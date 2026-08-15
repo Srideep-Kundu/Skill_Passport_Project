@@ -21,9 +21,8 @@ async def my_matches(principal: Annotated[Student, Depends(require_role("student
     matches = [await compute_and_persist_match(session, principal.id, internship.id) for internship in internships]
     internship_titles = {internship.id: internship.title for internship in internships}
     return [
-        MatchResponse(
-            **MatchResponse.model_validate(match).model_dump(),
-            internship_title=internship_titles[match.internship_id],
+        MatchResponse.model_validate(match).model_copy(
+            update={"internship_title": internship_titles[match.internship_id]}
         )
         for match in sorted(matches, key=lambda match: (-float(match.final_score), str(match.internship_id)))
     ]

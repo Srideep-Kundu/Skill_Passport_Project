@@ -51,9 +51,8 @@ async def internship_matches(internship_id: UUID, principal: Annotated[Recruiter
     if internship is None or internship.recruiter_id != principal.id:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Internship not found")
     return [
-        MatchResponse(
-            **MatchResponse.model_validate(match).model_dump(),
-            candidate_label=f"Candidate {str(match.student_id)[:8]}",
+        MatchResponse.model_validate(match).model_copy(
+            update={"candidate_label": f"Candidate {str(match.student_id)[:8]}"}
         )
         for match in await ranked_matches_for_internship(session, internship_id)
     ]
