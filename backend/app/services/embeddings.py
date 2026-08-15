@@ -1,8 +1,10 @@
 import hashlib
 import math
 
+VECTOR_DIMENSIONS = 768
 
-def deterministic_embedding(text: str, dimensions: int = 32) -> list[float]:
+
+def deterministic_embedding(text: str, dimensions: int = VECTOR_DIMENSIONS) -> list[float]:
     """Stable local fallback embedding; provider embeddings never score by themselves."""
     values = [0.0] * dimensions
     for token in text.casefold().split():
