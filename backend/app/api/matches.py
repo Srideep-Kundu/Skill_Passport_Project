@@ -33,14 +33,16 @@ async def match_explanation(match_id: UUID, principal: Annotated[Student | Recru
     match = await session.get(Match, match_id)
     if match is None:
         raise HTTPException(status_code=404, detail="Match not found")
+    include_evidence_references = isinstance(principal, Student)
     if isinstance(principal, Student):
         allowed = match.student_id == principal.id
     else:
         internship = await session.get(Internship, match.internship_id)
         student = await session.get(Student, match.student_id)
-        allowed = isinstance(principal, Recruiter) and internship is not None and internship.recruiter_id == principal.id and student is not None and student.recruiter_evidence_consent
+        allowed = isinstance(principal, Recruiter) and internship is not None and internship.recruiter_id == principal.id
+        include_evidence_references = allowed and student is not None and student.recruiter_evidence_consent
     if not allowed:
         raise HTTPException(status_code=403, detail="Not authorized to view this explanation")
-    result = await render_explanation(session, match_id)
+    result = await render_explanation(session, match_id, include_evidence_references=include_evidence_references)
     assert result is not None
     return ExplanationResponse.model_validate(result)

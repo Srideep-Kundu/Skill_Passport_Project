@@ -4,9 +4,9 @@
 
 Use PostgreSQL 16 with the `vector` extension enabled and a Redis instance reachable only by the API/worker network. Run Alembic migrations before serving traffic, seed the canonical taxonomy and demo data only in a demo environment, and configure `/health` as the service health check.
 
-Set the following as platform secrets or environment variables, never in Git: `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET_KEY`, `GEMINI_API_KEY`, optional `GITHUB_TOKEN`, and production `CORS_ORIGINS`. Set `APP_ENV=production`; strong unique JWT keys and production credentials are mandatory. Do not use the local values from `.env.example`.
+Set the following as platform secrets or environment variables, never in Git: `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET_KEY`, optional `GEMINI_API_KEY`, optional `GITHUB_TOKEN`, and production `CORS_ORIGINS`. Set `APP_ENV=production`; strong unique JWT keys, PostgreSQL, Redis, and exact HTTPS CORS origins are mandatory. Set `EXTRACTION_PROVIDER=gemini` only when `GEMINI_API_KEY` is configured; otherwise use `local`. Do not use the local values from `.env.example`.
 
-The database role used by the matching worker must have access only to `matching_view` and matching-related persistence, not the `students` table. Run the matching-view migration/grant validation as part of deployment.
+The `0002_matching_role_privileges` migration creates `skill_passport_matcher`, a `NOLOGIN` role restricted to `matching_view`, taxonomy/requirements, and match persistence. Matching service transactions activate that role before matching reads and writes; the role cannot select profile or raw-evidence tables. The current monolithic API still uses one primary connection identity outside those transactions, so a separate matching-process database identity remains a future hardening step. Run this migration with a database principal permitted to create roles and validate the grants as part of deployment.
 
 ## Railway
 

@@ -22,6 +22,17 @@ TIER_MULTIPLIER = {
 }
 
 
+async def activate_matching_role(session: AsyncSession) -> None:
+    """Restrict PostgreSQL matching operations to the least-privilege database role.
+
+    The API currently shares one connection identity for all services, so this is a
+    transaction-scoped boundary rather than a separate process identity. The matcher
+    must still use this role before it reads matching inputs or persists match output.
+    """
+    if session.get_bind().dialect.name == "postgresql":
+        await session.execute(text("SET LOCAL ROLE skill_passport_matcher"))
+
+
 @dataclass(frozen=True)
 class RequirementInput:
     skill_id: UUID
@@ -120,6 +131,7 @@ async def _possessed(session: AsyncSession, student_id: UUID) -> list[PossessedS
 
 
 async def compute_and_persist_match(session: AsyncSession, student_id: UUID, internship_id: UUID) -> Match:
+    await activate_matching_role(session)
     result = calculate_score(await _requirements(session, internship_id), await _possessed(session, student_id))
     existing = (await session.execute(text("SELECT id FROM matches WHERE student_id=:student_id AND internship_id=:internship_id AND score_version=:version"), {"student_id": str(student_id), "internship_id": str(internship_id), "version": SCORE_VERSION})).scalar_one_or_none()
     if existing:
@@ -140,12 +152,14 @@ async def compute_and_persist_match(session: AsyncSession, student_id: UUID, int
 
 
 async def ranked_matches_for_internship(session: AsyncSession, internship_id: UUID) -> list[Match]:
+    await activate_matching_role(session)
     student_ids = [UUID(str(value)) for value in (await session.execute(text("SELECT DISTINCT student_id FROM matching_view ORDER BY student_id"))).scalars().all()]
     matches = [await compute_and_persist_match(session, student_id, internship_id) for student_id in student_ids]
     return sorted(matches, key=lambda match: (-float(match.final_score), str(match.student_id)))
 
 
 async def suggest_teams(session: AsyncSession, target_skill_ids: list[UUID], pool: list[UUID]) -> list[tuple[tuple[UUID, UUID], float]]:
+    await activate_matching_role(session)
     targets = set(target_skill_ids)
     skills_by_student: dict[UUID, set[UUID]] = {}
     for student_id in sorted(set(pool), key=str):

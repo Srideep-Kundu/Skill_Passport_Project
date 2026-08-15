@@ -60,7 +60,13 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      EXTRACTION_PROVIDER: ${EXTRACTION_PROVIDER:-local}
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+      RATE_LIMITING_ENABLED: ${RATE_LIMITING_ENABLED:-true}
+      LOGIN_RATE_LIMIT_PER_MINUTE: ${LOGIN_RATE_LIMIT_PER_MINUTE:-10}
+      REGISTRATION_RATE_LIMIT_PER_MINUTE: ${REGISTRATION_RATE_LIMIT_PER_MINUTE:-5}
+      EXTRACTION_RATE_LIMIT_PER_MINUTE: ${EXTRACTION_RATE_LIMIT_PER_MINUTE:-10}
+      VERIFICATION_RATE_LIMIT_PER_MINUTE: ${VERIFICATION_RATE_LIMIT_PER_MINUTE:-10}
     ports:
       - "8000:8000"
     depends_on:
@@ -86,6 +92,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://skill_passport:change-me-local-only@postgres:5432/skill_passport}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      EXTRACTION_PROVIDER: ${EXTRACTION_PROVIDER:-local}
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
     command: ["python", "-m", "app.workers.extraction_worker"]
     depends_on:

@@ -1,8 +1,8 @@
 import { request } from "./client";
 import type {
-  AuthSession, CandidateMatch, Evidence, EvidenceSubmission, Internship, InternshipCreate,
+  AuthSession, CandidateMatch, EvidenceDetail, EvidenceSubmission, EvidenceSummary, Internship, InternshipCreate,
   LoginRequest, MatchExplanation, PaginatedResponse, Passport, RecruiterRegistration, Skill,
-  StudentMatch, StudentRegistration, TeamSuggestion, TeamSuggestionRequest,
+  StudentMatch, StudentRegistration, TeamSuggestion, TeamSuggestionRequest, VerificationResult, RecruiterEvidenceConsent,
 } from "./types";
 
 export const api = {
@@ -10,11 +10,11 @@ export const api = {
   registerRecruiter: (input: RecruiterRegistration) => request<AuthSession>("/auth/register/recruiter", { method: "POST", body: JSON.stringify(input) }),
   login: (input: LoginRequest) => request<AuthSession>("/auth/login", { method: "POST", body: JSON.stringify(input) }),
   passport: (token: string) => request<Passport>("/passport/me", {}, token),
-  submitEvidence: (input: EvidenceSubmission, token: string) => request<Pick<Evidence, "id" | "extraction_status">>("/evidence", { method: "POST", body: JSON.stringify(input) }, token),
-  evidence: (id: string, token: string) => request<Evidence>(`/evidence/${encodeURIComponent(id)}`, {}, token),
-  verifyEvidence: (id: string, checkType: string, token: string) => request<void>(`/evidence/${encodeURIComponent(id)}/verify`, { method: "POST", body: JSON.stringify({ check_type: checkType }) }, token),
+  submitEvidence: (input: EvidenceSubmission, token: string) => request<EvidenceSummary>("/evidence", { method: "POST", body: JSON.stringify(input) }, token),
+  evidence: (id: string, token: string) => request<EvidenceDetail>(`/evidence/${encodeURIComponent(id)}`, {}, token),
+  verifyEvidence: (id: string, checkType: string, token: string) => request<VerificationResult>(`/evidence/${encodeURIComponent(id)}/verify`, { method: "POST", body: JSON.stringify({ check_type: checkType }) }, token),
   searchSkills: (query: string, token: string) => request<Skill[]>(`/skills/search?q=${encodeURIComponent(query)}`, {}, token),
-  createInternship: (input: InternshipCreate, token: string) => request<{ internship_id: string }>("/internships", { method: "POST", body: JSON.stringify(input) }, token),
+  createInternship: (input: InternshipCreate, token: string) => request<Internship>("/internships", { method: "POST", body: JSON.stringify(input) }, token),
   internshipMatches: async (id: string, token: string): Promise<CandidateMatch[]> => {
     const response = await request<CandidateMatch[] | PaginatedResponse<CandidateMatch>>(`/internships/${encodeURIComponent(id)}/matches`, {}, token);
     return Array.isArray(response) ? response : response.items;
@@ -28,5 +28,7 @@ export const api = {
     return Array.isArray(response) ? response : response.items;
   },
   explanation: (id: string, token: string) => request<MatchExplanation>(`/matches/${encodeURIComponent(id)}/explanation`, {}, token),
+  recruiterEvidenceConsent: (token: string) => request<RecruiterEvidenceConsent>("/passport/consent", {}, token),
+  setRecruiterEvidenceConsent: (recruiterEvidenceConsent: boolean, token: string) => request<RecruiterEvidenceConsent>("/passport/consent", { method: "PUT", body: JSON.stringify({ recruiter_evidence_consent: recruiterEvidenceConsent }) }, token),
   suggestTeams: (input: TeamSuggestionRequest, token: string) => request<TeamSuggestion[]>("/teams/suggest", { method: "POST", body: JSON.stringify(input) }, token),
 };

@@ -66,12 +66,21 @@ class EvidenceDetail(EvidenceResponse):
 
 
 class VerificationRequest(APIModel):
-    check_type: Literal["github_commit_match"]
+    # The legacy value remains accepted for compatibility but is recorded conservatively.
+    check_type: Literal["github_repository_accessibility", "github_commit_match"]
 
 
 class VerificationResponse(APIModel):
     result: str
     details: dict[str, object]
+
+
+class RecruiterEvidenceConsentUpdate(APIModel):
+    recruiter_evidence_consent: bool
+
+
+class RecruiterEvidenceConsentResponse(APIModel):
+    recruiter_evidence_consent: bool
 
 
 class SkillResponse(APIModel):

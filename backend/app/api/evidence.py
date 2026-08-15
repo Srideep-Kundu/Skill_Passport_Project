@@ -5,9 +5,18 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.db import get_session
 from app.core.security import require_role
-from app.models import Evidence, Skill, Student, StudentSkill
+from app.models import (
+    Evidence,
+    Internship,
+    Match,
+    Recruiter,
+    Skill,
+    Student,
+    StudentSkill,
+)
 from app.schemas.contracts import (
     EvidenceCreate,
     EvidenceDetail,
@@ -17,6 +26,7 @@ from app.schemas.contracts import (
     VerificationResponse,
 )
 from app.services.extraction_service import enqueue_extraction
+from app.services.rate_limit_service import enforce_rate_limit
 from app.services.verification_service import verify_github_evidence
 
 router = APIRouter(prefix="/evidence", tags=["evidence"])
@@ -24,6 +34,7 @@ router = APIRouter(prefix="/evidence", tags=["evidence"])
 
 @router.post("", response_model=EvidenceResponse, status_code=status.HTTP_201_CREATED)
 async def submit_evidence(payload: EvidenceCreate, principal: Annotated[Student, Depends(require_role("student"))], session: Annotated[AsyncSession, Depends(get_session)]) -> EvidenceResponse:
+    await enforce_rate_limit("extraction", str(principal.id), get_settings().extraction_rate_limit_per_minute)
     evidence = Evidence(student_id=principal.id, evidence_type=payload.evidence_type, title=payload.title, description=payload.description, external_url=str(payload.external_url) if payload.external_url else None)
     session.add(evidence)
     await session.commit()
@@ -49,5 +60,47 @@ async def get_evidence(evidence_id: UUID, principal: Annotated[Student, Depends(
 @router.post("/{evidence_id}/verify", response_model=VerificationResponse)
 async def verify_evidence(evidence_id: UUID, payload: VerificationRequest, principal: Annotated[Student, Depends(require_role("student"))], session: Annotated[AsyncSession, Depends(get_session)]) -> VerificationResponse:
     await _owned_evidence(session, evidence_id, principal.id)
+    await enforce_rate_limit("verification", str(principal.id), get_settings().verification_rate_limit_per_minute)
     check = await verify_github_evidence(session, evidence_id)
     return VerificationResponse(result=check.result, details=check.details or {})
+
+
+@router.get("/internships/{internship_id}/candidates/{student_id}/{evidence_id}", response_model=EvidenceDetail)
+async def recruiter_evidence(
+    internship_id: UUID,
+    student_id: UUID,
+    evidence_id: UUID,
+    principal: Annotated[Recruiter, Depends(require_role("recruiter"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> EvidenceDetail:
+    """Return raw evidence only for a consenting candidate matched to the recruiter's internship."""
+    internship = await session.get(Internship, internship_id)
+    evidence = await session.get(Evidence, evidence_id)
+    if internship is None or internship.recruiter_id != principal.id or evidence is None or evidence.student_id != student_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Evidence not found")
+    student = await session.get(Student, student_id)
+    if student is None or not student.recruiter_evidence_consent:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Candidate has not consented to recruiter evidence access")
+    match = (
+        await session.scalars(
+            select(Match.id).where(Match.student_id == student_id, Match.internship_id == internship_id)
+        )
+    ).first()
+    if match is None:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Evidence is not available for this internship")
+    rows = (await session.execute(select(StudentSkill, Skill).join(Skill).where(StudentSkill.source_evidence_id == evidence.id))).all()
+    return EvidenceDetail(
+        **EvidenceResponse.model_validate(evidence).model_dump(),
+        extracted_skills=[
+            ExtractedSkillResponse(
+                id=item.id,
+                skill_id=item.skill_id,
+                canonical_name=skill.canonical_name,
+                extraction_confidence=float(item.extraction_confidence),
+                verification_tier=item.verification_tier.value,
+                source_evidence_id=item.source_evidence_id,
+                evidence_span=item.evidence_span,
+            )
+            for item, skill in rows
+        ],
+    )

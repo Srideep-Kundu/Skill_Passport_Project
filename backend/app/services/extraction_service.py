@@ -64,7 +64,9 @@ class GeminiExtractor:
 
     async def extract(self, evidence_type: str, evidence_text: str, taxonomy: list[Skill]) -> ExtractionPayload:
         settings = get_settings()
-        if settings.gemini_api_key:
+        if settings.extraction_provider == "gemini":
+            if not settings.gemini_api_key:
+                raise ValueError("Gemini extraction is enabled without an API key")
             prompt = (
                 "Extract only explicit technical skills from the evidence. Return JSON object {skills:[{skill,confidence,"
                 "evidence_span,proficiency_hint}]}; do not infer identity, demographics, background, or any non-skill. "
@@ -110,7 +112,7 @@ async def extract_evidence(session: AsyncSession, evidence_id: UUID) -> None:
             ))
         evidence.extraction_status = ExtractionStatus.extracted
         session.add(AuditLog(actor_id=evidence.student_id, action="evidence_extracted", entity_type="evidence", entity_id=evidence.id,
-                             details={"skill_count": len(candidates), "provider": "gemini" if get_settings().gemini_api_key else "local_fallback"}))
+                              details={"skill_count": len(candidates), "provider": get_settings().extraction_provider}))
         await session.commit()
     except (httpx.HTTPError, IntegrityError, KeyError, TypeError, ValueError):
         await session.rollback()

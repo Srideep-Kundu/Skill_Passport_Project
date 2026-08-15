@@ -39,32 +39,35 @@ export interface ExtractedSkill {
   skill_id: string;
   canonical_name: string;
   extraction_confidence: number;
-  effective_confidence: number;
   verification_tier: VerificationTier;
-  evidence_span?: string;
+  evidence_span: string | null;
   source_evidence_id: string;
 }
 
-export interface Evidence {
+export interface EvidenceSummary {
   id: string;
   evidence_type: EvidenceType;
   title: string;
   description: string;
-  external_url?: string;
+  external_url: string | null;
   extraction_status: "pending_extraction" | "extracted" | "failed";
   submitted_at: string;
+}
+
+export interface EvidenceDetail extends EvidenceSummary {
   extracted_skills: ExtractedSkill[];
 }
 
 export interface Passport {
   skills: ExtractedSkill[];
-  evidence: Evidence[];
+  evidence: EvidenceSummary[];
 }
 
 export interface Skill {
   id: string;
   canonical_name: string;
   category: string;
+  aliases: string[];
 }
 
 export interface InternshipRequirementInput {
@@ -83,7 +86,17 @@ export interface Internship {
   id: string;
   title: string;
   description: string;
-  created_at?: string;
+  recruiter_id: string;
+  created_at: string;
+}
+
+export interface VerificationResult {
+  result: string;
+  details: Record<string, unknown>;
+}
+
+export interface RecruiterEvidenceConsent {
+  recruiter_evidence_consent: boolean;
 }
 
 export interface MatchExplanationLine {
@@ -91,8 +104,8 @@ export interface MatchExplanationLine {
   skill_name: string;
   status: "matched_verified" | "matched_partially_verified" | "matched_unverified" | "semantic_near_match" | "missing";
   contribution: number;
-  evidence_id?: string;
-  evidence_title?: string;
+  evidence_id: string | null;
+  evidence_title: string | null;
 }
 
 export interface MatchExplanation {
@@ -107,6 +120,7 @@ export interface MatchExplanation {
 
 export interface StudentMatch {
   id: string;
+  student_id: string;
   internship_id: string;
   internship_title: string;
   final_score: number;
@@ -119,6 +133,7 @@ export interface StudentMatch {
 export interface CandidateMatch {
   id: string;
   student_id: string;
+  internship_id: string;
   candidate_label: string;
   final_score: number;
   deterministic_score: number;
