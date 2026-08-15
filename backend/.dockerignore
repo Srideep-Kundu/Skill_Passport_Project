@@ -1,0 +1,24 @@
+# Local Python environments, caches, and database files are never image inputs.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.db
+
+# Local configuration and editor metadata must not enter the build context.
+.env
+.env.*
+!.env.example
+.git/
+.vscode/
+.idea/
+
+# Test coverage and OS artifacts.
+.coverage
+htmlcov/
+coverage.xml
+.DS_Store
+Thumbs.db
