@@ -22,14 +22,13 @@ Architecture and contribution invariants are defined in [AGENTS.md](AGENTS.md). 
    docker compose up --build
    ```
 
-3. Apply migrations after the database becomes healthy:
+3. Compose applies migrations before starting the API and worker. Seed the taxonomy and demo data after the stack starts:
 
    ```bash
-   docker compose exec backend alembic upgrade head
+   docker compose exec backend python -m seed.seed_demo_data
    ```
 
-4. Seed the taxonomy and demo data using the seed commands documented by the backend once migrations have completed.
-5. Open the frontend at `http://localhost:5173`; the API health check is at `http://localhost:8000/health`.
+4. Open the frontend at `http://localhost:5173`; the API health check is at `http://localhost:8000/health`.
 
 Use `docker compose down` to stop services. Add `-v` only when you intentionally want to remove the local PostgreSQL/Redis volumes.
 
