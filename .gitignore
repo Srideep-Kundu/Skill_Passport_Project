@@ -17,6 +17,7 @@ coverage.xml
 htmlcov/
 .venv/
 venv/
+*.db
 
 # Node/Vite
 node_modules/
