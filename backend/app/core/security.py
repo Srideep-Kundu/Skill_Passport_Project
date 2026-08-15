@@ -5,7 +5,7 @@ from uuid import UUID
 import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
+from jose import JWTError, jwt  # type: ignore[import-untyped]
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,10 +42,15 @@ async def current_principal(
         subject, role = UUID(payload["sub"]), payload["role"]
     except (JWTError, KeyError, ValueError) as error:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid authentication token") from error
-    model = {"student": Student, "recruiter": Recruiter, "admin": Admin}.get(role)
-    if model is None:
+    principal: Student | Recruiter | Admin | None
+    if role == "student":
+        principal = (await session.scalars(select(Student).where(Student.id == subject))).first()
+    elif role == "recruiter":
+        principal = (await session.scalars(select(Recruiter).where(Recruiter.id == subject))).first()
+    elif role == "admin":
+        principal = (await session.scalars(select(Admin).where(Admin.id == subject))).first()
+    else:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid authentication token")
-    principal = (await session.scalars(select(model).where(model.id == subject))).first()
     if principal is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Account no longer exists")
     return principal

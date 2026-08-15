@@ -3,7 +3,19 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint, func
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON, Uuid
@@ -11,6 +23,7 @@ from sqlalchemy.types import JSON, Uuid
 from app.core.db import Base
 
 Json = JSON().with_variant(JSONB, "postgresql")
+Embedding = JSON().with_variant(Vector(768), "postgresql")
 
 
 class Role(str, enum.Enum):
@@ -79,7 +92,7 @@ class Skill(Timestamped, Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     canonical_name: Mapped[str] = mapped_column(String(120), unique=True, index=True)
     category: Mapped[str] = mapped_column(String(120))
-    embedding: Mapped[list[float] | None] = mapped_column(Json)
+    embedding: Mapped[list[float] | None] = mapped_column(Embedding)
     aliases: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
 
 
@@ -108,6 +121,7 @@ class StudentSkill(Timestamped, Base):
     extraction_confidence: Mapped[float] = mapped_column(Numeric(4, 3), nullable=False)
     verification_tier: Mapped[VerificationTier] = mapped_column(Enum(VerificationTier), default=VerificationTier.unverified, nullable=False)
     proficiency_hint: Mapped[str | None] = mapped_column(String(32))
+    evidence_span: Mapped[str] = mapped_column(String(500), nullable=False)
     source_evidence: Mapped[Evidence] = relationship(back_populates="extracted_skills")
     skill: Mapped[Skill] = relationship()
 
@@ -128,7 +142,7 @@ class Internship(Timestamped, Base):
     recruiter_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("recruiters.id", ondelete="CASCADE"), index=True)
     title: Mapped[str] = mapped_column(String(200))
     description: Mapped[str] = mapped_column(Text)
-    embedding: Mapped[list[float] | None] = mapped_column(Json)
+    embedding: Mapped[list[float] | None] = mapped_column(Embedding)
     recruiter: Mapped[Recruiter] = relationship(back_populates="internships")
     requirements: Mapped[list["InternshipRequirement"]] = relationship(back_populates="internship", cascade="all, delete-orphan")
 
