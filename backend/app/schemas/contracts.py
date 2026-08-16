@@ -247,6 +247,57 @@ class InternshipResponse(APIModel):
     requirements: list[InternshipRequirementResponse] = Field(default_factory=list)
 
 
+class ExternalJobRequirementResponse(APIModel):
+    id: UUID
+    skill_id: UUID
+    skill_name: str
+    is_required: bool
+    weight: float
+    confidence: float
+    source_span: str
+
+
+class ExternalJobResponse(APIModel):
+    id: UUID
+    provider: str
+    provider_source: str
+    external_id: str
+    title: str
+    company_name: str
+    description: str
+    location: str | None
+    remote_status: str | None
+    employment_type: str | None
+    experience_level: str | None
+    salary_min: float | None
+    salary_max: float | None
+    salary_currency: str | None
+    apply_url: str | None
+    source_url: str
+    posted_at: datetime | None
+    expires_at: datetime | None
+    first_seen_at: datetime
+    last_seen_at: datetime
+    last_synced_at: datetime
+    is_active: bool
+    requirements: list[ExternalJobRequirementResponse] = Field(default_factory=list)
+
+
+class ExternalJobSyncRequest(APIModel):
+    provider: str = Field(min_length=1, max_length=64, pattern="^[a-z0-9_-]+$")
+    source_key: str = Field(min_length=1, max_length=120, pattern="^[A-Za-z0-9_-]+$")
+
+
+class ExternalJobSyncResponse(APIModel):
+    provider: str
+    provider_source: str
+    created: int
+    updated: int
+    marked_inactive: int
+    synced: int
+    synced_at: datetime
+
+
 ItemT = TypeVar("ItemT")
 
 

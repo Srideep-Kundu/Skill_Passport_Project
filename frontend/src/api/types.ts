@@ -144,6 +144,42 @@ export interface Internship {
   requirements: InternshipRequirement[];
 }
 
+export interface ExternalJobRequirement {
+  id: string;
+  skill_id: string;
+  skill_name: string;
+  is_required: boolean;
+  weight: number;
+  confidence: number;
+  source_span: string;
+}
+
+export interface ExternalJob {
+  id: string;
+  provider: string;
+  provider_source: string;
+  external_id: string;
+  title: string;
+  company_name: string;
+  description: string;
+  location: string | null;
+  remote_status: string | null;
+  employment_type: string | null;
+  experience_level: string | null;
+  salary_min: number | null;
+  salary_max: number | null;
+  salary_currency: string | null;
+  apply_url: string | null;
+  source_url: string;
+  posted_at: string | null;
+  expires_at: string | null;
+  first_seen_at: string;
+  last_seen_at: string;
+  last_synced_at: string;
+  is_active: boolean;
+  requirements: ExternalJobRequirement[];
+}
+
 export interface VerificationResult {
   result: string;
   details: Record<string, unknown>;

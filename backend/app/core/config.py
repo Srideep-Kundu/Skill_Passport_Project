@@ -71,6 +71,15 @@ class Settings(BaseSettings):
         ge=1,
         validation_alias=AliasChoices("SKILL_PASSPORT_VERIFICATION_RATE_LIMIT_PER_MINUTE", "VERIFICATION_RATE_LIMIT_PER_MINUTE"),
     )
+    external_job_sync_rate_limit_per_minute: int = Field(
+        default=5,
+        ge=1,
+        validation_alias=AliasChoices("SKILL_PASSPORT_EXTERNAL_JOB_SYNC_RATE_LIMIT_PER_MINUTE", "EXTERNAL_JOB_SYNC_RATE_LIMIT_PER_MINUTE"),
+    )
+    greenhouse_board_tokens: Annotated[list[str], NoDecode] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("SKILL_PASSPORT_GREENHOUSE_BOARD_TOKENS", "GREENHOUSE_BOARD_TOKENS"),
+    )
     extraction_max_attempts: int = Field(
         default=3,
         ge=1,
@@ -110,6 +119,13 @@ class Settings(BaseSettings):
     def split_cors_origins(cls, value: str | list[str]) -> list[str]:
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
+        return value
+
+    @field_validator("greenhouse_board_tokens", mode="before")
+    @classmethod
+    def split_greenhouse_board_tokens(cls, value: str | list[str]) -> list[str]:
+        if isinstance(value, str):
+            return [token.strip() for token in value.split(",") if token.strip()]
         return value
 
     def validate_for_runtime(self) -> None:

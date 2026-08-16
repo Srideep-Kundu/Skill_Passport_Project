@@ -122,6 +122,31 @@ async def _requirements(session: AsyncSession, internship_id: UUID) -> list[Requ
     return [RequirementInput(UUID(str(row["skill_id"])), float(row["weight"]), bool(row["is_required"]), _usable_embedding(row), row["embedding_fingerprint"]) for row in rows]
 
 
+async def external_job_requirements(session: AsyncSession, external_job_id: UUID) -> list[RequirementInput]:
+    """Adapter read model for future external-job matching; the scoring formula remains shared."""
+    rows = (
+        await session.execute(
+            text(
+                "SELECT r.skill_id, r.weight, r.is_required, s.embedding, s.embedding_fingerprint, "
+                "s.embedding_provider, s.embedding_model, s.embedding_dimension "
+                "FROM external_job_requirements r JOIN skills s ON s.id = r.skill_id "
+                "WHERE r.external_job_id = :external_job_id"
+            ),
+            {"external_job_id": _database_id(session, external_job_id)},
+        )
+    ).mappings().all()
+    return [
+        RequirementInput(
+            UUID(str(row["skill_id"])),
+            float(row["weight"]),
+            bool(row["is_required"]),
+            _usable_embedding(row),
+            row["embedding_fingerprint"],
+        )
+        for row in rows
+    ]
+
+
 async def _possessed(session: AsyncSession, student_id: UUID) -> list[PossessedSkill]:
     rows = (await session.execute(text("SELECT mv.skill_id, mv.source_evidence_id, mv.effective_confidence, mv.verification_tier, s.embedding, s.embedding_fingerprint, s.embedding_provider, s.embedding_model, s.embedding_dimension FROM matching_view mv JOIN skills s ON s.id = mv.skill_id WHERE mv.student_id = :student_id"), {"student_id": _database_id(session, student_id)})).mappings().all()
     return [PossessedSkill(UUID(str(row["skill_id"])), UUID(str(row["source_evidence_id"])), float(row["effective_confidence"]), str(row["verification_tier"]), _usable_embedding(row), row["embedding_fingerprint"]) for row in rows]

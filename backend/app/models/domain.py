@@ -244,6 +244,51 @@ class InternshipRequirement(Base):
     skill: Mapped[Skill] = relationship()
 
 
+class ExternalJob(Base):
+    """Provider-neutral, persisted representation of a public job posting."""
+
+    __tablename__ = "external_jobs"
+    __table_args__ = (UniqueConstraint("provider", "external_id", name="uq_external_job_provider_external_id"),)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    provider: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    provider_source: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    external_id: Mapped[str] = mapped_column(String(160), nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    company_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    location: Mapped[str | None] = mapped_column(String(255))
+    remote_status: Mapped[str | None] = mapped_column(String(32))
+    employment_type: Mapped[str | None] = mapped_column(String(64))
+    experience_level: Mapped[str | None] = mapped_column(String(64))
+    salary_min: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    salary_max: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    salary_currency: Mapped[str | None] = mapped_column(String(8))
+    apply_url: Mapped[str | None] = mapped_column(String(2048))
+    source_url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    posted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    raw_metadata: Mapped[dict[str, Any] | None] = mapped_column(Json)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    last_synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
+    requirements: Mapped[list["ExternalJobRequirement"]] = relationship(back_populates="external_job", cascade="all, delete-orphan")
+
+
+class ExternalJobRequirement(Base):
+    __tablename__ = "external_job_requirements"
+    __table_args__ = (UniqueConstraint("external_job_id", "skill_id", name="uq_external_job_requirement_skill"),)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    external_job_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("external_jobs.id", ondelete="CASCADE"), index=True)
+    skill_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("skills.id"), index=True)
+    is_required: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    weight: Mapped[float] = mapped_column(Numeric(3, 2), default=1.0, nullable=False)
+    confidence: Mapped[float] = mapped_column(Numeric(4, 3), nullable=False)
+    source_span: Mapped[str] = mapped_column(String(500), nullable=False)
+    external_job: Mapped[ExternalJob] = relationship(back_populates="requirements")
+    skill: Mapped[Skill] = relationship()
+
+
 class Match(Timestamped, Base):
     __tablename__ = "matches"
     __table_args__ = (UniqueConstraint("student_id", "internship_id", "score_version", name="uq_match_score_version"),)
