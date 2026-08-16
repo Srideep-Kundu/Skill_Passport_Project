@@ -180,6 +180,33 @@ export interface ExternalJob {
   requirements: ExternalJobRequirement[];
 }
 
+export interface ExternalJobMatch {
+  id: string;
+  student_id: string;
+  external_job_id: string;
+  title: string;
+  company_name: string;
+  provider: string;
+  external_id: string;
+  source_url: string;
+  location: string | null;
+  remote_status: string | null;
+  posted_at: string | null;
+  is_active: boolean;
+  deterministic_score: number;
+  semantic_score: number;
+  verification_bonus: number;
+  final_score: number;
+  score_version: string;
+  is_stale: boolean;
+  explanation: MatchExplanation;
+}
+
+export interface ExternalJobMatchState {
+  matching_status: "ready" | "not_computed" | "insufficient_requirements" | "inactive";
+  match: ExternalJobMatch | null;
+}
+
 export interface VerificationResult {
   result: string;
   details: Record<string, unknown>;
@@ -207,6 +234,7 @@ export interface RecruiterEvidenceConsent {
 export interface MatchExplanationLine {
   skill_id: string;
   skill_name: string;
+  is_required?: boolean;
   status: "matched_verified" | "matched_partially_verified" | "matched_unverified" | "semantic_near_match" | "missing";
   contribution: number;
   evidence_id: string | null;
@@ -218,6 +246,8 @@ export interface MatchExplanationLine {
   semantic_contribution: number;
   verification_contribution: number;
   total_contribution: number;
+  extraction_confidence?: number | null;
+  verification_tier?: VerificationTier | null;
 }
 
 export interface MatchExplanation {

@@ -325,6 +325,7 @@ class MatchResponse(APIModel):
 class ExplanationItem(APIModel):
     skill_id: UUID
     skill_name: str
+    is_required: bool = True
     status: str
     contribution: float
     evidence_id: UUID | None
@@ -336,6 +337,8 @@ class ExplanationItem(APIModel):
     semantic_contribution: float = 0.0
     verification_contribution: float = 0.0
     total_contribution: float = 0.0
+    extraction_confidence: float | None = None
+    verification_tier: str | None = None
 
 
 class ExplanationResponse(APIModel):
@@ -346,6 +349,33 @@ class ExplanationResponse(APIModel):
     verification_bonus: float
     final_score: float
     score_version: str
+
+
+class ExternalJobMatchResponse(APIModel):
+    id: UUID
+    student_id: UUID
+    external_job_id: UUID
+    title: str
+    company_name: str
+    provider: str
+    external_id: str
+    source_url: str
+    location: str | None
+    remote_status: str | None
+    posted_at: datetime | None
+    is_active: bool
+    deterministic_score: float
+    semantic_score: float
+    verification_bonus: float
+    final_score: float
+    score_version: str
+    is_stale: bool
+    explanation: ExplanationResponse
+
+
+class ExternalJobMatchStateResponse(APIModel):
+    matching_status: Literal["ready", "not_computed", "insufficient_requirements", "inactive"]
+    match: ExternalJobMatchResponse | None = None
 
 
 class TeamSuggestionRequest(APIModel):

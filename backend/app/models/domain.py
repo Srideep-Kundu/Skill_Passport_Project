@@ -289,6 +289,47 @@ class ExternalJobRequirement(Base):
     skill: Mapped[Skill] = relationship()
 
 
+class ExternalJobMatch(Timestamped, Base):
+    """Persisted student-to-external-job score using the shared deterministic formula."""
+
+    __tablename__ = "external_job_matches"
+    __table_args__ = (UniqueConstraint("student_id", "external_job_id", name="uq_external_job_match_student_job"),)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), index=True)
+    external_job_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("external_jobs.id", ondelete="CASCADE"), index=True)
+    deterministic_score: Mapped[float] = mapped_column(Numeric(5, 4), nullable=False)
+    semantic_score: Mapped[float] = mapped_column(Numeric(5, 4), nullable=False)
+    verification_bonus: Mapped[float] = mapped_column(Numeric(5, 4), nullable=False)
+    final_score: Mapped[float] = mapped_column(Numeric(5, 4), nullable=False, index=True)
+    score_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    input_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    computed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    explanations: Mapped[list["ExternalJobMatchExplanation"]] = relationship(back_populates="match", cascade="all, delete-orphan")
+
+
+class ExternalJobMatchExplanation(Base):
+    __tablename__ = "external_job_match_explanations"
+    __table_args__ = (UniqueConstraint("external_job_match_id", "skill_id", name="uq_external_job_match_explanation_skill"),)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    external_job_match_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("external_job_matches.id", ondelete="CASCADE"), index=True)
+    skill_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("skills.id"), index=True)
+    is_required: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    status: Mapped[str] = mapped_column(String(40), nullable=False)
+    contribution: Mapped[float] = mapped_column(Numeric(6, 5), nullable=False)
+    deterministic_contribution: Mapped[float] = mapped_column(Numeric(6, 5), nullable=False)
+    semantic_contribution: Mapped[float] = mapped_column(Numeric(6, 5), nullable=False)
+    verification_contribution: Mapped[float] = mapped_column(Numeric(6, 5), nullable=False)
+    matched_skill_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("skills.id"))
+    semantic_similarity: Mapped[float | None] = mapped_column(Numeric(5, 4))
+    contributing_evidence_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("evidence.id", ondelete="SET NULL"))
+    extraction_confidence: Mapped[float | None] = mapped_column(Numeric(4, 3))
+    verification_tier: Mapped[VerificationTier | None] = mapped_column(Enum(VerificationTier))
+    match: Mapped[ExternalJobMatch] = relationship(back_populates="explanations")
+    skill: Mapped[Skill] = relationship(foreign_keys=[skill_id])
+    matched_skill: Mapped[Skill | None] = relationship(foreign_keys=[matched_skill_id])
+    evidence: Mapped[Evidence | None] = relationship()
+
+
 class Match(Timestamped, Base):
     __tablename__ = "matches"
     __table_args__ = (UniqueConstraint("student_id", "internship_id", "score_version", name="uq_match_score_version"),)

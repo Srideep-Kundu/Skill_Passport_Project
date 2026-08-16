@@ -76,6 +76,12 @@ class Settings(BaseSettings):
         ge=1,
         validation_alias=AliasChoices("SKILL_PASSPORT_EXTERNAL_JOB_SYNC_RATE_LIMIT_PER_MINUTE", "EXTERNAL_JOB_SYNC_RATE_LIMIT_PER_MINUTE"),
     )
+    external_job_min_match_score: float = Field(
+        default=0.2,
+        ge=0.0,
+        le=1.0,
+        validation_alias=AliasChoices("SKILL_PASSPORT_MIN_EXTERNAL_JOB_MATCH_SCORE", "MIN_EXTERNAL_JOB_MATCH_SCORE"),
+    )
     greenhouse_board_tokens: Annotated[list[str], NoDecode] = Field(
         default_factory=list,
         validation_alias=AliasChoices("SKILL_PASSPORT_GREENHOUSE_BOARD_TOKENS", "GREENHOUSE_BOARD_TOKENS"),

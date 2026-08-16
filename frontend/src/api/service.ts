@@ -1,6 +1,6 @@
 import { request } from "./client";
 import type {
-  AuthSession, CandidateMatch, CandidateProfile, EvidenceDetail, EvidenceSubmission, EvidenceSummary, EvidenceUpdate, ExternalJob, Internship, InternshipCreate, InternshipUpdate,
+  AuthSession, CandidateMatch, CandidateProfile, EvidenceDetail, EvidenceSubmission, EvidenceSummary, EvidenceUpdate, ExternalJob, ExternalJobMatch, Internship, InternshipCreate, InternshipUpdate,
   LoginRequest, MatchExplanation, PaginatedResponse, Passport, RecruiterRegistration, Skill,
   StudentMatch, StudentRegistration, TeamSuggestion, TeamSuggestionRequest, VerificationResult, RecruiterEvidenceConsent, GitHubIdentity, ResumeDocument,
 } from "./types";
@@ -31,6 +31,8 @@ export const api = {
   internshipMatches: (id: string, token: string, page = 1, pageSize = 20) => request<PaginatedResponse<CandidateMatch>>(`/internships/${encodeURIComponent(id)}/matches?page=${page}&page_size=${pageSize}`, {}, token),
   internships: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<Internship>>(`/internships?page=${page}&page_size=${pageSize}`, {}, token),
   externalJobs: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<ExternalJob>>(`/external-jobs?page=${page}&page_size=${pageSize}`, {}, token),
+  externalJobMatches: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<ExternalJobMatch>>(`/external-jobs/matches?page=${page}&page_size=${pageSize}`, {}, token),
+  recomputeExternalJobMatches: (token: string) => request<ExternalJobMatch[]>("/external-jobs/matches/recompute", { method: "POST" }, token),
   studentMatches: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<StudentMatch>>(`/students/me/matches?page=${page}&page_size=${pageSize}`, {}, token),
   recomputeStudentMatches: (token: string) => request<StudentMatch[]>("/students/me/matches/recompute", { method: "POST" }, token),
   recomputeInternshipMatches: (id: string, token: string) => request<CandidateMatch[]>(`/internships/${encodeURIComponent(id)}/matches/recompute`, { method: "POST" }, token),

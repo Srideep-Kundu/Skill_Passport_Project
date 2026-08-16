@@ -7,6 +7,7 @@ from app.api import (
     admin,
     auth,
     evidence,
+    external_job_matches,
     external_jobs,
     internships,
     matches,
@@ -34,6 +35,7 @@ app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_cr
 app.include_router(auth.router)
 app.include_router(passport.router)
 app.include_router(evidence.router)
+app.include_router(external_job_matches.router)
 app.include_router(external_jobs.router)
 app.include_router(resumes.router)
 app.include_router(skills.router)
