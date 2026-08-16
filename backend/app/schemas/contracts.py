@@ -51,6 +51,15 @@ class EvidenceResponse(APIModel):
     submitted_at: datetime
 
 
+class ExtractionJobResponse(APIModel):
+    status: str
+    attempt_count: int
+    max_attempts: int
+    next_retry_at: datetime | None
+    user_message: str | None
+    provider: str | None
+
+
 class ExtractedSkillResponse(APIModel):
     id: UUID
     skill_id: UUID
@@ -63,6 +72,7 @@ class ExtractedSkillResponse(APIModel):
 
 class EvidenceDetail(EvidenceResponse):
     extracted_skills: list[ExtractedSkillResponse]
+    extraction_job: ExtractionJobResponse | None = None
 
 
 class VerificationRequest(APIModel):

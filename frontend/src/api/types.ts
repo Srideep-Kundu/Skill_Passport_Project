@@ -50,12 +50,22 @@ export interface EvidenceSummary {
   title: string;
   description: string;
   external_url: string | null;
-  extraction_status: "pending_extraction" | "extracted" | "failed";
+  extraction_status: "pending_extraction" | "queued" | "processing" | "retry_scheduled" | "extracted" | "failed" | "dead_lettered";
   submitted_at: string;
+}
+
+export interface ExtractionJob {
+  status: "pending" | "queued" | "processing" | "retry_scheduled" | "completed" | "failed" | "dead_lettered";
+  attempt_count: number;
+  max_attempts: number;
+  next_retry_at: string | null;
+  user_message: string | null;
+  provider: string | null;
 }
 
 export interface EvidenceDetail extends EvidenceSummary {
   extracted_skills: ExtractedSkill[];
+  extraction_job: ExtractionJob | null;
 }
 
 export interface Passport {

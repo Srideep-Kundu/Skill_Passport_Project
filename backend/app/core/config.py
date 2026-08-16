@@ -37,7 +37,10 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("SKILL_PASSPORT_CORS_ORIGINS", "CORS_ORIGINS"),
     )
     environment: str = Field(default="development", validation_alias=AliasChoices("SKILL_PASSPORT_ENVIRONMENT", "APP_ENV"))
-    extraction_sync_fallback: bool = True
+    extraction_sync_fallback: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("SKILL_PASSPORT_EXTRACTION_SYNC_FALLBACK", "EXTRACTION_SYNC_FALLBACK"),
+    )
     rate_limiting_enabled: bool = Field(
         default=True,
         validation_alias=AliasChoices("SKILL_PASSPORT_RATE_LIMITING_ENABLED", "RATE_LIMITING_ENABLED"),
@@ -61,6 +64,30 @@ class Settings(BaseSettings):
         default=10,
         ge=1,
         validation_alias=AliasChoices("SKILL_PASSPORT_VERIFICATION_RATE_LIMIT_PER_MINUTE", "VERIFICATION_RATE_LIMIT_PER_MINUTE"),
+    )
+    extraction_max_attempts: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        validation_alias=AliasChoices("SKILL_PASSPORT_EXTRACTION_MAX_ATTEMPTS", "EXTRACTION_MAX_ATTEMPTS"),
+    )
+    extraction_retry_base_seconds: int = Field(
+        default=15,
+        ge=1,
+        le=3600,
+        validation_alias=AliasChoices("SKILL_PASSPORT_EXTRACTION_RETRY_BASE_SECONDS", "EXTRACTION_RETRY_BASE_SECONDS"),
+    )
+    extraction_retry_max_seconds: int = Field(
+        default=300,
+        ge=1,
+        le=86400,
+        validation_alias=AliasChoices("SKILL_PASSPORT_EXTRACTION_RETRY_MAX_SECONDS", "EXTRACTION_RETRY_MAX_SECONDS"),
+    )
+    extraction_claim_timeout_seconds: int = Field(
+        default=300,
+        ge=30,
+        le=86400,
+        validation_alias=AliasChoices("SKILL_PASSPORT_EXTRACTION_CLAIM_TIMEOUT_SECONDS", "EXTRACTION_CLAIM_TIMEOUT_SECONDS"),
     )
 
     @field_validator("jwt_secret")

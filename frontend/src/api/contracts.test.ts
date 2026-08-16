@@ -28,7 +28,7 @@ describe("backend response contracts", () => {
       extraction_status: "extracted",
       submitted_at: "2026-01-01T00:00:00Z",
     } satisfies EvidenceSummary;
-    const detail = { ...evidence, extracted_skills: [skill] } satisfies EvidenceDetail;
+    const detail = { ...evidence, extracted_skills: [skill], extraction_job: null } satisfies EvidenceDetail;
     const internship = {
       id: "internship-id",
       recruiter_id: "recruiter-id",

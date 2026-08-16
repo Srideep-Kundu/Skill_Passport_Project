@@ -1,8 +1,10 @@
+from collections.abc import Sequence
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
+from sqlalchemy.engine import Row
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -10,6 +12,7 @@ from app.core.db import get_session
 from app.core.security import require_role
 from app.models import (
     Evidence,
+    ExtractionJob,
     Internship,
     Match,
     Recruiter,
@@ -22,10 +25,15 @@ from app.schemas.contracts import (
     EvidenceDetail,
     EvidenceResponse,
     ExtractedSkillResponse,
+    ExtractionJobResponse,
     VerificationRequest,
     VerificationResponse,
 )
-from app.services.extraction_service import enqueue_extraction
+from app.services.extraction_service import (
+    create_extraction_job,
+    enqueue_extraction,
+    manually_requeue_extraction,
+)
 from app.services.rate_limit_service import enforce_rate_limit
 from app.services.verification_service import verify_github_evidence
 
@@ -33,13 +41,17 @@ router = APIRouter(prefix="/evidence", tags=["evidence"])
 
 
 @router.post("", response_model=EvidenceResponse, status_code=status.HTTP_201_CREATED)
-async def submit_evidence(payload: EvidenceCreate, principal: Annotated[Student, Depends(require_role("student"))], session: Annotated[AsyncSession, Depends(get_session)]) -> EvidenceResponse:
+async def submit_evidence(payload: EvidenceCreate, response: Response, principal: Annotated[Student, Depends(require_role("student"))], session: Annotated[AsyncSession, Depends(get_session)]) -> EvidenceResponse:
     await enforce_rate_limit("extraction", str(principal.id), get_settings().extraction_rate_limit_per_minute)
     evidence = Evidence(student_id=principal.id, evidence_type=payload.evidence_type, title=payload.title, description=payload.description, external_url=str(payload.external_url) if payload.external_url else None)
     session.add(evidence)
+    await session.flush()
+    await create_extraction_job(session, evidence)
     await session.commit()
     await session.refresh(evidence)
-    await enqueue_extraction(evidence.id)
+    if not await enqueue_extraction(session, evidence.id):
+        response.status_code = status.HTTP_202_ACCEPTED
+        await session.refresh(evidence)
     return EvidenceResponse.model_validate(evidence)
 
 
@@ -54,7 +66,29 @@ async def _owned_evidence(session: AsyncSession, evidence_id: UUID, student_id: 
 async def get_evidence(evidence_id: UUID, principal: Annotated[Student, Depends(require_role("student"))], session: Annotated[AsyncSession, Depends(get_session)]) -> EvidenceDetail:
     evidence = await _owned_evidence(session, evidence_id, principal.id)
     rows = (await session.execute(select(StudentSkill, Skill).join(Skill).where(StudentSkill.source_evidence_id == evidence.id))).all()
-    return EvidenceDetail(**EvidenceResponse.model_validate(evidence).model_dump(), extracted_skills=[ExtractedSkillResponse(id=item.id, skill_id=item.skill_id, canonical_name=skill.canonical_name, extraction_confidence=float(item.extraction_confidence), verification_tier=item.verification_tier.value, source_evidence_id=item.source_evidence_id, evidence_span=item.evidence_span) for item, skill in rows])
+    job = (await session.scalars(select(ExtractionJob).where(ExtractionJob.evidence_id == evidence.id))).first()
+    return _evidence_detail(evidence, rows, job)
+
+
+def _evidence_detail(evidence: Evidence, rows: Sequence[Row[tuple[StudentSkill, Skill]]], job: ExtractionJob | None) -> EvidenceDetail:
+    return EvidenceDetail(
+        **EvidenceResponse.model_validate(evidence).model_dump(),
+        extracted_skills=[ExtractedSkillResponse(id=item.id, skill_id=item.skill_id, canonical_name=skill.canonical_name, extraction_confidence=float(item.extraction_confidence), verification_tier=item.verification_tier.value, source_evidence_id=item.source_evidence_id, evidence_span=item.evidence_span) for item, skill in rows],
+        extraction_job=ExtractionJobResponse(status=job.status.value, attempt_count=job.attempt_count, max_attempts=job.max_attempts, next_retry_at=job.next_retry_at, user_message=job.user_message, provider=job.provider) if job else None,
+    )
+
+
+@router.post("/{evidence_id}/requeue", response_model=EvidenceDetail)
+async def requeue_evidence(evidence_id: UUID, response: Response, principal: Annotated[Student, Depends(require_role("student"))], session: Annotated[AsyncSession, Depends(get_session)]) -> EvidenceDetail:
+    evidence = await _owned_evidence(session, evidence_id, principal.id)
+    if not await manually_requeue_extraction(session, evidence_id):
+        raise HTTPException(status.HTTP_409_CONFLICT, "Evidence extraction cannot be requeued")
+    await session.refresh(evidence)
+    rows = (await session.execute(select(StudentSkill, Skill).join(Skill).where(StudentSkill.source_evidence_id == evidence.id))).all()
+    job = (await session.scalars(select(ExtractionJob).where(ExtractionJob.evidence_id == evidence.id))).first()
+    if job is not None and job.status.value == "retry_scheduled":
+        response.status_code = status.HTTP_202_ACCEPTED
+    return _evidence_detail(evidence, rows, job)
 
 
 @router.post("/{evidence_id}/verify", response_model=VerificationResponse)
@@ -89,18 +123,5 @@ async def recruiter_evidence(
     if match is None:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Evidence is not available for this internship")
     rows = (await session.execute(select(StudentSkill, Skill).join(Skill).where(StudentSkill.source_evidence_id == evidence.id))).all()
-    return EvidenceDetail(
-        **EvidenceResponse.model_validate(evidence).model_dump(),
-        extracted_skills=[
-            ExtractedSkillResponse(
-                id=item.id,
-                skill_id=item.skill_id,
-                canonical_name=skill.canonical_name,
-                extraction_confidence=float(item.extraction_confidence),
-                verification_tier=item.verification_tier.value,
-                source_evidence_id=item.source_evidence_id,
-                evidence_span=item.evidence_span,
-            )
-            for item, skill in rows
-        ],
-    )
+    job = (await session.scalars(select(ExtractionJob).where(ExtractionJob.evidence_id == evidence.id))).first()
+    return _evidence_detail(evidence, rows, job)

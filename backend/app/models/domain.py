@@ -42,8 +42,22 @@ class EvidenceType(str, enum.Enum):
 
 class ExtractionStatus(str, enum.Enum):
     pending_extraction = "pending_extraction"
+    queued = "queued"
+    processing = "processing"
+    retry_scheduled = "retry_scheduled"
     extracted = "extracted"
     failed = "failed"
+    dead_lettered = "dead_lettered"
+
+
+class ExtractionJobStatus(str, enum.Enum):
+    pending = "pending"
+    queued = "queued"
+    processing = "processing"
+    retry_scheduled = "retry_scheduled"
+    completed = "completed"
+    failed = "failed"
+    dead_lettered = "dead_lettered"
 
 
 class VerificationTier(str, enum.Enum):
@@ -109,6 +123,29 @@ class Evidence(Base):
     extraction_status: Mapped[ExtractionStatus] = mapped_column(Enum(ExtractionStatus), default=ExtractionStatus.pending_extraction)
     student: Mapped[Student] = relationship(back_populates="evidence")
     extracted_skills: Mapped[list["StudentSkill"]] = relationship(back_populates="source_evidence", cascade="all, delete-orphan")
+    extraction_job: Mapped["ExtractionJob | None"] = relationship(back_populates="evidence", cascade="all, delete-orphan", uselist=False)
+
+
+class ExtractionJob(Base):
+    __tablename__ = "extraction_jobs"
+    __table_args__ = (
+        UniqueConstraint("evidence_id", name="uq_extraction_job_evidence"),
+        UniqueConstraint("idempotency_key", name="uq_extraction_job_idempotency_key"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    evidence_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("evidence.id", ondelete="CASCADE"), nullable=False, index=True)
+    status: Mapped[ExtractionJobStatus] = mapped_column(Enum(ExtractionJobStatus), default=ExtractionJobStatus.pending, nullable=False, index=True)
+    attempt_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    max_attempts: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
+    last_error: Mapped[str | None] = mapped_column(String(240))
+    user_message: Mapped[str | None] = mapped_column(String(240))
+    provider: Mapped[str | None] = mapped_column(String(32))
+    idempotency_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    queued_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    next_retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    evidence: Mapped[Evidence] = relationship(back_populates="extraction_job")
 
 
 class StudentSkill(Timestamped, Base):
