@@ -2,8 +2,8 @@ from collections.abc import Sequence
 from typing import Annotated, Literal, cast
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy import delete, func, select
 from sqlalchemy.engine import Row
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,20 +12,25 @@ from app.core.db import get_session
 from app.core.security import require_role
 from app.models import (
     Evidence,
+    EvidenceType,
     ExtractionJob,
+    ExtractionStatus,
     Internship,
     Match,
     Recruiter,
     Skill,
     Student,
     StudentSkill,
+    VerificationCheck,
 )
 from app.schemas.contracts import (
     EvidenceCreate,
     EvidenceDetail,
     EvidenceResponse,
+    EvidenceUpdate,
     ExtractedSkillResponse,
     ExtractionJobResponse,
+    PaginatedResponse,
     VerificationCheckResponse,
     VerificationRequest,
     VerificationResponse,
@@ -34,6 +39,7 @@ from app.services.extraction_service import (
     create_extraction_job,
     enqueue_extraction,
     manually_requeue_extraction,
+    reset_extraction_for_evidence,
 )
 from app.services.rate_limit_service import enforce_rate_limit
 from app.services.verification_service import verify_github_evidence
@@ -56,6 +62,35 @@ async def submit_evidence(payload: EvidenceCreate, response: Response, principal
     return EvidenceResponse.model_validate(evidence)
 
 
+@router.get("", response_model=PaginatedResponse[EvidenceResponse])
+async def list_evidence(
+    principal: Annotated[Student, Depends(require_role("student"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    evidence_type: EvidenceType | None = None,
+    extraction_status: ExtractionStatus | None = None,
+) -> PaginatedResponse[EvidenceResponse]:
+    filters = [Evidence.student_id == principal.id]
+    if evidence_type is not None:
+        filters.append(Evidence.evidence_type == evidence_type)
+    if extraction_status is not None:
+        filters.append(Evidence.extraction_status == extraction_status)
+    total = int((await session.scalar(select(func.count()).select_from(Evidence).where(*filters))) or 0)
+    items = list(
+        (
+            await session.scalars(
+                select(Evidence)
+                .where(*filters)
+                .order_by(Evidence.submitted_at.desc(), Evidence.id.desc())
+                .offset((page - 1) * page_size)
+                .limit(page_size)
+            )
+        ).all()
+    )
+    return PaginatedResponse(page=page, page_size=page_size, total=total, items=[EvidenceResponse.model_validate(item) for item in items])
+
+
 async def _owned_evidence(session: AsyncSession, evidence_id: UUID, student_id: UUID) -> Evidence:
     evidence = await session.get(Evidence, evidence_id)
     if evidence is None or evidence.student_id != student_id:
@@ -69,6 +104,59 @@ async def get_evidence(evidence_id: UUID, principal: Annotated[Student, Depends(
     rows = (await session.execute(select(StudentSkill, Skill).join(Skill).where(StudentSkill.source_evidence_id == evidence.id))).all()
     job = (await session.scalars(select(ExtractionJob).where(ExtractionJob.evidence_id == evidence.id))).first()
     return _evidence_detail(evidence, rows, job)
+
+
+@router.patch("/{evidence_id}", response_model=EvidenceDetail)
+async def update_evidence(
+    evidence_id: UUID,
+    payload: EvidenceUpdate,
+    response: Response,
+    principal: Annotated[Student, Depends(require_role("student"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> EvidenceDetail:
+    if not payload.model_fields_set:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "At least one evidence field must be supplied")
+    if any(getattr(payload, field) is None for field in payload.model_fields_set - {"external_url"}):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Evidence title, type, and description cannot be null")
+    evidence = await _owned_evidence(session, evidence_id, principal.id)
+    extraction_input_changed = bool({"description", "evidence_type"} & payload.model_fields_set)
+    if "evidence_type" in payload.model_fields_set:
+        assert payload.evidence_type is not None
+        evidence.evidence_type = EvidenceType(payload.evidence_type)
+    if "title" in payload.model_fields_set:
+        assert payload.title is not None
+        evidence.title = payload.title
+    if "description" in payload.model_fields_set:
+        assert payload.description is not None
+        evidence.description = payload.description
+    if "external_url" in payload.model_fields_set:
+        evidence.external_url = str(payload.external_url) if payload.external_url is not None else None
+    if extraction_input_changed:
+        await reset_extraction_for_evidence(session, evidence)
+    await session.commit()
+    if extraction_input_changed and not await enqueue_extraction(session, evidence.id):
+        response.status_code = status.HTTP_202_ACCEPTED
+    await session.refresh(evidence)
+    rows = (await session.execute(select(StudentSkill, Skill).join(Skill).where(StudentSkill.source_evidence_id == evidence.id))).all()
+    job = (await session.scalars(select(ExtractionJob).where(ExtractionJob.evidence_id == evidence.id))).first()
+    return _evidence_detail(evidence, rows, job)
+
+
+@router.delete("/{evidence_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_evidence(
+    evidence_id: UUID,
+    principal: Annotated[Student, Depends(require_role("student"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> Response:
+    evidence = await _owned_evidence(session, evidence_id, principal.id)
+    # Explicit deletes make the lifecycle correct even in SQLite test/dev databases
+    # where foreign-key enforcement can be disabled by connection settings.
+    await session.execute(delete(StudentSkill).where(StudentSkill.source_evidence_id == evidence.id))
+    await session.execute(delete(VerificationCheck).where(VerificationCheck.evidence_id == evidence.id))
+    await session.execute(delete(ExtractionJob).where(ExtractionJob.evidence_id == evidence.id))
+    await session.delete(evidence)
+    await session.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 def _evidence_detail(evidence: Evidence, rows: Sequence[Row[tuple[StudentSkill, Skill]]], job: ExtractionJob | None) -> EvidenceDetail:

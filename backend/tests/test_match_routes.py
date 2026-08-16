@@ -49,7 +49,8 @@ async def test_student_matches_adds_title_without_duplicate_response_field(monke
 
     result = await matches.my_matches(SimpleNamespace(id=STUDENT_ID), StudentMatchSession())
 
-    assert result[0].internship_title == "Backend Intern"
+    assert result.total == 1
+    assert result.items[0].internship_title == "Backend Intern"
 
 
 @pytest.mark.asyncio
@@ -69,4 +70,5 @@ async def test_recruiter_matches_adds_candidate_label_without_duplicate_response
         RecruiterMatchSession(),
     )
 
-    assert result[0].candidate_label == "Candidate 00000000"
+    assert result.total == 1
+    assert result.items[0].candidate_label == "Candidate 00000000"

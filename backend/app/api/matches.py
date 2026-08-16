@@ -1,14 +1,14 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
 from app.core.security import current_principal, require_role
 from app.models import Internship, Match, Recruiter, Student
-from app.schemas.contracts import ExplanationResponse, MatchResponse
+from app.schemas.contracts import ExplanationResponse, MatchResponse, PaginatedResponse
 from app.services.explanation_service import render_explanation
 from app.services.matching_service import (
     compute_and_persist_match,
@@ -19,17 +19,23 @@ from app.services.matching_service import (
 router = APIRouter(tags=["matches"])
 
 
-@router.get("/students/me/matches", response_model=list[MatchResponse])
-async def my_matches(principal: Annotated[Student, Depends(require_role("student"))], session: Annotated[AsyncSession, Depends(get_session)]) -> list[MatchResponse]:
+@router.get("/students/me/matches", response_model=PaginatedResponse[MatchResponse])
+async def my_matches(
+    principal: Annotated[Student, Depends(require_role("student"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+) -> PaginatedResponse[MatchResponse]:
     internships = (await session.scalars(select(Internship).order_by(Internship.created_at))).all()
     matches = await persisted_student_matches(session, principal.id)
     internship_titles = {internship.id: internship.title for internship in internships}
-    return [
+    items = [
         MatchResponse.model_validate(match).model_copy(
             update={"internship_title": internship_titles[match.internship_id], "is_stale": await match_is_stale(session, match)}
         )
         for match in sorted(matches, key=lambda match: (-float(match.final_score), str(match.internship_id)))
     ]
+    return PaginatedResponse(page=page, page_size=page_size, total=len(items), items=items[(page - 1) * page_size : page * page_size])
 
 
 @router.post("/students/me/matches/recompute", response_model=list[MatchResponse])

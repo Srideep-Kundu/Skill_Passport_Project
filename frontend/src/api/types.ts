@@ -34,6 +34,8 @@ export interface EvidenceSubmission {
   external_url?: string;
 }
 
+export type EvidenceUpdate = Partial<EvidenceSubmission>;
+
 export interface ExtractedSkill {
   id: string;
   skill_id: string;
@@ -92,12 +94,19 @@ export interface InternshipCreate {
   requirements: InternshipRequirementInput[];
 }
 
+export type InternshipUpdate = Partial<InternshipCreate>;
+
+export interface InternshipRequirement extends InternshipRequirementInput {
+  id: string;
+}
+
 export interface Internship {
   id: string;
   title: string;
   description: string;
   recruiter_id: string;
   created_at: string;
+  requirements: InternshipRequirement[];
 }
 
 export interface VerificationResult {
@@ -190,5 +199,7 @@ export interface TeamSuggestion {
 
 export interface PaginatedResponse<T> {
   items: T[];
-  total?: number;
+  page: number;
+  page_size: number;
+  total: number;
 }

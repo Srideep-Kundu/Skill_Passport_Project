@@ -5,11 +5,13 @@ from sqlalchemy import select
 from app.core.db import SessionLocal
 from app.core.security import hash_password
 from app.models import (
+    AccountEmail,
     Evidence,
     EvidenceType,
     Internship,
     InternshipRequirement,
     Recruiter,
+    Role,
     Skill,
     Student,
     StudentSkill,
@@ -30,6 +32,12 @@ async def seed_demo_data() -> None:
         ]
         session.add_all([recruiter, *students])
         await session.flush()
+        session.add_all(
+            [
+                AccountEmail(email=recruiter.email, account_id=recruiter.id, role=Role.recruiter),
+                *(AccountEmail(email=student.email, account_id=student.id, role=Role.student) for student in students),
+            ]
+        )
         skills = {skill.canonical_name: skill for skill in (await session.scalars(select(Skill).where(Skill.canonical_name.in_(["Python", "FastAPI", "PostgreSQL", "React"])))).all()}
         for student in students:
             evidence = Evidence(student_id=student.id, evidence_type=EvidenceType.project, title="API project", description="Built a Python FastAPI service using PostgreSQL.", extraction_status="extracted")

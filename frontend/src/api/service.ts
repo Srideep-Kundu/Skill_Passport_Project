@@ -1,6 +1,6 @@
 import { request } from "./client";
 import type {
-  AuthSession, CandidateMatch, EvidenceDetail, EvidenceSubmission, EvidenceSummary, Internship, InternshipCreate,
+  AuthSession, CandidateMatch, EvidenceDetail, EvidenceSubmission, EvidenceSummary, EvidenceUpdate, Internship, InternshipCreate, InternshipUpdate,
   LoginRequest, MatchExplanation, PaginatedResponse, Passport, RecruiterRegistration, Skill,
   StudentMatch, StudentRegistration, TeamSuggestion, TeamSuggestionRequest, VerificationResult, RecruiterEvidenceConsent, GitHubIdentity,
 } from "./types";
@@ -12,22 +12,19 @@ export const api = {
   passport: (token: string) => request<Passport>("/passport/me", {}, token),
   submitEvidence: (input: EvidenceSubmission, token: string) => request<EvidenceSummary>("/evidence", { method: "POST", body: JSON.stringify(input) }, token),
   evidence: (id: string, token: string) => request<EvidenceDetail>(`/evidence/${encodeURIComponent(id)}`, {}, token),
+  evidences: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<EvidenceSummary>>(`/evidence?page=${page}&page_size=${pageSize}`, {}, token),
+  updateEvidence: (id: string, input: EvidenceUpdate, token: string) => request<EvidenceDetail>(`/evidence/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) }, token),
+  deleteEvidence: (id: string, token: string) => request<void>(`/evidence/${encodeURIComponent(id)}`, { method: "DELETE" }, token),
   requeueEvidence: (id: string, token: string) => request<EvidenceDetail>(`/evidence/${encodeURIComponent(id)}/requeue`, { method: "POST" }, token),
   verifyEvidence: (id: string, token: string) => request<VerificationResult>(`/evidence/${encodeURIComponent(id)}/verify`, { method: "POST", body: JSON.stringify({ check_type: "github_project" }) }, token),
   searchSkills: (query: string, token: string) => request<Skill[]>(`/skills/search?q=${encodeURIComponent(query)}`, {}, token),
   createInternship: (input: InternshipCreate, token: string) => request<Internship>("/internships", { method: "POST", body: JSON.stringify(input) }, token),
-  internshipMatches: async (id: string, token: string): Promise<CandidateMatch[]> => {
-    const response = await request<CandidateMatch[] | PaginatedResponse<CandidateMatch>>(`/internships/${encodeURIComponent(id)}/matches`, {}, token);
-    return Array.isArray(response) ? response : response.items;
-  },
-  internships: async (token: string): Promise<Internship[]> => {
-    const response = await request<Internship[] | PaginatedResponse<Internship>>("/internships", {}, token);
-    return Array.isArray(response) ? response : response.items;
-  },
-  studentMatches: async (token: string): Promise<StudentMatch[]> => {
-    const response = await request<StudentMatch[] | PaginatedResponse<StudentMatch>>("/students/me/matches", {}, token);
-    return Array.isArray(response) ? response : response.items;
-  },
+  internship: (id: string, token: string) => request<Internship>(`/internships/${encodeURIComponent(id)}`, {}, token),
+  updateInternship: (id: string, input: InternshipUpdate, token: string) => request<Internship>(`/internships/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) }, token),
+  deleteInternship: (id: string, token: string) => request<void>(`/internships/${encodeURIComponent(id)}`, { method: "DELETE" }, token),
+  internshipMatches: (id: string, token: string, page = 1, pageSize = 20) => request<PaginatedResponse<CandidateMatch>>(`/internships/${encodeURIComponent(id)}/matches?page=${page}&page_size=${pageSize}`, {}, token),
+  internships: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<Internship>>(`/internships?page=${page}&page_size=${pageSize}`, {}, token),
+  studentMatches: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<StudentMatch>>(`/students/me/matches?page=${page}&page_size=${pageSize}`, {}, token),
   recomputeStudentMatches: (token: string) => request<StudentMatch[]>("/students/me/matches/recompute", { method: "POST" }, token),
   recomputeInternshipMatches: (id: string, token: string) => request<CandidateMatch[]>(`/internships/${encodeURIComponent(id)}/matches/recompute`, { method: "POST" }, token),
   explanation: (id: string, token: string) => request<MatchExplanation>(`/matches/${encodeURIComponent(id)}/explanation`, {}, token),

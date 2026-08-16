@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Literal
+from typing import Generic, Literal, TypeVar
 from uuid import UUID
 
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator
@@ -38,6 +38,13 @@ class EvidenceCreate(APIModel):
     evidence_type: Literal["coursework", "project", "competition", "certification", "micro_credential"]
     title: str = Field(min_length=1, max_length=200)
     description: str = Field(min_length=1, max_length=20_000)
+    external_url: AnyHttpUrl | None = None
+
+
+class EvidenceUpdate(APIModel):
+    evidence_type: Literal["coursework", "project", "competition", "certification", "micro_credential"] | None = None
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = Field(default=None, min_length=1, max_length=20_000)
     external_url: AnyHttpUrl | None = None
 
 
@@ -135,6 +142,10 @@ class InternshipRequirementCreate(APIModel):
     weight: float = Field(default=1.0, gt=0, le=10)
 
 
+class InternshipRequirementResponse(InternshipRequirementCreate):
+    id: UUID
+
+
 class InternshipCreate(APIModel):
     title: str = Field(min_length=1, max_length=200)
     description: str = Field(min_length=1, max_length=20_000)
@@ -148,12 +159,36 @@ class InternshipCreate(APIModel):
         return values
 
 
+class InternshipUpdate(APIModel):
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = Field(default=None, min_length=1, max_length=20_000)
+    requirements: list[InternshipRequirementCreate] | None = Field(default=None, min_length=1, max_length=50)
+
+    @field_validator("requirements")
+    @classmethod
+    def unique_updated_requirement_skills(cls, values: list[InternshipRequirementCreate] | None) -> list[InternshipRequirementCreate] | None:
+        if values is not None and len({value.skill_id for value in values}) != len(values):
+            raise ValueError("Each skill may appear only once in requirements")
+        return values
+
+
 class InternshipResponse(APIModel):
     id: UUID
     title: str
     description: str
     recruiter_id: UUID
     created_at: datetime
+    requirements: list[InternshipRequirementResponse] = Field(default_factory=list)
+
+
+ItemT = TypeVar("ItemT")
+
+
+class PaginatedResponse(APIModel, Generic[ItemT]):
+    page: int
+    page_size: int
+    total: int
+    items: list[ItemT]
 
 
 class MatchResponse(APIModel):

@@ -102,6 +102,15 @@ class Admin(Timestamped, Base):
     role = Role.admin.value
 
 
+class AccountEmail(Timestamped, Base):
+    """Global account-email registry used to enforce cross-role uniqueness."""
+
+    __tablename__ = "account_emails"
+    email: Mapped[str] = mapped_column(String(320), primary_key=True)
+    account_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, index=True)
+    role: Mapped[Role] = mapped_column(Enum(Role), nullable=False)
+
+
 class Skill(Timestamped, Base):
     __tablename__ = "skills"
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
@@ -229,7 +238,7 @@ class MatchExplanation(Base):
     verification_contribution: Mapped[float] = mapped_column(Numeric(6, 5), default=0.0, nullable=False)
     matched_skill_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("skills.id"))
     semantic_similarity: Mapped[float | None] = mapped_column(Numeric(5, 4))
-    contributing_evidence_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("evidence.id"))
+    contributing_evidence_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("evidence.id", ondelete="SET NULL"))
     match: Mapped[Match] = relationship(back_populates="explanations")
     skill: Mapped[Skill] = relationship(foreign_keys=[skill_id])
     matched_skill: Mapped[Skill | None] = relationship(foreign_keys=[matched_skill_id])

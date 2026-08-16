@@ -1,4 +1,5 @@
 from app.models.domain import (
+    AccountEmail,
     Admin,
     AuditLog,
     Evidence,
@@ -11,6 +12,7 @@ from app.models.domain import (
     Match,
     MatchExplanation,
     Recruiter,
+    Role,
     Skill,
     Student,
     StudentSkill,
@@ -19,7 +21,23 @@ from app.models.domain import (
 )
 
 __all__ = [
-    "Admin", "AuditLog", "Evidence", "EvidenceType", "ExtractionJob", "ExtractionJobStatus", "ExtractionStatus", "Internship",
-    "InternshipRequirement", "Match", "MatchExplanation", "Recruiter", "Skill", "Student",
-    "StudentSkill", "VerificationCheck", "VerificationTier",
+    "AccountEmail",
+    "Admin",
+    "AuditLog",
+    "Evidence",
+    "EvidenceType",
+    "ExtractionJob",
+    "ExtractionJobStatus",
+    "ExtractionStatus",
+    "Internship",
+    "InternshipRequirement",
+    "Match",
+    "MatchExplanation",
+    "Recruiter",
+    "Role",
+    "Skill",
+    "Student",
+    "StudentSkill",
+    "VerificationCheck",
+    "VerificationTier",
 ]

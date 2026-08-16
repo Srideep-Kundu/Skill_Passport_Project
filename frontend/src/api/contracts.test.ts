@@ -35,6 +35,7 @@ describe("backend response contracts", () => {
       title: "Backend intern",
       description: "Build APIs.",
       created_at: "2026-01-01T00:00:00Z",
+      requirements: [],
     } satisfies Internship;
     const explanation = {
       lines: ["Recommended based on persisted records."],

@@ -238,6 +238,25 @@ async def manually_requeue_extraction(session: AsyncSession, evidence_id: UUID) 
     return await enqueue_extraction(session, evidence_id)
 
 
+async def reset_extraction_for_evidence(session: AsyncSession, evidence: Evidence) -> None:
+    """Invalidate derived skills before an edited evidence record is extracted again."""
+    job = await _locked_job(session, evidence.id)
+    if job is None:
+        job = await create_extraction_job(session, evidence)
+    await session.execute(delete(StudentSkill).where(StudentSkill.source_evidence_id == evidence.id))
+    job.status = ExtractionJobStatus.pending
+    job.attempt_count = 0
+    job.queued_at = None
+    job.started_at = None
+    job.completed_at = None
+    job.next_retry_at = None
+    job.last_error = None
+    job.user_message = None
+    job.provider = None
+    evidence.extraction_status = ExtractionStatus.pending_extraction
+    session.add(_audit(evidence, "evidence_extraction_invalidated"))
+
+
 async def _claim_job(session: AsyncSession, evidence_id: UUID) -> Evidence | None:
     job = await _locked_job(session, evidence_id)
     evidence = await session.get(Evidence, evidence_id)

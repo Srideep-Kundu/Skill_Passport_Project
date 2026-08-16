@@ -2,12 +2,13 @@ from typing import Annotated, Literal, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.db import get_session
 from app.core.security import create_access_token, hash_password, verify_password
-from app.models import Admin, Recruiter, Student
+from app.models import AccountEmail, Admin, Recruiter, Role, Student
 from app.schemas.contracts import (
     LoginRequest,
     RecruiterRegistration,
@@ -25,6 +26,9 @@ def _request_subject(request: Request) -> str:
 
 async def _email_taken(session: AsyncSession, email: str) -> bool:
     normalized = email.casefold()
+    registry = await session.get(AccountEmail, normalized)
+    if registry is not None:
+        return True
     student = (await session.scalars(select(Student.id).where(Student.email == normalized))).first()
     recruiter = (await session.scalars(select(Recruiter.id).where(Recruiter.email == normalized))).first()
     admin = (await session.scalars(select(Admin.id).where(Admin.email == normalized))).first()
@@ -38,7 +42,13 @@ async def register_student(payload: StudentRegistration, request: Request, sessi
         raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
     student = Student(email=payload.email.casefold(), password_hash=hash_password(payload.password), full_name=payload.full_name, university=payload.university, graduation_year=payload.graduation_year)
     session.add(student)
-    await session.commit()
+    await session.flush()
+    session.add(AccountEmail(email=student.email, account_id=student.id, role=Role.student))
+    try:
+        await session.commit()
+    except IntegrityError as error:
+        await session.rollback()
+        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered") from error
     return TokenResponse(access_token=create_access_token(student.id, student.role), role="student")
 
 
@@ -49,7 +59,13 @@ async def register_recruiter(payload: RecruiterRegistration, request: Request, s
         raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
     recruiter = Recruiter(email=payload.email.casefold(), password_hash=hash_password(payload.password), company_name=payload.company_name)
     session.add(recruiter)
-    await session.commit()
+    await session.flush()
+    session.add(AccountEmail(email=recruiter.email, account_id=recruiter.id, role=Role.recruiter))
+    try:
+        await session.commit()
+    except IntegrityError as error:
+        await session.rollback()
+        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered") from error
     return TokenResponse(access_token=create_access_token(recruiter.id, recruiter.role), role="recruiter")
 
 
