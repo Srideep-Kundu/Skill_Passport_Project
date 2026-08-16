@@ -10,6 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.models import AuditLog, ExternalJob, ExternalJobRequirement, Skill
+from app.services.application_service import (
+    invalidate_stale_approved_applications_for_jobs,
+)
 from app.services.job_providers import (
     JobSearchFilters,
     NormalizedExternalJob,
@@ -156,8 +159,10 @@ async def sync_external_jobs(session: AsyncSession, *, provider_name: str, sourc
     synced_at = _now()
     taxonomy = list((await session.scalars(select(Skill).order_by(Skill.canonical_name, Skill.id))).all())
     created = updated = 0
+    changed_job_ids: set[UUID] = set()
     for external_id in sorted(fetched):
-        _, was_created = await _persist_job(session, fetched[external_id], taxonomy, synced_at)
+        external_job, was_created = await _persist_job(session, fetched[external_id], taxonomy, synced_at)
+        changed_job_ids.add(external_job.id)
         created += int(was_created)
         updated += int(not was_created)
 
@@ -177,7 +182,9 @@ async def sync_external_jobs(session: AsyncSession, *, provider_name: str, sourc
         if external_job.external_id not in fetched:
             external_job.is_active = False
             external_job.last_synced_at = synced_at
+            changed_job_ids.add(external_job.id)
             marked_inactive += 1
+    await invalidate_stale_approved_applications_for_jobs(session, changed_job_ids)
     session.add(
         AuditLog(
             actor_id=actor_id,

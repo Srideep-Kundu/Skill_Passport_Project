@@ -34,6 +34,9 @@ from app.schemas.contracts import (
     ResumeDocumentResponse,
     ResumeParsedData,
 )
+from app.services.application_service import (
+    invalidate_approved_applications_for_student,
+)
 from app.services.extraction_service import create_extraction_job, enqueue_extraction
 
 PARSER_VERSION = "v1-deterministic"
@@ -279,6 +282,15 @@ async def resume_response(session: AsyncSession, document: ResumeDocument) -> Re
 
 
 async def activate_resume(session: AsyncSession, document: ResumeDocument) -> None:
+    current_id = await session.scalar(
+        select(ResumeDocument.id).where(
+            ResumeDocument.student_id == document.student_id,
+            ResumeDocument.is_active.is_(True),
+        )
+    )
+    if current_id == document.id:
+        return
     await session.execute(update(ResumeDocument).where(ResumeDocument.student_id == document.student_id).values(is_active=False))
     document.is_active = True
+    await invalidate_approved_applications_for_student(session, document.student_id)
     await session.commit()

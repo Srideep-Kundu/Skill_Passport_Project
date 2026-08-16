@@ -1,6 +1,6 @@
 import { request } from "./client";
 import type {
-  AuthSession, CandidateMatch, CandidateProfile, EvidenceDetail, EvidenceSubmission, EvidenceSummary, EvidenceUpdate, ExternalJob, ExternalJobMatch, Internship, InternshipCreate, InternshipUpdate,
+  Application, AuthSession, CandidateMatch, CandidateProfile, EvidenceDetail, EvidenceSubmission, EvidenceSummary, EvidenceUpdate, ExternalJob, ExternalJobMatch, Internship, InternshipCreate, InternshipUpdate,
   LoginRequest, MatchExplanation, PaginatedResponse, Passport, RecruiterRegistration, Skill,
   StudentMatch, StudentRegistration, TeamSuggestion, TeamSuggestionRequest, VerificationResult, RecruiterEvidenceConsent, GitHubIdentity, ResumeDocument,
 } from "./types";
@@ -33,6 +33,13 @@ export const api = {
   externalJobs: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<ExternalJob>>(`/external-jobs?page=${page}&page_size=${pageSize}`, {}, token),
   externalJobMatches: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<ExternalJobMatch>>(`/external-jobs/matches?page=${page}&page_size=${pageSize}`, {}, token),
   recomputeExternalJobMatches: (token: string) => request<ExternalJobMatch[]>("/external-jobs/matches/recompute", { method: "POST" }, token),
+  applications: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<Application>>(`/applications?page=${page}&page_size=${pageSize}`, {}, token),
+  createApplication: (externalJobId: string, externalJobMatchId: string, token: string) => request<Application>("/applications", { method: "POST", body: JSON.stringify({ external_job_id: externalJobId, external_job_match_id: externalJobMatchId }) }, token),
+  requestApplicationApproval: (id: string, token: string) => request<Application>(`/applications/${encodeURIComponent(id)}/request-approval`, { method: "POST" }, token),
+  approveApplication: (id: string, token: string) => request<Application>(`/applications/${encodeURIComponent(id)}/approve`, { method: "POST" }, token),
+  revokeApplicationApproval: (id: string, token: string) => request<Application>(`/applications/${encodeURIComponent(id)}/revoke-approval`, { method: "POST" }, token),
+  selectManualApplication: (id: string, token: string) => request<Application>(`/applications/${encodeURIComponent(id)}/manual`, { method: "POST" }, token),
+  withdrawApplication: (id: string, token: string) => request<Application>(`/applications/${encodeURIComponent(id)}/withdraw`, { method: "POST" }, token),
   studentMatches: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<StudentMatch>>(`/students/me/matches?page=${page}&page_size=${pageSize}`, {}, token),
   recomputeStudentMatches: (token: string) => request<StudentMatch[]>("/students/me/matches/recompute", { method: "POST" }, token),
   recomputeInternshipMatches: (id: string, token: string) => request<CandidateMatch[]>(`/internships/${encodeURIComponent(id)}/matches/recompute`, { method: "POST" }, token),

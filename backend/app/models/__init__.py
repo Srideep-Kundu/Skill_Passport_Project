@@ -1,6 +1,8 @@
 from app.models.domain import (
     AccountEmail,
     Admin,
+    Application,
+    ApplicationStatus,
     AuditLog,
     Evidence,
     EvidenceType,
@@ -29,6 +31,8 @@ from app.models.domain import (
 __all__ = [
     "AccountEmail",
     "Admin",
+    "Application",
+    "ApplicationStatus",
     "AuditLog",
     "Evidence",
     "EvidenceType",

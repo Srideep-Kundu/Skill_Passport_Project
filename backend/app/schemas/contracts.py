@@ -378,6 +378,32 @@ class ExternalJobMatchStateResponse(APIModel):
     match: ExternalJobMatchResponse | None = None
 
 
+class ApplicationCreate(APIModel):
+    external_job_id: UUID
+    external_job_match_id: UUID
+
+
+class ApplicationResponse(APIModel):
+    id: UUID
+    student_id: UUID
+    external_job_id: UUID
+    external_job_match_id: UUID
+    resume_document_id: UUID
+    status: Literal["approval_pending", "approved", "manual_apply", "withdrawn"]
+    application_snapshot: dict[str, object]
+    application_fingerprint: str
+    approved_fingerprint: str | None
+    provider_capabilities: dict[str, bool]
+    manual_apply_url: str | None
+    approved_at: datetime | None
+    approval_revoked_at: datetime | None
+    submitted_at: datetime | None
+    withdrawn_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+    is_approval_stale: bool = False
+
+
 class TeamSuggestionRequest(APIModel):
     target_skill_set: list[UUID] = Field(min_length=1, max_length=30)
     pool: list[UUID] = Field(min_length=1, max_length=100)

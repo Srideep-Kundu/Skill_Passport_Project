@@ -77,6 +77,13 @@ class VerificationTier(str, enum.Enum):
     unverified = "unverified"
 
 
+class ApplicationStatus(str, enum.Enum):
+    approval_pending = "approval_pending"
+    approved = "approved"
+    manual_apply = "manual_apply"
+    withdrawn = "withdrawn"
+
+
 class Timestamped:
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
@@ -328,6 +335,32 @@ class ExternalJobMatchExplanation(Base):
     skill: Mapped[Skill] = relationship(foreign_keys=[skill_id])
     matched_skill: Mapped[Skill | None] = relationship(foreign_keys=[matched_skill_id])
     evidence: Mapped[Evidence | None] = relationship()
+
+
+class Application(Base):
+    """Student-owned application intent. This phase deliberately has no submission state."""
+
+    __tablename__ = "applications"
+    __table_args__ = (UniqueConstraint("student_id", "external_job_id", name="uq_application_student_external_job"),)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
+    external_job_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("external_jobs.id"), nullable=False, index=True)
+    external_job_match_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("external_job_matches.id"), nullable=False, index=True)
+    resume_document_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("resume_documents.id"), nullable=False, index=True)
+    status: Mapped[ApplicationStatus] = mapped_column(Enum(ApplicationStatus), default=ApplicationStatus.approval_pending, nullable=False, index=True)
+    application_snapshot: Mapped[dict[str, Any]] = mapped_column(Json, nullable=False)
+    application_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    approved_fingerprint: Mapped[str | None] = mapped_column(String(64))
+    provider_capabilities: Mapped[dict[str, bool]] = mapped_column(Json, nullable=False)
+    manual_apply_url: Mapped[str | None] = mapped_column(String(2048))
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    approval_revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    withdrawn_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    external_application_id: Mapped[str | None] = mapped_column(String(255))
+    failure_reason: Mapped[str | None] = mapped_column(String(240))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
 
 class Match(Timestamped, Base):

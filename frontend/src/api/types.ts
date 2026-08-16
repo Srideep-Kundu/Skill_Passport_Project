@@ -207,6 +207,38 @@ export interface ExternalJobMatchState {
   match: ExternalJobMatch | null;
 }
 
+export type ApplicationStatus = "approval_pending" | "approved" | "manual_apply" | "withdrawn";
+
+export interface ApplicationSnapshot {
+  schema_version: string;
+  job: { id: string; provider: string; provider_source: string; external_id: string; title: string; company_name: string; source_url: string; manual_apply_url: string; content_fingerprint: string };
+  recommendation: { match_id: string; final_score: number; supporting_evidence: { skill_name: string; evidence_id: string | null; evidence_title: string | null }[]; missing_skills: { skill_name: string; is_required: boolean }[] };
+  resume: { id: string; original_filename: string; checksum: string; parser_version: string; parsed_at: string | null };
+  application_profile: { full_name: string; email: string; phone: string | null; github_links: string[]; portfolio_links: string[]; education: unknown[]; experience: unknown[] };
+  sensitive_question_policy: "requires_direct_user_input";
+}
+
+export interface Application {
+  id: string;
+  student_id: string;
+  external_job_id: string;
+  external_job_match_id: string;
+  resume_document_id: string;
+  status: ApplicationStatus;
+  application_snapshot: ApplicationSnapshot;
+  application_fingerprint: string;
+  approved_fingerprint: string | null;
+  provider_capabilities: { search: boolean; detail_fetch: boolean; auto_apply: boolean; status_tracking: boolean };
+  manual_apply_url: string | null;
+  approved_at: string | null;
+  approval_revoked_at: string | null;
+  submitted_at: string | null;
+  withdrawn_at: string | null;
+  created_at: string;
+  updated_at: string;
+  is_approval_stale: boolean;
+}
+
 export interface VerificationResult {
   result: string;
   details: Record<string, unknown>;
