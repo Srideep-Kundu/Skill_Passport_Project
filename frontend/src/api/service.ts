@@ -1,6 +1,6 @@
 import { request } from "./client";
 import type {
-  AuthSession, CandidateMatch, EvidenceDetail, EvidenceSubmission, EvidenceSummary, EvidenceUpdate, Internship, InternshipCreate, InternshipUpdate,
+  AuthSession, CandidateMatch, CandidateProfile, EvidenceDetail, EvidenceSubmission, EvidenceSummary, EvidenceUpdate, Internship, InternshipCreate, InternshipUpdate,
   LoginRequest, MatchExplanation, PaginatedResponse, Passport, RecruiterRegistration, Skill,
   StudentMatch, StudentRegistration, TeamSuggestion, TeamSuggestionRequest, VerificationResult, RecruiterEvidenceConsent, GitHubIdentity, ResumeDocument,
 } from "./types";
@@ -10,6 +10,7 @@ export const api = {
   registerRecruiter: (input: RecruiterRegistration) => request<AuthSession>("/auth/register/recruiter", { method: "POST", body: JSON.stringify(input) }),
   login: (input: LoginRequest) => request<AuthSession>("/auth/login", { method: "POST", body: JSON.stringify(input) }),
   passport: (token: string) => request<Passport>("/passport/me", {}, token),
+  candidateProfile: (token: string) => request<CandidateProfile>("/passport/profile", {}, token),
   submitEvidence: (input: EvidenceSubmission, token: string) => request<EvidenceSummary>("/evidence", { method: "POST", body: JSON.stringify(input) }, token),
   evidence: (id: string, token: string) => request<EvidenceDetail>(`/evidence/${encodeURIComponent(id)}`, {}, token),
   evidences: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<EvidenceSummary>>(`/evidence?page=${page}&page_size=${pageSize}`, {}, token),

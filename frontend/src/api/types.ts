@@ -75,6 +75,41 @@ export interface Passport {
   evidence: EvidenceSummary[];
 }
 
+export interface ProfileEvidenceSupport {
+  evidence_id: string;
+  title: string;
+  evidence_type: EvidenceType;
+  origin: "manual" | "resume";
+  verification_tier: VerificationTier;
+  extraction_confidence: number;
+  effective_confidence: number;
+  evidence_span: string;
+  source_types: string[];
+  likely_duplicate_of: string | null;
+}
+
+export interface ProfileSkill {
+  skill_id: string;
+  canonical_name: string;
+  category: string;
+  supports: ProfileEvidenceSupport[];
+  supporting_evidence_count: number;
+  independent_evidence_count: number;
+  source_types: string[];
+  source_diversity: number;
+  highest_verification_tier: VerificationTier;
+  verification_summary: string;
+  summary_confidence: number;
+}
+
+export interface CandidateProfile {
+  student_id: string;
+  skills: ProfileSkill[];
+  active_resume: { id: string; original_filename: string; parse_status: string; parsed_at: string | null } | null;
+  github_identity_status: "not_linked" | "claimed";
+  profile_completeness: { has_active_resume: boolean; has_project_evidence: boolean; has_verified_evidence: boolean; has_evidence_backed_skills: boolean; has_github_identity: boolean };
+}
+
 export interface Skill {
   id: string;
   canonical_name: string;

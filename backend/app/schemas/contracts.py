@@ -310,3 +310,67 @@ class TeamSuggestion(APIModel):
 class PassportResponse(APIModel):
     skills: list[ExtractedSkillResponse]
     evidence: list[EvidenceResponse]
+
+
+class ProfileEvidenceSupport(APIModel):
+    evidence_id: UUID
+    title: str
+    evidence_type: str
+    origin: Literal["manual", "resume"]
+    verification_tier: Literal["verified", "partially_verified", "unverified"]
+    extraction_confidence: float
+    effective_confidence: float
+    evidence_span: str
+    source_types: list[str]
+    likely_duplicate_of: UUID | None = None
+
+
+class ProfileSkill(APIModel):
+    skill_id: UUID
+    canonical_name: str
+    category: str
+    supports: list[ProfileEvidenceSupport]
+    supporting_evidence_count: int
+    independent_evidence_count: int
+    source_types: list[str]
+    source_diversity: int
+    highest_verification_tier: Literal["verified", "partially_verified", "unverified"]
+    verification_summary: str
+    summary_confidence: float
+
+
+class ActiveResumeReference(APIModel):
+    id: UUID
+    original_filename: str
+    parse_status: str
+    parsed_at: datetime | None
+
+
+class ProfileCompleteness(APIModel):
+    has_active_resume: bool
+    has_project_evidence: bool
+    has_verified_evidence: bool
+    has_evidence_backed_skills: bool
+    has_github_identity: bool
+
+
+class CandidateProfileResponse(APIModel):
+    student_id: UUID
+    skills: list[ProfileSkill]
+    active_resume: ActiveResumeReference | None
+    github_identity_status: Literal["not_linked", "claimed"]
+    profile_completeness: ProfileCompleteness
+
+
+class MatchingProfileSkill(APIModel):
+    skill_id: UUID
+    evidence_id: UUID
+    effective_confidence: float
+    verification_tier: Literal["verified", "partially_verified", "unverified"]
+
+
+class MatchingProfileResponse(APIModel):
+    """Narrow fairness-safe representation; this is not an API candidate dossier."""
+
+    student_id: UUID
+    skills: list[MatchingProfileSkill]
