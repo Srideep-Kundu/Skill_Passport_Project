@@ -9,8 +9,11 @@ from app.core.db import get_session
 from app.core.security import require_role
 from app.models import Internship, InternshipRequirement, Recruiter, Skill
 from app.schemas.contracts import InternshipCreate, InternshipResponse, MatchResponse
-from app.services.embeddings import deterministic_embedding
-from app.services.matching_service import ranked_matches_for_internship
+from app.services.matching_service import (
+    match_is_stale,
+    persisted_internship_matches,
+    recompute_matches_for_internship,
+)
 
 router = APIRouter(prefix="/internships", tags=["internships"])
 
@@ -20,12 +23,13 @@ async def create_internship(payload: InternshipCreate, principal: Annotated[Recr
     known = set((await session.scalars(select(Skill.id).where(Skill.id.in_([requirement.skill_id for requirement in payload.requirements])))).all())
     if len(known) != len(payload.requirements):
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "All requirements must reference canonical skills")
-    internship = Internship(recruiter_id=principal.id, title=payload.title, description=payload.description, embedding=deterministic_embedding(payload.description))
+    internship = Internship(recruiter_id=principal.id, title=payload.title, description=payload.description)
     session.add(internship)
     await session.flush()
     for requirement in payload.requirements:
         session.add(InternshipRequirement(internship_id=internship.id, skill_id=requirement.skill_id, is_required=requirement.is_required, weight=requirement.weight))
     await session.commit()
+    await recompute_matches_for_internship(session, internship.id)
     await session.refresh(internship)
     return InternshipResponse.model_validate(internship)
 
@@ -52,7 +56,16 @@ async def internship_matches(internship_id: UUID, principal: Annotated[Recruiter
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Internship not found")
     return [
         MatchResponse.model_validate(match).model_copy(
-            update={"candidate_label": f"Candidate {str(match.student_id)[:8]}"}
+            update={"candidate_label": f"Candidate {str(match.student_id)[:8]}", "is_stale": await match_is_stale(session, match)}
         )
-        for match in await ranked_matches_for_internship(session, internship_id)
+        for match in sorted(await persisted_internship_matches(session, internship_id), key=lambda item: (-float(item.final_score), str(item.student_id)))
     ]
+
+
+@router.post("/{internship_id}/matches/recompute", response_model=list[MatchResponse])
+async def recompute_internship_matches(internship_id: UUID, principal: Annotated[Recruiter, Depends(require_role("recruiter"))], session: Annotated[AsyncSession, Depends(get_session)]) -> list[MatchResponse]:
+    internship = await session.get(Internship, internship_id)
+    if internship is None or internship.recruiter_id != principal.id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Internship not found")
+    matches = await recompute_matches_for_internship(session, internship_id)
+    return [MatchResponse.model_validate(match).model_copy(update={"candidate_label": f"Candidate {str(match.student_id)[:8]}", "is_stale": False}) for match in matches]

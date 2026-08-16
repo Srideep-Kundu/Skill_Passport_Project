@@ -32,6 +32,11 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("SKILL_PASSPORT_EXTRACTION_PROVIDER", "EXTRACTION_PROVIDER"),
     )
     github_token: str | None = Field(default=None, validation_alias=AliasChoices("SKILL_PASSPORT_GITHUB_TOKEN", "GITHUB_TOKEN"))
+    embedding_provider: Literal["disabled", "gemini", "deterministic_test"] = Field(default="disabled", validation_alias=AliasChoices("SKILL_PASSPORT_EMBEDDING_PROVIDER", "EMBEDDING_PROVIDER"))
+    embedding_model: str = Field(default="gemini-embedding-001", min_length=1, max_length=80, validation_alias=AliasChoices("SKILL_PASSPORT_EMBEDDING_MODEL", "EMBEDDING_MODEL"))
+    embedding_dimension: int = Field(default=768, ge=128, le=3072, validation_alias=AliasChoices("SKILL_PASSPORT_EMBEDDING_DIMENSION", "EMBEDDING_DIMENSION"))
+    semantic_matching_enabled: bool = Field(default=False, validation_alias=AliasChoices("SKILL_PASSPORT_SEMANTIC_MATCHING_ENABLED", "SEMANTIC_MATCHING_ENABLED"))
+    semantic_similarity_threshold: float = Field(default=0.75, ge=0.0, le=1.0, validation_alias=AliasChoices("SKILL_PASSPORT_SEMANTIC_SIMILARITY_THRESHOLD", "SEMANTIC_SIMILARITY_THRESHOLD"))
     cors_origins: Annotated[list[str], NoDecode] = Field(
         default=["http://localhost:5173"],
         validation_alias=AliasChoices("SKILL_PASSPORT_CORS_ORIGINS", "CORS_ORIGINS"),
@@ -116,6 +121,11 @@ class Settings(BaseSettings):
             raise RuntimeError("CORS_ORIGINS must contain exact HTTPS origins in production")
         if self.extraction_provider == "gemini" and not self.gemini_api_key:
             raise RuntimeError("GEMINI_API_KEY is required when EXTRACTION_PROVIDER=gemini")
+        if self.semantic_matching_enabled:
+            if self.embedding_provider != "gemini" or not self.gemini_api_key:
+                raise RuntimeError("Semantic matching in production requires GEMINI_API_KEY and EMBEDDING_PROVIDER=gemini")
+            if self.embedding_dimension != 768:
+                raise RuntimeError("EMBEDDING_DIMENSION must be 768 for the current pgvector schema")
 
 
 @lru_cache

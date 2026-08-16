@@ -38,7 +38,7 @@ describe("backend response contracts", () => {
     } satisfies Internship;
     const explanation = {
       lines: ["Recommended based on persisted records."],
-      items: [{ skill_id: "skill-id", skill_name: "Python", status: "matched_unverified", contribution: 0.2, evidence_id: null, evidence_title: null }],
+      items: [{ skill_id: "skill-id", skill_name: "Python", status: "matched_unverified", contribution: 0.2, total_contribution: 0.2, deterministic_contribution: 0.13, semantic_contribution: 0, verification_contribution: 0.07, matched_skill_id: "skill-id", matched_skill_name: "Python", semantic_similarity: null, evidence_id: null, evidence_title: null }],
       deterministic_score: 0.3,
       semantic_score: 0,
       verification_bonus: 0.05,

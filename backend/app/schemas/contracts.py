@@ -167,6 +167,7 @@ class MatchResponse(APIModel):
     score_version: str
     internship_title: str | None = None
     candidate_label: str | None = None
+    is_stale: bool = False
 
 
 class ExplanationItem(APIModel):
@@ -176,6 +177,13 @@ class ExplanationItem(APIModel):
     contribution: float
     evidence_id: UUID | None
     evidence_title: str | None
+    matched_skill_id: UUID | None = None
+    matched_skill_name: str | None = None
+    semantic_similarity: float | None = None
+    deterministic_contribution: float = 0.0
+    semantic_contribution: float = 0.0
+    verification_contribution: float = 0.0
+    total_contribution: float = 0.0
 
 
 class ExplanationResponse(APIModel):

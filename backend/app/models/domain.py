@@ -108,6 +108,11 @@ class Skill(Timestamped, Base):
     canonical_name: Mapped[str] = mapped_column(String(120), unique=True, index=True)
     category: Mapped[str] = mapped_column(String(120))
     embedding: Mapped[list[float] | None] = mapped_column(Embedding)
+    embedding_provider: Mapped[str | None] = mapped_column(String(32))
+    embedding_model: Mapped[str | None] = mapped_column(String(80))
+    embedding_dimension: Mapped[int | None] = mapped_column(Integer)
+    embedding_generated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    embedding_fingerprint: Mapped[str | None] = mapped_column(String(64), index=True)
     aliases: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
 
 
@@ -207,6 +212,7 @@ class Match(Timestamped, Base):
     verification_bonus: Mapped[float] = mapped_column(Numeric(5, 4), nullable=False)
     final_score: Mapped[float] = mapped_column(Numeric(5, 4), nullable=False, index=True)
     score_version: Mapped[str] = mapped_column(String(32), default="v1", nullable=False)
+    input_fingerprint: Mapped[str] = mapped_column(String(64), default="legacy", nullable=False)
     computed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     explanations: Mapped[list["MatchExplanation"]] = relationship(back_populates="match", cascade="all, delete-orphan")
 
@@ -218,9 +224,15 @@ class MatchExplanation(Base):
     skill_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("skills.id"), index=True)
     status: Mapped[str] = mapped_column(String(40))
     contribution: Mapped[float] = mapped_column(Numeric(6, 5), nullable=False)
+    deterministic_contribution: Mapped[float] = mapped_column(Numeric(6, 5), default=0.0, nullable=False)
+    semantic_contribution: Mapped[float] = mapped_column(Numeric(6, 5), default=0.0, nullable=False)
+    verification_contribution: Mapped[float] = mapped_column(Numeric(6, 5), default=0.0, nullable=False)
+    matched_skill_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("skills.id"))
+    semantic_similarity: Mapped[float | None] = mapped_column(Numeric(5, 4))
     contributing_evidence_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("evidence.id"))
     match: Mapped[Match] = relationship(back_populates="explanations")
-    skill: Mapped[Skill] = relationship()
+    skill: Mapped[Skill] = relationship(foreign_keys=[skill_id])
+    matched_skill: Mapped[Skill | None] = relationship(foreign_keys=[matched_skill_id])
     evidence: Mapped[Evidence | None] = relationship()
 
 

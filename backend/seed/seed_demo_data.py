@@ -15,7 +15,6 @@ from app.models import (
     StudentSkill,
     VerificationTier,
 )
-from app.services.embeddings import deterministic_embedding
 from seed.seed_skills import seed_skills
 
 
@@ -38,7 +37,7 @@ async def seed_demo_data() -> None:
             await session.flush()
             for name in ("Python", "FastAPI", "PostgreSQL"):
                 session.add(StudentSkill(student_id=student.id, skill_id=skills[name].id, source_evidence_id=evidence.id, extraction_confidence=0.9, verification_tier=VerificationTier.verified, evidence_span=name))
-        internship = Internship(recruiter_id=recruiter.id, title="Backend Intern", description="Build Python FastAPI services with PostgreSQL.", embedding=deterministic_embedding("Python FastAPI PostgreSQL"))
+        internship = Internship(recruiter_id=recruiter.id, title="Backend Intern", description="Build Python FastAPI services with PostgreSQL.")
         session.add(internship)
         await session.flush()
         for name, weight in (("Python", 1.0), ("FastAPI", 1.0), ("PostgreSQL", 1.0)):

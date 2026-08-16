@@ -38,10 +38,14 @@ class RecruiterMatchSession:
 
 @pytest.mark.asyncio
 async def test_student_matches_adds_title_without_duplicate_response_field(monkeypatch: pytest.MonkeyPatch) -> None:
-    async def fake_compute(_session: object, _student_id: UUID, _internship_id: UUID) -> SimpleNamespace:
-        return match_record()
+    async def fake_persisted(_session: object, _student_id: UUID) -> list[SimpleNamespace]:
+        return [match_record()]
 
-    monkeypatch.setattr(matches, "compute_and_persist_match", fake_compute)
+    async def not_stale(_session: object, _match: object) -> bool:
+        return False
+
+    monkeypatch.setattr(matches, "persisted_student_matches", fake_persisted)
+    monkeypatch.setattr(matches, "match_is_stale", not_stale)
 
     result = await matches.my_matches(SimpleNamespace(id=STUDENT_ID), StudentMatchSession())
 
@@ -50,10 +54,14 @@ async def test_student_matches_adds_title_without_duplicate_response_field(monke
 
 @pytest.mark.asyncio
 async def test_recruiter_matches_adds_candidate_label_without_duplicate_response_field(monkeypatch: pytest.MonkeyPatch) -> None:
-    async def fake_ranked(_session: object, _internship_id: UUID) -> list[SimpleNamespace]:
+    async def fake_persisted(_session: object, _internship_id: UUID) -> list[SimpleNamespace]:
         return [match_record()]
 
-    monkeypatch.setattr(internships, "ranked_matches_for_internship", fake_ranked)
+    async def not_stale(_session: object, _match: object) -> bool:
+        return False
+
+    monkeypatch.setattr(internships, "persisted_internship_matches", fake_persisted)
+    monkeypatch.setattr(internships, "match_is_stale", not_stale)
 
     result = await internships.internship_matches(
         INTERNSHIP_ID,

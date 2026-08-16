@@ -28,6 +28,8 @@ export const api = {
     const response = await request<StudentMatch[] | PaginatedResponse<StudentMatch>>("/students/me/matches", {}, token);
     return Array.isArray(response) ? response : response.items;
   },
+  recomputeStudentMatches: (token: string) => request<StudentMatch[]>("/students/me/matches/recompute", { method: "POST" }, token),
+  recomputeInternshipMatches: (id: string, token: string) => request<CandidateMatch[]>(`/internships/${encodeURIComponent(id)}/matches/recompute`, { method: "POST" }, token),
   explanation: (id: string, token: string) => request<MatchExplanation>(`/matches/${encodeURIComponent(id)}/explanation`, {}, token),
   recruiterEvidenceConsent: (token: string) => request<RecruiterEvidenceConsent>("/passport/consent", {}, token),
   setRecruiterEvidenceConsent: (recruiterEvidenceConsent: boolean, token: string) => request<RecruiterEvidenceConsent>("/passport/consent", { method: "PUT", body: JSON.stringify({ recruiter_evidence_consent: recruiterEvidenceConsent }) }, token),

@@ -131,6 +131,13 @@ export interface MatchExplanationLine {
   contribution: number;
   evidence_id: string | null;
   evidence_title: string | null;
+  matched_skill_id: string | null;
+  matched_skill_name: string | null;
+  semantic_similarity: number | null;
+  deterministic_contribution: number;
+  semantic_contribution: number;
+  verification_contribution: number;
+  total_contribution: number;
 }
 
 export interface MatchExplanation {
@@ -152,6 +159,7 @@ export interface StudentMatch {
   deterministic_score: number;
   semantic_score: number;
   verification_bonus: number;
+  is_stale: boolean;
   explanation?: MatchExplanation;
 }
 
@@ -164,6 +172,7 @@ export interface CandidateMatch {
   deterministic_score: number;
   semantic_score: number;
   verification_bonus: number;
+  is_stale: boolean;
   explanation?: MatchExplanation;
 }
 

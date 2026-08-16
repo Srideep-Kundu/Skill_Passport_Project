@@ -23,6 +23,7 @@ def production_settings(**overrides: object) -> Settings:
         ({"redis_url": None}, "REDIS_URL"),
         ({"cors_origins": ["*"]}, "CORS_ORIGINS"),
         ({"extraction_provider": "gemini", "gemini_api_key": None}, "GEMINI_API_KEY"),
+        ({"semantic_matching_enabled": True}, "Semantic matching"),
     ],
 )
 def test_production_settings_reject_unsafe_or_missing_configuration(overrides: dict[str, object], message: str) -> None:
