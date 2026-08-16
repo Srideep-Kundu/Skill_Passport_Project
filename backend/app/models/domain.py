@@ -60,6 +60,17 @@ class ExtractionJobStatus(str, enum.Enum):
     dead_lettered = "dead_lettered"
 
 
+class ResumeParseStatus(str, enum.Enum):
+    uploaded = "uploaded"
+    parsing = "parsing"
+    parsed = "parsed"
+    evidence_created = "evidence_created"
+    processing_skills = "processing_skills"
+    completed = "completed"
+    failed = "failed"
+    unsupported = "unsupported"
+
+
 class VerificationTier(str, enum.Enum):
     verified = "verified"
     partially_verified = "partially_verified"
@@ -134,11 +145,34 @@ class Evidence(Base):
     description: Mapped[str] = mapped_column(Text)
     external_url: Mapped[str | None] = mapped_column(String(2048))
     raw_metadata: Mapped[dict[str, Any] | None] = mapped_column(Json)
+    resume_document_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("resume_documents.id"), index=True)
+    resume_section: Mapped[str | None] = mapped_column(String(40))
+    resume_source_hash: Mapped[str | None] = mapped_column(String(64))
     submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     extraction_status: Mapped[ExtractionStatus] = mapped_column(Enum(ExtractionStatus), default=ExtractionStatus.pending_extraction)
     student: Mapped[Student] = relationship(back_populates="evidence")
     extracted_skills: Mapped[list["StudentSkill"]] = relationship(back_populates="source_evidence", cascade="all, delete-orphan")
     extraction_job: Mapped["ExtractionJob | None"] = relationship(back_populates="evidence", cascade="all, delete-orphan", uselist=False)
+
+
+class ResumeDocument(Base):
+    __tablename__ = "resume_documents"
+    __table_args__ = (UniqueConstraint("student_id", "checksum", name="uq_resume_document_student_checksum"),)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), index=True, nullable=False)
+    original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    storage_key: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    checksum: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    parse_status: Mapped[ResumeParseStatus] = mapped_column(Enum(ResumeParseStatus), default=ResumeParseStatus.uploaded, nullable=False, index=True)
+    parser_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    parsed_data: Mapped[dict[str, Any] | None] = mapped_column(Json)
+    extracted_text: Mapped[str | None] = mapped_column(Text)
+    safe_error_message: Mapped[str | None] = mapped_column(String(240))
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    parsed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
 
 
 class ExtractionJob(Base):

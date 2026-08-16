@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 from typing import Annotated, Literal
 
 from pydantic import AliasChoices, Field, field_validator
@@ -94,6 +95,9 @@ class Settings(BaseSettings):
         le=86400,
         validation_alias=AliasChoices("SKILL_PASSPORT_EXTRACTION_CLAIM_TIMEOUT_SECONDS", "EXTRACTION_CLAIM_TIMEOUT_SECONDS"),
     )
+    resume_storage_dir: Path = Field(default=Path("./uploads/resumes"), validation_alias=AliasChoices("SKILL_PASSPORT_RESUME_STORAGE_DIR", "RESUME_STORAGE_DIR"))
+    resume_max_upload_bytes: int = Field(default=5 * 1024 * 1024, ge=1, le=25 * 1024 * 1024, validation_alias=AliasChoices("SKILL_PASSPORT_RESUME_MAX_UPLOAD_BYTES", "RESUME_MAX_UPLOAD_BYTES"))
+    resume_max_extracted_characters: int = Field(default=100_000, ge=1_000, le=1_000_000, validation_alias=AliasChoices("SKILL_PASSPORT_RESUME_MAX_EXTRACTED_CHARACTERS", "RESUME_MAX_EXTRACTED_CHARACTERS"))
 
     @field_validator("jwt_secret")
     @classmethod

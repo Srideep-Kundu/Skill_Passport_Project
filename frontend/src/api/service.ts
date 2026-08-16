@@ -2,7 +2,7 @@ import { request } from "./client";
 import type {
   AuthSession, CandidateMatch, EvidenceDetail, EvidenceSubmission, EvidenceSummary, EvidenceUpdate, Internship, InternshipCreate, InternshipUpdate,
   LoginRequest, MatchExplanation, PaginatedResponse, Passport, RecruiterRegistration, Skill,
-  StudentMatch, StudentRegistration, TeamSuggestion, TeamSuggestionRequest, VerificationResult, RecruiterEvidenceConsent, GitHubIdentity,
+  StudentMatch, StudentRegistration, TeamSuggestion, TeamSuggestionRequest, VerificationResult, RecruiterEvidenceConsent, GitHubIdentity, ResumeDocument,
 } from "./types";
 
 export const api = {
@@ -15,6 +15,11 @@ export const api = {
   evidences: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<EvidenceSummary>>(`/evidence?page=${page}&page_size=${pageSize}`, {}, token),
   updateEvidence: (id: string, input: EvidenceUpdate, token: string) => request<EvidenceDetail>(`/evidence/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) }, token),
   deleteEvidence: (id: string, token: string) => request<void>(`/evidence/${encodeURIComponent(id)}`, { method: "DELETE" }, token),
+  resumes: (token: string) => request<PaginatedResponse<ResumeDocument>>("/resumes", {}, token),
+  uploadResume: (file: File, token: string) => { const body = new FormData(); body.append("file", file); return request<ResumeDocument>("/resumes", { method: "POST", body }, token); },
+  parseResume: (id: string, token: string) => request<ResumeDocument>(`/resumes/${encodeURIComponent(id)}/parse`, { method: "POST" }, token),
+  activateResume: (id: string, token: string) => request<ResumeDocument>(`/resumes/${encodeURIComponent(id)}/activate`, { method: "PUT" }, token),
+  deleteResume: (id: string, token: string) => request<void>(`/resumes/${encodeURIComponent(id)}`, { method: "DELETE" }, token),
   requeueEvidence: (id: string, token: string) => request<EvidenceDetail>(`/evidence/${encodeURIComponent(id)}/requeue`, { method: "POST" }, token),
   verifyEvidence: (id: string, token: string) => request<VerificationResult>(`/evidence/${encodeURIComponent(id)}/verify`, { method: "POST", body: JSON.stringify({ check_type: "github_project" }) }, token),
   searchSkills: (query: string, token: string) => request<Skill[]>(`/skills/search?q=${encodeURIComponent(query)}`, {}, token),

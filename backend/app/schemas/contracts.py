@@ -82,6 +82,72 @@ class EvidenceDetail(EvidenceResponse):
     extraction_job: ExtractionJobResponse | None = None
 
 
+class CandidateContact(APIModel):
+    name: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    github_links: list[str] = Field(default_factory=list)
+    portfolio_links: list[str] = Field(default_factory=list)
+
+
+class EducationEntry(APIModel):
+    institution: str
+    detail: str
+    source_span: str
+
+
+class ExperienceEntry(APIModel):
+    title: str
+    description: str
+    source_span: str
+
+
+class ProjectEntry(APIModel):
+    title: str
+    description: str
+    source_span: str
+
+
+class CertificationEntry(APIModel):
+    name: str
+    detail: str
+    source_span: str
+
+
+class AchievementEntry(APIModel):
+    title: str
+    detail: str
+    source_span: str
+
+
+class ResumeParsedData(APIModel):
+    contact: CandidateContact = Field(default_factory=CandidateContact)
+    education: list[EducationEntry] = Field(default_factory=list)
+    experience: list[ExperienceEntry] = Field(default_factory=list)
+    projects: list[ProjectEntry] = Field(default_factory=list)
+    certifications: list[CertificationEntry] = Field(default_factory=list)
+    achievements: list[AchievementEntry] = Field(default_factory=list)
+    explicit_technical_skills: list[str] = Field(default_factory=list)
+    prohibited_attribute_labels: list[str] = Field(default_factory=list)
+
+
+class ResumeDocumentResponse(APIModel):
+    id: UUID
+    original_filename: str
+    mime_type: str
+    size_bytes: int
+    checksum: str
+    parse_status: str
+    parser_version: str
+    uploaded_at: datetime
+    parsed_at: datetime | None
+    is_active: bool
+    safe_error_message: str | None
+    parsed_summary: ResumeParsedData | None = None
+    generated_evidence_count: int = 0
+    skills_status: str = "not_started"
+
+
 class VerificationRequest(APIModel):
     # Legacy values remain accepted while every request runs the complete GitHub check suite.
     check_type: Literal["github_repository_accessibility", "github_commit_match", "github_project"] = "github_project"

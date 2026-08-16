@@ -203,3 +203,27 @@ export interface PaginatedResponse<T> {
   page_size: number;
   total: number;
 }
+
+export interface ResumeParsedData {
+  contact: { name: string | null; email: string | null; phone: string | null; github_links: string[]; portfolio_links: string[] };
+  projects: { title: string; description: string }[];
+  certifications: { name: string; detail: string }[];
+  explicit_technical_skills: string[];
+}
+
+export interface ResumeDocument {
+  id: string;
+  original_filename: string;
+  mime_type: string;
+  size_bytes: number;
+  checksum: string;
+  parse_status: "uploaded" | "parsing" | "parsed" | "evidence_created" | "processing_skills" | "completed" | "failed" | "unsupported";
+  parser_version: string;
+  uploaded_at: string;
+  parsed_at: string | null;
+  is_active: boolean;
+  safe_error_message: string | null;
+  parsed_summary: ResumeParsedData | null;
+  generated_evidence_count: number;
+  skills_status: "not_started" | "extracting" | "ready";
+}

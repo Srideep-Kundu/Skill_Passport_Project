@@ -66,6 +66,9 @@ services:
       EXTRACTION_RETRY_BASE_SECONDS: ${EXTRACTION_RETRY_BASE_SECONDS:-15}
       EXTRACTION_RETRY_MAX_SECONDS: ${EXTRACTION_RETRY_MAX_SECONDS:-300}
       EXTRACTION_CLAIM_TIMEOUT_SECONDS: ${EXTRACTION_CLAIM_TIMEOUT_SECONDS:-300}
+      RESUME_STORAGE_DIR: ${RESUME_STORAGE_DIR:-/app/uploads/resumes}
+      RESUME_MAX_UPLOAD_BYTES: ${RESUME_MAX_UPLOAD_BYTES:-5242880}
+      RESUME_MAX_EXTRACTED_CHARACTERS: ${RESUME_MAX_EXTRACTED_CHARACTERS:-100000}
       EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-disabled}
       EMBEDDING_MODEL: ${EMBEDDING_MODEL:-gemini-embedding-001}
       EMBEDDING_DIMENSION: ${EMBEDDING_DIMENSION:-768}
@@ -79,6 +82,8 @@ services:
       VERIFICATION_RATE_LIMIT_PER_MINUTE: ${VERIFICATION_RATE_LIMIT_PER_MINUTE:-10}
     ports:
       - "8000:8000"
+    volumes:
+      - resume-data:/app/uploads/resumes
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -134,3 +139,4 @@ services:
 volumes:
   postgres-data:
   redis-data:
+  resume-data:

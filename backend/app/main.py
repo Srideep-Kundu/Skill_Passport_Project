@@ -3,7 +3,17 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import admin, auth, evidence, internships, matches, passport, skills, teams
+from app.api import (
+    admin,
+    auth,
+    evidence,
+    internships,
+    matches,
+    passport,
+    resumes,
+    skills,
+    teams,
+)
 from app.core.config import get_settings
 from app.core.db import create_schema_for_local_use
 
@@ -23,6 +33,7 @@ app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_cr
 app.include_router(auth.router)
 app.include_router(passport.router)
 app.include_router(evidence.router)
+app.include_router(resumes.router)
 app.include_router(skills.router)
 app.include_router(internships.router)
 app.include_router(matches.router)
