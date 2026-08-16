@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Annotated
+from typing import Annotated, Literal, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
@@ -26,6 +26,7 @@ from app.schemas.contracts import (
     EvidenceResponse,
     ExtractedSkillResponse,
     ExtractionJobResponse,
+    VerificationCheckResponse,
     VerificationRequest,
     VerificationResponse,
 )
@@ -95,8 +96,13 @@ async def requeue_evidence(evidence_id: UUID, response: Response, principal: Ann
 async def verify_evidence(evidence_id: UUID, payload: VerificationRequest, principal: Annotated[Student, Depends(require_role("student"))], session: Annotated[AsyncSession, Depends(get_session)]) -> VerificationResponse:
     await _owned_evidence(session, evidence_id, principal.id)
     await enforce_rate_limit("verification", str(principal.id), get_settings().verification_rate_limit_per_minute)
-    check = await verify_github_evidence(session, evidence_id)
-    return VerificationResponse(result=check.result, details=check.details or {})
+    run = await verify_github_evidence(session, evidence_id)
+    return VerificationResponse(
+        result=run.tier.value,
+        details={"transient_failure": run.transient_failure, "check_count": len(run.checks)},
+        verification_tier=run.tier.value,
+        checks=[VerificationCheckResponse(check_type=check.check_type, result=cast(Literal["pass", "partial", "fail", "not_applicable"], check.result), details=check.details or {}, checked_at=check.checked_at) for check in run.checks],
+    )
 
 
 @router.get("/internships/{internship_id}/candidates/{student_id}/{evidence_id}", response_model=EvidenceDetail)

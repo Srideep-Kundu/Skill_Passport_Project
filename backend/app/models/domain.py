@@ -78,6 +78,7 @@ class Student(Timestamped, Base):
     full_name: Mapped[str] = mapped_column(String(200))
     university: Mapped[str | None] = mapped_column(String(255))
     graduation_year: Mapped[int | None] = mapped_column(Integer)
+    github_username: Mapped[str | None] = mapped_column(String(39), unique=True, index=True)
     recruiter_evidence_consent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     role = Role.student.value
     evidence: Mapped[list["Evidence"]] = relationship(back_populates="student", cascade="all, delete-orphan")

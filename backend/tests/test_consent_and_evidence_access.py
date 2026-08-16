@@ -6,7 +6,7 @@ from fastapi import HTTPException
 
 from app.api import evidence, matches, passport
 from app.models import Evidence, EvidenceType, Internship, Recruiter, Student
-from app.schemas.contracts import RecruiterEvidenceConsentUpdate
+from app.schemas.contracts import GitHubIdentityUpdate, RecruiterEvidenceConsentUpdate, VerificationRequest
 
 STUDENT_ID = UUID("00000000-0000-0000-0000-000000000001")
 RECRUITER_ID = UUID("00000000-0000-0000-0000-000000000002")
@@ -40,6 +40,14 @@ class EvidenceAccessSession:
         if model is Evidence:
             return self.item
         return None
+
+
+class OwnedEvidenceSession:
+    def __init__(self, item: Evidence) -> None:
+        self.item = item
+
+    async def get(self, model: type[object], _identifier: UUID) -> object | None:
+        return self.item if model is Evidence else None
 
 
 class ExplanationSession:
@@ -112,3 +120,36 @@ async def test_recruiter_can_view_redacted_match_explanation_without_raw_evidenc
 
     assert observed["include_evidence_references"] is False
     assert result.items[0].evidence_id is None
+
+
+@pytest.mark.asyncio
+async def test_student_cannot_trigger_verification_for_another_students_evidence() -> None:
+    owner = Student(id=STUDENT_ID, email="owner@example.test", password_hash="hash", full_name="Owner")
+    requester = Student(id=UUID("00000000-0000-0000-0000-000000000099"), email="requester@example.test", password_hash="hash", full_name="Requester")
+    item = Evidence(id=EVIDENCE_ID, student_id=owner.id, evidence_type=EvidenceType.project, title="Project", description="Evidence", external_url="https://github.com/example/project")
+
+    with pytest.raises(HTTPException) as raised:
+        await evidence.verify_evidence(item.id, VerificationRequest(), requester, OwnedEvidenceSession(item))  # type: ignore[arg-type]
+
+    assert raised.value.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_claimed_github_identity_is_not_reported_as_authenticated(monkeypatch: pytest.MonkeyPatch) -> None:
+    student = Student(id=STUDENT_ID, email="student@example.test", password_hash="hash", full_name="Student")
+    session = ConsentSession()
+
+    class GitHubIdentityClient:
+        async def validate_username(self, _username: str) -> str:
+            return "StudentHandle"
+
+    async def no_rate_limit(*_args: object) -> None:
+        return None
+
+    monkeypatch.setattr(passport, "GitHubClient", GitHubIdentityClient)
+    monkeypatch.setattr(passport, "enforce_rate_limit", no_rate_limit)
+    result = await passport.set_github_identity(GitHubIdentityUpdate(github_username="studenthandle"), student, session)  # type: ignore[arg-type]
+
+    assert result.github_username == "StudentHandle"
+    assert result.association_status == "claimed"
+    assert result.identity_authenticated is False

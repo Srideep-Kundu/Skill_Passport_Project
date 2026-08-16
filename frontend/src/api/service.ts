@@ -2,7 +2,7 @@ import { request } from "./client";
 import type {
   AuthSession, CandidateMatch, EvidenceDetail, EvidenceSubmission, EvidenceSummary, Internship, InternshipCreate,
   LoginRequest, MatchExplanation, PaginatedResponse, Passport, RecruiterRegistration, Skill,
-  StudentMatch, StudentRegistration, TeamSuggestion, TeamSuggestionRequest, VerificationResult, RecruiterEvidenceConsent,
+  StudentMatch, StudentRegistration, TeamSuggestion, TeamSuggestionRequest, VerificationResult, RecruiterEvidenceConsent, GitHubIdentity,
 } from "./types";
 
 export const api = {
@@ -13,7 +13,7 @@ export const api = {
   submitEvidence: (input: EvidenceSubmission, token: string) => request<EvidenceSummary>("/evidence", { method: "POST", body: JSON.stringify(input) }, token),
   evidence: (id: string, token: string) => request<EvidenceDetail>(`/evidence/${encodeURIComponent(id)}`, {}, token),
   requeueEvidence: (id: string, token: string) => request<EvidenceDetail>(`/evidence/${encodeURIComponent(id)}/requeue`, { method: "POST" }, token),
-  verifyEvidence: (id: string, checkType: string, token: string) => request<VerificationResult>(`/evidence/${encodeURIComponent(id)}/verify`, { method: "POST", body: JSON.stringify({ check_type: checkType }) }, token),
+  verifyEvidence: (id: string, token: string) => request<VerificationResult>(`/evidence/${encodeURIComponent(id)}/verify`, { method: "POST", body: JSON.stringify({ check_type: "github_project" }) }, token),
   searchSkills: (query: string, token: string) => request<Skill[]>(`/skills/search?q=${encodeURIComponent(query)}`, {}, token),
   createInternship: (input: InternshipCreate, token: string) => request<Internship>("/internships", { method: "POST", body: JSON.stringify(input) }, token),
   internshipMatches: async (id: string, token: string): Promise<CandidateMatch[]> => {
@@ -31,5 +31,7 @@ export const api = {
   explanation: (id: string, token: string) => request<MatchExplanation>(`/matches/${encodeURIComponent(id)}/explanation`, {}, token),
   recruiterEvidenceConsent: (token: string) => request<RecruiterEvidenceConsent>("/passport/consent", {}, token),
   setRecruiterEvidenceConsent: (recruiterEvidenceConsent: boolean, token: string) => request<RecruiterEvidenceConsent>("/passport/consent", { method: "PUT", body: JSON.stringify({ recruiter_evidence_consent: recruiterEvidenceConsent }) }, token),
+  githubIdentity: (token: string) => request<GitHubIdentity>("/passport/github-identity", {}, token),
+  setGithubIdentity: (githubUsername: string, token: string) => request<GitHubIdentity>("/passport/github-identity", { method: "PUT", body: JSON.stringify({ github_username: githubUsername }) }, token),
   suggestTeams: (input: TeamSuggestionRequest, token: string) => request<TeamSuggestion[]>("/teams/suggest", { method: "POST", body: JSON.stringify(input) }, token),
 };

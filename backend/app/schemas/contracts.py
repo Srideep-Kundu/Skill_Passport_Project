@@ -76,13 +76,42 @@ class EvidenceDetail(EvidenceResponse):
 
 
 class VerificationRequest(APIModel):
-    # The legacy value remains accepted for compatibility but is recorded conservatively.
-    check_type: Literal["github_repository_accessibility", "github_commit_match"]
+    # Legacy values remain accepted while every request runs the complete GitHub check suite.
+    check_type: Literal["github_repository_accessibility", "github_commit_match", "github_project"] = "github_project"
+
+
+class VerificationCheckResponse(APIModel):
+    check_type: str
+    result: Literal["pass", "partial", "fail", "not_applicable"]
+    details: dict[str, object]
+    checked_at: datetime | None
 
 
 class VerificationResponse(APIModel):
     result: str
     details: dict[str, object]
+    verification_tier: Literal["verified", "partially_verified", "unverified"]
+    checks: list[VerificationCheckResponse]
+
+
+class GitHubIdentityUpdate(APIModel):
+    github_username: str = Field(min_length=1, max_length=39)
+
+    @field_validator("github_username")
+    @classmethod
+    def github_username_is_plain_handle(cls, value: str) -> str:
+        import re
+
+        normalized = value.strip()
+        if not re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})", normalized):
+            raise ValueError("GitHub username is invalid")
+        return normalized
+
+
+class GitHubIdentityResponse(APIModel):
+    github_username: str | None
+    association_status: Literal["not_linked", "claimed"]
+    identity_authenticated: bool = False
 
 
 class RecruiterEvidenceConsentUpdate(APIModel):

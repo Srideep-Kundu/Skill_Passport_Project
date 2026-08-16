@@ -103,6 +103,21 @@ export interface Internship {
 export interface VerificationResult {
   result: string;
   details: Record<string, unknown>;
+  verification_tier: VerificationTier;
+  checks: VerificationCheck[];
+}
+
+export interface VerificationCheck {
+  check_type: "repository_accessible" | "repository_owner_match" | "commit_author_match" | "language_consistency" | "timeline_consistency";
+  result: "pass" | "partial" | "fail" | "not_applicable";
+  details: Record<string, unknown>;
+  checked_at: string | null;
+}
+
+export interface GitHubIdentity {
+  github_username: string | null;
+  association_status: "not_linked" | "claimed";
+  identity_authenticated: false;
 }
 
 export interface RecruiterEvidenceConsent {
