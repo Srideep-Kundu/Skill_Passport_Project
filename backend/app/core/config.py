@@ -22,7 +22,9 @@ class Settings(BaseSettings):
     )
     jwt_secret: str = Field(
         default="test-only-secret-not-for-production",
-        validation_alias=AliasChoices("SKILL_PASSPORT_JWT_SECRET", "JWT_SECRET_KEY"),
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_JWT_SECRET", "JWT_SECRET", "JWT_SECRET_KEY"
+        ),
     )
     jwt_algorithm: str = Field(
         default="HS256",
@@ -98,6 +100,25 @@ class Settings(BaseSettings):
     environment: str = Field(
         default="development",
         validation_alias=AliasChoices("SKILL_PASSPORT_ENVIRONMENT", "APP_ENV"),
+    )
+    log_level: str = Field(
+        default="INFO",
+        validation_alias=AliasChoices("SKILL_PASSPORT_LOG_LEVEL", "LOG_LEVEL"),
+    )
+    worker_heartbeat_ttl_seconds: int = Field(
+        default=30,
+        ge=10,
+        le=3600,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_WORKER_HEARTBEAT_TTL_SECONDS",
+            "WORKER_HEARTBEAT_TTL_SECONDS",
+        ),
+    )
+    demo_reset_enabled: bool = Field(
+        default=False,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_DEMO_RESET_ENABLED", "DEMO_RESET_ENABLED"
+        ),
     )
     extraction_sync_fallback: bool = Field(
         default=False,

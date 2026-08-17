@@ -35,7 +35,7 @@ Architecture and contribution invariants are defined in [AGENTS.md](AGENTS.md). 
    docker compose exec backend python -m seed.seed_demo_data
    ```
 
-5. Open the frontend at `http://localhost:5173`; the API health check is at `http://localhost:8000/health`.
+5. Open the frontend at `http://localhost:5173`; liveness is at `http://localhost:8000/health` and dependency readiness is at `http://localhost:8000/ready`.
 
 Use `docker compose down` to stop services. Add `-v` only when you intentionally want to remove the local PostgreSQL/Redis volumes.
 
@@ -81,4 +81,6 @@ Production requirements:
 - Set unique secrets and exact HTTPS CORS origins through the platform environment UI.
 - Run migrations before serving traffic and validate `vector`, `matching_view`, and role grants.
 - Run the extraction worker as a distinct process using the same backend image and Redis URL.
+- Use `python -m app.core.release_check` after migrations and taxonomy seeding; it checks the revision, pgvector, restricted matching surface, matching role, taxonomy, and Redis without printing credentials.
+- Use `python -m app.core.release_smoke` after deployment; optional non-production smoke credentials extend it through login and a protected request.
 - Never expose API keys or use `VITE_*` variables for server-only secrets.

@@ -18,3 +18,4 @@ Run this matrix against a fresh, seeded environment before a demo or release. Re
 | Recruiter evidence boundary | Attempt to open a candidate’s raw evidence before and after consent is granted. | Access is denied without consent and allowed only for the authorized internship after consent. |
 | Team suggestion | Request a team suggestion for a target skill set. | Deterministic pairs/groups show coverage and the Jaccard redundancy penalty. |
 | Error and rate-limit behavior | Send invalid evidence, malformed JWTs, and repeated auth/extraction requests. | Requests return structured errors; no secret, stack trace, or raw provider output is exposed; rate-limited requests are rejected safely. |
+| Operational readiness | Inspect `/health`, `/ready`, and admin worker status after the stack starts. | Liveness responds immediately, readiness requires PostgreSQL and Redis, and the worker heartbeat is fresh without exposing job payloads. |
