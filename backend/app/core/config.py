@@ -94,6 +94,12 @@ class Settings(BaseSettings):
         default=None,
         validation_alias=AliasChoices("SKILL_PASSPORT_LEVER_APPLICATION_CREDENTIALS", "LEVER_APPLICATION_CREDENTIALS"),
     )
+    provider_submission_enabled: bool = Field(default=False, validation_alias=AliasChoices("SKILL_PASSPORT_PROVIDER_SUBMISSION_ENABLED", "PROVIDER_SUBMISSION_ENABLED"))
+    lever_submission_enabled: bool = Field(default=False, validation_alias=AliasChoices("SKILL_PASSPORT_LEVER_SUBMISSION_ENABLED", "LEVER_SUBMISSION_ENABLED"))
+    application_execution_mode: Literal["assisted", "staging_submit"] = Field(
+        default="assisted",
+        validation_alias=AliasChoices("SKILL_PASSPORT_APPLICATION_EXECUTION_MODE", "APPLICATION_EXECUTION_MODE"),
+    )
     extraction_max_attempts: int = Field(
         default=3,
         ge=1,
@@ -160,6 +166,8 @@ class Settings(BaseSettings):
                 raise RuntimeError("Semantic matching in production requires GEMINI_API_KEY and EMBEDDING_PROVIDER=gemini")
             if self.embedding_dimension != 768:
                 raise RuntimeError("EMBEDDING_DIMENSION must be 768 for the current pgvector schema")
+        if self.provider_submission_enabled or self.lever_submission_enabled or self.application_execution_mode == "staging_submit":
+            raise RuntimeError("Controlled provider submission is permitted only in an explicitly configured staging environment")
 
 
 @lru_cache

@@ -28,7 +28,7 @@ Credentials are read only from environment/secret-provider configuration, never 
 
 Greenhouse's public Job Board API supports job discovery; its authenticated application endpoint is a separate capability. The adapter records that distinction and maps public application-question metadata only when available. A missing credential, a wrong-board credential, or an unmapped required question keeps the job assisted-only.
 
-Lever has a public postings adapter and an authenticated official application-question discovery path. The adapter maps supported official fields to the normalized Phase 11 model. Unsupported required fields and required file-upload fields force assisted fallback. The release does not submit requests to either provider: a controlled submission adapter, provider approval, and an end-to-end staging review are required first.
+Lever has a public postings adapter and an authenticated official application-question discovery path. The adapter maps supported official fields to the normalized Phase 11 model. Unsupported required fields force assisted fallback. A narrowly scoped, feature-flagged Lever adapter is available only for controlled staging use; see [controlled Lever submission](controlled-lever-submission.md). Greenhouse remains assisted-only.
 
 ## Schema, sensitive fields, and files
 

@@ -392,6 +392,7 @@ class ApplicationField(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     application_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("applications.id", ondelete="CASCADE"), nullable=False, index=True)
     field_id: Mapped[str] = mapped_column(String(120), nullable=False)
+    provider_field_id: Mapped[str | None] = mapped_column(String(160))
     label: Mapped[str] = mapped_column(String(255), nullable=False)
     field_type: Mapped[str] = mapped_column(String(32), nullable=False)
     required: Mapped[bool] = mapped_column(Boolean, nullable=False)

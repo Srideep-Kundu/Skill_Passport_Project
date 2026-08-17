@@ -5,7 +5,7 @@ import json
 import re
 from abc import ABC, abstractmethod
 from collections.abc import Set as AbstractSet
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from html import unescape
 from html.parser import HTMLParser
@@ -35,6 +35,10 @@ class ProviderPayloadError(ProviderError):
 
 class ProviderSubmissionUnsupported(ProviderError):
     safe_message = "This provider does not support machine application submission."
+
+
+class ProviderPreSendFailure(ProviderError):
+    safe_message = "The provider could not be reached before submission started."
 
 
 @dataclass(frozen=True)
@@ -106,6 +110,25 @@ provider_credential_store = ProviderCredentialStore.from_environment()
 
 
 @dataclass(frozen=True)
+class ProviderSubmissionPolicy:
+    enabled: bool
+    lever_enabled: bool
+    staging_mode: bool
+
+    @classmethod
+    def from_environment(cls) -> "ProviderSubmissionPolicy":
+        settings = get_settings()
+        return cls(settings.provider_submission_enabled, settings.lever_submission_enabled, settings.environment == "staging" and settings.application_execution_mode == "staging_submit")
+
+    @property
+    def lever_live_submission_allowed(self) -> bool:
+        return self.enabled and self.lever_enabled and self.staging_mode
+
+
+provider_submission_policy = ProviderSubmissionPolicy.from_environment()
+
+
+@dataclass(frozen=True)
 class ApplicationFieldDefinition:
     field_id: str
     label: str
@@ -116,6 +139,7 @@ class ApplicationFieldDefinition:
     sensitive: bool = False
     requires_user_input: bool = False
     source: str = "provider"
+    provider_field_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -342,6 +366,9 @@ def normalize_provider_application_field(provider: str, value: object, *, prefix
     label_key = clean_label.casefold()
     sensitive = any(word in label_key for word in _SENSITIVE_FIELD_WORDS) or value.get("category") == "eeo"
     category = "legal" if sensitive else "provider"
+    raw_provider_id = str(raw_id)
+    if len(raw_provider_id) > 160:
+        return None
     return ApplicationFieldDefinition(
         field_id=field_id,
         label=clean_label,
@@ -352,6 +379,7 @@ def normalize_provider_application_field(provider: str, value: object, *, prefix
         sensitive=sensitive,
         requires_user_input=sensitive,
         source=f"{provider}_official_schema",
+        provider_field_id=raw_provider_id,
     )
 
 
@@ -640,17 +668,45 @@ class LeverJobProvider(JobProvider):
         data = payload.get("data") if isinstance(payload, dict) else None
         if not isinstance(data, dict):
             raise ProviderPayloadError()
-        fields: list[object] = []
-        for key in ("personalInformation", "urls", "eeoResponses"):
-            value = data.get(key)
-            if isinstance(value, list):
-                fields.extend(value)
+        fields: list[ApplicationFieldDefinition] = []
+        unsupported: list[str] = []
+
+        def add_fields(value: object, source: str, *, eeo: bool = False) -> None:
+            if not isinstance(value, list):
+                return
+            for item in value:
+                definition = normalize_provider_application_field(self.name, item, prefix="lever_")
+                if definition is None:
+                    if isinstance(item, dict) and item.get("required") is True:
+                        unsupported.append(str(item.get("id", "unknown"))[:120])
+                    continue
+                if eeo:
+                    # Preserve direct-input policy, but do not serialize an undocumented EEO shape.
+                    if definition.required:
+                        unsupported.append(definition.provider_field_id or definition.field_id)
+                    continue
+                if definition.field_type == "file" and "resume" not in definition.label.casefold():
+                    if definition.required:
+                        unsupported.append(definition.provider_field_id or definition.field_id)
+                    continue
+                fields.append(replace(definition, source=source))
+
+        add_fields(data.get("personalInformation"), "lever:personal")
+        add_fields(data.get("urls"), "lever:urls")
+        add_fields(data.get("eeoResponses"), "lever:eeo", eeo=True)
         custom_questions = data.get("customQuestions")
         if isinstance(custom_questions, list):
             for group in custom_questions:
                 if isinstance(group, dict) and isinstance(group.get("fields"), list):
-                    fields.extend(group["fields"])
-        return normalized_application_schema(self.name, "lever-v1", fields, prefix="lever_")
+                    group_id = str(group.get("id", ""))
+                    if re.fullmatch(r"[A-Za-z0-9-]{1,36}", group_id):
+                        add_fields(group["fields"], f"lever:custom:{group_id}")
+                    else:
+                        unsupported.append("invalid_custom_question_group")
+        ids = [field.field_id for field in fields]
+        if len(ids) != len(set(ids)):
+            unsupported.append("duplicate_field_id")
+        return ProviderApplicationSchema("lever-v1", tuple(fields), tuple(unsupported))
 
     async def get_submission_capability(self, job: NormalizedExternalJob) -> ProviderSubmissionCapability:
         credential = self._credentials.get(self.name, job.provider_source)
@@ -663,7 +719,112 @@ class LeverJobProvider(JobProvider):
         schema_available = bool(schema.fields) and not schema.unsupported_required_field_ids
         if not schema_available:
             return ProviderSubmissionCapability(True, True, True, False, False, "assisted", "The required Lever application form cannot be safely mapped.")
-        return ProviderSubmissionCapability(True, True, True, True, False, "assisted", "Credential scope matches, but controlled Lever submission is not enabled by this release.")
+        if not provider_submission_policy.lever_live_submission_allowed:
+            return ProviderSubmissionCapability(True, True, True, True, False, "assisted", "Controlled Lever submission is disabled outside the staging safety boundary.")
+        return ProviderSubmissionCapability(True, True, True, True, True, "none", "Controlled Lever submission is enabled for this employer scope.")
+
+    async def _upload_resume(self, credential: ProviderCredential, upload: dict[str, object]) -> str:
+        filename, mime_type, content = upload.get("filename"), upload.get("mime_type"), upload.get("content")
+        if not isinstance(filename, str) or not isinstance(mime_type, str) or not isinstance(content, bytes) or len(content) > 30 * 1024 * 1024:
+            raise ProviderPayloadError()
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=5.0), transport=self._transport, follow_redirects=False) as client:
+                response = await client.post(f"{self._authenticated_base_url}/uploads", auth=(credential.secret, ""), files={"file": (filename, content, mime_type)})
+        except httpx.ConnectError as error:
+            raise ProviderPreSendFailure() from error
+        except (httpx.TimeoutException, httpx.TransportError) as error:
+            raise ProviderError() from error
+        if response.status_code == 429:
+            raise ProviderRateLimited()
+        if response.status_code >= 500:
+            raise ProviderPreSendFailure()
+        if response.status_code >= 400:
+            raise ProviderPayloadError()
+        try:
+            data = response.json().get("data")
+        except ValueError as error:
+            raise ProviderPayloadError() from error
+        uri = data.get("uri") if isinstance(data, dict) else None
+        if not isinstance(uri, str) or not uri.startswith(f"{self._authenticated_base_url}/uploads/"):
+            raise ProviderPayloadError()
+        return uri
+
+    async def submit_application(self, payload: dict[str, object], *, idempotency_key: str) -> ProviderSubmissionResult:
+        del idempotency_key  # Lever's documented endpoint has no native idempotency parameter.
+        provider_source, external_id = payload.get("provider_source"), payload.get("external_job_id")
+        if not isinstance(provider_source, str) or not isinstance(external_id, str) or not self._posting_key.fullmatch(external_id):
+            raise ProviderPayloadError()
+        credential = self._credentials.get(self.name, provider_source)
+        if credential is None or not provider_submission_policy.lever_live_submission_allowed:
+            raise ProviderSubmissionUnsupported()
+        field_entries = payload.get("fields")
+        if not isinstance(field_entries, list):
+            raise ProviderPayloadError()
+        body: dict[str, object] = {"personalInformation": [], "customQuestions": [], "urls": []}
+        custom_forms: dict[str, list[dict[str, object]]] = {}
+        resume_uri: str | None = None
+        for field in field_entries:
+            if not isinstance(field, dict):
+                raise ProviderPayloadError()
+            source, provider_field_id, field_type, answer = field.get("source"), field.get("provider_field_id"), field.get("field_type"), field.get("answer")
+            if not isinstance(source, str) or not isinstance(provider_field_id, str):
+                raise ProviderPayloadError()
+            value = answer
+            if field_type == "file":
+                upload = payload.get("_resume_upload")
+                if not isinstance(upload, dict):
+                    raise ProviderPayloadError()
+                resume_uri = resume_uri or await self._upload_resume(credential, upload)
+                value = resume_uri
+            item = {"id": provider_field_id, "value": value}
+            if source == "lever:personal":
+                cast = body["personalInformation"]
+                assert isinstance(cast, list)
+                cast.append(item)
+            elif source == "lever:urls":
+                cast = body["urls"]
+                assert isinstance(cast, list)
+                cast.append(item)
+            elif source.startswith("lever:custom:"):
+                group_id = source.removeprefix("lever:custom:")
+                if not re.fullmatch(r"[A-Za-z0-9-]{1,36}", group_id):
+                    raise ProviderPayloadError()
+                custom_forms.setdefault(group_id, []).append(item)
+            else:
+                raise ProviderPayloadError()
+        body["customQuestions"] = [{"id": group_id, "fields": items} for group_id, items in sorted(custom_forms.items())]
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=5.0), transport=self._transport, follow_redirects=False) as client:
+                response = await client.post(
+                    f"{self._authenticated_base_url}/postings/{external_id}/apply",
+                    auth=(credential.secret, ""),
+                    params={"send_confirmation_email": "true"},
+                    json=body,
+                    headers={"Accept": "application/json"},
+                )
+        except httpx.ConnectError as error:
+            raise ProviderPreSendFailure() from error
+        except (httpx.TimeoutException, httpx.TransportError) as error:
+            # A timeout after issuing the POST may mean Lever received the application.
+            raise ProviderError() from error
+        if response.status_code == 429:
+            return ProviderSubmissionResult("rate_limited", safe_error="Lever rate limited this application submission")
+        if response.status_code >= 500:
+            return ProviderSubmissionResult("temporary_failure", safe_error="Lever temporarily could not accept this application")
+        if response.status_code in {400, 422}:
+            return ProviderSubmissionResult("validation_failed", safe_error="Lever rejected one or more application fields")
+        if response.status_code in {401, 403, 404}:
+            return ProviderSubmissionResult("rejected_by_provider", safe_error="Lever did not authorize this application submission")
+        if response.status_code >= 400:
+            return ProviderSubmissionResult("rejected_by_provider", safe_error="Lever rejected this application")
+        try:
+            data = response.json().get("data")
+        except ValueError as error:
+            raise ProviderError() from error
+        application_id = data.get("applicationId") or data.get("id") if isinstance(data, dict) else None
+        if not isinstance(application_id, str) or not application_id:
+            raise ProviderError()
+        return ProviderSubmissionResult("submitted", external_application_id=application_id)
 
 
 class DeterministicTestApplicationProvider(JobProvider):

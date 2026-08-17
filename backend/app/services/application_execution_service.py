@@ -16,6 +16,7 @@ from app.models import (
     ApplicationSubmissionAttempt,
     AuditLog,
     ExternalJob,
+    ResumeDocument,
     Student,
     SubmissionAttemptStatus,
 )
@@ -28,11 +29,14 @@ from app.services.job_providers import (
     NormalizedExternalJob,
     ProviderApplicationSchema,
     ProviderError,
+    ProviderPreSendFailure,
+    ProviderRateLimited,
     ProviderSubmissionCapability,
     ProviderSubmissionResult,
     ProviderSubmissionUnsupported,
     provider_registry,
 )
+from app.services.resume_service import LocalResumeStorage, ResumeError
 
 _FIELD_ID = re.compile(r"^[a-z][a-z0-9_]{0,119}$")
 _USER_SOURCE = "user_provided"
@@ -120,9 +124,17 @@ def _assisted_schema() -> ProviderApplicationSchema:
 def _profile_answer(application: Application, field: ApplicationFieldDefinition) -> tuple[object | None, str | None]:
     if field.sensitive or field.requires_user_input:
         return None, None
+    if field.field_type == "file" and field.source.startswith("lever:") and "resume" in field.label.casefold():
+        resume = application.application_snapshot.get("resume")
+        if isinstance(resume, dict) and resume.get("checksum"):
+            return {"approved_resume": True}, "approved_resume"
     profile = application.application_snapshot.get("application_profile")
     if not isinstance(profile, dict) or field.source != "profile":
-        return None, None
+        if not isinstance(profile, dict) or field.source != "lever:personal":
+            return None, None
+        profile_key = {"name": "full_name", "email": "email", "phone": "phone"}.get(field.provider_field_id or "")
+        answer = profile.get(profile_key) if profile_key else None
+        return (answer, "profile") if not _is_empty(answer) else (None, None)
     answer = profile.get(field.field_id)
     return (answer, "profile") if not _is_empty(answer) else (None, None)
 
@@ -162,6 +174,16 @@ def _payload(application: Application, fields: list[ApplicationField]) -> dict[s
         "resume": resume,
         "provider_schema_version": application.provider_schema_version,
         "answers": {field.field_id: field.answer for field in sorted(fields, key=lambda item: item.field_id)},
+        "fields": [
+            {
+                "field_id": field.field_id,
+                "provider_field_id": field.provider_field_id,
+                "field_type": field.field_type,
+                "source": field.source,
+                "answer": field.answer,
+            }
+            for field in sorted(fields, key=lambda item: item.field_id)
+        ],
     }
 
 
@@ -214,6 +236,7 @@ async def prepare_application(session: AsyncSession, *, application: Application
         field = ApplicationField(
             application_id=application.id,
             field_id=definition.field_id,
+            provider_field_id=definition.provider_field_id,
             label=definition.label,
             field_type=definition.field_type,
             required=definition.required,
@@ -327,6 +350,20 @@ async def submit_application(session: AsyncSession, *, application: Application,
     payload_fingerprint = _fingerprint(payload)
     if unresolved or payload_fingerprint != application.execution_payload_fingerprint or payload_fingerprint != application.ready_payload_fingerprint:
         raise ApplicationWorkflowError("The reviewed application payload changed. Prepare and approve it again.")
+    if any(field.field_type == "file" for field in fields):
+        resume_snapshot = application.application_snapshot.get("resume")
+        if not isinstance(resume_snapshot, dict) or str(resume_snapshot.get("id")) != str(application.resume_document_id):
+            raise ApplicationWorkflowError("The approved resume no longer matches this application")
+        resume = await session.get(ResumeDocument, application.resume_document_id)
+        if resume is None or resume.checksum != resume_snapshot.get("checksum") or resume.mime_type not in {"application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}:
+            raise ApplicationWorkflowError("The approved resume cannot be uploaded safely")
+        try:
+            content = LocalResumeStorage().read(resume.storage_key)
+        except ResumeError as error:
+            raise ApplicationWorkflowError("The approved resume is unavailable") from error
+        if len(content) != resume.size_bytes or hashlib.sha256(content).hexdigest() != resume.checksum:
+            raise ApplicationWorkflowError("The approved resume checksum changed")
+        payload["_resume_upload"] = {"filename": resume.original_filename, "mime_type": resume.mime_type, "content": content}
     provider_errors = await provider.validate_application(payload)
     if provider_errors:
         application.status = ApplicationStatus.needs_input
@@ -361,6 +398,10 @@ async def submit_application(session: AsyncSession, *, application: Application,
         result = await provider.submit_application(payload, idempotency_key=idempotency_key)
     except ProviderSubmissionUnsupported as error:
         result = ProviderSubmissionResult("validation_failed", safe_error=error.safe_message)
+    except ProviderRateLimited as error:
+        result = ProviderSubmissionResult("rate_limited", safe_error=error.safe_message)
+    except ProviderPreSendFailure as error:
+        result = ProviderSubmissionResult("temporary_failure", safe_error=error.safe_message)
     except ProviderError as error:
         # Generic transport/provider failures are ambiguous unless an adapter explicitly declares otherwise.
         result = ProviderSubmissionResult("unknown_submission_state", safe_error=error.safe_message)

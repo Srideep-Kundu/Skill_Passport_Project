@@ -14,6 +14,7 @@ from app.services.job_providers import (
     ProviderError,
     ProviderPayloadError,
     ProviderRateLimited,
+    ProviderSubmissionPolicy,
     normalized_application_schema,
 )
 
@@ -180,10 +181,11 @@ async def test_lever_official_schema_normalizes_sensitive_and_file_fields_and_st
     schema = await provider.get_application_schema(_job("lever", "acme", "posting-1"))
     gender = next(field for field in schema.fields if field.field_id == "lever_gender")
     assert gender.sensitive is True and gender.requires_user_input is True
-    assert "lever_resume" in schema.unsupported_required_field_ids
+    resume = next(field for field in schema.fields if field.field_id == "lever_resume")
+    assert resume.field_type == "file" and resume.source == "lever:custom:form-1"
     capability = await provider.get_submission_capability(_job("lever", "acme", "posting-1"))
     assert capability.credentials_configured is True
-    assert capability.application_schema_available is False
+    assert capability.application_schema_available is True
     assert capability.submission_ready is False
 
 
@@ -191,3 +193,60 @@ def test_unsupported_required_provider_field_is_not_silently_dropped() -> None:
     schema = normalized_application_schema("lever", "test", [{"id": "custom", "text": "Unknown", "type": "matrix", "required": True}], prefix="lever_")
     assert schema.fields == ()
     assert schema.unsupported_required_field_ids == ("custom",)
+
+
+@pytest.mark.asyncio
+async def test_controlled_lever_submission_uploads_approved_resume_and_posts_official_payload(monkeypatch: pytest.MonkeyPatch) -> None:
+    import app.services.job_providers as providers
+
+    monkeypatch.setattr(providers, "provider_submission_policy", ProviderSubmissionPolicy(True, True, True))
+    requests: list[httpx.Request] = []
+
+    async def response(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.url.path == "/v1/uploads":
+            return httpx.Response(201, json={"data": {"uri": "https://api.lever.co/v1/uploads/resume-1"}})
+        if request.url.path == "/v1/postings/posting-1/apply":
+            assert request.url.params["send_confirmation_email"] == "true"
+            body = json.loads(request.content)
+            assert body["personalInformation"] == [{"id": "name", "value": "Student"}]
+            assert body["customQuestions"] == [{"id": "form-1", "fields": [{"id": "resume", "value": "https://api.lever.co/v1/uploads/resume-1"}]}]
+            return httpx.Response(201, json={"data": {"applicationId": "application-1"}})
+        return httpx.Response(404)
+
+    provider = LeverJobProvider(
+        transport=httpx.MockTransport(response),
+        credentials=ProviderCredentialStore((ProviderCredential("lever", "acme", "test-api-key"),)),
+    )
+    result = await provider.submit_application(
+        {
+            "provider_source": "acme",
+            "external_job_id": "posting-1",
+            "fields": [
+                {"field_id": "lever_name", "provider_field_id": "name", "field_type": "text", "source": "lever:personal", "answer": "Student"},
+                {"field_id": "lever_resume", "provider_field_id": "resume", "field_type": "file", "source": "lever:custom:form-1", "answer": {"approved_resume": True}},
+            ],
+            "_resume_upload": {"filename": "resume.pdf", "mime_type": "application/pdf", "content": b"resume"},
+        },
+        idempotency_key="internal-only",
+    )
+    assert result.outcome == "submitted" and result.external_application_id == "application-1"
+    assert [request.url.path for request in requests] == ["/v1/uploads", "/v1/postings/posting-1/apply"]
+
+
+@pytest.mark.asyncio
+async def test_controlled_lever_submission_normalizes_rate_limit_and_ambiguous_transport(monkeypatch: pytest.MonkeyPatch) -> None:
+    import app.services.job_providers as providers
+
+    monkeypatch.setattr(providers, "provider_submission_policy", ProviderSubmissionPolicy(True, True, True))
+    credentials = ProviderCredentialStore((ProviderCredential("lever", "acme", "test-api-key"),))
+    payload = {"provider_source": "acme", "external_job_id": "posting-1", "fields": []}
+    rate_limited = LeverJobProvider(transport=httpx.MockTransport(lambda request: httpx.Response(429)), credentials=credentials)
+    assert (await rate_limited.submit_application(payload, idempotency_key="one")).outcome == "rate_limited"
+
+    async def timeout(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("post may have been sent", request=request)
+
+    ambiguous = LeverJobProvider(transport=httpx.MockTransport(timeout), credentials=credentials)
+    with pytest.raises(ProviderError):
+        await ambiguous.submit_application(payload, idempotency_key="two")
