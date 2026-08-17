@@ -27,9 +27,17 @@ This guide uses Docker Compose for PostgreSQL, Redis, migrations, the API, worke
    docker compose run --rm --no-deps backend alembic current
    ```
 
-   This uses the exact database credentials and service hostname from `.env`; no credentials need to be guessed. The expected current revision is `0011_application_execution`.
+   This uses the exact database credentials and service hostname from `.env`; no credentials need to be guessed. The expected current revision is `0015_automation_policy`.
 
-4. Confirm services and open the application:
+4. Seed the canonical taxonomy (and, optionally, the demo data) after services are healthy:
+
+   ```bash
+   docker compose exec backend python -m seed.seed_skills
+   # Optional local demo accounts and evidence:
+   docker compose exec backend python -m seed.seed_demo_data
+   ```
+
+5. Confirm services and open the application:
 
    ```bash
    docker compose ps
@@ -51,6 +59,10 @@ This guide uses Docker Compose for PostgreSQL, Redis, migrations, the API, worke
 | `EMBEDDING_PROVIDER` | `disabled` by default; set to `gemini` only with a configured Gemini key. |
 | `SEMANTIC_MATCHING_ENABLED` | `false` by default; enable only with a compatible embedding provider. |
 | `GREENHOUSE_BOARD_TOKENS` | Optional comma-separated allowlist of public Greenhouse board tokens. |
+| `LEVER_SITE_TOKENS` | Optional comma-separated allowlist of public Lever site tokens. |
+| `ASHBY_JOB_BOARD_NAMES` | Optional comma-separated allowlist of public Ashby job-board names. |
+| `DISCOVERY_RUN_RATE_LIMIT_PER_MINUTE` | Per-student limit for manual discovery runs. |
+| `APPLICATION_EXECUTION_RATE_LIMIT_PER_MINUTE` | Per-student shared limit for prepare, submit, and reconciliation calls. |
 
 `.env.example` also documents CORS, extraction retry, upload-limit, matching threshold, rate-limit, and frontend API URL settings. Docker Compose uses explicit development fallbacks for every setting it consumes, while `.env` lets a developer override them consistently.
 
@@ -60,9 +72,11 @@ Run checks from the host using the project virtual environment:
 
 ```bash
 cd backend
-pytest
-ruff check .
-mypy app
+# PowerShell
+.\.venv\Scripts\Activate.ps1
+python -m pytest
+python -m ruff check .
+python -m mypy app
 ```
 
 For frontend checks:

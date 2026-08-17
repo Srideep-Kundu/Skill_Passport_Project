@@ -47,10 +47,10 @@ Backend:
 
 ```bash
 cd backend
-pip install -r requirements.txt
-pytest
-ruff check .
-mypy app
+.\.venv\Scripts\Activate.ps1
+python -m pytest
+python -m ruff check .
+python -m mypy app
 ```
 
 Frontend:

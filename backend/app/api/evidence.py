@@ -120,6 +120,12 @@ async def update_evidence(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Evidence title, type, and description cannot be null")
     evidence = await _owned_evidence(session, evidence_id, principal.id)
     extraction_input_changed = bool({"description", "evidence_type"} & payload.model_fields_set)
+    if extraction_input_changed:
+        await enforce_rate_limit(
+            "extraction",
+            str(principal.id),
+            get_settings().extraction_rate_limit_per_minute,
+        )
     if "evidence_type" in payload.model_fields_set:
         assert payload.evidence_type is not None
         evidence.evidence_type = EvidenceType(payload.evidence_type)
@@ -170,6 +176,11 @@ def _evidence_detail(evidence: Evidence, rows: Sequence[Row[tuple[StudentSkill, 
 @router.post("/{evidence_id}/requeue", response_model=EvidenceDetail)
 async def requeue_evidence(evidence_id: UUID, response: Response, principal: Annotated[Student, Depends(require_role("student"))], session: Annotated[AsyncSession, Depends(get_session)]) -> EvidenceDetail:
     evidence = await _owned_evidence(session, evidence_id, principal.id)
+    await enforce_rate_limit(
+        "extraction",
+        str(principal.id),
+        get_settings().extraction_rate_limit_per_minute,
+    )
     if not await manually_requeue_extraction(session, evidence_id):
         raise HTTPException(status.HTTP_409_CONFLICT, "Evidence extraction cannot be requeued")
     await session.refresh(evidence)

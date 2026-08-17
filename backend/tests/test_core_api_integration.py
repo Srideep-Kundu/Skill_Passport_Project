@@ -166,3 +166,51 @@ async def test_evidence_internship_matching_and_consent_lifecycle(
         assert await session.scalar(select(func.count()).select_from(Evidence)) == 0
         assert await session.scalar(select(func.count()).select_from(ExtractionJob)) == 0
     assert (await client.delete(f"/internships/{internship_id}", headers=authorization(recruiter_token))).status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_all_evidence_extraction_triggers_share_the_student_rate_limit(
+    api_client: tuple[httpx.AsyncClient, async_sessionmaker[AsyncSession]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, _ = api_client
+    calls: list[tuple[str, str, int]] = []
+
+    async def record_limit(category: str, subject: str, limit: int) -> None:
+        calls.append((category, subject, limit))
+
+    monkeypatch.setattr(evidence_api, "enforce_rate_limit", record_limit)
+    async def requeue_without_worker(*_args: object) -> bool:
+        return True
+
+    monkeypatch.setattr(
+        evidence_api, "manually_requeue_extraction", requeue_without_worker
+    )
+    token = await register(client, "student", "limited-student@example.test")
+    created = await client.post(
+        "/evidence",
+        headers=authorization(token),
+        json={
+            "evidence_type": "project",
+            "title": "API",
+            "description": "Built a Python API.",
+        },
+    )
+    assert created.status_code == 201
+    evidence_id = created.json()["id"]
+    assert (
+        await client.patch(
+            f"/evidence/{evidence_id}",
+            headers=authorization(token),
+            json={"description": "Rebuilt the Python API."},
+        )
+    ).status_code == 200
+    assert (
+        await client.post(
+            f"/evidence/{evidence_id}/requeue", headers=authorization(token)
+        )
+    ).status_code == 200
+
+    assert len(calls) == 3
+    assert {category for category, _, _ in calls} == {"extraction"}
+    assert len({subject for _, subject, _ in calls}) == 1

@@ -194,6 +194,49 @@ async def test_manual_requeue_resets_dead_lettered_job(monkeypatch: pytest.Monke
 
 
 @pytest.mark.asyncio
+async def test_stale_worker_lease_is_requeued_or_dead_lettered_at_its_attempt_limit(
+    monkeypatch: pytest.MonkeyPatch,
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    monkeypatch.setattr(extraction_service, "get_settings", lambda: settings(redis_url="redis://test"))
+    monkeypatch.setattr(extraction_service, "Redis", RecordingRedis)
+    RecordingRedis.calls = []
+    async with session_factory() as session:
+        evidence, _ = await evidence_with_job(session)
+        job = (
+            await session.scalars(
+                select(ExtractionJob).where(ExtractionJob.evidence_id == evidence.id)
+            )
+        ).one()
+        job.status = ExtractionJobStatus.queued
+        job.queued_at = datetime.now(UTC) - timedelta(seconds=31)
+        evidence.extraction_status = ExtractionStatus.queued
+        await session.commit()
+
+        recovered = await extraction_service.recover_stale_processing_jobs(session)
+        await session.refresh(job)
+        await session.refresh(evidence)
+        assert recovered == [evidence.id]
+        assert job.status is ExtractionJobStatus.pending
+        assert evidence.extraction_status is ExtractionStatus.pending_extraction
+        assert await extraction_service.enqueue_extraction(session, evidence.id)
+        assert job.status is ExtractionJobStatus.queued
+
+        job.status = ExtractionJobStatus.processing
+        job.attempt_count = job.max_attempts
+        job.started_at = datetime.now(UTC) - timedelta(seconds=31)
+        evidence.extraction_status = ExtractionStatus.processing
+        await session.commit()
+        assert await extraction_service.recover_stale_processing_jobs(session) == []
+        await session.refresh(job)
+        await session.refresh(evidence)
+
+    assert job.status is ExtractionJobStatus.dead_lettered
+    assert evidence.extraction_status is ExtractionStatus.dead_lettered
+    assert len(RecordingRedis.calls) == 1
+
+
+@pytest.mark.asyncio
 async def test_malformed_gemini_response_and_http_statuses_are_classified(monkeypatch: pytest.MonkeyPatch) -> None:
     class BadResponse:
         def __init__(self, body: dict[str, object]) -> None:

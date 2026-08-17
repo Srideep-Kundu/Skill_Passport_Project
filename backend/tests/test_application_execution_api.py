@@ -6,6 +6,7 @@ import pytest_asyncio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from app.api import applications
 from app.core.db import Base, create_matching_view, get_session
 from app.core.security import create_access_token
 from app.main import app
@@ -169,6 +170,27 @@ async def test_submission_requires_an_active_approval(
     assert (await client.post(f"/applications/{application_id}/revoke-approval", headers=_headers(token))).status_code == 200
     assert (await client.post(f"/applications/{application_id}/submit", headers=_headers(token))).status_code == 409
     assert provider is not None and provider.submit_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_preparation_and_submission_share_the_execution_rate_limit(
+    execution_client: tuple[httpx.AsyncClient, async_sessionmaker[AsyncSession]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, factory = execution_client
+    calls: list[tuple[str, str, int]] = []
+
+    async def record_limit(category: str, subject: str, limit: int) -> None:
+        calls.append((category, subject, limit))
+
+    monkeypatch.setattr(applications, "enforce_rate_limit", record_limit)
+    token, _, application_id, _ = await _approved_application(client, factory, monkeypatch)
+    await _ready(client, token, application_id)
+    assert (await client.post(f"/applications/{application_id}/submit", headers=_headers(token))).status_code == 200
+
+    assert len(calls) == 2
+    assert {category for category, _, _ in calls} == {"application-execution"}
+    assert len({subject for _, subject, _ in calls}) == 1
 
 
 @pytest.mark.asyncio

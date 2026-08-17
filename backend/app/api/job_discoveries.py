@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.db import get_session
 from app.core.security import require_role
 from app.models import JobDiscovery, JobDiscoveryRun, Student
@@ -21,6 +22,7 @@ from app.services.discovery_service import (
     run_discovery,
     update_discovery,
 )
+from app.services.rate_limit_service import enforce_rate_limit
 
 router = APIRouter(prefix="/job-discoveries", tags=["job-discoveries"])
 
@@ -74,6 +76,11 @@ async def delete(discovery_id: UUID, principal: Annotated[Student, Depends(requi
 
 @router.post("/{discovery_id}/run", response_model=JobDiscoveryRunResponse)
 async def run(discovery_id: UUID, principal: Annotated[Student, Depends(require_role("student"))], session: Annotated[AsyncSession, Depends(get_session)]) -> JobDiscoveryRun:
+    await enforce_rate_limit(
+        "discovery-run",
+        str(principal.id),
+        get_settings().discovery_run_rate_limit_per_minute,
+    )
     try:
         return await run_discovery(session, discovery=await _owned(session, discovery_id, principal.id))
     except DiscoveryError as error:

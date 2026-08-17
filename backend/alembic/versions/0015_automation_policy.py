@@ -15,6 +15,8 @@ depends_on = None
 
 
 def upgrade() -> None:
+    if "automation_policies" in sa.inspect(op.get_bind()).get_table_names():
+        return
     op.create_table(
         "automation_policies",
         sa.Column("id", sa.Uuid(), primary_key=True),

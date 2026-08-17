@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.db import get_session
 from app.core.security import require_role
 from app.models import (
@@ -49,6 +50,7 @@ from app.services.application_tracking_service import (
     timeline,
     withdraw_tracked_application,
 )
+from app.services.rate_limit_service import enforce_rate_limit
 
 router = APIRouter(prefix="/applications", tags=["applications"])
 
@@ -190,6 +192,11 @@ async def prepare_application_form(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ApplicationFormResponse:
     application = await _owned_application(session, application_id, principal.id)
+    await enforce_rate_limit(
+        "application-execution",
+        str(principal.id),
+        get_settings().application_execution_rate_limit_per_minute,
+    )
     try:
         await prepare_application(session, application=application, student=principal)
         return await _form_response(session, application)
@@ -246,6 +253,11 @@ async def execute_application_submission(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ApplicationResponse:
     application = await _owned_application(session, application_id, principal.id)
+    await enforce_rate_limit(
+        "application-execution",
+        str(principal.id),
+        get_settings().application_execution_rate_limit_per_minute,
+    )
     try:
         application = await submit_application(session, application=application, student=principal)
     except ApplicationWorkflowError as error:
@@ -275,6 +287,11 @@ async def reconcile_application_status(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ApplicationResponse:
     application = await _owned_application(session, application_id, principal.id)
+    await enforce_rate_limit(
+        "application-execution",
+        str(principal.id),
+        get_settings().application_execution_rate_limit_per_minute,
+    )
     try:
         application = await reconcile_application(session, application=application)
     except ApplicationWorkflowError as error:

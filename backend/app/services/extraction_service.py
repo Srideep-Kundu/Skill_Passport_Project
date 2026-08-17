@@ -356,10 +356,104 @@ async def process_evidence_job(evidence_id: UUID) -> str:
         return await extract_evidence(session, evidence_id)
 
 
+async def recover_stale_processing_jobs(
+    session: AsyncSession, *, limit: int = 25
+) -> list[UUID]:
+    """Return abandoned queue and worker leases without duplicating live work."""
+    cutoff = _now() - timedelta(seconds=get_settings().extraction_claim_timeout_seconds)
+    evidence_ids = list(
+        (
+            await session.scalars(
+                select(ExtractionJob.evidence_id)
+                .where(
+                    ExtractionJob.status == ExtractionJobStatus.processing,
+                    ExtractionJob.started_at <= cutoff,
+                )
+                .union_all(
+                    select(ExtractionJob.evidence_id).where(
+                        ExtractionJob.status == ExtractionJobStatus.queued,
+                        ExtractionJob.queued_at <= cutoff,
+                    )
+                )
+                .order_by(ExtractionJob.evidence_id)
+                .limit(limit)
+            )
+        ).all()
+    )
+    recovered: list[UUID] = []
+    for evidence_id in evidence_ids:
+        job = await _locked_job(session, evidence_id)
+        evidence = await session.get(Evidence, evidence_id)
+        is_stale_processing = (
+            job is not None
+            and job.status == ExtractionJobStatus.processing
+            and job.started_at is not None
+            and job.started_at <= cutoff
+        )
+        is_stale_queued = (
+            job is not None
+            and job.status == ExtractionJobStatus.queued
+            and job.queued_at is not None
+            and job.queued_at <= cutoff
+        )
+        if job is None or evidence is None or not (is_stale_processing or is_stale_queued):
+            continue
+        reason = "worker_lease_expired" if is_stale_processing else "queue_lease_expired"
+        if is_stale_processing and job.attempt_count >= job.max_attempts:
+            job.status = ExtractionJobStatus.dead_lettered
+            job.completed_at = _now()
+            job.last_error = reason
+            job.user_message = "Extraction could not be completed. Retry this evidence later."
+            evidence.extraction_status = ExtractionStatus.dead_lettered
+            session.add(
+                _audit(
+                    evidence,
+                    "extraction_job_dead_lettered",
+                    {"attempt": job.attempt_count, "error": reason},
+                )
+            )
+            continue
+        job.status = ExtractionJobStatus.pending
+        job.started_at = None
+        job.queued_at = None
+        job.next_retry_at = None
+        job.last_error = reason
+        job.user_message = "Extraction was interrupted and will retry automatically."
+        evidence.extraction_status = ExtractionStatus.pending_extraction
+        session.add(
+            _audit(
+                evidence,
+                "extraction_job_recovered",
+                {"attempt": job.attempt_count, "reason": reason},
+            )
+        )
+        recovered.append(evidence_id)
+    if evidence_ids:
+        await session.commit()
+    return recovered
+
+
 async def enqueue_due_retries(limit: int = 25) -> int:
-    """Promote due retry jobs without sleeping; the worker invokes this on each poll cycle."""
+    """Promote due retries and abandoned worker leases on each poll cycle."""
     async with SessionLocal() as session:
-        due_ids = list((await session.scalars(select(ExtractionJob.evidence_id).where(ExtractionJob.status == ExtractionJobStatus.retry_scheduled, ExtractionJob.next_retry_at <= _now()).order_by(ExtractionJob.next_retry_at).limit(limit))).all())
+        due_ids = list(
+            (
+                await session.scalars(
+                    select(ExtractionJob.evidence_id)
+                    .where(
+                        ExtractionJob.status == ExtractionJobStatus.retry_scheduled,
+                        ExtractionJob.next_retry_at <= _now(),
+                    )
+                    .order_by(ExtractionJob.next_retry_at, ExtractionJob.id)
+                    .limit(limit)
+                )
+            ).all()
+        )
+        remaining = max(0, limit - len(due_ids))
+        if remaining:
+            due_ids.extend(
+                await recover_stale_processing_jobs(session, limit=remaining)
+            )
     queued = 0
     for evidence_id in due_ids:
         async with SessionLocal() as session:

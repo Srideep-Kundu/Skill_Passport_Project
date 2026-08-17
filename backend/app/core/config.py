@@ -150,6 +150,22 @@ class Settings(BaseSettings):
             "EXTERNAL_JOB_SYNC_RATE_LIMIT_PER_MINUTE",
         ),
     )
+    discovery_run_rate_limit_per_minute: int = Field(
+        default=10,
+        ge=1,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_DISCOVERY_RUN_RATE_LIMIT_PER_MINUTE",
+            "DISCOVERY_RUN_RATE_LIMIT_PER_MINUTE",
+        ),
+    )
+    application_execution_rate_limit_per_minute: int = Field(
+        default=10,
+        ge=1,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_APPLICATION_EXECUTION_RATE_LIMIT_PER_MINUTE",
+            "APPLICATION_EXECUTION_RATE_LIMIT_PER_MINUTE",
+        ),
+    )
     external_job_min_match_score: float = Field(
         default=0.2,
         ge=0.0,

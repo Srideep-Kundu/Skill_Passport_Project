@@ -33,3 +33,13 @@ def test_production_settings_reject_unsafe_or_missing_configuration(overrides: d
 
 def test_development_settings_allow_local_defaults() -> None:
     Settings().validate_for_runtime()
+
+
+def test_costly_operation_rate_limits_accept_documented_environment_aliases() -> None:
+    settings = Settings(
+        DISCOVERY_RUN_RATE_LIMIT_PER_MINUTE="7",
+        APPLICATION_EXECUTION_RATE_LIMIT_PER_MINUTE="8",
+    )
+
+    assert settings.discovery_run_rate_limit_per_minute == 7
+    assert settings.application_execution_rate_limit_per_minute == 8
