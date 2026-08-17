@@ -1,6 +1,6 @@
 # Application approval workflow
 
-This workflow records a student's explicit intent to apply to one external job. It does **not** submit an application to a provider, automate a browser, retain provider credentials, or claim that a provider-side application exists.
+This workflow records a student's explicit intent to apply to one external job. It does not automate a browser, retain provider credentials, or claim that a provider-side application exists until a separately capability-gated execution adapter confirms it. See [the application execution foundation](application-execution-foundation.md) for the Phase 11 preparation and submission boundary.
 
 ## Explicit approval rule
 
@@ -15,7 +15,7 @@ approval_pending -> withdrawn
 approved -> manual_apply | withdrawn
 ```
 
-There is no submission state or submit endpoint. Invalid transitions return a conflict response. A withdrawn record is terminal. Manual application is a recorded choice, not a failure, and only exposes the original provider URL.
+Approval remains a prerequisite for preparation and submission. Invalid transitions return a conflict response. A withdrawn record is terminal. Manual application is a recorded choice, not a failure, and only exposes the original provider URL. The execution states and their additional safeguards are documented in the application execution foundation.
 
 ## Approval snapshot and staleness
 
@@ -44,4 +44,4 @@ Student-scoped endpoints are:
 
 Cross-student application IDs return the same 404 response as absent IDs. Audit entries contain only actor, application/job IDs, status transition metadata, and a fingerprint—not application-safe profile values or sensitive payloads. Events include `application_intent_created`, `approval_requested`, `application_approved`, `approval_revoked`, `manual_apply_selected`, `application_withdrawn`, and `approval_invalidated`.
 
-Provider capabilities are snapshotted for future compatibility. Current Greenhouse capability is `auto_apply=false`; this phase routes the student to manual apply and contains no provider execution code. Before an Application Execution phase, the repository still needs a separately reviewed execution contract, per-provider authorization/capability checks, payload field review with direct user input for sensitive questions, idempotency/withdrawal semantics, and provider response handling.
+Provider capabilities are snapshotted for future compatibility. Current Greenhouse capability remains `auto_apply=false`; it routes the student to assisted/manual application only. The provider-neutral execution contract, payload review, sensitive direct-input handling, idempotency, and normalized provider responses are documented in the application execution foundation.

@@ -30,12 +30,42 @@ class ProviderPayloadError(ProviderError):
     safe_message = "The job source returned an unexpected response."
 
 
+class ProviderSubmissionUnsupported(ProviderError):
+    safe_message = "This provider does not support machine application submission."
+
+
 @dataclass(frozen=True)
 class ProviderCapabilities:
     search: bool
     detail_fetch: bool
     auto_apply: bool
     status_tracking: bool
+
+
+@dataclass(frozen=True)
+class ApplicationFieldDefinition:
+    field_id: str
+    label: str
+    field_type: str
+    required: bool
+    category: str
+    allowed_values: tuple[str, ...] = ()
+    sensitive: bool = False
+    requires_user_input: bool = False
+    source: str = "provider"
+
+
+@dataclass(frozen=True)
+class ProviderApplicationSchema:
+    version: str
+    fields: tuple[ApplicationFieldDefinition, ...]
+
+
+@dataclass(frozen=True)
+class ProviderSubmissionResult:
+    outcome: str
+    external_application_id: str | None = None
+    safe_error: str | None = None
 
 
 @dataclass(frozen=True)
@@ -90,6 +120,24 @@ class JobProvider(ABC):
 
     def get_application_url(self, job: NormalizedExternalJob) -> str | None:
         return job.apply_url
+
+    async def get_application_schema(self, job: NormalizedExternalJob) -> ProviderApplicationSchema:
+        """Return only a provider-declared schema; unsupported providers remain assisted-only."""
+        del job
+        return ProviderApplicationSchema(version="unsupported-v1", fields=())
+
+    async def validate_application(self, payload: dict[str, object]) -> list[str]:
+        """Adapters may add provider-specific validation without making submission mandatory."""
+        del payload
+        return []
+
+    async def submit_application(self, payload: dict[str, object], *, idempotency_key: str) -> ProviderSubmissionResult:
+        del payload, idempotency_key
+        raise ProviderSubmissionUnsupported()
+
+    async def get_submission_result(self, external_application_id: str) -> ProviderSubmissionResult | None:
+        del external_application_id
+        return None
 
 
 class _PlainTextParser(HTMLParser):
@@ -299,6 +347,62 @@ class GreenhouseJobProvider(JobProvider):
             raise ProviderPayloadError()
         board, payload = await self._get_json(source_key), await self._get_json(f"{source_key}/jobs/{external_id}", params={"content": "true"})
         return self._normalize_job(payload, source_key=source_key, company_name=_clean_text(board.get("name"), 255) or source_key)
+
+
+class DeterministicTestApplicationProvider(JobProvider):
+    """Test/dev-only adapter; never register it as a real provider integration."""
+
+    name = "test_application"
+    capabilities = ProviderCapabilities(search=False, detail_fetch=False, auto_apply=True, status_tracking=False)
+
+    def __init__(self, outcomes: tuple[str, ...] = ("submitted",)) -> None:
+        self._outcomes = list(outcomes)
+        self.submit_calls = 0
+
+    async def search_jobs(self, filters: JobSearchFilters, *, source_key: str) -> ProviderSearchPage:
+        del filters, source_key
+        raise ProviderSubmissionUnsupported()
+
+    async def get_job(self, external_id: str, *, source_key: str) -> NormalizedExternalJob:
+        del external_id, source_key
+        raise ProviderSubmissionUnsupported()
+
+    async def get_application_schema(self, job: NormalizedExternalJob) -> ProviderApplicationSchema:
+        del job
+        return ProviderApplicationSchema(
+            version="test-v1",
+            fields=(
+                ApplicationFieldDefinition("full_name", "Full name", "text", True, "identity", source="profile"),
+                ApplicationFieldDefinition("email", "Email", "email", True, "identity", source="profile"),
+                ApplicationFieldDefinition("phone", "Phone", "phone", False, "identity", source="profile"),
+                ApplicationFieldDefinition("why_interested", "Why are you interested?", "textarea", True, "narrative", requires_user_input=True),
+                ApplicationFieldDefinition("work_authorization", "Authorized to work?", "select", True, "legal", ("yes", "no"), sensitive=True, requires_user_input=True),
+            ),
+        )
+
+    async def validate_application(self, payload: dict[str, object]) -> list[str]:
+        answers = payload.get("answers")
+        if not isinstance(answers, dict):
+            return ["payload"]
+        return [field_id for field_id in ("full_name", "email", "why_interested", "work_authorization") if not answers.get(field_id)]
+
+    async def submit_application(self, payload: dict[str, object], *, idempotency_key: str) -> ProviderSubmissionResult:
+        del payload
+        self.submit_calls += 1
+        outcome = self._outcomes.pop(0) if self._outcomes else "submitted"
+        if outcome == "submitted":
+            return ProviderSubmissionResult("submitted", external_application_id=f"test-{idempotency_key[:12]}")
+        if outcome == "rejected_by_provider":
+            return ProviderSubmissionResult(outcome, safe_error="The test provider rejected the application")
+        if outcome == "validation_failed":
+            return ProviderSubmissionResult(outcome, safe_error="The test provider rejected a field")
+        if outcome == "rate_limited":
+            return ProviderSubmissionResult(outcome, safe_error="The test provider is rate limited")
+        if outcome == "temporary_failure":
+            return ProviderSubmissionResult(outcome, safe_error="The test provider failed before submission")
+        if outcome == "unknown_submission_state":
+            return ProviderSubmissionResult(outcome, safe_error="The test provider may have received the application")
+        return ProviderSubmissionResult("validation_failed", safe_error="The test provider returned an invalid result")
 
 
 class JobProviderRegistry:

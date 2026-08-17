@@ -236,7 +236,14 @@ async def create_application_intent(session: AsyncSession, *, student: Student, 
 
 
 async def application_is_stale(session: AsyncSession, application: Application, student: Student) -> bool:
-    if application.status != ApplicationStatus.approved:
+    if application.approved_fingerprint is None or application.status not in {
+        ApplicationStatus.approved,
+        ApplicationStatus.preparing,
+        ApplicationStatus.needs_input,
+        ApplicationStatus.prepared,
+        ApplicationStatus.ready_to_submit,
+        ApplicationStatus.submitting,
+    }:
         return False
     try:
         current = await build_application_snapshot(
@@ -304,7 +311,13 @@ async def revoke_approval(session: AsyncSession, *, application: Application) ->
 
 
 async def select_manual_apply(session: AsyncSession, *, application: Application) -> Application:
-    if application.status not in {ApplicationStatus.approval_pending, ApplicationStatus.approved}:
+    if application.status not in {
+        ApplicationStatus.approval_pending,
+        ApplicationStatus.approved,
+        ApplicationStatus.needs_input,
+        ApplicationStatus.prepared,
+        ApplicationStatus.ready_to_submit,
+    }:
         raise ApplicationWorkflowError("Manual application is not available in the current state")
     previous = application.status
     application.status = ApplicationStatus.manual_apply
@@ -315,7 +328,14 @@ async def select_manual_apply(session: AsyncSession, *, application: Application
 
 
 async def withdraw_application(session: AsyncSession, *, application: Application) -> Application:
-    if application.status not in {ApplicationStatus.approval_pending, ApplicationStatus.approved, ApplicationStatus.manual_apply}:
+    if application.status not in {
+        ApplicationStatus.approval_pending,
+        ApplicationStatus.approved,
+        ApplicationStatus.needs_input,
+        ApplicationStatus.prepared,
+        ApplicationStatus.ready_to_submit,
+        ApplicationStatus.manual_apply,
+    }:
         raise ApplicationWorkflowError("This application cannot be withdrawn in the current state")
     previous = application.status
     application.status = ApplicationStatus.withdrawn
@@ -331,7 +351,17 @@ async def invalidate_approved_applications_for_student(session: AsyncSession, st
     applications = list(
         (
             await session.scalars(
-                select(Application).where(Application.student_id == student_id, Application.status == ApplicationStatus.approved)
+                select(Application).where(
+                    Application.student_id == student_id,
+                    Application.status.in_(
+                        [
+                            ApplicationStatus.approved,
+                            ApplicationStatus.needs_input,
+                            ApplicationStatus.prepared,
+                            ApplicationStatus.ready_to_submit,
+                        ]
+                    ),
+                )
             )
         ).all()
     )
@@ -349,7 +379,17 @@ async def invalidate_stale_approved_applications_for_jobs(session: AsyncSession,
         await session.execute(
             select(Application, Student)
             .join(Student, Student.id == Application.student_id)
-            .where(Application.external_job_id.in_(external_job_ids), Application.status == ApplicationStatus.approved)
+            .where(
+                Application.external_job_id.in_(external_job_ids),
+                Application.status.in_(
+                    [
+                        ApplicationStatus.approved,
+                        ApplicationStatus.needs_input,
+                        ApplicationStatus.prepared,
+                        ApplicationStatus.ready_to_submit,
+                    ]
+                ),
+            )
         )
     ).all()
     invalidated = 0

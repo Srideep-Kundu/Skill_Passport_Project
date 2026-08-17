@@ -207,7 +207,7 @@ export interface ExternalJobMatchState {
   match: ExternalJobMatch | null;
 }
 
-export type ApplicationStatus = "approval_pending" | "approved" | "manual_apply" | "withdrawn";
+export type ApplicationStatus = "approval_pending" | "approved" | "preparing" | "needs_input" | "prepared" | "ready_to_submit" | "submitting" | "submitted" | "failed" | "unknown_submission_state" | "manual_apply" | "withdrawn";
 
 export interface ApplicationSnapshot {
   schema_version: string;
@@ -229,14 +229,45 @@ export interface Application {
   application_fingerprint: string;
   approved_fingerprint: string | null;
   provider_capabilities: { search: boolean; detail_fetch: boolean; auto_apply: boolean; status_tracking: boolean };
+  provider_schema_version?: string | null;
+  execution_payload_fingerprint?: string | null;
+  ready_payload_fingerprint?: string | null;
   manual_apply_url: string | null;
   approved_at: string | null;
   approval_revoked_at: string | null;
+  prepared_at?: string | null;
+  ready_at?: string | null;
   submitted_at: string | null;
   withdrawn_at: string | null;
   created_at: string;
   updated_at: string;
   is_approval_stale: boolean;
+}
+
+export interface ApplicationField {
+  field_id: string;
+  label: string;
+  field_type: "text" | "textarea" | "email" | "phone" | "url" | "select" | "multi_select" | "boolean" | "file" | "date" | "number";
+  required: boolean;
+  category: string;
+  allowed_values: string[];
+  sensitive: boolean;
+  source: string;
+  answer: unknown | null;
+  answer_source: string | null;
+  requires_user_input: boolean;
+  is_answered: boolean;
+}
+
+export interface ApplicationForm {
+  application_id: string;
+  provider: string;
+  provider_auto_apply: boolean;
+  provider_schema_version: string | null;
+  payload_fingerprint: string | null;
+  unresolved_field_ids: string[];
+  is_assisted: boolean;
+  fields: ApplicationField[];
 }
 
 export interface VerificationResult {

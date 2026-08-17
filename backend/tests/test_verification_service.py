@@ -4,9 +4,22 @@ from uuid import UUID
 
 import pytest
 
-from app.models import Evidence, EvidenceType, Student, StudentSkill, VerificationCheck, VerificationTier
-from app.services.github_service import GitHubCommit, GitHubInaccessible, GitHubNotFound, GitHubRepository, GitHubUnavailable
+from app.models import (
+    Evidence,
+    EvidenceType,
+    Student,
+    StudentSkill,
+    VerificationCheck,
+    VerificationTier,
+)
 from app.services import verification_service
+from app.services.github_service import (
+    GitHubCommit,
+    GitHubInaccessible,
+    GitHubNotFound,
+    GitHubRepository,
+    GitHubUnavailable,
+)
 
 EVIDENCE_ID = UUID("00000000-0000-0000-0000-000000000001")
 STUDENT_ID = UUID("00000000-0000-0000-0000-000000000002")

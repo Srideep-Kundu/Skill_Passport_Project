@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Generic, Literal, TypeVar
+from typing import Any, Generic, Literal, TypeVar
 from uuid import UUID
 
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator
@@ -389,19 +389,54 @@ class ApplicationResponse(APIModel):
     external_job_id: UUID
     external_job_match_id: UUID
     resume_document_id: UUID
-    status: Literal["approval_pending", "approved", "manual_apply", "withdrawn"]
+    status: Literal["approval_pending", "approved", "preparing", "needs_input", "prepared", "ready_to_submit", "submitting", "submitted", "failed", "unknown_submission_state", "manual_apply", "withdrawn"]
     application_snapshot: dict[str, object]
     application_fingerprint: str
     approved_fingerprint: str | None
     provider_capabilities: dict[str, bool]
+    provider_schema_version: str | None
+    execution_payload_fingerprint: str | None
+    ready_payload_fingerprint: str | None
     manual_apply_url: str | None
     approved_at: datetime | None
     approval_revoked_at: datetime | None
+    prepared_at: datetime | None
+    ready_at: datetime | None
     submitted_at: datetime | None
     withdrawn_at: datetime | None
     created_at: datetime
     updated_at: datetime
     is_approval_stale: bool = False
+
+
+class ApplicationFieldResponse(APIModel):
+    field_id: str
+    label: str
+    field_type: str
+    required: bool
+    category: str
+    allowed_values: list[str]
+    sensitive: bool
+    source: str
+    answer: object | None = None
+    answer_source: str | None
+    requires_user_input: bool
+    is_answered: bool
+
+
+class ApplicationFormResponse(APIModel):
+    application_id: UUID
+    provider: str
+    provider_auto_apply: bool
+    provider_schema_version: str | None
+    payload_fingerprint: str | None
+    unresolved_field_ids: list[str]
+    is_assisted: bool
+    fields: list[ApplicationFieldResponse]
+
+
+class ApplicationAnswersUpdate(APIModel):
+    answers: dict[str, Any] = Field(min_length=1, max_length=100)
 
 
 class TeamSuggestionRequest(APIModel):

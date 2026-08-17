@@ -80,8 +80,24 @@ class VerificationTier(str, enum.Enum):
 class ApplicationStatus(str, enum.Enum):
     approval_pending = "approval_pending"
     approved = "approved"
+    preparing = "preparing"
+    needs_input = "needs_input"
+    prepared = "prepared"
+    ready_to_submit = "ready_to_submit"
+    submitting = "submitting"
+    submitted = "submitted"
+    failed = "failed"
+    unknown_submission_state = "unknown_submission_state"
     manual_apply = "manual_apply"
     withdrawn = "withdrawn"
+
+
+class SubmissionAttemptStatus(str, enum.Enum):
+    submitting = "submitting"
+    submitted = "submitted"
+    retryable_failure = "retryable_failure"
+    failed = "failed"
+    unknown_submission_state = "unknown_submission_state"
 
 
 class Timestamped:
@@ -338,7 +354,7 @@ class ExternalJobMatchExplanation(Base):
 
 
 class Application(Base):
-    """Student-owned application intent. This phase deliberately has no submission state."""
+    """Student-owned application intent, preparation state, and provider submission outcome."""
 
     __tablename__ = "applications"
     __table_args__ = (UniqueConstraint("student_id", "external_job_id", name="uq_application_student_external_job"),)
@@ -352,15 +368,57 @@ class Application(Base):
     application_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
     approved_fingerprint: Mapped[str | None] = mapped_column(String(64))
     provider_capabilities: Mapped[dict[str, bool]] = mapped_column(Json, nullable=False)
+    provider_schema_version: Mapped[str | None] = mapped_column(String(64))
+    execution_payload_fingerprint: Mapped[str | None] = mapped_column(String(64), index=True)
+    ready_payload_fingerprint: Mapped[str | None] = mapped_column(String(64))
     manual_apply_url: Mapped[str | None] = mapped_column(String(2048))
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     approval_revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    prepared_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    ready_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     withdrawn_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     external_application_id: Mapped[str | None] = mapped_column(String(255))
     failure_reason: Mapped[str | None] = mapped_column(String(240))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+class ApplicationField(Base):
+    """Normalized provider-form field; sensitive answers are persisted but never returned or audited."""
+
+    __tablename__ = "application_fields"
+    __table_args__ = (UniqueConstraint("application_id", "field_id", name="uq_application_field_id"),)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    application_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("applications.id", ondelete="CASCADE"), nullable=False, index=True)
+    field_id: Mapped[str] = mapped_column(String(120), nullable=False)
+    label: Mapped[str] = mapped_column(String(255), nullable=False)
+    field_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    required: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    category: Mapped[str] = mapped_column(String(64), nullable=False)
+    allowed_values: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    sensitive: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    source: Mapped[str] = mapped_column(String(64), nullable=False)
+    answer: Mapped[Any | None] = mapped_column(Json)
+    answer_source: Mapped[str | None] = mapped_column(String(32))
+    requires_user_input: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+class ApplicationSubmissionAttempt(Base):
+    __tablename__ = "application_submission_attempts"
+    __table_args__ = (UniqueConstraint("idempotency_key", name="uq_application_submission_idempotency_key"),)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    application_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("applications.id", ondelete="CASCADE"), nullable=False, index=True)
+    payload_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    idempotency_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[SubmissionAttemptStatus] = mapped_column(Enum(SubmissionAttemptStatus), nullable=False, index=True)
+    attempt_count: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    provider_response_id: Mapped[str | None] = mapped_column(String(255))
+    result_type: Mapped[str | None] = mapped_column(String(64))
+    safe_error: Mapped[str | None] = mapped_column(String(240))
 
 
 class Match(Timestamped, Base):

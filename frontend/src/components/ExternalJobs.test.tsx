@@ -26,6 +26,6 @@ describe("ExternalJobs", () => {
     expect(screen.getByRole("region", { name: "Application approval" })).toHaveTextContent("Application-safe profile");
     expect(screen.getByText("Approve application")).toBeInTheDocument();
     expect(screen.getByText("Apply manually")).toBeInTheDocument();
-    expect(screen.getByText("No external application is submitted by this product.")).toBeInTheDocument();
+    expect(screen.getByText(/No browser automation is used/)).toBeInTheDocument();
   });
 });

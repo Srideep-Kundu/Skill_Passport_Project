@@ -6,7 +6,11 @@ from fastapi import HTTPException
 
 from app.api import evidence, matches, passport
 from app.models import Evidence, EvidenceType, Internship, Recruiter, Student
-from app.schemas.contracts import GitHubIdentityUpdate, RecruiterEvidenceConsentUpdate, VerificationRequest
+from app.schemas.contracts import (
+    GitHubIdentityUpdate,
+    RecruiterEvidenceConsentUpdate,
+    VerificationRequest,
+)
 
 STUDENT_ID = UUID("00000000-0000-0000-0000-000000000001")
 RECRUITER_ID = UUID("00000000-0000-0000-0000-000000000002")
