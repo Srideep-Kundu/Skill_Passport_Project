@@ -13,6 +13,7 @@ from app.core.config import get_settings
 from app.models import (
     Application,
     ApplicationStatus,
+    ApplicationStatusSource,
     AuditLog,
     Evidence,
     ExternalJob,
@@ -23,15 +24,10 @@ from app.models import (
     Student,
 )
 from app.schemas.contracts import ResumeParsedData
+from app.services.application_errors import ApplicationWorkflowError
+from app.services.application_tracking_service import record_status_event
 from app.services.job_providers import ProviderError, provider_registry
 from app.services.matching_service import external_job_match_is_stale
-
-
-class ApplicationWorkflowError(Exception):
-    def __init__(self, detail: str, status_code: int = 409) -> None:
-        self.detail = detail
-        self.status_code = status_code
-        super().__init__(detail)
 
 
 @dataclass(frozen=True)
@@ -229,6 +225,7 @@ async def create_application_intent(session: AsyncSession, *, student: Student, 
     )
     session.add(application)
     await session.flush()
+    record_status_event(session, application, event_type="application_created", source=ApplicationStatusSource.system)
     session.add(_audit(application, "application_intent_created"))
     await session.commit()
     await session.refresh(application)
@@ -266,6 +263,7 @@ async def request_approval(session: AsyncSession, *, application: Application, s
         raise ApplicationWorkflowError("Approval can only be requested for a pending application")
     snapshot = await build_application_snapshot(session, student=student, external_job_id=application.external_job_id, required_match_id=application.external_job_match_id)
     _set_snapshot(application, snapshot)
+    record_status_event(session, application, event_type="approval_requested", source=ApplicationStatusSource.user)
     session.add(_audit(application, "approval_requested"))
     await session.commit()
     await session.refresh(application)
@@ -292,6 +290,7 @@ async def approve_application(session: AsyncSession, *, application: Application
     application.approved_at = _now()
     application.approved_fingerprint = current.fingerprint
     application.approval_revoked_at = None
+    record_status_event(session, application, event_type="application_approved", source=ApplicationStatusSource.user)
     session.add(_audit(application, "application_approved", from_status=pending_status))
     await session.commit()
     await session.refresh(application)
@@ -304,6 +303,7 @@ async def revoke_approval(session: AsyncSession, *, application: Application) ->
     previous = application.status
     application.status = ApplicationStatus.approval_pending
     application.approval_revoked_at = _now()
+    record_status_event(session, application, event_type="approval_revoked", source=ApplicationStatusSource.user)
     session.add(_audit(application, "approval_revoked", from_status=previous))
     await session.commit()
     await session.refresh(application)
@@ -321,6 +321,7 @@ async def select_manual_apply(session: AsyncSession, *, application: Application
         raise ApplicationWorkflowError("Manual application is not available in the current state")
     previous = application.status
     application.status = ApplicationStatus.manual_apply
+    record_status_event(session, application, event_type="manual_apply_selected", source=ApplicationStatusSource.user)
     session.add(_audit(application, "manual_apply_selected", from_status=previous))
     await session.commit()
     await session.refresh(application)

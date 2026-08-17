@@ -404,6 +404,9 @@ class ApplicationResponse(APIModel):
     ready_at: datetime | None
     submitted_at: datetime | None
     withdrawn_at: datetime | None
+    tracking_status: Literal["submitted", "received", "in_review", "rejected", "interview", "offer", "hired", "withdrawn", "unknown"] | None
+    tracking_status_source: Literal["system", "provider", "user", "admin"] | None
+    tracking_updated_at: datetime | None
     created_at: datetime
     updated_at: datetime
     is_approval_stale: bool = False
@@ -438,6 +441,35 @@ class ApplicationFormResponse(APIModel):
 
 class ApplicationAnswersUpdate(APIModel):
     answers: dict[str, Any] = Field(min_length=1, max_length=100)
+
+
+class ManualSubmissionRecord(APIModel):
+    submitted_at: datetime | None = None
+    provider_reference: str | None = Field(default=None, max_length=255, pattern=r"^[A-Za-z0-9._:-]+$")
+
+
+class ApplicationStatusEventResponse(APIModel):
+    id: UUID
+    application_id: UUID
+    event_type: str
+    status: Literal["submitted", "received", "in_review", "rejected", "interview", "offer", "hired", "withdrawn", "unknown"] | None
+    source: Literal["system", "provider", "user", "admin"]
+    provider_status: str | None
+    safe_metadata: dict[str, object]
+    created_at: datetime
+
+
+class ApplicationSubmissionAttemptResponse(APIModel):
+    id: UUID
+    application_id: UUID
+    payload_fingerprint: str
+    status: Literal["submitting", "submitted", "retryable_failure", "failed", "unknown_submission_state"]
+    attempt_count: int
+    started_at: datetime
+    completed_at: datetime | None
+    provider_response_id: str | None
+    result_type: str | None
+    safe_error: str | None
 
 
 class TeamSuggestionRequest(APIModel):

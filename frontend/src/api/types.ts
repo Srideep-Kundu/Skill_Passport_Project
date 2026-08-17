@@ -208,6 +208,8 @@ export interface ExternalJobMatchState {
 }
 
 export type ApplicationStatus = "approval_pending" | "approved" | "preparing" | "needs_input" | "prepared" | "ready_to_submit" | "submitting" | "submitted" | "failed" | "unknown_submission_state" | "manual_apply" | "withdrawn";
+export type ApplicationTrackingStatus = "submitted" | "received" | "in_review" | "rejected" | "interview" | "offer" | "hired" | "withdrawn" | "unknown";
+export type ApplicationStatusSource = "system" | "provider" | "user" | "admin";
 
 export interface ApplicationSnapshot {
   schema_version: string;
@@ -239,9 +241,36 @@ export interface Application {
   ready_at?: string | null;
   submitted_at: string | null;
   withdrawn_at: string | null;
+  tracking_status?: ApplicationTrackingStatus | null;
+  tracking_status_source?: ApplicationStatusSource | null;
+  tracking_updated_at?: string | null;
   created_at: string;
   updated_at: string;
   is_approval_stale: boolean;
+}
+
+export interface ApplicationStatusEvent {
+  id: string;
+  application_id: string;
+  event_type: string;
+  status: ApplicationTrackingStatus | null;
+  source: ApplicationStatusSource;
+  provider_status: string | null;
+  safe_metadata: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface ApplicationSubmissionAttempt {
+  id: string;
+  application_id: string;
+  payload_fingerprint: string;
+  status: "submitting" | "submitted" | "retryable_failure" | "failed" | "unknown_submission_state";
+  attempt_count: number;
+  started_at: string;
+  completed_at: string | null;
+  provider_response_id: string | null;
+  result_type: string | null;
+  safe_error: string | null;
 }
 
 export interface ApplicationField {

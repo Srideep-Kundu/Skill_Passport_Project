@@ -15,6 +15,7 @@ from urllib.parse import urlsplit
 import httpx
 
 from app.core.config import get_settings
+from app.models import ApplicationTrackingStatus
 
 
 class ProviderError(Exception):
@@ -60,6 +61,20 @@ class ProviderSubmissionCapability:
     submission_ready: bool
     fallback: str
     reason: str
+
+
+@dataclass(frozen=True)
+class ProviderStatusCapability:
+    supports_status_tracking: bool
+    status_lookup_method: str
+    credentials_configured: bool
+    reason: str
+
+
+@dataclass(frozen=True)
+class ProviderStatusResult:
+    status: ApplicationTrackingStatus
+    provider_status: str | None = None
 
 
 @dataclass(frozen=True)
@@ -227,7 +242,10 @@ class JobProvider(ABC):
         del payload, idempotency_key
         raise ProviderSubmissionUnsupported()
 
-    async def get_submission_result(self, external_application_id: str) -> ProviderSubmissionResult | None:
+    async def get_status_capability(self) -> ProviderStatusCapability:
+        return ProviderStatusCapability(False, "none", False, "This provider has no configured applicant-status lookup.")
+
+    async def get_application_status(self, external_application_id: str) -> ProviderStatusResult | None:
         del external_application_id
         return None
 
@@ -409,6 +427,9 @@ class GreenhouseJobProvider(JobProvider):
 
     name = "greenhouse"
     capabilities = ProviderCapabilities(search=True, detail_fetch=True, auto_apply=False, status_tracking=False)
+
+    async def get_status_capability(self) -> ProviderStatusCapability:
+        return ProviderStatusCapability(False, "none", False, "Greenhouse job-board credentials do not provide applicant-status tracking in this integration.")
     _board_key = re.compile(r"^[A-Za-z0-9_-]{1,120}$")
     _base_url = "https://boards-api.greenhouse.io/v1/boards"
     _public_hosts: ClassVar[frozenset[str]] = frozenset({"boards.greenhouse.io", "job-boards.greenhouse.io"})
@@ -555,6 +576,9 @@ class LeverJobProvider(JobProvider):
 
     name = "lever"
     capabilities = ProviderCapabilities(search=True, detail_fetch=True, auto_apply=False, status_tracking=False)
+
+    async def get_status_capability(self) -> ProviderStatusCapability:
+        return ProviderStatusCapability(False, "none", False, "Controlled Lever submission credentials are not used for applicant-status tracking.")
     _site_key = re.compile(r"^[A-Za-z0-9_-]{1,120}$")
     _posting_key = re.compile(r"^[A-Za-z0-9-]{1,160}$")
     _public_base_url = "https://api.lever.co/v0/postings"

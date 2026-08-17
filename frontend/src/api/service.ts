@@ -1,6 +1,6 @@
 import { request } from "./client";
 import type {
-  Application, ApplicationForm, AuthSession, CandidateMatch, CandidateProfile, EvidenceDetail, EvidenceSubmission, EvidenceSummary, EvidenceUpdate, ExternalJob, ExternalJobMatch, Internship, InternshipCreate, InternshipUpdate,
+  Application, ApplicationForm, ApplicationStatusEvent, ApplicationSubmissionAttempt, AuthSession, CandidateMatch, CandidateProfile, EvidenceDetail, EvidenceSubmission, EvidenceSummary, EvidenceUpdate, ExternalJob, ExternalJobMatch, Internship, InternshipCreate, InternshipUpdate,
   LoginRequest, MatchExplanation, PaginatedResponse, Passport, RecruiterRegistration, Skill,
   StudentMatch, StudentRegistration, TeamSuggestion, TeamSuggestionRequest, VerificationResult, RecruiterEvidenceConsent, GitHubIdentity, ResumeDocument,
 } from "./types";
@@ -45,6 +45,10 @@ export const api = {
   updateApplicationAnswers: (id: string, answers: Record<string, unknown>, token: string) => request<ApplicationForm>(`/applications/${encodeURIComponent(id)}/answers`, { method: "PUT", body: JSON.stringify({ answers }) }, token),
   readyApplication: (id: string, token: string) => request<Application>(`/applications/${encodeURIComponent(id)}/ready`, { method: "POST" }, token),
   submitApplication: (id: string, token: string) => request<Application>(`/applications/${encodeURIComponent(id)}/submit`, { method: "POST" }, token),
+  applicationTimeline: (id: string, token: string) => request<ApplicationStatusEvent[]>(`/applications/${encodeURIComponent(id)}/timeline`, {}, token),
+  applicationAttempts: (id: string, token: string) => request<ApplicationSubmissionAttempt[]>(`/applications/${encodeURIComponent(id)}/attempts`, {}, token),
+  markManualSubmission: (id: string, token: string, input: { submitted_at?: string; provider_reference?: string }) => request<Application>(`/applications/${encodeURIComponent(id)}/mark-manual-submitted`, { method: "POST", body: JSON.stringify(input) }, token),
+  reconcileApplication: (id: string, token: string) => request<Application>(`/applications/${encodeURIComponent(id)}/reconcile`, { method: "POST" }, token),
   studentMatches: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<StudentMatch>>(`/students/me/matches?page=${page}&page_size=${pageSize}`, {}, token),
   recomputeStudentMatches: (token: string) => request<StudentMatch[]>("/students/me/matches/recompute", { method: "POST" }, token),
   recomputeInternshipMatches: (id: string, token: string) => request<CandidateMatch[]>(`/internships/${encodeURIComponent(id)}/matches/recompute`, { method: "POST" }, token),

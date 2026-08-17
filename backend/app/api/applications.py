@@ -8,13 +8,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
 from app.core.security import require_role
-from app.models import Application, ApplicationField, ExternalJob, Student
+from app.models import (
+    Application,
+    ApplicationField,
+    ApplicationStatusEvent,
+    ApplicationSubmissionAttempt,
+    ExternalJob,
+    Student,
+)
 from app.schemas.contracts import (
     ApplicationAnswersUpdate,
     ApplicationCreate,
     ApplicationFieldResponse,
     ApplicationFormResponse,
     ApplicationResponse,
+    ApplicationStatusEventResponse,
+    ApplicationSubmissionAttemptResponse,
+    ManualSubmissionRecord,
     PaginatedResponse,
 )
 from app.services.application_execution_service import (
@@ -32,7 +42,12 @@ from app.services.application_service import (
     request_approval,
     revoke_approval,
     select_manual_apply,
-    withdraw_application,
+)
+from app.services.application_tracking_service import (
+    reconcile_application,
+    record_manual_submission,
+    timeline,
+    withdraw_tracked_application,
 )
 
 router = APIRouter(prefix="/applications", tags=["applications"])
@@ -139,6 +154,26 @@ async def list_applications(
     )
 
 
+@router.get("/{application_id}/timeline", response_model=list[ApplicationStatusEventResponse])
+async def application_timeline(
+    application_id: UUID,
+    principal: Annotated[Student, Depends(require_role("student"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[ApplicationStatusEvent]:
+    await _owned_application(session, application_id, principal.id)
+    return await timeline(session, application_id)
+
+
+@router.get("/{application_id}/attempts", response_model=list[ApplicationSubmissionAttemptResponse])
+async def application_attempts(
+    application_id: UUID,
+    principal: Annotated[Student, Depends(require_role("student"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[ApplicationSubmissionAttempt]:
+    await _owned_application(session, application_id, principal.id)
+    return list((await session.scalars(select(ApplicationSubmissionAttempt).where(ApplicationSubmissionAttempt.application_id == application_id).order_by(ApplicationSubmissionAttempt.started_at.asc(), ApplicationSubmissionAttempt.id.asc()))).all())
+
+
 @router.get("/{application_id}", response_model=ApplicationResponse)
 async def get_application(
     application_id: UUID,
@@ -218,6 +253,35 @@ async def execute_application_submission(
     return await _response(session, application, principal)
 
 
+@router.post("/{application_id}/mark-manual-submitted", response_model=ApplicationResponse)
+async def mark_manual_submitted(
+    application_id: UUID,
+    payload: ManualSubmissionRecord,
+    principal: Annotated[Student, Depends(require_role("student"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ApplicationResponse:
+    application = await _owned_application(session, application_id, principal.id)
+    try:
+        application = await record_manual_submission(session, application=application, submitted_at=payload.submitted_at, provider_reference=payload.provider_reference)
+    except ApplicationWorkflowError as error:
+        raise _workflow_error(error) from error
+    return await _response(session, application, principal)
+
+
+@router.post("/{application_id}/reconcile", response_model=ApplicationResponse)
+async def reconcile_application_status(
+    application_id: UUID,
+    principal: Annotated[Student, Depends(require_role("student"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ApplicationResponse:
+    application = await _owned_application(session, application_id, principal.id)
+    try:
+        application = await reconcile_application(session, application=application)
+    except ApplicationWorkflowError as error:
+        raise _workflow_error(error) from error
+    return await _response(session, application, principal)
+
+
 @router.post("/{application_id}/request-approval", response_model=ApplicationResponse)
 async def request_application_approval(
     application_id: UUID,
@@ -282,7 +346,7 @@ async def withdraw_application_intent(
 ) -> ApplicationResponse:
     application = await _owned_application(session, application_id, principal.id)
     try:
-        application = await withdraw_application(session, application=application)
+        application = await withdraw_tracked_application(session, application=application)
     except ApplicationWorkflowError as error:
         raise _workflow_error(error) from error
     return await _response(session, application, principal)

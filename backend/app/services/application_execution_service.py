@@ -13,7 +13,9 @@ from app.models import (
     Application,
     ApplicationField,
     ApplicationStatus,
+    ApplicationStatusSource,
     ApplicationSubmissionAttempt,
+    ApplicationTrackingStatus,
     AuditLog,
     ExternalJob,
     ResumeDocument,
@@ -24,6 +26,7 @@ from app.services.application_service import (
     ApplicationWorkflowError,
     build_application_snapshot,
 )
+from app.services.application_tracking_service import record_status_event
 from app.services.job_providers import (
     ApplicationFieldDefinition,
     NormalizedExternalJob,
@@ -227,6 +230,7 @@ async def prepare_application(session: AsyncSession, *, application: Application
     _validate_schema(schema)
     existing = {field.field_id: field for field in await _fields(session, application.id)}
     application.status = ApplicationStatus.preparing
+    record_status_event(session, application, event_type="application_preparation_started", source=ApplicationStatusSource.system)
     session.add(_audit(application, "application_preparation_started", {"provider_schema_version": schema.version}))
     await session.execute(delete(ApplicationField).where(ApplicationField.application_id == application.id))
     created: list[ApplicationField] = []
@@ -258,6 +262,13 @@ async def prepare_application(session: AsyncSession, *, application: Application
     application.ready_payload_fingerprint = None
     application.execution_payload_fingerprint = _fingerprint(_payload(application, created))
     application.status = ApplicationStatus.needs_input if unresolved else ApplicationStatus.prepared
+    record_status_event(
+        session,
+        application,
+        event_type="application_needs_input" if unresolved else "application_prepared",
+        source=ApplicationStatusSource.system,
+        safe_metadata={"unresolved_field_count": len(unresolved)},
+    )
     session.add(
         _audit(
             application,
@@ -327,6 +338,7 @@ async def ready_application(session: AsyncSession, *, application: Application, 
     application.ready_payload_fingerprint = payload_fingerprint
     application.ready_at = _now()
     application.status = ApplicationStatus.ready_to_submit
+    record_status_event(session, application, event_type="application_ready", source=ApplicationStatusSource.user)
     session.add(_audit(application, "application_ready", {"payload_fingerprint": payload_fingerprint, "field_ids": [field.field_id for field in fields]}))
     await session.commit()
     await session.refresh(application)
@@ -392,6 +404,7 @@ async def submit_application(session: AsyncSession, *, application: Application,
         attempt.safe_error = None
     application.status = ApplicationStatus.submitting
     await session.flush()
+    record_status_event(session, application, event_type="submission_started", source=ApplicationStatusSource.system)
     session.add(_audit(application, "submission_started", {"attempt_id": str(attempt.id), "payload_fingerprint": payload_fingerprint}))
     await session.commit()
     try:
@@ -415,6 +428,14 @@ async def submit_application(session: AsyncSession, *, application: Application,
         application.submitted_at = _now()
         application.external_application_id = result.external_application_id
         application.failure_reason = None
+        record_status_event(
+            session,
+            application,
+            event_type="submission_confirmed",
+            source=ApplicationStatusSource.provider,
+            tracking_status=ApplicationTrackingStatus.submitted,
+            provider_status="submitted",
+        )
         session.add(_audit(application, "submission_succeeded", {"attempt_id": str(attempt.id), "provider_response_id": result.external_application_id}))
     elif result.outcome in {"temporary_failure", "rate_limited"}:
         attempt.status = SubmissionAttemptStatus.retryable_failure
@@ -425,6 +446,13 @@ async def submit_application(session: AsyncSession, *, application: Application,
         attempt.status = SubmissionAttemptStatus.unknown_submission_state
         application.status = ApplicationStatus.unknown_submission_state
         application.failure_reason = result.safe_error
+        record_status_event(
+            session,
+            application,
+            event_type="submission_unknown",
+            source=ApplicationStatusSource.system,
+            tracking_status=ApplicationTrackingStatus.unknown,
+        )
         session.add(_audit(application, "submission_unknown", {"attempt_id": str(attempt.id)}))
     elif result.outcome == "validation_failed":
         attempt.status = SubmissionAttemptStatus.failed

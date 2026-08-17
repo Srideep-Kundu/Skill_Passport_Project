@@ -100,6 +100,25 @@ class SubmissionAttemptStatus(str, enum.Enum):
     unknown_submission_state = "unknown_submission_state"
 
 
+class ApplicationTrackingStatus(str, enum.Enum):
+    submitted = "submitted"
+    received = "received"
+    in_review = "in_review"
+    rejected = "rejected"
+    interview = "interview"
+    offer = "offer"
+    hired = "hired"
+    withdrawn = "withdrawn"
+    unknown = "unknown"
+
+
+class ApplicationStatusSource(str, enum.Enum):
+    system = "system"
+    provider = "provider"
+    user = "user"
+    admin = "admin"
+
+
 class Timestamped:
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
@@ -380,6 +399,9 @@ class Application(Base):
     withdrawn_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     external_application_id: Mapped[str | None] = mapped_column(String(255))
     failure_reason: Mapped[str | None] = mapped_column(String(240))
+    tracking_status: Mapped[ApplicationTrackingStatus | None] = mapped_column(Enum(ApplicationTrackingStatus), index=True)
+    tracking_status_source: Mapped[ApplicationStatusSource | None] = mapped_column(Enum(ApplicationStatusSource))
+    tracking_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -420,6 +442,20 @@ class ApplicationSubmissionAttempt(Base):
     provider_response_id: Mapped[str | None] = mapped_column(String(255))
     result_type: Mapped[str | None] = mapped_column(String(64))
     safe_error: Mapped[str | None] = mapped_column(String(240))
+
+
+class ApplicationStatusEvent(Base):
+    """Append-only, non-sensitive application tracking timeline."""
+
+    __tablename__ = "application_status_events"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    application_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("applications.id", ondelete="CASCADE"), nullable=False, index=True)
+    event_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    status: Mapped[ApplicationTrackingStatus | None] = mapped_column(Enum(ApplicationTrackingStatus), index=True)
+    source: Mapped[ApplicationStatusSource] = mapped_column(Enum(ApplicationStatusSource), nullable=False)
+    provider_status: Mapped[str | None] = mapped_column(String(80))
+    safe_metadata: Mapped[dict[str, Any]] = mapped_column(Json, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
 
 class Match(Timestamped, Base):

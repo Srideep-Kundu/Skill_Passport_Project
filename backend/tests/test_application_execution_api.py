@@ -3,9 +3,6 @@ from uuid import UUID
 import httpx
 import pytest
 import pytest_asyncio
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
 from app.core.db import Base, create_matching_view, get_session
 from app.core.security import create_access_token
 from app.main import app
@@ -25,11 +22,17 @@ from app.models import (
     StudentSkill,
     VerificationTier,
 )
-from app.services import application_execution_service, application_service
+from app.services import (
+    application_execution_service,
+    application_service,
+    application_tracking_service,
+)
 from app.services.job_providers import (
     DeterministicTestApplicationProvider,
     JobProviderRegistry,
 )
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 
 @pytest_asyncio.fixture
@@ -68,6 +71,7 @@ async def _approved_application(
         registry = JobProviderRegistry((provider,))
         monkeypatch.setattr(application_execution_service, "provider_registry", registry)
         monkeypatch.setattr(application_service, "provider_registry", registry)
+        monkeypatch.setattr(application_tracking_service, "provider_registry", registry)
     async with factory() as session:
         student = Student(email=f"{provider_name}@example.test", password_hash="hash", full_name="Execution Student", university="University A")
         other = Student(email=f"other-{provider_name}@example.test", password_hash="hash", full_name="Other Student", university="University B")
@@ -138,6 +142,9 @@ async def test_prepare_masks_sensitive_fields_and_executes_idempotently(
     assert ready.status_code == 200 and ready.json()["status"] == "ready_to_submit"
     submitted = await client.post(f"/applications/{application_id}/submit", headers=_headers(token))
     assert submitted.status_code == 200 and submitted.json()["status"] == "submitted"
+    timeline_response = await client.get(f"/applications/{application_id}/timeline", headers=_headers(token))
+    confirmed_event = next(event for event in timeline_response.json() if event["event_type"] == "submission_confirmed")
+    assert confirmed_event["source"] == "provider" and confirmed_event["status"] == "submitted"
     assert provider is not None and provider.submit_calls == 1
     assert (await client.post(f"/applications/{application_id}/submit", headers=_headers(token))).status_code == 409
     async with factory() as session:
@@ -223,3 +230,50 @@ async def test_greenhouse_is_assisted_only_and_never_submits(
     assert {field["field_id"] for field in prepared.json()["fields"]} == {"full_name", "email", "phone"}
     assert (await client.post(f"/applications/{application_id}/ready", headers=_headers(token))).status_code == 409
     assert (await client.post(f"/applications/{application_id}/submit", headers=_headers(token))).status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_manual_tracking_timeline_is_user_reported_and_withdrawal_is_local(
+    execution_client: tuple[httpx.AsyncClient, async_sessionmaker[AsyncSession]], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client, _, = execution_client
+    token, other_token, application_id, _ = await _approved_application(client, execution_client[1], monkeypatch)
+    assert (await client.post(f"/applications/{application_id}/manual", headers=_headers(token))).status_code == 200
+    invalid = await client.post(f"/applications/{application_id}/mark-manual-submitted", headers=_headers(token), json={"provider_reference": "not safe/"})
+    assert invalid.status_code == 422
+    marked = await client.post(f"/applications/{application_id}/mark-manual-submitted", headers=_headers(token), json={"provider_reference": "candidate-123"})
+    assert marked.status_code == 200
+    assert marked.json()["status"] == "submitted"
+    assert marked.json()["tracking_status"] == "submitted"
+    assert marked.json()["tracking_status_source"] == "user"
+    assert (await client.get(f"/applications/{application_id}/timeline", headers=_headers(other_token))).status_code == 404
+    timeline = (await client.get(f"/applications/{application_id}/timeline", headers=_headers(token))).json()
+    manual_event = next(event for event in timeline if event["event_type"] == "manual_submission_recorded")
+    assert manual_event["source"] == "user" and manual_event["provider_status"] is None
+    withdrawn = await client.post(f"/applications/{application_id}/withdraw", headers=_headers(token))
+    assert withdrawn.status_code == 200 and withdrawn.json()["tracking_status"] == "withdrawn"
+    assert withdrawn.json()["tracking_status_source"] == "user"
+    assert (await client.post(f"/applications/{application_id}/withdraw", headers=_headers(token))).status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_ambiguous_submission_reconciliation_never_replays_the_post(
+    execution_client: tuple[httpx.AsyncClient, async_sessionmaker[AsyncSession]], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client, factory = execution_client
+    token, _, application_id, provider = await _approved_application(client, factory, monkeypatch, ("unknown_submission_state",))
+    await _ready(client, token, application_id)
+    assert (await client.post(f"/applications/{application_id}/submit", headers=_headers(token))).json()["status"] == "unknown_submission_state"
+    assert provider is not None and provider.submit_calls == 1
+    reconciled = await client.post(f"/applications/{application_id}/reconcile", headers=_headers(token))
+    assert reconciled.status_code == 200 and reconciled.json()["status"] == "unknown_submission_state"
+    assert (await client.post(f"/applications/{application_id}/reconcile", headers=_headers(token))).status_code == 409
+    assert (await client.post(f"/applications/{application_id}/submit", headers=_headers(token))).status_code == 409
+    assert provider.submit_calls == 1
+    attempts = (await client.get(f"/applications/{application_id}/attempts", headers=_headers(token))).json()
+    assert len(attempts) == 1 and attempts[0]["status"] == "unknown_submission_state"
+    timeline = (await client.get(f"/applications/{application_id}/timeline", headers=_headers(token))).json()
+    assert [event["created_at"] for event in timeline] == sorted(event["created_at"] for event in timeline)
+    assert any(event["event_type"] == "status_reconciliation_requested" for event in timeline)
+    confirmed = await client.post(f"/applications/{application_id}/mark-manual-submitted", headers=_headers(token), json={})
+    assert confirmed.status_code == 200 and confirmed.json()["tracking_status_source"] == "user"
