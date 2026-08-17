@@ -284,6 +284,20 @@ export interface JobDiscoveryRun {
   jobs_seen: number; jobs_created: number; jobs_updated: number; recommendations_created: number; recommendations_changed: number; safe_error: string | null; started_at: string; completed_at: string | null;
 }
 
+export interface AutomationPolicy {
+  id: string; student_id: string; name: string; enabled: boolean; priority: number; minimum_match_score: number;
+  allowed_providers: ("greenhouse" | "lever")[]; allowed_locations: string[]; remote_preference: boolean | null;
+  employment_types: string[]; experience_levels: string[]; required_skills_any: string[]; required_skills_all: string[]; excluded_skills: string[];
+  excluded_companies: string[]; excluded_keywords: string[]; maximum_jobs_per_run: number; maximum_review_intents_per_run: number;
+  maximum_review_intents_per_day: number; maximum_pending_review_queue_size: number; auto_create_review_intent: boolean; last_applied_at: string | null; created_at: string; updated_at: string;
+}
+
+export interface AutomationQueueItem {
+  external_job_id: string; match_id: string; title: string; company_name: string; provider: string; final_score: number;
+  policy_id: string; policy_name: string; policy_reason: string[]; application_id: string | null; application_status: ApplicationStatus | null; active_resume_filename: string | null;
+  explanation: MatchExplanation;
+}
+
 export interface ApplicationField {
   field_id: string;
   label: string;

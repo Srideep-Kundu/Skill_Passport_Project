@@ -13,7 +13,9 @@ from app.models import (
     ExternalJobMatch,
     JobDiscovery,
     JobDiscoveryRun,
+    Student,
 )
+from app.services.automation_policy_service import apply_policies_to_matches
 from app.services.external_jobs_service import sync_discovery_source
 from app.services.job_providers import (
     JobSearchFilters,
@@ -132,6 +134,9 @@ async def run_discovery(session: AsyncSession, *, discovery: JobDiscovery) -> Jo
     run.jobs_created = sum(int(result.get("created", 0)) for result in provider_results.values() if isinstance(result, dict))
     run.jobs_updated = sum(int(result.get("updated", 0)) for result in provider_results.values() if isinstance(result, dict))
     run.recommendations_created, run.recommendations_changed = created_recommendations, changed_recommendations
+    student = await session.get(Student, discovery.student_id)
+    if student is not None:
+        await apply_policies_to_matches(session, student=student, external_job_ids=job_ids)
     run.status = DiscoveryRunStatus.completed if failures == 0 else DiscoveryRunStatus.partial if job_ids else DiscoveryRunStatus.failed
     run.safe_error = "One or more providers could not be synced" if failures else None
     run.completed_at = _now()

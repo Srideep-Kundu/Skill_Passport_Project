@@ -1,6 +1,6 @@
 import { request } from "./client";
 import type {
-  Application, ApplicationForm, ApplicationStatusEvent, ApplicationSubmissionAttempt, AuthSession, CandidateMatch, CandidateProfile, EvidenceDetail, EvidenceSubmission, EvidenceSummary, EvidenceUpdate, ExternalJob, ExternalJobMatch, Internship, InternshipCreate, InternshipUpdate, JobDiscovery, JobDiscoveryRun,
+  Application, ApplicationForm, ApplicationStatusEvent, ApplicationSubmissionAttempt, AuthSession, AutomationPolicy, AutomationQueueItem, CandidateMatch, CandidateProfile, EvidenceDetail, EvidenceSubmission, EvidenceSummary, EvidenceUpdate, ExternalJob, ExternalJobMatch, Internship, InternshipCreate, InternshipUpdate, JobDiscovery, JobDiscoveryRun,
   LoginRequest, MatchExplanation, PaginatedResponse, Passport, RecruiterRegistration, Skill,
   StudentMatch, StudentRegistration, TeamSuggestion, TeamSuggestionRequest, VerificationResult, RecruiterEvidenceConsent, GitHubIdentity, ResumeDocument,
 } from "./types";
@@ -55,6 +55,10 @@ export const api = {
   deleteJobDiscovery: (id: string, token: string) => request<void>(`/job-discoveries/${encodeURIComponent(id)}`, { method: "DELETE" }, token),
   runJobDiscovery: (id: string, token: string) => request<JobDiscoveryRun>(`/job-discoveries/${encodeURIComponent(id)}/run`, { method: "POST" }, token),
   jobDiscoveryRuns: (id: string, token: string) => request<PaginatedResponse<JobDiscoveryRun>>(`/job-discoveries/${encodeURIComponent(id)}/runs`, {}, token),
+  automationPolicies: (token: string) => request<PaginatedResponse<AutomationPolicy>>("/automation-policies", {}, token),
+  createAutomationPolicy: (input: Omit<AutomationPolicy, "id" | "student_id" | "last_applied_at" | "created_at" | "updated_at">, token: string) => request<AutomationPolicy>("/automation-policies", { method: "POST", body: JSON.stringify(input) }, token),
+  updateAutomationPolicy: (id: string, input: Partial<AutomationPolicy>, token: string) => request<AutomationPolicy>(`/automation-policies/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) }, token),
+  automationReviewQueue: (token: string) => request<PaginatedResponse<AutomationQueueItem>>("/automation-review-queue", {}, token),
   studentMatches: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<StudentMatch>>(`/students/me/matches?page=${page}&page_size=${pageSize}`, {}, token),
   recomputeStudentMatches: (token: string) => request<StudentMatch[]>("/students/me/matches/recompute", { method: "POST" }, token),
   recomputeInternshipMatches: (id: string, token: string) => request<CandidateMatch[]>(`/internships/${encodeURIComponent(id)}/matches/recompute`, { method: "POST" }, token),

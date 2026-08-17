@@ -127,6 +127,34 @@ class DiscoveryRunStatus(str, enum.Enum):
     failed = "failed"
 
 
+class AutomationPolicy(Base):
+    __tablename__ = "automation_policies"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(80), nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    priority: Mapped[int] = mapped_column(Integer, default=100, nullable=False)
+    minimum_match_score: Mapped[float] = mapped_column(Numeric(5, 4), default=0.2, nullable=False)
+    allowed_providers: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    allowed_locations: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    remote_preference: Mapped[bool | None] = mapped_column(Boolean)
+    employment_types: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    experience_levels: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    required_skills_any: Mapped[list[uuid.UUID]] = mapped_column(Json, default=list, nullable=False)
+    required_skills_all: Mapped[list[uuid.UUID]] = mapped_column(Json, default=list, nullable=False)
+    excluded_skills: Mapped[list[uuid.UUID]] = mapped_column(Json, default=list, nullable=False)
+    excluded_companies: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    excluded_keywords: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    maximum_jobs_per_run: Mapped[int] = mapped_column(Integer, default=25, nullable=False)
+    maximum_review_intents_per_run: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
+    maximum_review_intents_per_day: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
+    maximum_pending_review_queue_size: Mapped[int] = mapped_column(Integer, default=25, nullable=False)
+    auto_create_review_intent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    last_applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
 class Timestamped:
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 

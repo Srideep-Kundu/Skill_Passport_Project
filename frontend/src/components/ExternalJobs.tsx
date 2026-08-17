@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError, api } from "../api";
 import type { Application, ExternalJob, ExternalJobMatch, MatchExplanation } from "../api";
 import { ApplicationPreparation } from "./ApplicationPreparation";
+import { AutomationPreferences } from "./AutomationPreferences";
 import { SavedDiscoveries } from "./SavedDiscoveries";
 import { EmptyState, ErrorState, LoadingState } from "./AsyncState";
 
@@ -66,5 +67,5 @@ function ExternalJobsContent({ token }: { token: string }) {
 }
 
 export function ExternalJobs({ token }: { token: string }) {
-  return <div className="space-y-6"><SavedDiscoveries token={token} /><ExternalJobsContent token={token} /></div>;
+  return <div className="space-y-6"><AutomationPreferences token={token} /><SavedDiscoveries token={token} /><ExternalJobsContent token={token} /></div>;
 }

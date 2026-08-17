@@ -3,6 +3,9 @@ from uuid import UUID
 import httpx
 import pytest
 import pytest_asyncio
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+
 from app.core.db import Base, create_matching_view, get_session
 from app.core.security import create_access_token
 from app.main import app
@@ -31,8 +34,6 @@ from app.services.job_providers import (
     DeterministicTestApplicationProvider,
     JobProviderRegistry,
 )
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 
 @pytest_asyncio.fixture

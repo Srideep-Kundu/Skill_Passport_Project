@@ -35,14 +35,21 @@ class LoginRequest(APIModel):
 
 
 class EvidenceCreate(APIModel):
-    evidence_type: Literal["coursework", "project", "competition", "certification", "micro_credential"]
+    evidence_type: Literal[
+        "coursework", "project", "competition", "certification", "micro_credential"
+    ]
     title: str = Field(min_length=1, max_length=200)
     description: str = Field(min_length=1, max_length=20_000)
     external_url: AnyHttpUrl | None = None
 
 
 class EvidenceUpdate(APIModel):
-    evidence_type: Literal["coursework", "project", "competition", "certification", "micro_credential"] | None = None
+    evidence_type: (
+        Literal[
+            "coursework", "project", "competition", "certification", "micro_credential"
+        ]
+        | None
+    ) = None
     title: str | None = Field(default=None, min_length=1, max_length=200)
     description: str | None = Field(default=None, min_length=1, max_length=20_000)
     external_url: AnyHttpUrl | None = None
@@ -150,7 +157,9 @@ class ResumeDocumentResponse(APIModel):
 
 class VerificationRequest(APIModel):
     # Legacy values remain accepted while every request runs the complete GitHub check suite.
-    check_type: Literal["github_repository_accessibility", "github_commit_match", "github_project"] = "github_project"
+    check_type: Literal[
+        "github_repository_accessibility", "github_commit_match", "github_project"
+    ] = "github_project"
 
 
 class VerificationCheckResponse(APIModel):
@@ -219,7 +228,9 @@ class InternshipCreate(APIModel):
 
     @field_validator("requirements")
     @classmethod
-    def unique_requirement_skills(cls, values: list[InternshipRequirementCreate]) -> list[InternshipRequirementCreate]:
+    def unique_requirement_skills(
+        cls, values: list[InternshipRequirementCreate]
+    ) -> list[InternshipRequirementCreate]:
         if len({value.skill_id for value in values}) != len(values):
             raise ValueError("Each skill may appear only once in requirements")
         return values
@@ -228,12 +239,18 @@ class InternshipCreate(APIModel):
 class InternshipUpdate(APIModel):
     title: str | None = Field(default=None, min_length=1, max_length=200)
     description: str | None = Field(default=None, min_length=1, max_length=20_000)
-    requirements: list[InternshipRequirementCreate] | None = Field(default=None, min_length=1, max_length=50)
+    requirements: list[InternshipRequirementCreate] | None = Field(
+        default=None, min_length=1, max_length=50
+    )
 
     @field_validator("requirements")
     @classmethod
-    def unique_updated_requirement_skills(cls, values: list[InternshipRequirementCreate] | None) -> list[InternshipRequirementCreate] | None:
-        if values is not None and len({value.skill_id for value in values}) != len(values):
+    def unique_updated_requirement_skills(
+        cls, values: list[InternshipRequirementCreate] | None
+    ) -> list[InternshipRequirementCreate] | None:
+        if values is not None and len({value.skill_id for value in values}) != len(
+            values
+        ):
             raise ValueError("Each skill may appear only once in requirements")
         return values
 
@@ -374,7 +391,9 @@ class ExternalJobMatchResponse(APIModel):
 
 
 class ExternalJobMatchStateResponse(APIModel):
-    matching_status: Literal["ready", "not_computed", "insufficient_requirements", "inactive"]
+    matching_status: Literal[
+        "ready", "not_computed", "insufficient_requirements", "inactive"
+    ]
     match: ExternalJobMatchResponse | None = None
 
 
@@ -389,7 +408,20 @@ class ApplicationResponse(APIModel):
     external_job_id: UUID
     external_job_match_id: UUID
     resume_document_id: UUID
-    status: Literal["approval_pending", "approved", "preparing", "needs_input", "prepared", "ready_to_submit", "submitting", "submitted", "failed", "unknown_submission_state", "manual_apply", "withdrawn"]
+    status: Literal[
+        "approval_pending",
+        "approved",
+        "preparing",
+        "needs_input",
+        "prepared",
+        "ready_to_submit",
+        "submitting",
+        "submitted",
+        "failed",
+        "unknown_submission_state",
+        "manual_apply",
+        "withdrawn",
+    ]
     application_snapshot: dict[str, object]
     application_fingerprint: str
     approved_fingerprint: str | None
@@ -404,7 +436,20 @@ class ApplicationResponse(APIModel):
     ready_at: datetime | None
     submitted_at: datetime | None
     withdrawn_at: datetime | None
-    tracking_status: Literal["submitted", "received", "in_review", "rejected", "interview", "offer", "hired", "withdrawn", "unknown"] | None
+    tracking_status: (
+        Literal[
+            "submitted",
+            "received",
+            "in_review",
+            "rejected",
+            "interview",
+            "offer",
+            "hired",
+            "withdrawn",
+            "unknown",
+        ]
+        | None
+    )
     tracking_status_source: Literal["system", "provider", "user", "admin"] | None
     tracking_updated_at: datetime | None
     created_at: datetime
@@ -465,7 +510,9 @@ class JobDiscoveryUpdate(APIModel):
     remote_preference: bool | None = None
     employment_type: str | None = Field(default=None, max_length=64)
     experience_level: str | None = Field(default=None, max_length=64)
-    providers: list[Literal["greenhouse", "lever"]] | None = Field(default=None, min_length=1, max_length=2)
+    providers: list[Literal["greenhouse", "lever"]] | None = Field(
+        default=None, min_length=1, max_length=2
+    )
     freshness_days: int | None = Field(default=None, ge=1, le=90)
     minimum_match_score: float | None = Field(default=None, ge=0.0, le=1.0)
     cadence_hours: Literal[6, 12, 24] | None = None
@@ -507,16 +554,103 @@ class JobDiscoveryRunResponse(APIModel):
     completed_at: datetime | None
 
 
+class AutomationPolicyInput(APIModel):
+    name: str = Field(min_length=1, max_length=80)
+    enabled: bool = False
+    priority: int = Field(default=100, ge=0, le=1000)
+    minimum_match_score: float = Field(default=0.2, ge=0.0, le=1.0)
+    allowed_providers: list[Literal["greenhouse", "lever"]] = Field(
+        default_factory=list, max_length=2
+    )
+    allowed_locations: list[str] = Field(default_factory=list, max_length=20)
+    remote_preference: bool | None = None
+    employment_types: list[str] = Field(default_factory=list, max_length=10)
+    experience_levels: list[str] = Field(default_factory=list, max_length=10)
+    required_skills_any: list[UUID] = Field(default_factory=list, max_length=30)
+    required_skills_all: list[UUID] = Field(default_factory=list, max_length=30)
+    excluded_skills: list[UUID] = Field(default_factory=list, max_length=30)
+    excluded_companies: list[str] = Field(default_factory=list, max_length=20)
+    excluded_keywords: list[str] = Field(default_factory=list, max_length=20)
+    maximum_jobs_per_run: int = Field(default=25, ge=1, le=100)
+    maximum_review_intents_per_run: int = Field(default=5, ge=0, le=10)
+    maximum_review_intents_per_day: int = Field(default=5, ge=0, le=10)
+    maximum_pending_review_queue_size: int = Field(default=25, ge=0, le=100)
+    auto_create_review_intent: bool = False
+
+
+class AutomationPolicyUpdate(APIModel):
+    name: str | None = Field(default=None, min_length=1, max_length=80)
+    enabled: bool | None = None
+    priority: int | None = Field(default=None, ge=0, le=1000)
+    minimum_match_score: float | None = Field(default=None, ge=0.0, le=1.0)
+    allowed_providers: list[Literal["greenhouse", "lever"]] | None = Field(
+        default=None, max_length=2
+    )
+    allowed_locations: list[str] | None = Field(default=None, max_length=20)
+    remote_preference: bool | None = None
+    employment_types: list[str] | None = Field(default=None, max_length=10)
+    experience_levels: list[str] | None = Field(default=None, max_length=10)
+    required_skills_any: list[UUID] | None = Field(default=None, max_length=30)
+    required_skills_all: list[UUID] | None = Field(default=None, max_length=30)
+    excluded_skills: list[UUID] | None = Field(default=None, max_length=30)
+    excluded_companies: list[str] | None = Field(default=None, max_length=20)
+    excluded_keywords: list[str] | None = Field(default=None, max_length=20)
+    maximum_jobs_per_run: int | None = Field(default=None, ge=1, le=100)
+    maximum_review_intents_per_run: int | None = Field(default=None, ge=0, le=10)
+    maximum_review_intents_per_day: int | None = Field(default=None, ge=0, le=10)
+    maximum_pending_review_queue_size: int | None = Field(default=None, ge=0, le=100)
+    auto_create_review_intent: bool | None = None
+
+
+class AutomationPolicyResponse(AutomationPolicyInput):
+    id: UUID
+    student_id: UUID
+    last_applied_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AutomationQueueItem(APIModel):
+    external_job_id: UUID
+    match_id: UUID
+    title: str
+    company_name: str
+    provider: str
+    final_score: float
+    policy_id: UUID
+    policy_name: str
+    policy_reason: list[str]
+    application_id: UUID | None = None
+    application_status: str | None = None
+    active_resume_filename: str | None = None
+    explanation: ExplanationResponse
+
+
 class ManualSubmissionRecord(APIModel):
     submitted_at: datetime | None = None
-    provider_reference: str | None = Field(default=None, max_length=255, pattern=r"^[A-Za-z0-9._:-]+$")
+    provider_reference: str | None = Field(
+        default=None, max_length=255, pattern=r"^[A-Za-z0-9._:-]+$"
+    )
 
 
 class ApplicationStatusEventResponse(APIModel):
     id: UUID
     application_id: UUID
     event_type: str
-    status: Literal["submitted", "received", "in_review", "rejected", "interview", "offer", "hired", "withdrawn", "unknown"] | None
+    status: (
+        Literal[
+            "submitted",
+            "received",
+            "in_review",
+            "rejected",
+            "interview",
+            "offer",
+            "hired",
+            "withdrawn",
+            "unknown",
+        ]
+        | None
+    )
     source: Literal["system", "provider", "user", "admin"]
     provider_status: str | None
     safe_metadata: dict[str, object]
@@ -527,7 +661,13 @@ class ApplicationSubmissionAttemptResponse(APIModel):
     id: UUID
     application_id: UUID
     payload_fingerprint: str
-    status: Literal["submitting", "submitted", "retryable_failure", "failed", "unknown_submission_state"]
+    status: Literal[
+        "submitting",
+        "submitted",
+        "retryable_failure",
+        "failed",
+        "unknown_submission_state",
+    ]
     attempt_count: int
     started_at: datetime
     completed_at: datetime | None
