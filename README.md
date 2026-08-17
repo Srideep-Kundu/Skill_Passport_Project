@@ -15,22 +15,31 @@ Architecture and contribution invariants are defined in [AGENTS.md](AGENTS.md). 
 
 ## Local development with Docker
 
-1. Copy `.env.example` to `.env` and replace local placeholder values as needed. Never commit `.env`.
+1. Copy `.env.example` to `.env`. The checked-in values are explicit development-only defaults, so a new developer does not need to guess local database credentials. Never commit `.env`.
 2. Start the stack:
 
    ```bash
-   docker compose up --build
+   docker compose up -d --build
    ```
 
-3. Compose applies migrations before starting the API and worker. Seed the taxonomy and demo data after the stack starts:
+3. Compose applies migrations before starting the API and worker. To run or confirm the migration manually, use the Compose network:
+
+   ```bash
+   docker compose run --rm --no-deps backend alembic upgrade head
+   docker compose run --rm --no-deps backend alembic current
+   ```
+
+4. Seed the taxonomy and demo data after the stack starts:
 
    ```bash
    docker compose exec backend python -m seed.seed_demo_data
    ```
 
-4. Open the frontend at `http://localhost:5173`; the API health check is at `http://localhost:8000/health`.
+5. Open the frontend at `http://localhost:5173`; the API health check is at `http://localhost:8000/health`.
 
 Use `docker compose down` to stop services. Add `-v` only when you intentionally want to remove the local PostgreSQL/Redis volumes.
+
+See the [local development guide](docs/local-development.md) for the environment-variable reference, host-versus-Compose database connection boundary, local checks, and reset procedure.
 
 ## Local checks
 
