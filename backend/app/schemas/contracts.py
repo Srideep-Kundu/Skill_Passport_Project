@@ -496,7 +496,9 @@ class JobDiscoveryCreate(APIModel):
     remote_preference: bool | None = None
     employment_type: str | None = Field(default=None, max_length=64)
     experience_level: str | None = Field(default=None, max_length=64)
-    providers: list[Literal["greenhouse", "lever"]] = Field(min_length=1, max_length=2)
+    providers: list[Literal["greenhouse", "lever", "ashby"]] = Field(
+        min_length=1, max_length=3
+    )
     freshness_days: int = Field(default=30, ge=1, le=90)
     minimum_match_score: float = Field(default=0.2, ge=0.0, le=1.0)
     cadence_hours: Literal[6, 12, 24] = 24
@@ -510,8 +512,8 @@ class JobDiscoveryUpdate(APIModel):
     remote_preference: bool | None = None
     employment_type: str | None = Field(default=None, max_length=64)
     experience_level: str | None = Field(default=None, max_length=64)
-    providers: list[Literal["greenhouse", "lever"]] | None = Field(
-        default=None, min_length=1, max_length=2
+    providers: list[Literal["greenhouse", "lever", "ashby"]] | None = Field(
+        default=None, min_length=1, max_length=3
     )
     freshness_days: int | None = Field(default=None, ge=1, le=90)
     minimum_match_score: float | None = Field(default=None, ge=0.0, le=1.0)
@@ -559,8 +561,8 @@ class AutomationPolicyInput(APIModel):
     enabled: bool = False
     priority: int = Field(default=100, ge=0, le=1000)
     minimum_match_score: float = Field(default=0.2, ge=0.0, le=1.0)
-    allowed_providers: list[Literal["greenhouse", "lever"]] = Field(
-        default_factory=list, max_length=2
+    allowed_providers: list[Literal["greenhouse", "lever", "ashby"]] = Field(
+        default_factory=list, max_length=3
     )
     allowed_locations: list[str] = Field(default_factory=list, max_length=20)
     remote_preference: bool | None = None
@@ -583,8 +585,8 @@ class AutomationPolicyUpdate(APIModel):
     enabled: bool | None = None
     priority: int | None = Field(default=None, ge=0, le=1000)
     minimum_match_score: float | None = Field(default=None, ge=0.0, le=1.0)
-    allowed_providers: list[Literal["greenhouse", "lever"]] | None = Field(
-        default=None, max_length=2
+    allowed_providers: list[Literal["greenhouse", "lever", "ashby"]] | None = Field(
+        default=None, max_length=3
     )
     allowed_locations: list[str] | None = Field(default=None, max_length=20)
     remote_preference: bool | None = None

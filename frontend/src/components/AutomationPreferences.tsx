@@ -9,7 +9,7 @@ const safeDefaultPolicy = {
   enabled: false,
   priority: 100,
   minimum_match_score: 0.2,
-  allowed_providers: [] as ("greenhouse" | "lever")[],
+  allowed_providers: [] as ("greenhouse" | "lever" | "ashby")[],
   allowed_locations: [],
   remote_preference: null,
   employment_types: [],

@@ -10,7 +10,7 @@ Provider payloads never enter candidate-profile, fairness, recommendation, or sc
 
 `JobProvider` exposes `search_jobs`, `get_job`, and `get_application_url`. Its `ProviderCapabilities` explicitly declares `search`, `detail_fetch`, `auto_apply`, and `status_tracking`; unsupported capabilities are `false`, not emulated.
 
-The first adapter is Greenhouse Job Board API. Greenhouse documents public, unauthenticated GET endpoints for published job boards and jobs; the adapter calls only `https://boards-api.greenhouse.io/v1/boards/{board_token}` and its job endpoints. It never submits applications, controls a browser, or scrapes HTML pages. A board token must be explicitly allowlisted in `GREENHOUSE_BOARD_TOKENS` before an admin can request `POST /external-jobs/sync`.
+The adapters are Greenhouse Job Board API, Lever's public postings API, and Ashby's documented public Job Postings API. Each source identifier must be explicitly allowlisted before discovery or an admin sync can access it. Ashby board names are configured through `ASHBY_JOB_BOARD_NAMES`; its adapter uses only `https://api.ashbyhq.com/posting-api/job-board/{JOB_BOARD_NAME}` and is discovery-only. See [Ashby provider details](ashby-job-provider.md).
 
 ## Data and normalization
 

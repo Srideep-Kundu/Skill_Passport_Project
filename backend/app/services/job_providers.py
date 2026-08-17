@@ -88,7 +88,9 @@ class ProviderCredentialStore:
     """Environment-backed credentials scoped to one provider employer/board identity."""
 
     def __init__(self, credentials: tuple[ProviderCredential, ...] = ()) -> None:
-        self._credentials = {(item.provider, item.scope.casefold()): item for item in credentials}
+        self._credentials = {
+            (item.provider, item.scope.casefold()): item for item in credentials
+        }
 
     @staticmethod
     def _parse(provider: str, value: str | None) -> tuple[ProviderCredential, ...]:
@@ -105,7 +107,12 @@ class ProviderCredentialStore:
             if not isinstance(entry, dict):
                 continue
             scope, secret = entry.get("scope"), entry.get("api_key")
-            if isinstance(scope, str) and isinstance(secret, str) and re.fullmatch(r"[A-Za-z0-9_-]{1,120}", scope) and 1 <= len(secret) <= 4096:
+            if (
+                isinstance(scope, str)
+                and isinstance(secret, str)
+                and re.fullmatch(r"[A-Za-z0-9_-]{1,120}", scope)
+                and 1 <= len(secret) <= 4096
+            ):
                 parsed.append(ProviderCredential(provider, scope, secret))
         return tuple(parsed)
 
@@ -133,7 +140,12 @@ class ProviderSubmissionPolicy:
     @classmethod
     def from_environment(cls) -> "ProviderSubmissionPolicy":
         settings = get_settings()
-        return cls(settings.provider_submission_enabled, settings.lever_submission_enabled, settings.environment == "staging" and settings.application_execution_mode == "staging_submit")
+        return cls(
+            settings.provider_submission_enabled,
+            settings.lever_submission_enabled,
+            settings.environment == "staging"
+            and settings.application_execution_mode == "staging_submit",
+        )
 
     @property
     def lever_live_submission_allowed(self) -> bool:
@@ -216,19 +228,35 @@ class JobProvider(ABC):
     capabilities: ProviderCapabilities
 
     @abstractmethod
-    async def search_jobs(self, filters: JobSearchFilters, *, source_key: str) -> ProviderSearchPage: ...
+    async def search_jobs(
+        self, filters: JobSearchFilters, *, source_key: str
+    ) -> ProviderSearchPage: ...
 
     @abstractmethod
-    async def get_job(self, external_id: str, *, source_key: str) -> NormalizedExternalJob: ...
+    async def get_job(
+        self, external_id: str, *, source_key: str
+    ) -> NormalizedExternalJob: ...
 
     def get_application_url(self, job: NormalizedExternalJob) -> str | None:
         return job.apply_url
 
-    async def get_submission_capability(self, job: NormalizedExternalJob) -> ProviderSubmissionCapability:
+    async def get_submission_capability(
+        self, job: NormalizedExternalJob
+    ) -> ProviderSubmissionCapability:
         del job
-        return ProviderSubmissionCapability(False, False, False, False, False, "assisted", "This provider has no official submission integration.")
+        return ProviderSubmissionCapability(
+            False,
+            False,
+            False,
+            False,
+            False,
+            "assisted",
+            "This provider has no official submission integration.",
+        )
 
-    async def get_application_schema(self, job: NormalizedExternalJob) -> ProviderApplicationSchema:
+    async def get_application_schema(
+        self, job: NormalizedExternalJob
+    ) -> ProviderApplicationSchema:
         """Return only a provider-declared schema; unsupported providers remain assisted-only."""
         del job
         return ProviderApplicationSchema(version="unsupported-v1", fields=())
@@ -238,14 +266,23 @@ class JobProvider(ABC):
         del payload
         return []
 
-    async def submit_application(self, payload: dict[str, object], *, idempotency_key: str) -> ProviderSubmissionResult:
+    async def submit_application(
+        self, payload: dict[str, object], *, idempotency_key: str
+    ) -> ProviderSubmissionResult:
         del payload, idempotency_key
         raise ProviderSubmissionUnsupported()
 
     async def get_status_capability(self) -> ProviderStatusCapability:
-        return ProviderStatusCapability(False, "none", False, "This provider has no configured applicant-status lookup.")
+        return ProviderStatusCapability(
+            False,
+            "none",
+            False,
+            "This provider has no configured applicant-status lookup.",
+        )
 
-    async def get_application_status(self, external_application_id: str) -> ProviderStatusResult | None:
+    async def get_application_status(
+        self, external_application_id: str
+    ) -> ProviderStatusResult | None:
         del external_application_id
         return None
 
@@ -272,7 +309,9 @@ class _PlainTextParser(HTMLParser):
             self.ignored_depth -= 1
 
     def text(self) -> str:
-        return re.sub(r"[ \t]+", " ", re.sub(r"\n{3,}", "\n\n", "".join(self.parts))).strip()
+        return re.sub(
+            r"[ \t]+", " ", re.sub(r"\n{3,}", "\n\n", "".join(self.parts))
+        ).strip()
 
 
 def html_to_safe_text(value: object, *, limit: int = 20_000) -> str:
@@ -291,7 +330,12 @@ def _safe_url(value: object, *, allowed_hosts: AbstractSet[str]) -> str | None:
     if not isinstance(value, str) or len(value) > 2_048:
         return None
     parsed = urlsplit(value)
-    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+    if (
+        parsed.scheme != "https"
+        or not parsed.hostname
+        or parsed.username
+        or parsed.password
+    ):
         return None
     hostname = parsed.hostname.casefold()
     if hostname not in allowed_hosts:
@@ -306,7 +350,9 @@ def _parse_time(value: object) -> datetime | None:
         parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
         return None
-    return parsed.replace(tzinfo=UTC) if parsed.tzinfo is None else parsed.astimezone(UTC)
+    return (
+        parsed.replace(tzinfo=UTC) if parsed.tzinfo is None else parsed.astimezone(UTC)
+    )
 
 
 def _clean_text(value: object, limit: int) -> str | None:
@@ -326,11 +372,28 @@ def _safe_metadata(value: object, *, depth: int = 0) -> object:
     if isinstance(value, list):
         return [_safe_metadata(item, depth=depth + 1) for item in value[:50]]
     if isinstance(value, dict):
-        return {str(key)[:100]: _safe_metadata(item, depth=depth + 1) for key, item in list(value.items())[:50]}
+        return {
+            str(key)[:100]: _safe_metadata(item, depth=depth + 1)
+            for key, item in list(value.items())[:50]
+        }
     return str(value)[:2_000]
 
 
-_SENSITIVE_FIELD_WORDS = frozenset({"gender", "race", "ethnicity", "disability", "veteran", "religion", "sexual orientation", "work authorization", "visa", "criminal", "salary"})
+_SENSITIVE_FIELD_WORDS = frozenset(
+    {
+        "gender",
+        "race",
+        "ethnicity",
+        "disability",
+        "veteran",
+        "religion",
+        "sexual orientation",
+        "work authorization",
+        "visa",
+        "criminal",
+        "salary",
+    }
+)
 _FIELD_TYPE_MAP = {
     "text": "text",
     "short_answer": "text",
@@ -357,17 +420,25 @@ _FIELD_TYPE_MAP = {
 }
 
 
-def normalize_provider_application_field(provider: str, value: object, *, prefix: str = "") -> ApplicationFieldDefinition | None:
+def normalize_provider_application_field(
+    provider: str, value: object, *, prefix: str = ""
+) -> ApplicationFieldDefinition | None:
     """Map a documented provider field to Phase 11's safe normalized contract."""
     if not isinstance(value, dict):
         return None
     raw_id = value.get("id") or value.get("name")
     label = value.get("label") or value.get("question") or value.get("text")
     raw_type = value.get("type") or value.get("input_type")
-    if not isinstance(raw_id, (str, int)) or not isinstance(label, str) or not isinstance(raw_type, str):
+    if (
+        not isinstance(raw_id, (str, int))
+        or not isinstance(label, str)
+        or not isinstance(raw_type, str)
+    ):
         return None
     field_id = re.sub(r"[^a-z0-9_]", "_", f"{prefix}{raw_id}".casefold()).strip("_")
-    if not re.fullmatch(r"[a-z][a-z0-9_]{0,119}", field_id) or not (clean_label := _clean_text(label, 255)):
+    if not re.fullmatch(r"[a-z][a-z0-9_]{0,119}", field_id) or not (
+        clean_label := _clean_text(label, 255)
+    ):
         return None
     field_type = _FIELD_TYPE_MAP.get(raw_type.casefold())
     if field_type is None:
@@ -376,13 +447,22 @@ def normalize_provider_application_field(provider: str, value: object, *, prefix
     options: list[str] = []
     if isinstance(values, list):
         for option in values:
-            option_text = option.get("label") or option.get("text") or option.get("value") if isinstance(option, dict) else option
-            if isinstance(option_text, str) and (clean_option := _clean_text(option_text, 255)):
+            option_text = (
+                option.get("label") or option.get("text") or option.get("value")
+                if isinstance(option, dict)
+                else option
+            )
+            if isinstance(option_text, str) and (
+                clean_option := _clean_text(option_text, 255)
+            ):
                 options.append(clean_option)
     if field_type in {"select", "multi_select"} and not options:
         return None
     label_key = clean_label.casefold()
-    sensitive = any(word in label_key for word in _SENSITIVE_FIELD_WORDS) or value.get("category") == "eeo"
+    sensitive = (
+        any(word in label_key for word in _SENSITIVE_FIELD_WORDS)
+        or value.get("category") == "eeo"
+    )
     category = "legal" if sensitive else "provider"
     raw_provider_id = str(raw_id)
     if len(raw_provider_id) > 160:
@@ -401,7 +481,9 @@ def normalize_provider_application_field(provider: str, value: object, *, prefix
     )
 
 
-def normalized_application_schema(provider: str, version: str, fields: object, *, prefix: str) -> ProviderApplicationSchema:
+def normalized_application_schema(
+    provider: str, version: str, fields: object, *, prefix: str
+) -> ProviderApplicationSchema:
     if not isinstance(fields, list):
         return ProviderApplicationSchema(version, ())
     normalized: list[ApplicationFieldDefinition] = []
@@ -418,23 +500,42 @@ def normalized_application_schema(provider: str, version: str, fields: object, *
             unsupported_required.append(str(raw_id)[:120])
     ids = [field.field_id for field in normalized]
     if len(ids) != len(set(ids)):
-        return ProviderApplicationSchema(version, (), tuple(unsupported_required + ["duplicate_field_id"]))
-    return ProviderApplicationSchema(version, tuple(normalized), tuple(unsupported_required))
+        return ProviderApplicationSchema(
+            version, (), tuple(unsupported_required + ["duplicate_field_id"])
+        )
+    return ProviderApplicationSchema(
+        version, tuple(normalized), tuple(unsupported_required)
+    )
 
 
 class GreenhouseJobProvider(JobProvider):
     """Official public Greenhouse Job Board API adapter, not a browser scraper."""
 
     name = "greenhouse"
-    capabilities = ProviderCapabilities(search=True, detail_fetch=True, auto_apply=False, status_tracking=False)
+    capabilities = ProviderCapabilities(
+        search=True, detail_fetch=True, auto_apply=False, status_tracking=False
+    )
 
     async def get_status_capability(self) -> ProviderStatusCapability:
-        return ProviderStatusCapability(False, "none", False, "Greenhouse job-board credentials do not provide applicant-status tracking in this integration.")
+        return ProviderStatusCapability(
+            False,
+            "none",
+            False,
+            "Greenhouse job-board credentials do not provide applicant-status tracking in this integration.",
+        )
+
     _board_key = re.compile(r"^[A-Za-z0-9_-]{1,120}$")
     _base_url = "https://boards-api.greenhouse.io/v1/boards"
-    _public_hosts: ClassVar[frozenset[str]] = frozenset({"boards.greenhouse.io", "job-boards.greenhouse.io"})
+    _public_hosts: ClassVar[frozenset[str]] = frozenset(
+        {"boards.greenhouse.io", "job-boards.greenhouse.io"}
+    )
 
-    def __init__(self, *, transport: httpx.AsyncBaseTransport | None = None, credentials: ProviderCredentialStore | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        transport: httpx.AsyncBaseTransport | None = None,
+        credentials: ProviderCredentialStore | None = None,
+    ) -> None:
         self._transport = transport
         self._credentials = credentials or provider_credential_store
 
@@ -443,11 +544,21 @@ class GreenhouseJobProvider(JobProvider):
         if not cls._board_key.fullmatch(source_key):
             raise ProviderPayloadError()
 
-    async def _get_json(self, path: str, *, params: dict[str, str] | None = None) -> dict[str, Any]:
+    async def _get_json(
+        self, path: str, *, params: dict[str, str] | None = None
+    ) -> dict[str, Any]:
         for attempt in range(2):
             try:
-                async with httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=5.0), transport=self._transport, follow_redirects=False) as client:
-                    response = await client.get(f"{self._base_url}/{path}", params=params, headers={"Accept": "application/json"})
+                async with httpx.AsyncClient(
+                    timeout=httpx.Timeout(10.0, connect=5.0),
+                    transport=self._transport,
+                    follow_redirects=False,
+                ) as client:
+                    response = await client.get(
+                        f"{self._base_url}/{path}",
+                        params=params,
+                        headers={"Accept": "application/json"},
+                    )
             except (httpx.TimeoutException, httpx.TransportError) as error:
                 if attempt == 0:
                     await asyncio.sleep(0.1)
@@ -473,24 +584,43 @@ class GreenhouseJobProvider(JobProvider):
             return payload
         raise ProviderError()
 
-    def _normalize_job(self, payload: dict[str, Any], *, source_key: str, company_name: str) -> NormalizedExternalJob:
+    def _normalize_job(
+        self, payload: dict[str, Any], *, source_key: str, company_name: str
+    ) -> NormalizedExternalJob:
         external_id = str(payload.get("id", "")).strip()
         title = _clean_text(payload.get("title"), 200)
         content = html_to_safe_text(payload.get("content"))
         if not external_id or len(external_id) > 160 or title is None or not content:
             raise ProviderPayloadError()
         location_data = payload.get("location")
-        location = _clean_text(location_data.get("name"), 255) if isinstance(location_data, dict) else None
-        remote_status = "remote" if "remote" in f"{title} {location or ''}".casefold() else "not_remote" if location else None
-        constructed_url = f"https://boards.greenhouse.io/{source_key}/jobs/{external_id}"
-        source_url = _safe_url(payload.get("absolute_url"), allowed_hosts=self._public_hosts) or constructed_url
-        metadata = _safe_metadata({
-            "departments": payload.get("departments"),
-            "offices": payload.get("offices"),
-            "provider_metadata": payload.get("metadata"),
-            "updated_at": payload.get("updated_at"),
-            "application_questions": payload.get("questions"),
-        })
+        location = (
+            _clean_text(location_data.get("name"), 255)
+            if isinstance(location_data, dict)
+            else None
+        )
+        remote_status = (
+            "remote"
+            if "remote" in f"{title} {location or ''}".casefold()
+            else "not_remote"
+            if location
+            else None
+        )
+        constructed_url = (
+            f"https://boards.greenhouse.io/{source_key}/jobs/{external_id}"
+        )
+        source_url = (
+            _safe_url(payload.get("absolute_url"), allowed_hosts=self._public_hosts)
+            or constructed_url
+        )
+        metadata = _safe_metadata(
+            {
+                "departments": payload.get("departments"),
+                "offices": payload.get("offices"),
+                "provider_metadata": payload.get("metadata"),
+                "updated_at": payload.get("updated_at"),
+                "application_questions": payload.get("questions"),
+            }
+        )
         return NormalizedExternalJob(
             provider=self.name,
             provider_source=source_key,
@@ -514,28 +644,54 @@ class GreenhouseJobProvider(JobProvider):
 
     @staticmethod
     def _matches(job: NormalizedExternalJob, filters: JobSearchFilters) -> bool:
-        if filters.query and filters.query.casefold() not in f"{job.title} {job.company_name}".casefold():
+        if (
+            filters.query
+            and filters.query.casefold()
+            not in f"{job.title} {job.company_name}".casefold()
+        ):
             return False
-        if filters.location and filters.location.casefold() not in (job.location or "").casefold():
+        if (
+            filters.location
+            and filters.location.casefold() not in (job.location or "").casefold()
+        ):
             return False
-        if filters.remote is not None and (job.remote_status == "remote") != filters.remote:
+        if (
+            filters.remote is not None
+            and (job.remote_status == "remote") != filters.remote
+        ):
             return False
         if filters.employment_type and job.employment_type != filters.employment_type:
             return False
-        if filters.experience_level and job.experience_level != filters.experience_level:
+        if (
+            filters.experience_level
+            and job.experience_level != filters.experience_level
+        ):
             return False
-        return not (filters.posted_after and (job.posted_at is None or job.posted_at < filters.posted_after))
+        return not (
+            filters.posted_after
+            and (job.posted_at is None or job.posted_at < filters.posted_after)
+        )
 
-    async def search_jobs(self, filters: JobSearchFilters, *, source_key: str) -> ProviderSearchPage:
+    async def search_jobs(
+        self, filters: JobSearchFilters, *, source_key: str
+    ) -> ProviderSearchPage:
         self._validate_source_key(source_key)
-        board, payload = await self._get_json(source_key), await self._get_json(f"{source_key}/jobs", params={"content": "true", "questions": "true"})
+        board, payload = (
+            await self._get_json(source_key),
+            await self._get_json(
+                f"{source_key}/jobs", params={"content": "true", "questions": "true"}
+            ),
+        )
         company_name = _clean_text(board.get("name"), 255) or source_key
         jobs_data = payload.get("jobs")
         if not isinstance(jobs_data, list):
             raise ProviderPayloadError()
         if any(not isinstance(item, dict) for item in jobs_data):
             raise ProviderPayloadError()
-        jobs = [self._normalize_job(item, source_key=source_key, company_name=company_name) for item in jobs_data]
+        jobs = [
+            self._normalize_job(item, source_key=source_key, company_name=company_name)
+            for item in jobs_data
+        ]
         filtered = [job for job in jobs if self._matches(job, filters)]
         try:
             start = int(filters.cursor or "0")
@@ -545,47 +701,112 @@ class GreenhouseJobProvider(JobProvider):
             raise ProviderPayloadError()
         page_size = min(max(filters.page_size, 1), 100)
         page = tuple(filtered[start : start + page_size])
-        next_cursor = str(start + page_size) if start + page_size < len(filtered) else None
+        next_cursor = (
+            str(start + page_size) if start + page_size < len(filtered) else None
+        )
         return ProviderSearchPage(jobs=page, next_cursor=next_cursor)
 
-    async def get_job(self, external_id: str, *, source_key: str) -> NormalizedExternalJob:
+    async def get_job(
+        self, external_id: str, *, source_key: str
+    ) -> NormalizedExternalJob:
         self._validate_source_key(source_key)
         if not re.fullmatch(r"[A-Za-z0-9_-]{1,160}", external_id):
             raise ProviderPayloadError()
-        board, payload = await self._get_json(source_key), await self._get_json(f"{source_key}/jobs/{external_id}", params={"content": "true", "questions": "true"})
-        return self._normalize_job(payload, source_key=source_key, company_name=_clean_text(board.get("name"), 255) or source_key)
+        board, payload = (
+            await self._get_json(source_key),
+            await self._get_json(
+                f"{source_key}/jobs/{external_id}",
+                params={"content": "true", "questions": "true"},
+            ),
+        )
+        return self._normalize_job(
+            payload,
+            source_key=source_key,
+            company_name=_clean_text(board.get("name"), 255) or source_key,
+        )
 
-    async def get_application_schema(self, job: NormalizedExternalJob) -> ProviderApplicationSchema:
+    async def get_application_schema(
+        self, job: NormalizedExternalJob
+    ) -> ProviderApplicationSchema:
         metadata = job.raw_metadata or {}
-        questions = metadata.get("application_questions") if isinstance(metadata, dict) else None
-        return normalized_application_schema(self.name, "greenhouse-job-board-v1", questions, prefix="gh_")
+        questions = (
+            metadata.get("application_questions")
+            if isinstance(metadata, dict)
+            else None
+        )
+        return normalized_application_schema(
+            self.name, "greenhouse-job-board-v1", questions, prefix="gh_"
+        )
 
-    async def get_submission_capability(self, job: NormalizedExternalJob) -> ProviderSubmissionCapability:
+    async def get_submission_capability(
+        self, job: NormalizedExternalJob
+    ) -> ProviderSubmissionCapability:
         credential = self._credentials.get(self.name, job.provider_source)
         schema = await self.get_application_schema(job)
-        schema_available = bool(schema.fields) and not schema.unsupported_required_field_ids
+        schema_available = (
+            bool(schema.fields) and not schema.unsupported_required_field_ids
+        )
         if credential is None:
-            return ProviderSubmissionCapability(True, False, True, schema_available, False, "assisted", "Provider integration is not connected for this Greenhouse board.")
+            return ProviderSubmissionCapability(
+                True,
+                False,
+                True,
+                schema_available,
+                False,
+                "assisted",
+                "Provider integration is not connected for this Greenhouse board.",
+            )
         if not schema_available:
-            return ProviderSubmissionCapability(True, True, True, False, False, "assisted", "The required Greenhouse application form cannot be safely mapped.")
-        return ProviderSubmissionCapability(True, True, True, True, False, "assisted", "Credential scope matches, but controlled Greenhouse submission is not enabled by this release.")
+            return ProviderSubmissionCapability(
+                True,
+                True,
+                True,
+                False,
+                False,
+                "assisted",
+                "The required Greenhouse application form cannot be safely mapped.",
+            )
+        return ProviderSubmissionCapability(
+            True,
+            True,
+            True,
+            True,
+            False,
+            "assisted",
+            "Credential scope matches, but controlled Greenhouse submission is not enabled by this release.",
+        )
 
 
 class LeverJobProvider(JobProvider):
     """Official Lever postings adapter with credential-scoped form discovery only."""
 
     name = "lever"
-    capabilities = ProviderCapabilities(search=True, detail_fetch=True, auto_apply=False, status_tracking=False)
+    capabilities = ProviderCapabilities(
+        search=True, detail_fetch=True, auto_apply=False, status_tracking=False
+    )
 
     async def get_status_capability(self) -> ProviderStatusCapability:
-        return ProviderStatusCapability(False, "none", False, "Controlled Lever submission credentials are not used for applicant-status tracking.")
+        return ProviderStatusCapability(
+            False,
+            "none",
+            False,
+            "Controlled Lever submission credentials are not used for applicant-status tracking.",
+        )
+
     _site_key = re.compile(r"^[A-Za-z0-9_-]{1,120}$")
     _posting_key = re.compile(r"^[A-Za-z0-9-]{1,160}$")
     _public_base_url = "https://api.lever.co/v0/postings"
     _authenticated_base_url = "https://api.lever.co/v1"
-    _public_hosts: ClassVar[frozenset[str]] = frozenset({"jobs.lever.co", "jobs.eu.lever.co"})
+    _public_hosts: ClassVar[frozenset[str]] = frozenset(
+        {"jobs.lever.co", "jobs.eu.lever.co"}
+    )
 
-    def __init__(self, *, transport: httpx.AsyncBaseTransport | None = None, credentials: ProviderCredentialStore | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        transport: httpx.AsyncBaseTransport | None = None,
+        credentials: ProviderCredentialStore | None = None,
+    ) -> None:
         self._transport = transport
         self._credentials = credentials or provider_credential_store
 
@@ -594,10 +815,20 @@ class LeverJobProvider(JobProvider):
         if not cls._site_key.fullmatch(site):
             raise ProviderPayloadError()
 
-    async def _public_json(self, path: str, *, params: dict[str, str] | None = None) -> object:
+    async def _public_json(
+        self, path: str, *, params: dict[str, str] | None = None
+    ) -> object:
         try:
-            async with httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=5.0), transport=self._transport, follow_redirects=False) as client:
-                response = await client.get(f"{self._public_base_url}/{path}", params=params, headers={"Accept": "application/json"})
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(10.0, connect=5.0),
+                transport=self._transport,
+                follow_redirects=False,
+            ) as client:
+                response = await client.get(
+                    f"{self._public_base_url}/{path}",
+                    params=params,
+                    headers={"Accept": "application/json"},
+                )
         except (httpx.TimeoutException, httpx.TransportError) as error:
             raise ProviderError() from error
         if response.status_code == 429:
@@ -613,17 +844,36 @@ class LeverJobProvider(JobProvider):
         except ValueError as error:
             raise ProviderPayloadError() from error
 
-    def _normalize_job(self, payload: object, *, source_key: str) -> NormalizedExternalJob:
+    def _normalize_job(
+        self, payload: object, *, source_key: str
+    ) -> NormalizedExternalJob:
         if not isinstance(payload, dict):
             raise ProviderPayloadError()
-        external_id, title = _clean_text(str(payload.get("id", "")), 160), _clean_text(payload.get("text"), 200)
-        description = _clean_text(payload.get("descriptionPlain"), 20_000) or html_to_safe_text(payload.get("description"))
+        external_id, title = (
+            _clean_text(str(payload.get("id", "")), 160),
+            _clean_text(payload.get("text"), 200),
+        )
+        description = _clean_text(
+            payload.get("descriptionPlain"), 20_000
+        ) or html_to_safe_text(payload.get("description"))
         categories = payload.get("categories")
-        location = _clean_text(categories.get("location"), 255) if isinstance(categories, dict) else None
-        if not external_id or not self._posting_key.fullmatch(external_id) or title is None or not description:
+        location = (
+            _clean_text(categories.get("location"), 255)
+            if isinstance(categories, dict)
+            else None
+        )
+        if (
+            not external_id
+            or not self._posting_key.fullmatch(external_id)
+            or title is None
+            or not description
+        ):
             raise ProviderPayloadError()
         hosted = _safe_url(payload.get("hostedUrl"), allowed_hosts=self._public_hosts)
-        apply_url = _safe_url(payload.get("applyUrl"), allowed_hosts=self._public_hosts) or hosted
+        apply_url = (
+            _safe_url(payload.get("applyUrl"), allowed_hosts=self._public_hosts)
+            or hosted
+        )
         if hosted is None:
             hosted = f"https://jobs.lever.co/{source_key}/{external_id}"
         return NormalizedExternalJob(
@@ -635,7 +885,9 @@ class LeverJobProvider(JobProvider):
             description=description,
             location=location,
             remote_status=_clean_text(payload.get("workplaceType"), 40),
-            employment_type=_clean_text(categories.get("commitment"), 100) if isinstance(categories, dict) else None,
+            employment_type=_clean_text(categories.get("commitment"), 100)
+            if isinstance(categories, dict)
+            else None,
             experience_level=None,
             salary_min=None,
             salary_max=None,
@@ -647,23 +899,43 @@ class LeverJobProvider(JobProvider):
             raw_metadata=None,
         )
 
-    async def search_jobs(self, filters: JobSearchFilters, *, source_key: str) -> ProviderSearchPage:
+    async def search_jobs(
+        self, filters: JobSearchFilters, *, source_key: str
+    ) -> ProviderSearchPage:
         self._validate_site(source_key)
-        payload = await self._public_json(source_key, params={"mode": "json", "limit": str(min(max(filters.page_size, 1), 100))})
+        payload = await self._public_json(
+            source_key,
+            params={"mode": "json", "limit": str(min(max(filters.page_size, 1), 100))},
+        )
         if not isinstance(payload, list):
             raise ProviderPayloadError()
-        jobs = tuple(self._normalize_job(item, source_key=source_key) for item in payload)
+        jobs = tuple(
+            self._normalize_job(item, source_key=source_key) for item in payload
+        )
         return ProviderSearchPage(jobs=jobs, next_cursor=None)
 
-    async def get_job(self, external_id: str, *, source_key: str) -> NormalizedExternalJob:
+    async def get_job(
+        self, external_id: str, *, source_key: str
+    ) -> NormalizedExternalJob:
         self._validate_site(source_key)
         if not self._posting_key.fullmatch(external_id):
             raise ProviderPayloadError()
-        return self._normalize_job(await self._public_json(f"{source_key}/{external_id}", params={"mode": "json"}), source_key=source_key)
+        return self._normalize_job(
+            await self._public_json(
+                f"{source_key}/{external_id}", params={"mode": "json"}
+            ),
+            source_key=source_key,
+        )
 
-    async def _application_questions(self, job: NormalizedExternalJob, credential: ProviderCredential) -> object:
+    async def _application_questions(
+        self, job: NormalizedExternalJob, credential: ProviderCredential
+    ) -> object:
         try:
-            async with httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=5.0), transport=self._transport, follow_redirects=False) as client:
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(10.0, connect=5.0),
+                transport=self._transport,
+                follow_redirects=False,
+            ) as client:
                 response = await client.get(
                     f"{self._authenticated_base_url}/postings/{job.external_id}/apply",
                     auth=(credential.secret, ""),
@@ -684,7 +956,9 @@ class LeverJobProvider(JobProvider):
         except ValueError as error:
             raise ProviderPayloadError() from error
 
-    async def get_application_schema(self, job: NormalizedExternalJob) -> ProviderApplicationSchema:
+    async def get_application_schema(
+        self, job: NormalizedExternalJob
+    ) -> ProviderApplicationSchema:
         credential = self._credentials.get(self.name, job.provider_source)
         if credential is None:
             return ProviderApplicationSchema("lever-v1", ())
@@ -699,7 +973,9 @@ class LeverJobProvider(JobProvider):
             if not isinstance(value, list):
                 return
             for item in value:
-                definition = normalize_provider_application_field(self.name, item, prefix="lever_")
+                definition = normalize_provider_application_field(
+                    self.name, item, prefix="lever_"
+                )
                 if definition is None:
                     if isinstance(item, dict) and item.get("required") is True:
                         unsupported.append(str(item.get("id", "unknown"))[:120])
@@ -707,11 +983,18 @@ class LeverJobProvider(JobProvider):
                 if eeo:
                     # Preserve direct-input policy, but do not serialize an undocumented EEO shape.
                     if definition.required:
-                        unsupported.append(definition.provider_field_id or definition.field_id)
+                        unsupported.append(
+                            definition.provider_field_id or definition.field_id
+                        )
                     continue
-                if definition.field_type == "file" and "resume" not in definition.label.casefold():
+                if (
+                    definition.field_type == "file"
+                    and "resume" not in definition.label.casefold()
+                ):
                     if definition.required:
-                        unsupported.append(definition.provider_field_id or definition.field_id)
+                        unsupported.append(
+                            definition.provider_field_id or definition.field_id
+                        )
                     continue
                 fields.append(replace(definition, source=source))
 
@@ -732,28 +1015,91 @@ class LeverJobProvider(JobProvider):
             unsupported.append("duplicate_field_id")
         return ProviderApplicationSchema("lever-v1", tuple(fields), tuple(unsupported))
 
-    async def get_submission_capability(self, job: NormalizedExternalJob) -> ProviderSubmissionCapability:
+    async def get_submission_capability(
+        self, job: NormalizedExternalJob
+    ) -> ProviderSubmissionCapability:
         credential = self._credentials.get(self.name, job.provider_source)
         if credential is None:
-            return ProviderSubmissionCapability(True, False, True, False, False, "assisted", "Provider integration is not connected for this Lever site.")
+            return ProviderSubmissionCapability(
+                True,
+                False,
+                True,
+                False,
+                False,
+                "assisted",
+                "Provider integration is not connected for this Lever site.",
+            )
         try:
             schema = await self.get_application_schema(job)
         except ProviderError:
-            return ProviderSubmissionCapability(True, True, True, False, False, "assisted", "The official Lever application schema is unavailable.")
-        schema_available = bool(schema.fields) and not schema.unsupported_required_field_ids
+            return ProviderSubmissionCapability(
+                True,
+                True,
+                True,
+                False,
+                False,
+                "assisted",
+                "The official Lever application schema is unavailable.",
+            )
+        schema_available = (
+            bool(schema.fields) and not schema.unsupported_required_field_ids
+        )
         if not schema_available:
-            return ProviderSubmissionCapability(True, True, True, False, False, "assisted", "The required Lever application form cannot be safely mapped.")
+            return ProviderSubmissionCapability(
+                True,
+                True,
+                True,
+                False,
+                False,
+                "assisted",
+                "The required Lever application form cannot be safely mapped.",
+            )
         if not provider_submission_policy.lever_live_submission_allowed:
-            return ProviderSubmissionCapability(True, True, True, True, False, "assisted", "Controlled Lever submission is disabled outside the staging safety boundary.")
-        return ProviderSubmissionCapability(True, True, True, True, True, "none", "Controlled Lever submission is enabled for this employer scope.")
+            return ProviderSubmissionCapability(
+                True,
+                True,
+                True,
+                True,
+                False,
+                "assisted",
+                "Controlled Lever submission is disabled outside the staging safety boundary.",
+            )
+        return ProviderSubmissionCapability(
+            True,
+            True,
+            True,
+            True,
+            True,
+            "none",
+            "Controlled Lever submission is enabled for this employer scope.",
+        )
 
-    async def _upload_resume(self, credential: ProviderCredential, upload: dict[str, object]) -> str:
-        filename, mime_type, content = upload.get("filename"), upload.get("mime_type"), upload.get("content")
-        if not isinstance(filename, str) or not isinstance(mime_type, str) or not isinstance(content, bytes) or len(content) > 30 * 1024 * 1024:
+    async def _upload_resume(
+        self, credential: ProviderCredential, upload: dict[str, object]
+    ) -> str:
+        filename, mime_type, content = (
+            upload.get("filename"),
+            upload.get("mime_type"),
+            upload.get("content"),
+        )
+        if (
+            not isinstance(filename, str)
+            or not isinstance(mime_type, str)
+            or not isinstance(content, bytes)
+            or len(content) > 30 * 1024 * 1024
+        ):
             raise ProviderPayloadError()
         try:
-            async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=5.0), transport=self._transport, follow_redirects=False) as client:
-                response = await client.post(f"{self._authenticated_base_url}/uploads", auth=(credential.secret, ""), files={"file": (filename, content, mime_type)})
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(20.0, connect=5.0),
+                transport=self._transport,
+                follow_redirects=False,
+            ) as client:
+                response = await client.post(
+                    f"{self._authenticated_base_url}/uploads",
+                    auth=(credential.secret, ""),
+                    files={"file": (filename, content, mime_type)},
+                )
         except httpx.ConnectError as error:
             raise ProviderPreSendFailure() from error
         except (httpx.TimeoutException, httpx.TransportError) as error:
@@ -769,28 +1115,53 @@ class LeverJobProvider(JobProvider):
         except ValueError as error:
             raise ProviderPayloadError() from error
         uri = data.get("uri") if isinstance(data, dict) else None
-        if not isinstance(uri, str) or not uri.startswith(f"{self._authenticated_base_url}/uploads/"):
+        if not isinstance(uri, str) or not uri.startswith(
+            f"{self._authenticated_base_url}/uploads/"
+        ):
             raise ProviderPayloadError()
         return uri
 
-    async def submit_application(self, payload: dict[str, object], *, idempotency_key: str) -> ProviderSubmissionResult:
-        del idempotency_key  # Lever's documented endpoint has no native idempotency parameter.
-        provider_source, external_id = payload.get("provider_source"), payload.get("external_job_id")
-        if not isinstance(provider_source, str) or not isinstance(external_id, str) or not self._posting_key.fullmatch(external_id):
+    async def submit_application(
+        self, payload: dict[str, object], *, idempotency_key: str
+    ) -> ProviderSubmissionResult:
+        del (
+            idempotency_key
+        )  # Lever's documented endpoint has no native idempotency parameter.
+        provider_source, external_id = (
+            payload.get("provider_source"),
+            payload.get("external_job_id"),
+        )
+        if (
+            not isinstance(provider_source, str)
+            or not isinstance(external_id, str)
+            or not self._posting_key.fullmatch(external_id)
+        ):
             raise ProviderPayloadError()
         credential = self._credentials.get(self.name, provider_source)
-        if credential is None or not provider_submission_policy.lever_live_submission_allowed:
+        if (
+            credential is None
+            or not provider_submission_policy.lever_live_submission_allowed
+        ):
             raise ProviderSubmissionUnsupported()
         field_entries = payload.get("fields")
         if not isinstance(field_entries, list):
             raise ProviderPayloadError()
-        body: dict[str, object] = {"personalInformation": [], "customQuestions": [], "urls": []}
+        body: dict[str, object] = {
+            "personalInformation": [],
+            "customQuestions": [],
+            "urls": [],
+        }
         custom_forms: dict[str, list[dict[str, object]]] = {}
         resume_uri: str | None = None
         for field in field_entries:
             if not isinstance(field, dict):
                 raise ProviderPayloadError()
-            source, provider_field_id, field_type, answer = field.get("source"), field.get("provider_field_id"), field.get("field_type"), field.get("answer")
+            source, provider_field_id, field_type, answer = (
+                field.get("source"),
+                field.get("provider_field_id"),
+                field.get("field_type"),
+                field.get("answer"),
+            )
             if not isinstance(source, str) or not isinstance(provider_field_id, str):
                 raise ProviderPayloadError()
             value = answer
@@ -816,9 +1187,16 @@ class LeverJobProvider(JobProvider):
                 custom_forms.setdefault(group_id, []).append(item)
             else:
                 raise ProviderPayloadError()
-        body["customQuestions"] = [{"id": group_id, "fields": items} for group_id, items in sorted(custom_forms.items())]
+        body["customQuestions"] = [
+            {"id": group_id, "fields": items}
+            for group_id, items in sorted(custom_forms.items())
+        ]
         try:
-            async with httpx.AsyncClient(timeout=httpx.Timeout(20.0, connect=5.0), transport=self._transport, follow_redirects=False) as client:
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(20.0, connect=5.0),
+                transport=self._transport,
+                follow_redirects=False,
+            ) as client:
                 response = await client.post(
                     f"{self._authenticated_base_url}/postings/{external_id}/apply",
                     auth=(credential.secret, ""),
@@ -832,88 +1210,396 @@ class LeverJobProvider(JobProvider):
             # A timeout after issuing the POST may mean Lever received the application.
             raise ProviderError() from error
         if response.status_code == 429:
-            return ProviderSubmissionResult("rate_limited", safe_error="Lever rate limited this application submission")
+            return ProviderSubmissionResult(
+                "rate_limited",
+                safe_error="Lever rate limited this application submission",
+            )
         if response.status_code >= 500:
-            return ProviderSubmissionResult("temporary_failure", safe_error="Lever temporarily could not accept this application")
+            return ProviderSubmissionResult(
+                "temporary_failure",
+                safe_error="Lever temporarily could not accept this application",
+            )
         if response.status_code in {400, 422}:
-            return ProviderSubmissionResult("validation_failed", safe_error="Lever rejected one or more application fields")
+            return ProviderSubmissionResult(
+                "validation_failed",
+                safe_error="Lever rejected one or more application fields",
+            )
         if response.status_code in {401, 403, 404}:
-            return ProviderSubmissionResult("rejected_by_provider", safe_error="Lever did not authorize this application submission")
+            return ProviderSubmissionResult(
+                "rejected_by_provider",
+                safe_error="Lever did not authorize this application submission",
+            )
         if response.status_code >= 400:
-            return ProviderSubmissionResult("rejected_by_provider", safe_error="Lever rejected this application")
+            return ProviderSubmissionResult(
+                "rejected_by_provider", safe_error="Lever rejected this application"
+            )
         try:
             data = response.json().get("data")
         except ValueError as error:
             raise ProviderError() from error
-        application_id = data.get("applicationId") or data.get("id") if isinstance(data, dict) else None
+        application_id = (
+            data.get("applicationId") or data.get("id")
+            if isinstance(data, dict)
+            else None
+        )
         if not isinstance(application_id, str) or not application_id:
             raise ProviderError()
-        return ProviderSubmissionResult("submitted", external_application_id=application_id)
+        return ProviderSubmissionResult(
+            "submitted", external_application_id=application_id
+        )
+
+
+class AshbyJobProvider(JobProvider):
+    """Official public Ashby Job Postings API adapter; discovery and assisted apply only."""
+
+    name = "ashby"
+    capabilities = ProviderCapabilities(
+        search=True, detail_fetch=False, auto_apply=False, status_tracking=False
+    )
+    _board_key = re.compile(r"^[A-Za-z0-9_-]{1,120}$")
+    _base_url = "https://api.ashbyhq.com/posting-api/job-board"
+    _public_hosts: ClassVar[frozenset[str]] = frozenset({"jobs.ashbyhq.com"})
+
+    def __init__(self, *, transport: httpx.AsyncBaseTransport | None = None) -> None:
+        self._transport = transport
+
+    @classmethod
+    def _validate_source_key(cls, source_key: str) -> None:
+        if not cls._board_key.fullmatch(source_key):
+            raise ProviderPayloadError()
+
+    async def _get_json(self, source_key: str) -> dict[str, Any]:
+        for attempt in range(2):
+            try:
+                async with httpx.AsyncClient(
+                    timeout=httpx.Timeout(10.0, connect=5.0),
+                    transport=self._transport,
+                    follow_redirects=False,
+                ) as client:
+                    response = await client.get(
+                        f"{self._base_url}/{source_key}",
+                        params={"includeCompensation": "true"},
+                        headers={"Accept": "application/json"},
+                    )
+            except (httpx.TimeoutException, httpx.TransportError) as error:
+                if attempt == 0:
+                    await asyncio.sleep(0.1)
+                    continue
+                raise ProviderError() from error
+            if response.status_code == 429:
+                raise ProviderRateLimited()
+            if response.status_code == 404:
+                raise ProviderNotFound()
+            if response.status_code >= 500:
+                if attempt == 0:
+                    await asyncio.sleep(0.1)
+                    continue
+                raise ProviderError()
+            if response.status_code >= 400:
+                raise ProviderPayloadError()
+            try:
+                payload = response.json()
+            except ValueError as error:
+                raise ProviderPayloadError() from error
+            if not isinstance(payload, dict) or not isinstance(
+                payload.get("jobs"), list
+            ):
+                raise ProviderPayloadError()
+            return payload
+        raise ProviderError()
+
+    @staticmethod
+    def _compensation(value: object) -> tuple[float | None, float | None, str | None]:
+        if not isinstance(value, dict):
+            return None, None, None
+        components = value.get("summaryComponents")
+        if not isinstance(components, list):
+            return None, None, None
+        for component in components:
+            if (
+                not isinstance(component, dict)
+                or component.get("compensationType") != "Salary"
+            ):
+                continue
+            minimum, maximum = component.get("minValue"), component.get("maxValue")
+            return (
+                float(minimum) if isinstance(minimum, (int, float)) else None,
+                float(maximum) if isinstance(maximum, (int, float)) else None,
+                _clean_text(component.get("currencyCode"), 8),
+            )
+        return None, None, None
+
+    def _normalize_job(
+        self, payload: object, *, source_key: str
+    ) -> NormalizedExternalJob:
+        if not isinstance(payload, dict):
+            raise ProviderPayloadError()
+        external_id = _clean_text(payload.get("id") or payload.get("jobPostingId"), 160)
+        title = _clean_text(payload.get("title"), 200)
+        description = _clean_text(
+            payload.get("descriptionPlain"), 20_000
+        ) or html_to_safe_text(payload.get("descriptionHtml"))
+        if external_id is None or title is None or not description:
+            raise ProviderPayloadError()
+        location = _clean_text(payload.get("location"), 255)
+        workplace = _clean_text(payload.get("workplaceType"), 32)
+        remote_status = (
+            "remote"
+            if payload.get("isRemote") is True or workplace == "Remote"
+            else "hybrid"
+            if workplace == "Hybrid"
+            else "not_remote"
+            if workplace == "OnSite"
+            else None
+        )
+        constructed_url = f"https://jobs.ashbyhq.com/{source_key}"
+        source_url = (
+            _safe_url(payload.get("jobUrl"), allowed_hosts=self._public_hosts)
+            or constructed_url
+        )
+        apply_url = (
+            _safe_url(payload.get("applyUrl"), allowed_hosts=self._public_hosts)
+            or source_url
+        )
+        salary_min, salary_max, salary_currency = self._compensation(
+            payload.get("compensation")
+        )
+        metadata = _safe_metadata(
+            {
+                "department": payload.get("department"),
+                "team": payload.get("team"),
+                "secondary_locations": payload.get("secondaryLocations"),
+                "workplace_type": workplace,
+                "is_listed": payload.get("isListed"),
+                "api_version": payload.get("apiVersion"),
+            }
+        )
+        return NormalizedExternalJob(
+            provider=self.name,
+            provider_source=source_key,
+            external_id=external_id,
+            title=title,
+            company_name=source_key,
+            description=description,
+            location=location,
+            remote_status=remote_status,
+            employment_type=_clean_text(payload.get("employmentType"), 64),
+            experience_level=None,
+            salary_min=salary_min,
+            salary_max=salary_max,
+            salary_currency=salary_currency,
+            apply_url=apply_url,
+            source_url=source_url,
+            posted_at=_parse_time(payload.get("publishedAt")),
+            expires_at=None,
+            raw_metadata=metadata if isinstance(metadata, dict) else None,
+        )
+
+    @staticmethod
+    def _matches(job: NormalizedExternalJob, filters: JobSearchFilters) -> bool:
+        if (
+            filters.query
+            and filters.query.casefold()
+            not in f"{job.title} {job.company_name}".casefold()
+        ):
+            return False
+        if (
+            filters.location
+            and filters.location.casefold() not in (job.location or "").casefold()
+        ):
+            return False
+        if (
+            filters.remote is not None
+            and (job.remote_status == "remote") != filters.remote
+        ):
+            return False
+        if filters.employment_type and job.employment_type != filters.employment_type:
+            return False
+        return not (
+            filters.posted_after
+            and (job.posted_at is None or job.posted_at < filters.posted_after)
+        )
+
+    async def search_jobs(
+        self, filters: JobSearchFilters, *, source_key: str
+    ) -> ProviderSearchPage:
+        self._validate_source_key(source_key)
+        payload = await self._get_json(source_key)
+        jobs_data = payload["jobs"]
+        assert isinstance(jobs_data, list)
+        jobs = [
+            self._normalize_job(item, source_key=source_key)
+            for item in jobs_data
+            if isinstance(item, dict) and item.get("isListed") is not False
+        ]
+        if len(jobs) != sum(
+            isinstance(item, dict) and item.get("isListed") is not False
+            for item in jobs_data
+        ):
+            raise ProviderPayloadError()
+        filtered = [job for job in jobs if self._matches(job, filters)]
+        try:
+            start = int(filters.cursor or "0")
+        except ValueError as error:
+            raise ProviderPayloadError() from error
+        if start < 0:
+            raise ProviderPayloadError()
+        page_size = min(max(filters.page_size, 1), 100)
+        page = tuple(filtered[start : start + page_size])
+        next_cursor = (
+            str(start + page_size) if start + page_size < len(filtered) else None
+        )
+        return ProviderSearchPage(page, next_cursor)
+
+    async def get_job(
+        self, external_id: str, *, source_key: str
+    ) -> NormalizedExternalJob:
+        del external_id, source_key
+        raise ProviderSubmissionUnsupported()
+
+    async def get_status_capability(self) -> ProviderStatusCapability:
+        return ProviderStatusCapability(
+            False,
+            "none",
+            False,
+            "Ashby public job postings do not expose applicant-status tracking in this integration.",
+        )
 
 
 class DeterministicTestApplicationProvider(JobProvider):
     """Test/dev-only adapter; never register it as a real provider integration."""
 
     name = "test_application"
-    capabilities = ProviderCapabilities(search=False, detail_fetch=False, auto_apply=True, status_tracking=False)
+    capabilities = ProviderCapabilities(
+        search=False, detail_fetch=False, auto_apply=True, status_tracking=False
+    )
 
     def __init__(self, outcomes: tuple[str, ...] = ("submitted",)) -> None:
         self._outcomes = list(outcomes)
         self.submit_calls = 0
 
-    async def search_jobs(self, filters: JobSearchFilters, *, source_key: str) -> ProviderSearchPage:
+    async def search_jobs(
+        self, filters: JobSearchFilters, *, source_key: str
+    ) -> ProviderSearchPage:
         del filters, source_key
         raise ProviderSubmissionUnsupported()
 
-    async def get_job(self, external_id: str, *, source_key: str) -> NormalizedExternalJob:
+    async def get_job(
+        self, external_id: str, *, source_key: str
+    ) -> NormalizedExternalJob:
         del external_id, source_key
         raise ProviderSubmissionUnsupported()
 
-    async def get_application_schema(self, job: NormalizedExternalJob) -> ProviderApplicationSchema:
+    async def get_application_schema(
+        self, job: NormalizedExternalJob
+    ) -> ProviderApplicationSchema:
         del job
         return ProviderApplicationSchema(
             version="test-v1",
             fields=(
-                ApplicationFieldDefinition("full_name", "Full name", "text", True, "identity", source="profile"),
-                ApplicationFieldDefinition("email", "Email", "email", True, "identity", source="profile"),
-                ApplicationFieldDefinition("phone", "Phone", "phone", False, "identity", source="profile"),
-                ApplicationFieldDefinition("why_interested", "Why are you interested?", "textarea", True, "narrative", requires_user_input=True),
-                ApplicationFieldDefinition("work_authorization", "Authorized to work?", "select", True, "legal", ("yes", "no"), sensitive=True, requires_user_input=True),
+                ApplicationFieldDefinition(
+                    "full_name", "Full name", "text", True, "identity", source="profile"
+                ),
+                ApplicationFieldDefinition(
+                    "email", "Email", "email", True, "identity", source="profile"
+                ),
+                ApplicationFieldDefinition(
+                    "phone", "Phone", "phone", False, "identity", source="profile"
+                ),
+                ApplicationFieldDefinition(
+                    "why_interested",
+                    "Why are you interested?",
+                    "textarea",
+                    True,
+                    "narrative",
+                    requires_user_input=True,
+                ),
+                ApplicationFieldDefinition(
+                    "work_authorization",
+                    "Authorized to work?",
+                    "select",
+                    True,
+                    "legal",
+                    ("yes", "no"),
+                    sensitive=True,
+                    requires_user_input=True,
+                ),
             ),
         )
 
-    async def get_submission_capability(self, job: NormalizedExternalJob) -> ProviderSubmissionCapability:
+    async def get_submission_capability(
+        self, job: NormalizedExternalJob
+    ) -> ProviderSubmissionCapability:
         del job
-        return ProviderSubmissionCapability(True, True, True, True, True, "none", "Deterministic test-only submission capability.")
+        return ProviderSubmissionCapability(
+            True,
+            True,
+            True,
+            True,
+            True,
+            "none",
+            "Deterministic test-only submission capability.",
+        )
 
     async def validate_application(self, payload: dict[str, object]) -> list[str]:
         answers = payload.get("answers")
         if not isinstance(answers, dict):
             return ["payload"]
-        return [field_id for field_id in ("full_name", "email", "why_interested", "work_authorization") if not answers.get(field_id)]
+        return [
+            field_id
+            for field_id in (
+                "full_name",
+                "email",
+                "why_interested",
+                "work_authorization",
+            )
+            if not answers.get(field_id)
+        ]
 
-    async def submit_application(self, payload: dict[str, object], *, idempotency_key: str) -> ProviderSubmissionResult:
+    async def submit_application(
+        self, payload: dict[str, object], *, idempotency_key: str
+    ) -> ProviderSubmissionResult:
         del payload
         self.submit_calls += 1
         outcome = self._outcomes.pop(0) if self._outcomes else "submitted"
         if outcome == "submitted":
-            return ProviderSubmissionResult("submitted", external_application_id=f"test-{idempotency_key[:12]}")
+            return ProviderSubmissionResult(
+                "submitted", external_application_id=f"test-{idempotency_key[:12]}"
+            )
         if outcome == "rejected_by_provider":
-            return ProviderSubmissionResult(outcome, safe_error="The test provider rejected the application")
+            return ProviderSubmissionResult(
+                outcome, safe_error="The test provider rejected the application"
+            )
         if outcome == "validation_failed":
-            return ProviderSubmissionResult(outcome, safe_error="The test provider rejected a field")
+            return ProviderSubmissionResult(
+                outcome, safe_error="The test provider rejected a field"
+            )
         if outcome == "rate_limited":
-            return ProviderSubmissionResult(outcome, safe_error="The test provider is rate limited")
+            return ProviderSubmissionResult(
+                outcome, safe_error="The test provider is rate limited"
+            )
         if outcome == "temporary_failure":
-            return ProviderSubmissionResult(outcome, safe_error="The test provider failed before submission")
+            return ProviderSubmissionResult(
+                outcome, safe_error="The test provider failed before submission"
+            )
         if outcome == "unknown_submission_state":
-            return ProviderSubmissionResult(outcome, safe_error="The test provider may have received the application")
-        return ProviderSubmissionResult("validation_failed", safe_error="The test provider returned an invalid result")
+            return ProviderSubmissionResult(
+                outcome,
+                safe_error="The test provider may have received the application",
+            )
+        return ProviderSubmissionResult(
+            "validation_failed",
+            safe_error="The test provider returned an invalid result",
+        )
 
 
 class JobProviderRegistry:
     def __init__(self, providers: tuple[JobProvider, ...] | None = None) -> None:
-        available = providers or (GreenhouseJobProvider(), LeverJobProvider())
+        available = providers or (
+            GreenhouseJobProvider(),
+            LeverJobProvider(),
+            AshbyJobProvider(),
+        )
         self._providers = {provider.name: provider for provider in available}
 
     def get(self, name: str) -> JobProvider:

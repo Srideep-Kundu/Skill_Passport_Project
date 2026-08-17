@@ -275,7 +275,7 @@ export interface ApplicationSubmissionAttempt {
 
 export interface JobDiscovery {
   id: string; student_id: string; name: string; enabled: boolean; query: string | null; location: string | null; remote_preference: boolean | null;
-  employment_type: string | null; experience_level: string | null; providers: string[]; freshness_days: number; minimum_match_score: number; cadence_hours: 6 | 12 | 24;
+  employment_type: string | null; experience_level: string | null; providers: ("greenhouse" | "lever" | "ashby")[]; freshness_days: number; minimum_match_score: number; cadence_hours: 6 | 12 | 24;
   last_run_at: string | null; next_run_at: string | null; created_at: string; updated_at: string;
 }
 
@@ -286,7 +286,7 @@ export interface JobDiscoveryRun {
 
 export interface AutomationPolicy {
   id: string; student_id: string; name: string; enabled: boolean; priority: number; minimum_match_score: number;
-  allowed_providers: ("greenhouse" | "lever")[]; allowed_locations: string[]; remote_preference: boolean | null;
+  allowed_providers: ("greenhouse" | "lever" | "ashby")[]; allowed_locations: string[]; remote_preference: boolean | null;
   employment_types: string[]; experience_levels: string[]; required_skills_any: string[]; required_skills_all: string[]; excluded_skills: string[];
   excluded_companies: string[]; excluded_keywords: string[]; maximum_jobs_per_run: number; maximum_review_intents_per_run: number;
   maximum_review_intents_per_day: number; maximum_pending_review_queue_size: number; auto_create_review_intent: boolean; last_applied_at: string | null; created_at: string; updated_at: string;

@@ -158,7 +158,7 @@ async def test_external_matching_is_fair_and_provider_independent(session_factor
         first = Student(email="first@example.test", password_hash="hash", full_name="First Name", university="University A")
         second = Student(email="second@example.test", password_hash="hash", full_name="Second Name", university="University B")
         skill = Skill(canonical_name="Python", category="language", aliases=[])
-        greenhouse, other = _job(provider="greenhouse", external_id="same"), _job(provider="other", external_id="same")
+        greenhouse, other = _job(provider="greenhouse", external_id="same"), _job(provider="ashby", external_id="same")
         session.add_all([first, second, skill, greenhouse, other])
         await session.flush()
         await _student_skill(session, first, skill, confidence=0.9)
