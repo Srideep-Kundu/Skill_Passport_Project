@@ -34,7 +34,9 @@ This guide uses Docker Compose for PostgreSQL, Redis, migrations, the API, worke
    ```bash
    docker compose exec backend python -m seed.seed_skills
    # Optional local demo accounts and evidence:
-   docker compose exec backend python -m seed.seed_demo_data
+   # For the complete offline demo, use .env.demo.example and then:
+   docker compose exec backend python -m seed.reset_demo
+   docker compose exec backend python -m seed.validate_demo
    ```
 
 5. Confirm services and open the application:
@@ -103,12 +105,13 @@ docker compose exec backend python -m seed.seed_demo_data
 docker compose exec backend python -m app.core.release_check
 ```
 
-The seeded accounts are `ada@example.test`, `ben@example.test`, and `recruiter@example.test`, each with the local-only password `DemoPassword123`. The fixture is offline: it creates no provider credentials, makes no external requests, and should never be run against a production database.
+The complete fixture is documented in [DEMO.md](../DEMO.md). It is offline, creates no provider credentials or live external requests, and must never run against a production database.
 
 To clear and reseed an already-running **disposable PostgreSQL demo database**, use the guarded command below. It refuses to run unless both gates are explicitly supplied; it is never an API endpoint and cannot run with `APP_ENV=production`.
 
 ```bash
-docker compose run --rm --no-deps -e APP_ENV=demo -e DEMO_RESET_ENABLED=true backend python -m seed.reset_demo
+docker compose --env-file .env.demo.example run --rm --no-deps backend python -m seed.reset_demo
+docker compose --env-file .env.demo.example run --rm --no-deps backend python -m seed.validate_demo
 ```
 
 ## Secret handling

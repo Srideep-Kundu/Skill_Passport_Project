@@ -173,7 +173,7 @@ async def build_application_snapshot(
             "original_filename": resume.original_filename,
             "checksum": resume.checksum,
             "parser_version": resume.parser_version,
-            "parsed_at": resume.parsed_at,
+            "parsed_at": resume.parsed_at.isoformat() if resume.parsed_at else None,
         },
         # This is intentionally separate from matching_view and never enters matching.
         "application_profile": _application_profile(student, resume),

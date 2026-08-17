@@ -29,10 +29,12 @@ Architecture and contribution invariants are defined in [AGENTS.md](AGENTS.md). 
    docker compose run --rm --no-deps backend alembic current
    ```
 
-4. Seed the taxonomy and demo data after the stack starts:
+4. Seed the taxonomy after the stack starts. For the complete offline demo, copy `.env.demo.example` to `.env` before starting the stack, then reset and validate it:
 
    ```bash
-   docker compose exec backend python -m seed.seed_demo_data
+   docker compose exec backend python -m seed.seed_skills
+   docker compose exec backend python -m seed.reset_demo
+   docker compose exec backend python -m seed.validate_demo
    ```
 
 5. Open the frontend at `http://localhost:5173`; liveness is at `http://localhost:8000/health` and dependency readiness is at `http://localhost:8000/ready`.
