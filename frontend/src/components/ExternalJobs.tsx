@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ApiError, api } from "../api";
 import type { Application, ExternalJob, ExternalJobMatch, MatchExplanation } from "../api";
 import { ApplicationPreparation } from "./ApplicationPreparation";
+import { SavedDiscoveries } from "./SavedDiscoveries";
 import { EmptyState, ErrorState, LoadingState } from "./AsyncState";
 
 function syncedLabel(value: string): string {
@@ -35,7 +36,7 @@ function RecommendedJob({ job, application, onApply }: { job: ExternalJobMatch; 
   return <li className="rounded-lg border border-indigo-200 bg-indigo-50/30 p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold text-slate-950">{job.title}</h3><p className="text-sm text-slate-600">{job.company_name}{locationLabel(job)}</p></div><strong className="text-xl text-indigo-700">{Math.round(job.final_score * 100)}%</strong></div><p className="mt-2 text-xs text-slate-600">Source: {job.provider}{job.posted_at ? ` · Posted ${new Date(job.posted_at).toLocaleDateString()}` : ""}{job.is_stale ? " · Match needs refresh" : ""}</p><Explanation explanation={job.explanation} /><div className="mt-3 flex flex-wrap gap-3"><a href={job.source_url} target="_blank" rel="noreferrer" className="text-sm font-medium text-indigo-700 underline">Open original listing</a><button type="button" disabled={job.is_stale} onClick={onApply} className="text-sm font-medium text-indigo-700 underline disabled:text-slate-400">{application ? "Review application" : "Apply"}</button></div></li>;
 }
 
-export function ExternalJobs({ token }: { token: string }) {
+function ExternalJobsContent({ token }: { token: string }) {
   const [jobs, setJobs] = useState<ExternalJob[] | null>(null);
   const [recommended, setRecommended] = useState<ExternalJobMatch[] | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -62,4 +63,8 @@ export function ExternalJobs({ token }: { token: string }) {
   }
   if ((!jobs || !recommended) && !error) return <LoadingState label="Loading external jobs" />;
   return <section aria-label="External jobs" className="space-y-4 rounded-xl bg-white p-5 shadow-sm"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-lg font-semibold">Recommended jobs</h2><p className="mt-1 text-sm text-slate-600">Persisted evidence-backed matches. Location and remote preferences filter jobs but never alter skill-fit scores.</p></div><button type="button" onClick={() => void refreshRecommendations()} disabled={refreshing} className="rounded border border-indigo-600 px-3 py-1.5 text-sm font-medium text-indigo-700 disabled:text-slate-400">{refreshing ? "Refreshing…" : "Refresh recommendations"}</button></div>{selectedApplication ? <ApprovalScreen application={selectedApplication} token={token} onChanged={updateApplication} onClose={() => setSelectedApplication(null)} /> : null}{error ? <ErrorState message={error} onRetry={() => void load()} /> : recommended?.length ? <ul className="space-y-3">{recommended.map((job) => <RecommendedJob key={job.id} job={job} application={applicationsByJob.get(job.external_job_id)} onApply={() => void beginApplication(job)} />)}</ul> : <EmptyState title="No recommended jobs yet">Refresh recommendations after jobs with canonical required skills have been synced. Jobs below the configured recommendation threshold remain searchable.</EmptyState>}<div className="border-t border-slate-200 pt-4"><h3 className="font-semibold">All synced external jobs</h3>{jobs?.length ? <ul className="mt-3 space-y-3">{jobs.map((job) => <li key={job.id} className="rounded-lg border border-slate-200 p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><h4 className="font-semibold text-slate-950">{job.title}</h4><p className="text-sm text-slate-600">{job.company_name}{locationLabel(job)}</p></div><span className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">Source: {job.provider}</span></div><p className="mt-2 text-sm text-slate-600">{syncedLabel(job.last_synced_at)}{job.requirements.some((item) => item.is_required) ? "" : " · Requirements not yet sufficient for matching"}</p><a href={job.source_url} target="_blank" rel="noreferrer" className="mt-3 inline-block text-sm font-medium text-indigo-700 underline">Open original listing</a></li>)}</ul> : <EmptyState title="No synced external jobs">An administrator can sync a configured public job source. Check back after the next sync.</EmptyState>}</div></section>;
+}
+
+export function ExternalJobs({ token }: { token: string }) {
+  return <div className="space-y-6"><SavedDiscoveries token={token} /><ExternalJobsContent token={token} /></div>;
 }

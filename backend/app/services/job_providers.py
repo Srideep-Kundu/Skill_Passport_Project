@@ -922,5 +922,8 @@ class JobProviderRegistry:
         except KeyError as error:
             raise ProviderNotFound() from error
 
+    def names(self) -> frozenset[str]:
+        return frozenset(self._providers)
+
 
 provider_registry = JobProviderRegistry()

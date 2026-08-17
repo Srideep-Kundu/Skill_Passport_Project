@@ -443,6 +443,70 @@ class ApplicationAnswersUpdate(APIModel):
     answers: dict[str, Any] = Field(min_length=1, max_length=100)
 
 
+class JobDiscoveryCreate(APIModel):
+    name: str = Field(min_length=1, max_length=80)
+    enabled: bool = True
+    query: str | None = Field(default=None, max_length=200)
+    location: str | None = Field(default=None, max_length=255)
+    remote_preference: bool | None = None
+    employment_type: str | None = Field(default=None, max_length=64)
+    experience_level: str | None = Field(default=None, max_length=64)
+    providers: list[Literal["greenhouse", "lever"]] = Field(min_length=1, max_length=2)
+    freshness_days: int = Field(default=30, ge=1, le=90)
+    minimum_match_score: float = Field(default=0.2, ge=0.0, le=1.0)
+    cadence_hours: Literal[6, 12, 24] = 24
+
+
+class JobDiscoveryUpdate(APIModel):
+    name: str | None = Field(default=None, min_length=1, max_length=80)
+    enabled: bool | None = None
+    query: str | None = Field(default=None, max_length=200)
+    location: str | None = Field(default=None, max_length=255)
+    remote_preference: bool | None = None
+    employment_type: str | None = Field(default=None, max_length=64)
+    experience_level: str | None = Field(default=None, max_length=64)
+    providers: list[Literal["greenhouse", "lever"]] | None = Field(default=None, min_length=1, max_length=2)
+    freshness_days: int | None = Field(default=None, ge=1, le=90)
+    minimum_match_score: float | None = Field(default=None, ge=0.0, le=1.0)
+    cadence_hours: Literal[6, 12, 24] | None = None
+
+
+class JobDiscoveryResponse(APIModel):
+    id: UUID
+    student_id: UUID
+    name: str
+    enabled: bool
+    query: str | None
+    location: str | None
+    remote_preference: bool | None
+    employment_type: str | None
+    experience_level: str | None
+    providers: list[str]
+    freshness_days: int
+    minimum_match_score: float
+    cadence_hours: int
+    last_run_at: datetime | None
+    next_run_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class JobDiscoveryRunResponse(APIModel):
+    id: UUID
+    discovery_id: UUID
+    status: Literal["queued", "running", "completed", "partial", "failed"]
+    providers_requested: list[str]
+    provider_results: dict[str, object]
+    jobs_seen: int
+    jobs_created: int
+    jobs_updated: int
+    recommendations_created: int
+    recommendations_changed: int
+    safe_error: str | None
+    started_at: datetime
+    completed_at: datetime | None
+
+
 class ManualSubmissionRecord(APIModel):
     submitted_at: datetime | None = None
     provider_reference: str | None = Field(default=None, max_length=255, pattern=r"^[A-Za-z0-9._:-]+$")

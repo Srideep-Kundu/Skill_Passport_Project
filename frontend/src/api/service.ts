@@ -1,6 +1,6 @@
 import { request } from "./client";
 import type {
-  Application, ApplicationForm, ApplicationStatusEvent, ApplicationSubmissionAttempt, AuthSession, CandidateMatch, CandidateProfile, EvidenceDetail, EvidenceSubmission, EvidenceSummary, EvidenceUpdate, ExternalJob, ExternalJobMatch, Internship, InternshipCreate, InternshipUpdate,
+  Application, ApplicationForm, ApplicationStatusEvent, ApplicationSubmissionAttempt, AuthSession, CandidateMatch, CandidateProfile, EvidenceDetail, EvidenceSubmission, EvidenceSummary, EvidenceUpdate, ExternalJob, ExternalJobMatch, Internship, InternshipCreate, InternshipUpdate, JobDiscovery, JobDiscoveryRun,
   LoginRequest, MatchExplanation, PaginatedResponse, Passport, RecruiterRegistration, Skill,
   StudentMatch, StudentRegistration, TeamSuggestion, TeamSuggestionRequest, VerificationResult, RecruiterEvidenceConsent, GitHubIdentity, ResumeDocument,
 } from "./types";
@@ -49,6 +49,12 @@ export const api = {
   applicationAttempts: (id: string, token: string) => request<ApplicationSubmissionAttempt[]>(`/applications/${encodeURIComponent(id)}/attempts`, {}, token),
   markManualSubmission: (id: string, token: string, input: { submitted_at?: string; provider_reference?: string }) => request<Application>(`/applications/${encodeURIComponent(id)}/mark-manual-submitted`, { method: "POST", body: JSON.stringify(input) }, token),
   reconcileApplication: (id: string, token: string) => request<Application>(`/applications/${encodeURIComponent(id)}/reconcile`, { method: "POST" }, token),
+  jobDiscoveries: (token: string) => request<PaginatedResponse<JobDiscovery>>("/job-discoveries", {}, token),
+  createJobDiscovery: (input: Omit<JobDiscovery, "id" | "student_id" | "last_run_at" | "next_run_at" | "created_at" | "updated_at">, token: string) => request<JobDiscovery>("/job-discoveries", { method: "POST", body: JSON.stringify(input) }, token),
+  updateJobDiscovery: (id: string, input: Partial<JobDiscovery>, token: string) => request<JobDiscovery>(`/job-discoveries/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) }, token),
+  deleteJobDiscovery: (id: string, token: string) => request<void>(`/job-discoveries/${encodeURIComponent(id)}`, { method: "DELETE" }, token),
+  runJobDiscovery: (id: string, token: string) => request<JobDiscoveryRun>(`/job-discoveries/${encodeURIComponent(id)}/run`, { method: "POST" }, token),
+  jobDiscoveryRuns: (id: string, token: string) => request<PaginatedResponse<JobDiscoveryRun>>(`/job-discoveries/${encodeURIComponent(id)}/runs`, {}, token),
   studentMatches: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<StudentMatch>>(`/students/me/matches?page=${page}&page_size=${pageSize}`, {}, token),
   recomputeStudentMatches: (token: string) => request<StudentMatch[]>("/students/me/matches/recompute", { method: "POST" }, token),
   recomputeInternshipMatches: (id: string, token: string) => request<CandidateMatch[]>(`/internships/${encodeURIComponent(id)}/matches/recompute`, { method: "POST" }, token),

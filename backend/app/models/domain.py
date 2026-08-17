@@ -119,6 +119,14 @@ class ApplicationStatusSource(str, enum.Enum):
     admin = "admin"
 
 
+class DiscoveryRunStatus(str, enum.Enum):
+    queued = "queued"
+    running = "running"
+    completed = "completed"
+    partial = "partial"
+    failed = "failed"
+
+
 class Timestamped:
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
@@ -370,6 +378,55 @@ class ExternalJobMatchExplanation(Base):
     skill: Mapped[Skill] = relationship(foreign_keys=[skill_id])
     matched_skill: Mapped[Skill | None] = relationship(foreign_keys=[matched_skill_id])
     evidence: Mapped[Evidence | None] = relationship()
+
+
+class JobDiscovery(Base):
+    __tablename__ = "job_discoveries"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(80), nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
+    query: Mapped[str | None] = mapped_column(String(200))
+    location: Mapped[str | None] = mapped_column(String(255))
+    remote_preference: Mapped[bool | None] = mapped_column(Boolean)
+    employment_type: Mapped[str | None] = mapped_column(String(64))
+    experience_level: Mapped[str | None] = mapped_column(String(64))
+    providers: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    freshness_days: Mapped[int] = mapped_column(Integer, default=30, nullable=False)
+    minimum_match_score: Mapped[float] = mapped_column(Numeric(5, 4), default=0.2, nullable=False)
+    cadence_hours: Mapped[int] = mapped_column(Integer, default=24, nullable=False)
+    last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    next_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+
+class JobDiscoveryRun(Base):
+    __tablename__ = "job_discovery_runs"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    discovery_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("job_discoveries.id", ondelete="CASCADE"), nullable=False, index=True)
+    status: Mapped[DiscoveryRunStatus] = mapped_column(Enum(DiscoveryRunStatus), nullable=False, index=True)
+    providers_requested: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    provider_results: Mapped[dict[str, Any]] = mapped_column(Json, default=dict, nullable=False)
+    jobs_seen: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    jobs_created: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    jobs_updated: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    recommendations_created: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    recommendations_changed: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    safe_error: Mapped[str | None] = mapped_column(String(240))
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class DiscoveryRecommendation(Base):
+    __tablename__ = "discovery_recommendations"
+    __table_args__ = (UniqueConstraint("discovery_id", "external_job_id", name="uq_discovery_recommendation_job"),)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    discovery_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("job_discoveries.id", ondelete="CASCADE"), nullable=False, index=True)
+    external_job_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("external_jobs.id"), nullable=False, index=True)
+    match_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    first_recommended_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_recommended_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class Application(Base):

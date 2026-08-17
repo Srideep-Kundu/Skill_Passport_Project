@@ -273,6 +273,17 @@ export interface ApplicationSubmissionAttempt {
   safe_error: string | null;
 }
 
+export interface JobDiscovery {
+  id: string; student_id: string; name: string; enabled: boolean; query: string | null; location: string | null; remote_preference: boolean | null;
+  employment_type: string | null; experience_level: string | null; providers: string[]; freshness_days: number; minimum_match_score: number; cadence_hours: 6 | 12 | 24;
+  last_run_at: string | null; next_run_at: string | null; created_at: string; updated_at: string;
+}
+
+export interface JobDiscoveryRun {
+  id: string; discovery_id: string; status: "queued" | "running" | "completed" | "partial" | "failed"; providers_requested: string[]; provider_results: Record<string, unknown>;
+  jobs_seen: number; jobs_created: number; jobs_updated: number; recommendations_created: number; recommendations_changed: number; safe_error: string | null; started_at: string; completed_at: string | null;
+}
+
 export interface ApplicationField {
   field_id: string;
   label: string;

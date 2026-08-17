@@ -1,7 +1,7 @@
 """Persistence and taxonomy normalization for provider-neutral external jobs."""
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -47,7 +47,7 @@ def _now() -> datetime:
 
 def configured_provider_source(provider: str, source_key: str) -> bool:
     settings = get_settings()
-    return provider == "greenhouse" and source_key in settings.greenhouse_board_tokens
+    return (provider == "greenhouse" and source_key in settings.greenhouse_board_tokens) or (provider == "lever" and source_key in settings.lever_site_tokens)
 
 
 def normalize_job_requirements(description: str, taxonomy: list[Skill]) -> list[NormalizedRequirement]:
@@ -202,3 +202,39 @@ async def sync_external_jobs(session: AsyncSession, *, provider_name: str, sourc
     )
     await session.commit()
     return ExternalJobSyncResult(provider_name, source_key, created, updated, marked_inactive, len(fetched), synced_at)
+
+
+async def sync_discovery_source(
+    session: AsyncSession, *, provider_name: str, source_key: str, filters: JobSearchFilters
+) -> tuple[list[UUID], ExternalJobSyncResult]:
+    """Bounded filtered sync for one discovery source; filtered results never retire jobs."""
+    provider = provider_registry.get(provider_name)
+    if not configured_provider_source(provider_name, source_key) or not provider.capabilities.search:
+        raise ProviderError("provider source is not configured")
+    cursor: str | None = None
+    fetched: dict[str, NormalizedExternalJob] = {}
+    for _ in range(5):
+        page = await provider.search_jobs(replace(filters, cursor=cursor, page_size=min(filters.page_size, 100)), source_key=source_key)
+        for job in page.jobs:
+            if job.provider != provider_name or job.provider_source != source_key:
+                raise ProviderError("provider returned an invalid source")
+            fetched[job.external_id] = job
+        if page.next_cursor is None:
+            break
+        if page.next_cursor == cursor:
+            raise ProviderError("provider pagination did not advance")
+        cursor = page.next_cursor
+    else:
+        raise ProviderError("provider pagination limit reached")
+    now = _now()
+    taxonomy = list((await session.scalars(select(Skill).order_by(Skill.canonical_name, Skill.id))).all())
+    job_ids: list[UUID] = []
+    created = updated = 0
+    for external_id in sorted(fetched):
+        persisted, was_created = await _persist_job(session, fetched[external_id], taxonomy, now)
+        job_ids.append(persisted.id)
+        created += int(was_created)
+        updated += int(not was_created)
+    await invalidate_stale_approved_applications_for_jobs(session, set(job_ids))
+    await session.commit()
+    return job_ids, ExternalJobSyncResult(provider_name, source_key, created, updated, 0, len(fetched), now)

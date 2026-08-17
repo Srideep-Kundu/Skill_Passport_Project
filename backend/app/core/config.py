@@ -86,6 +86,11 @@ class Settings(BaseSettings):
         default_factory=list,
         validation_alias=AliasChoices("SKILL_PASSPORT_GREENHOUSE_BOARD_TOKENS", "GREENHOUSE_BOARD_TOKENS"),
     )
+    lever_site_tokens: Annotated[list[str], NoDecode] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices("SKILL_PASSPORT_LEVER_SITE_TOKENS", "LEVER_SITE_TOKENS"),
+    )
+    discovery_max_active_per_student: int = Field(default=10, ge=1, le=25, validation_alias=AliasChoices("SKILL_PASSPORT_DISCOVERY_MAX_ACTIVE_PER_STUDENT", "DISCOVERY_MAX_ACTIVE_PER_STUDENT"))
     greenhouse_application_credentials: str | None = Field(
         default=None,
         validation_alias=AliasChoices("SKILL_PASSPORT_GREENHOUSE_APPLICATION_CREDENTIALS", "GREENHOUSE_APPLICATION_CREDENTIALS"),
@@ -144,6 +149,13 @@ class Settings(BaseSettings):
     @field_validator("greenhouse_board_tokens", mode="before")
     @classmethod
     def split_greenhouse_board_tokens(cls, value: str | list[str]) -> list[str]:
+        if isinstance(value, str):
+            return [token.strip() for token in value.split(",") if token.strip()]
+        return value
+
+    @field_validator("lever_site_tokens", mode="before")
+    @classmethod
+    def split_lever_site_tokens(cls, value: str | list[str]) -> list[str]:
         if isinstance(value, str):
             return [token.strip() for token in value.split(",") if token.strip()]
         return value

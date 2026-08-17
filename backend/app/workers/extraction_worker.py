@@ -6,6 +6,8 @@ from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
 from app.core.config import get_settings
+from app.core.db import SessionLocal
+from app.services.discovery_service import run_due_discoveries
 from app.services.extraction_service import (
     QUEUE_NAME,
     enqueue_due_retries,
@@ -30,10 +32,16 @@ async def run_worker() -> None:
     if not settings.redis_url:
         raise RuntimeError("SKILL_PASSPORT_REDIS_URL is required to run the extraction worker")
     client = Redis.from_url(settings.redis_url)
+    discovery_tick = 0
     try:
         while True:
             try:
                 await enqueue_due_retries()
+                discovery_tick += 1
+                if discovery_tick >= 12:
+                    discovery_tick = 0
+                    async with SessionLocal() as session:
+                        await run_due_discoveries(session)
                 item = await client.blpop(QUEUE_NAME, timeout=5)
             except RedisError:
                 logger.warning("extraction_worker_redis_unavailable")
