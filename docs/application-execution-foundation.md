@@ -6,7 +6,7 @@ This layer turns an approved application intent into either a reviewed, provider
 
 `JobProvider` retains explicit `search`, `detail_fetch`, `auto_apply`, and `status_tracking` capabilities. It now has optional application methods: `get_application_schema`, `validate_application`, `submit_application`, and `get_submission_result`. An adapter that does not explicitly declare `auto_apply=true` cannot submit: the API returns the assisted/manual path instead.
 
-Greenhouse remains `auto_apply=false`. Its public board data can produce an assisted preparation view with the source application URL, the active resume, application-safe profile fields, and evidence-backed match context, but never a machine submission button.
+Greenhouse remains assisted-only unless a later controlled release enables an exact credential-scoped submission adapter. Its public board data can produce an assisted preparation view with the source application URL, the active resume, application-safe profile fields, and evidence-backed match context, but never a machine submission button merely because its public API is available. See [provider submission capability](provider-submission-capability.md) for the Phase 12 decision model.
 
 `DeterministicTestApplicationProvider` is deliberately absent from the production registry. It is a test/dev fixture that exercises a declared auto-apply adapter and normalized outcomes; it is not an external integration.
 

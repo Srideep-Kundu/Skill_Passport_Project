@@ -86,6 +86,14 @@ class Settings(BaseSettings):
         default_factory=list,
         validation_alias=AliasChoices("SKILL_PASSPORT_GREENHOUSE_BOARD_TOKENS", "GREENHOUSE_BOARD_TOKENS"),
     )
+    greenhouse_application_credentials: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("SKILL_PASSPORT_GREENHOUSE_APPLICATION_CREDENTIALS", "GREENHOUSE_APPLICATION_CREDENTIALS"),
+    )
+    lever_application_credentials: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("SKILL_PASSPORT_LEVER_APPLICATION_CREDENTIALS", "LEVER_APPLICATION_CREDENTIALS"),
+    )
     extraction_max_attempts: int = Field(
         default=3,
         ge=1,

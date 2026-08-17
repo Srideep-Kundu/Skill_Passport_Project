@@ -1,3 +1,4 @@
+from dataclasses import asdict
 from typing import Annotated
 from uuid import UUID
 
@@ -87,6 +88,7 @@ async def _form_response(session: AsyncSession, application: Application) -> App
         payload_fingerprint=application.execution_payload_fingerprint,
         unresolved_field_ids=form.unresolved_field_ids,
         is_assisted=form.is_assisted,
+        submission_capability=asdict(form.submission_capability),
         fields=[_field_response(field) for field in form.fields],
     )
 

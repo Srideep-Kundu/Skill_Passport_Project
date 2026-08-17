@@ -28,6 +28,7 @@ from app.services.job_providers import (
     NormalizedExternalJob,
     ProviderApplicationSchema,
     ProviderError,
+    ProviderSubmissionCapability,
     ProviderSubmissionResult,
     ProviderSubmissionUnsupported,
     provider_registry,
@@ -43,6 +44,7 @@ class PreparedForm:
     unresolved_field_ids: list[str]
     payload_fingerprint: str
     is_assisted: bool
+    submission_capability: ProviderSubmissionCapability
 
 
 def _now() -> datetime:
@@ -178,13 +180,15 @@ async def _fields(session: AsyncSession, application_id: UUID) -> list[Applicati
 
 
 async def get_prepared_form(session: AsyncSession, application: Application) -> PreparedForm:
-    provider, _ = await _provider_and_job(session, application)
+    provider, job = await _provider_and_job(session, application)
+    capability = await provider.get_submission_capability(_normalized_job(job))
     fields = await _fields(session, application.id)
     return PreparedForm(
         fields=fields,
         unresolved_field_ids=_unresolved(fields),
         payload_fingerprint=application.execution_payload_fingerprint or "",
-        is_assisted=not provider.capabilities.auto_apply,
+        is_assisted=not capability.submission_ready,
+        submission_capability=capability,
     )
 
 
@@ -193,8 +197,10 @@ async def prepare_application(session: AsyncSession, *, application: Application
         raise ApplicationWorkflowError("This application cannot be prepared in its current state")
     await _approval_is_current(session, application, student)
     provider, job = await _provider_and_job(session, application)
-    schema = await provider.get_application_schema(_normalized_job(job))
-    if not provider.capabilities.auto_apply and not schema.fields:
+    normalized_job = _normalized_job(job)
+    capability = await provider.get_submission_capability(normalized_job)
+    schema = await provider.get_application_schema(normalized_job)
+    if not capability.submission_ready and not schema.fields:
         schema = _assisted_schema()
     _validate_schema(schema)
     existing = {field.field_id: field for field in await _fields(session, application.id)}
@@ -237,7 +243,7 @@ async def prepare_application(session: AsyncSession, *, application: Application
         )
     )
     await session.commit()
-    return PreparedForm(created, unresolved, application.execution_payload_fingerprint, not provider.capabilities.auto_apply)
+    return PreparedForm(created, unresolved, application.execution_payload_fingerprint, not capability.submission_ready, capability)
 
 
 def _validate_answer(field: ApplicationField, value: object) -> None:
@@ -273,16 +279,18 @@ async def update_application_answers(session: AsyncSession, *, application: Appl
     application.status = ApplicationStatus.needs_input if unresolved else ApplicationStatus.prepared
     session.add(_audit(application, "application_answers_updated", {"field_ids": sorted(answers), "unresolved_field_ids": unresolved}))
     await session.commit()
-    provider, _ = await _provider_and_job(session, application)
-    return PreparedForm(fields, unresolved, application.execution_payload_fingerprint, not provider.capabilities.auto_apply)
+    provider, job = await _provider_and_job(session, application)
+    capability = await provider.get_submission_capability(_normalized_job(job))
+    return PreparedForm(fields, unresolved, application.execution_payload_fingerprint, not capability.submission_ready, capability)
 
 
 async def ready_application(session: AsyncSession, *, application: Application, student: Student) -> Application:
     if application.status != ApplicationStatus.prepared:
         raise ApplicationWorkflowError("Resolve and review the prepared application before marking it ready")
     await _approval_is_current(session, application, student)
-    provider, _ = await _provider_and_job(session, application)
-    if not provider.capabilities.auto_apply:
+    provider, job = await _provider_and_job(session, application)
+    capability = await provider.get_submission_capability(_normalized_job(job))
+    if not capability.submission_ready:
         raise ApplicationWorkflowError("This provider is assisted/manual only")
     fields = await _fields(session, application.id)
     unresolved = _unresolved(fields)
@@ -307,7 +315,8 @@ async def submit_application(session: AsyncSession, *, application: Application,
         raise ApplicationWorkflowError("This application is not ready to submit")
     await _approval_is_current(session, application, student)
     provider, job = await _provider_and_job(session, application)
-    if not provider.capabilities.auto_apply:
+    capability = await provider.get_submission_capability(_normalized_job(job))
+    if not capability.submission_ready:
         raise ApplicationWorkflowError("This provider is assisted/manual only")
     schema = await provider.get_application_schema(_normalized_job(job))
     if schema.version != application.provider_schema_version:

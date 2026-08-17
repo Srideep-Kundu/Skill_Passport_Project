@@ -267,6 +267,15 @@ export interface ApplicationForm {
   payload_fingerprint: string | null;
   unresolved_field_ids: string[];
   is_assisted: boolean;
+  submission_capability: {
+    provider_supports_submission: boolean;
+    credentials_configured: boolean;
+    posting_supports_submission: boolean;
+    application_schema_available: boolean;
+    submission_ready: boolean;
+    fallback: string;
+    reason: string;
+  };
   fields: ApplicationField[];
 }
 

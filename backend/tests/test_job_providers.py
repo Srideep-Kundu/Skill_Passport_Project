@@ -6,11 +6,39 @@ import pytest
 from app.services.job_providers import (
     GreenhouseJobProvider,
     JobSearchFilters,
+    LeverJobProvider,
+    NormalizedExternalJob,
     ProviderCapabilities,
+    ProviderCredential,
+    ProviderCredentialStore,
     ProviderError,
     ProviderPayloadError,
     ProviderRateLimited,
+    normalized_application_schema,
 )
+
+
+def _job(provider: str, source: str, external_id: str, *, metadata: dict[str, object] | None = None) -> NormalizedExternalJob:
+    return NormalizedExternalJob(
+        provider=provider,
+        provider_source=source,
+        external_id=external_id,
+        title="Platform Intern",
+        company_name="Acme",
+        description="Python work",
+        location=None,
+        remote_status=None,
+        employment_type=None,
+        experience_level=None,
+        salary_min=None,
+        salary_max=None,
+        salary_currency=None,
+        apply_url="https://example.test/apply",
+        source_url="https://example.test/job",
+        posted_at=None,
+        expires_at=None,
+        raw_metadata=metadata,
+    )
 
 
 def _response(request: httpx.Request) -> httpx.Response:
@@ -105,3 +133,61 @@ async def test_greenhouse_adapter_handles_empty_malformed_and_provider_errors() 
     unavailable = GreenhouseJobProvider(transport=httpx.MockTransport(timeout_handler))
     with pytest.raises(ProviderError):
         await unavailable.search_jobs(JobSearchFilters(), source_key="acme")
+
+
+@pytest.mark.asyncio
+async def test_greenhouse_submission_capability_requires_exact_credential_scope_and_mapped_schema() -> None:
+    job = _job(
+        "greenhouse",
+        "acme",
+        "1",
+        metadata={"application_questions": [{"id": "portfolio", "label": "Portfolio", "type": "url", "required": True}]},
+    )
+    no_credential = await GreenhouseJobProvider(credentials=ProviderCredentialStore()).get_submission_capability(job)
+    assert no_credential.provider_supports_submission is True
+    assert no_credential.credentials_configured is False
+    assert no_credential.submission_ready is False
+
+    wrong_scope = await GreenhouseJobProvider(credentials=ProviderCredentialStore((ProviderCredential("greenhouse", "other", "test-key"),))).get_submission_capability(job)
+    assert wrong_scope.credentials_configured is False and wrong_scope.fallback == "assisted"
+
+    scoped = await GreenhouseJobProvider(credentials=ProviderCredentialStore((ProviderCredential("greenhouse", "acme", "test-key"),))).get_submission_capability(job)
+    assert scoped.credentials_configured is True
+    assert scoped.application_schema_available is True
+    assert scoped.submission_ready is False
+
+
+@pytest.mark.asyncio
+async def test_lever_official_schema_normalizes_sensitive_and_file_fields_and_stays_assisted() -> None:
+    async def response(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/v1/postings/posting-1/apply"
+        assert request.headers.get("authorization") is not None
+        return httpx.Response(
+            200,
+            json={
+                "data": {
+                    "personalInformation": [{"id": "name", "text": "Full name", "type": "text", "required": True}],
+                    "customQuestions": [{"id": "form-1", "fields": [
+                        {"id": "gender", "text": "Gender", "type": "dropdown", "required": False, "options": ["Female", "Male", "Prefer not to say"]},
+                        {"id": "resume", "text": "Resume", "type": "file-upload", "required": True},
+                    ]}],
+                }
+            },
+        )
+
+    credentials = ProviderCredentialStore((ProviderCredential("lever", "acme", "test-api-key"),))
+    provider = LeverJobProvider(transport=httpx.MockTransport(response), credentials=credentials)
+    schema = await provider.get_application_schema(_job("lever", "acme", "posting-1"))
+    gender = next(field for field in schema.fields if field.field_id == "lever_gender")
+    assert gender.sensitive is True and gender.requires_user_input is True
+    assert "lever_resume" in schema.unsupported_required_field_ids
+    capability = await provider.get_submission_capability(_job("lever", "acme", "posting-1"))
+    assert capability.credentials_configured is True
+    assert capability.application_schema_available is False
+    assert capability.submission_ready is False
+
+
+def test_unsupported_required_provider_field_is_not_silently_dropped() -> None:
+    schema = normalized_application_schema("lever", "test", [{"id": "custom", "text": "Unknown", "type": "matrix", "required": True}], prefix="lever_")
+    assert schema.fields == ()
+    assert schema.unsupported_required_field_ids == ("custom",)

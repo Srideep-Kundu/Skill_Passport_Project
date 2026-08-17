@@ -432,6 +432,7 @@ class ApplicationFormResponse(APIModel):
     payload_fingerprint: str | None
     unresolved_field_ids: list[str]
     is_assisted: bool
+    submission_capability: dict[str, bool | str]
     fields: list[ApplicationFieldResponse]
 
 
