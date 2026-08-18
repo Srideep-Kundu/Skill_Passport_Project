@@ -1,0 +1,15 @@
+import { useCallback, useEffect, useState } from "react";
+
+import { ApiError, api } from "../api";
+import type { JobDiscovery } from "../api";
+
+export function SavedDiscoveries({ token }: { token: string }) {
+  const [discoveries, setDiscoveries] = useState<JobDiscovery[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const load = useCallback(async () => { try { setError(null); setDiscoveries((await api.jobDiscoveries(token)).items); } catch (caught) { setError(caught instanceof ApiError ? caught.detail : "Saved discoveries could not be loaded."); } }, [token]);
+  useEffect(() => { void load(); }, [load]);
+  async function create() { try { setBusy(true); await api.createJobDiscovery({ name: "Daily internship search", enabled: true, query: null, location: null, remote_preference: true, employment_type: null, experience_level: null, providers: ["greenhouse"], freshness_days: 30, minimum_match_score: 0.2, cadence_hours: 24 }, token); await load(); } catch (caught) { setError(caught instanceof ApiError ? caught.detail : "Saved discovery could not be created."); } finally { setBusy(false); } }
+  async function run(discovery: JobDiscovery) { try { setBusy(true); await api.runJobDiscovery(discovery.id, token); await load(); } catch (caught) { setError(caught instanceof ApiError ? caught.detail : "Discovery run could not be started."); } finally { setBusy(false); } }
+  return <section aria-label="Saved job searches" className="rounded-xl bg-white p-5 shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="text-lg font-semibold">Saved job searches</h2><p className="mt-1 text-sm text-slate-600">Recurring discovery refreshes jobs and recommendations only. It never applies for you.</p></div><button type="button" disabled={busy} onClick={() => void create()} className="rounded border border-indigo-600 px-3 py-1.5 text-sm font-medium text-indigo-700">Add daily search</button></div>{error ? <p role="alert" className="mt-3 text-sm text-red-700">{error}</p> : null}{discoveries?.length ? <ul className="mt-4 space-y-3">{discoveries.map((item) => <li key={item.id} className="rounded border border-slate-200 p-3"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-medium">{item.name} {!item.enabled && <span className="text-slate-500">Disabled</span>}</p><p className="text-sm text-slate-600">{item.providers.join(", ")} · every {item.cadence_hours}h · minimum {Math.round(item.minimum_match_score * 100)}%</p><p className="text-xs text-slate-500">Last checked: {item.last_run_at ? new Date(item.last_run_at).toLocaleString() : "not yet"} · Next: {item.next_run_at ? new Date(item.next_run_at).toLocaleString() : "disabled"}</p></div><button type="button" disabled={busy || !item.enabled} onClick={() => void run(item)} className="text-sm font-medium text-indigo-700 disabled:text-slate-400">Run now</button></div></li>)}</ul> : <p className="mt-4 text-sm text-slate-600">No saved searches yet. Add one to check approved public providers on a safe cadence.</p>}</section>;
+}

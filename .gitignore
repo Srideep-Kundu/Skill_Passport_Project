@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.demo.example
 *.pem
 *.key
 
@@ -24,6 +25,8 @@ node_modules/
 dist/
 coverage/
 *.tsbuildinfo
+frontend/test-results/
+frontend/playwright-report/
 
 # Tooling and OS files
 .DS_Store

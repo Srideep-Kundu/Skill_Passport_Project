@@ -15,22 +15,33 @@ Architecture and contribution invariants are defined in [AGENTS.md](AGENTS.md). 
 
 ## Local development with Docker
 
-1. Copy `.env.example` to `.env` and replace local placeholder values as needed. Never commit `.env`.
+1. Copy `.env.example` to `.env`. The checked-in values are explicit development-only defaults, so a new developer does not need to guess local database credentials. Never commit `.env`.
 2. Start the stack:
 
    ```bash
-   docker compose up --build
+   docker compose up -d --build
    ```
 
-3. Compose applies migrations before starting the API and worker. Seed the taxonomy and demo data after the stack starts:
+3. Compose applies migrations before starting the API and worker. To run or confirm the migration manually, use the Compose network:
 
    ```bash
-   docker compose exec backend python -m seed.seed_demo_data
+   docker compose run --rm --no-deps backend alembic upgrade head
+   docker compose run --rm --no-deps backend alembic current
    ```
 
-4. Open the frontend at `http://localhost:5173`; the API health check is at `http://localhost:8000/health`.
+4. Seed the taxonomy after the stack starts. For the complete offline demo, copy `.env.demo.example` to `.env` before starting the stack, then reset and validate it:
+
+   ```bash
+   docker compose exec backend python -m seed.seed_skills
+   docker compose exec backend python -m seed.reset_demo
+   docker compose exec backend python -m seed.validate_demo
+   ```
+
+5. Open the frontend at `http://localhost:5173`; liveness is at `http://localhost:8000/health` and dependency readiness is at `http://localhost:8000/ready`.
 
 Use `docker compose down` to stop services. Add `-v` only when you intentionally want to remove the local PostgreSQL/Redis volumes.
+
+See the [local development guide](docs/local-development.md) for the environment-variable reference, host-versus-Compose database connection boundary, local checks, and reset procedure.
 
 ## Local checks
 
@@ -38,10 +49,10 @@ Backend:
 
 ```bash
 cd backend
-pip install -r requirements.txt
-pytest
-ruff check .
-mypy app
+.\.venv\Scripts\Activate.ps1
+python -m pytest
+python -m ruff check .
+python -m mypy app
 ```
 
 Frontend:
@@ -72,4 +83,6 @@ Production requirements:
 - Set unique secrets and exact HTTPS CORS origins through the platform environment UI.
 - Run migrations before serving traffic and validate `vector`, `matching_view`, and role grants.
 - Run the extraction worker as a distinct process using the same backend image and Redis URL.
+- Use `python -m app.core.release_check` after migrations and taxonomy seeding; it checks the revision, pgvector, restricted matching surface, matching role, taxonomy, and Redis without printing credentials.
+- Use `python -m app.core.release_smoke` after deployment; optional non-production smoke credentials extend it through login and a protected request.
 - Never expose API keys or use `VITE_*` variables for server-only secrets.

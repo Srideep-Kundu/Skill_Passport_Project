@@ -2,7 +2,8 @@ import type { MatchExplanation, MatchExplanationLine } from "../api";
 
 function ExplanationRow({ line }: { line: MatchExplanationLine }) {
   const matched = line.status !== "missing";
-  return <li className="flex justify-between gap-3 border-b border-slate-100 py-2 last:border-0"><span><span aria-hidden="true" className={matched ? "text-emerald-600" : "text-amber-600"}>{matched ? "✓" : "△"}</span> {line.skill_name}{line.evidence_title ? <span className="text-slate-500"> — {line.evidence_title}</span> : null}</span><span className="shrink-0 text-slate-600">{Math.round(line.contribution * 100)} pts</span></li>;
+  const semantic = line.semantic_similarity !== null && line.matched_skill_name ? ` · ${line.matched_skill_name} (${Math.round(line.semantic_similarity * 100)}%)` : "";
+  return <li className="flex justify-between gap-3 border-b border-slate-100 py-2 last:border-0"><span><span aria-hidden="true" className={matched ? "text-emerald-600" : "text-amber-600"}>{matched ? "✓" : "△"}</span> {line.skill_name}{semantic}{line.evidence_title ? <span className="text-slate-500"> — {line.evidence_title}</span> : null}<span className="block text-xs text-slate-500">Exact {Math.round(line.deterministic_contribution * 100)}% · Semantic {Math.round(line.semantic_contribution * 100)}% · Verification {Math.round(line.verification_contribution * 100)}%</span></span><span className="shrink-0 text-slate-600">{Math.round(line.total_contribution * 100)} pts</span></li>;
 }
 
 export function MatchExplanationPanel({ explanation }: { explanation: MatchExplanation }) {

@@ -1,14 +1,39 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
+from redis.asyncio import Redis
+from redis.exceptions import RedisError
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.db import get_session
 from app.core.security import require_role
 from app.models import Admin
+from app.services.worker_observability import (
+    WORKER_HEARTBEAT_KEY,
+    parse_worker_heartbeat,
+)
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+@router.get("/worker-status")
+async def worker_status(
+    principal: Annotated[Admin, Depends(require_role("admin"))],
+) -> dict[str, object]:
+    """Return an operational heartbeat without exposing job payloads or secrets."""
+    settings = get_settings()
+    if not settings.redis_url:
+        return {"status": "unconfigured", "heartbeat": None}
+    client = Redis.from_url(settings.redis_url)
+    try:
+        heartbeat = parse_worker_heartbeat(await client.get(WORKER_HEARTBEAT_KEY))
+    except RedisError:
+        return {"status": "unavailable", "heartbeat": None}
+    finally:
+        await client.aclose()
+    return {"status": "healthy" if heartbeat else "stale", "heartbeat": heartbeat}
 
 
 @router.get("/fairness-audit")

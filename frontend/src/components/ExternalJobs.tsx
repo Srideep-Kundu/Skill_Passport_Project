@@ -1,0 +1,71 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import { ApiError, api } from "../api";
+import type { Application, ExternalJob, ExternalJobMatch, MatchExplanation } from "../api";
+import { ApplicationPreparation } from "./ApplicationPreparation";
+import { AutomationPreferences } from "./AutomationPreferences";
+import { SavedDiscoveries } from "./SavedDiscoveries";
+import { EmptyState, ErrorState, LoadingState } from "./AsyncState";
+
+function syncedLabel(value: string): string {
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.valueOf()) ? "Sync time unavailable" : `Synced ${parsed.toLocaleString()}`;
+}
+
+function locationLabel(job: Pick<ExternalJob, "location" | "remote_status">): string {
+  return `${job.location ? ` · ${job.location}` : ""}${job.remote_status === "remote" && !job.location?.toLowerCase().includes("remote") ? " · Remote" : ""}`;
+}
+
+function Explanation({ explanation }: { explanation: MatchExplanation }) {
+  return <details className="mt-3 rounded border border-indigo-100 bg-indigo-50/40 p-3"><summary className="cursor-pointer font-medium text-indigo-800">Why this match?</summary><div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs"><span>Exact<br /><strong>{Math.round(explanation.deterministic_score * 100)}%</strong></span><span>Semantic<br /><strong>{Math.round(explanation.semantic_score * 100)}%</strong></span><span>Verified<br /><strong>{Math.round(explanation.verification_bonus * 100)}%</strong></span></div><ul className="mt-3 space-y-2 text-sm">{explanation.items.map((item) => <li key={item.skill_id}><strong>{item.status === "missing" ? "△" : "✓"} {item.skill_name}</strong>{item.status === "missing" ? ` — missing ${item.is_required === false ? "preferred" : "required"} skill` : ""}{item.evidence_title ? ` · ${item.evidence_title}` : ""}</li>)}</ul></details>;
+}
+
+function ApprovalScreen({ application, token, onChanged, onClose }: { application: Application; token: string; onChanged: (application: Application) => void; onClose: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const snapshot = application.application_snapshot;
+  async function run(action: () => Promise<Application>) {
+    try { setBusy(true); setError(null); onChanged(await action()); }
+    catch (caught) { setError(caught instanceof ApiError ? caught.detail : "The application action could not be completed."); }
+    finally { setBusy(false); }
+  }
+  const preSubmission = ["approval_pending", "approved", "needs_input", "prepared", "ready_to_submit"];
+  return <section aria-label="Application approval" className="rounded-xl border border-indigo-200 bg-indigo-50/30 p-5 shadow-sm"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-semibold text-indigo-700">APPLICATION REVIEW</p><h3 className="text-xl font-semibold text-slate-950">{snapshot.job.title}</h3><p className="text-sm text-slate-600">{snapshot.job.company_name} · {snapshot.job.provider}</p></div><span className="rounded bg-white px-2 py-1 text-sm font-medium text-slate-700">{application.status.replaceAll("_", " ")}</span></div><p className="mt-3 text-sm text-slate-700">Match score: <strong>{Math.round(snapshot.recommendation.final_score * 100)}%</strong>. This approval applies only to this job, recommendation, resume, and profile snapshot.</p><a href={snapshot.job.source_url} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm font-medium text-indigo-700 underline">View job source</a><div className="mt-4 grid gap-4 md:grid-cols-2"><div><h4 className="font-medium">Evidence supporting this match</h4>{snapshot.recommendation.supporting_evidence.length ? <ul className="mt-1 list-disc pl-5 text-sm text-slate-700">{snapshot.recommendation.supporting_evidence.map((item) => <li key={`${item.skill_name}-${item.evidence_id}`}>{item.skill_name}{item.evidence_title ? ` — ${item.evidence_title}` : ""}</li>)}</ul> : <p className="mt-1 text-sm text-slate-600">No evidence references were persisted.</p>}</div><div><h4 className="font-medium">Missing skills</h4>{snapshot.recommendation.missing_skills.length ? <ul className="mt-1 list-disc pl-5 text-sm text-slate-700">{snapshot.recommendation.missing_skills.map((item) => <li key={item.skill_name}>{item.skill_name} ({item.is_required ? "required" : "preferred"})</li>)}</ul> : <p className="mt-1 text-sm text-slate-600">No missing skills recorded.</p>}</div></div><div className="mt-4 rounded border border-slate-200 bg-white p-3 text-sm text-slate-700"><h4 className="font-medium text-slate-950">Application-safe profile</h4><p className="mt-1">Resume: {snapshot.resume.original_filename}</p><p>{snapshot.application_profile.full_name} · {snapshot.application_profile.email}{snapshot.application_profile.phone ? ` · ${snapshot.application_profile.phone}` : ""}</p><p className="mt-1 text-xs text-slate-500">Sensitive demographic and legal questions always require your direct input and are never inferred.</p></div>{application.is_approval_stale ? <p className="mt-3 rounded bg-amber-100 p-3 text-sm text-amber-900">Your approved inputs changed. Review and approve the updated application again.</p> : null}<ApplicationPreparation application={application} token={token} onChanged={onChanged} />{error ? <p role="alert" className="mt-3 text-sm text-red-700">{error}</p> : null}<div className="mt-4 flex flex-wrap gap-2">{application.status === "approval_pending" ? <button type="button" disabled={busy} onClick={() => void run(async () => { await api.requestApplicationApproval(application.id, token); return api.approveApplication(application.id, token); })} className="rounded bg-indigo-700 px-3 py-1.5 text-sm font-medium text-white">Approve application</button> : null}{application.status === "approved" && application.is_approval_stale ? <button type="button" disabled={busy} onClick={() => void run(() => api.requestApplicationApproval(application.id, token))} className="rounded bg-indigo-700 px-3 py-1.5 text-sm font-medium text-white">Refresh approval review</button> : null}{application.status === "approved" ? <button type="button" disabled={busy} onClick={() => void run(() => api.revokeApplicationApproval(application.id, token))} className="rounded border border-indigo-600 px-3 py-1.5 text-sm font-medium text-indigo-700">Revoke approval</button> : null}{preSubmission.includes(application.status) ? <button type="button" disabled={busy} onClick={() => void run(() => api.selectManualApplication(application.id, token))} className="rounded border border-indigo-600 px-3 py-1.5 text-sm font-medium text-indigo-700">Apply manually</button> : null}{application.status === "manual_apply" && application.manual_apply_url ? <a href={application.manual_apply_url} target="_blank" rel="noreferrer" className="rounded border border-indigo-600 px-3 py-1.5 text-sm font-medium text-indigo-700">Open manual application page</a> : null}{preSubmission.includes(application.status) ? <button type="button" disabled={busy} onClick={() => void run(() => api.withdrawApplication(application.id, token))} className="rounded border border-slate-400 px-3 py-1.5 text-sm font-medium text-slate-700">Cancel application</button> : null}<button type="button" onClick={onClose} className="rounded px-3 py-1.5 text-sm text-slate-600">Close</button></div><p className="mt-3 text-xs text-slate-500">No external application is submitted by this product for assisted providers. No browser automation is used; submission appears only for a provider that explicitly declares that capability.</p></section>;
+}
+
+function RecommendedJob({ job, application, onApply }: { job: ExternalJobMatch; application: Application | undefined; onApply: () => void }) {
+  return <li className="rounded-lg border border-indigo-200 bg-indigo-50/30 p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold text-slate-950">{job.title}</h3><p className="text-sm text-slate-600">{job.company_name}{locationLabel(job)}</p></div><strong className="text-xl text-indigo-700">{Math.round(job.final_score * 100)}%</strong></div><p className="mt-2 text-xs text-slate-600">Source: {job.provider}{job.posted_at ? ` · Posted ${new Date(job.posted_at).toLocaleDateString()}` : ""}{job.is_stale ? " · Match needs refresh" : ""}</p><Explanation explanation={job.explanation} /><div className="mt-3 flex flex-wrap gap-3"><a href={job.source_url} target="_blank" rel="noreferrer" className="text-sm font-medium text-indigo-700 underline">Open original listing</a><button type="button" disabled={job.is_stale} onClick={onApply} className="text-sm font-medium text-indigo-700 underline disabled:text-slate-400">{application ? "Review application" : "Apply"}</button></div></li>;
+}
+
+function ExternalJobsContent({ token }: { token: string }) {
+  const [jobs, setJobs] = useState<ExternalJob[] | null>(null);
+  const [recommended, setRecommended] = useState<ExternalJobMatch[] | null>(null);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const applicationsByJob = useMemo(() => new Map(applications.map((application) => [application.external_job_id, application])), [applications]);
+  const load = useCallback(async () => {
+    try { setError(null); const [jobPage, matchPage, applicationPage] = await Promise.all([api.externalJobs(token), api.externalJobMatches(token), api.applications(token)]); setJobs(jobPage.items); setRecommended(matchPage.items); setApplications(applicationPage.items); }
+    catch (caught) { setError(caught instanceof ApiError ? caught.detail : "External jobs could not be loaded."); }
+  }, [token]);
+  useEffect(() => { void load(); }, [load]);
+  function updateApplication(next: Application) { setSelectedApplication(next); setApplications((current) => current.map((item) => item.id === next.id ? next : item)); }
+  async function beginApplication(job: ExternalJobMatch) {
+    const existing = applicationsByJob.get(job.external_job_id);
+    if (existing) { setSelectedApplication(existing); return; }
+    try { setError(null); const created = await api.createApplication(job.external_job_id, job.id, token); setApplications((current) => [created, ...current]); setSelectedApplication(created); }
+    catch (caught) { setError(caught instanceof ApiError ? caught.detail : "The application could not be created."); }
+  }
+  async function refreshRecommendations() {
+    try { setRefreshing(true); await api.recomputeExternalJobMatches(token); await load(); }
+    catch (caught) { setError(caught instanceof ApiError ? caught.detail : "Recommendations could not be refreshed."); }
+    finally { setRefreshing(false); }
+  }
+  if ((!jobs || !recommended) && !error) return <LoadingState label="Loading external jobs" />;
+  return <section aria-label="External jobs" className="space-y-4 rounded-xl bg-white p-5 shadow-sm"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-lg font-semibold">Recommended jobs</h2><p className="mt-1 text-sm text-slate-600">Persisted evidence-backed matches. Location and remote preferences filter jobs but never alter skill-fit scores.</p></div><button type="button" onClick={() => void refreshRecommendations()} disabled={refreshing} className="rounded border border-indigo-600 px-3 py-1.5 text-sm font-medium text-indigo-700 disabled:text-slate-400">{refreshing ? "Refreshing…" : "Refresh recommendations"}</button></div>{selectedApplication ? <ApprovalScreen application={selectedApplication} token={token} onChanged={updateApplication} onClose={() => setSelectedApplication(null)} /> : null}{error ? <ErrorState message={error} onRetry={() => void load()} /> : recommended?.length ? <ul className="space-y-3">{recommended.map((job) => <RecommendedJob key={job.id} job={job} application={applicationsByJob.get(job.external_job_id)} onApply={() => void beginApplication(job)} />)}</ul> : <EmptyState title="No recommended jobs yet">Refresh recommendations after jobs with canonical required skills have been synced. Jobs below the configured recommendation threshold remain searchable.</EmptyState>}<div className="border-t border-slate-200 pt-4"><h3 className="font-semibold">All synced external jobs</h3>{jobs?.length ? <ul className="mt-3 space-y-3">{jobs.map((job) => <li key={job.id} className="rounded-lg border border-slate-200 p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><h4 className="font-semibold text-slate-950">{job.title}</h4><p className="text-sm text-slate-600">{job.company_name}{locationLabel(job)}</p></div><span className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">Source: {job.provider}</span></div><p className="mt-2 text-sm text-slate-600">{syncedLabel(job.last_synced_at)}{job.requirements.some((item) => item.is_required) ? "" : " · Requirements not yet sufficient for matching"}</p><a href={job.source_url} target="_blank" rel="noreferrer" className="mt-3 inline-block text-sm font-medium text-indigo-700 underline">Open original listing</a></li>)}</ul> : <EmptyState title="No synced external jobs">An administrator can sync a configured public job source. Check back after the next sync.</EmptyState>}</div></section>;
+}
+
+export function ExternalJobs({ token }: { token: string }) {
+  return <div className="space-y-6"><AutomationPreferences token={token} /><SavedDiscoveries token={token} /><ExternalJobsContent token={token} /></div>;
+}

@@ -4,7 +4,6 @@ from sqlalchemy import select
 
 from app.core.db import SessionLocal
 from app.models import Skill
-from app.services.embeddings import deterministic_embedding
 
 TAXONOMY: dict[str, list[str]] = {
     "Programming Language": ["Python", "Java", "JavaScript", "TypeScript", "C", "C++", "C#", "Go", "Rust", "Kotlin", "Swift", "Ruby", "PHP", "R", "Scala", "Racket", "MATLAB", "SQL", "Bash", "PowerShell", "HTML", "CSS"],
@@ -28,7 +27,7 @@ async def seed_skills() -> int:
         for category, names in TAXONOMY.items():
             for name in names:
                 if name not in existing:
-                    session.add(Skill(canonical_name=name, category=category, aliases=ALIASES.get(name, []), embedding=deterministic_embedding(name)))
+                    session.add(Skill(canonical_name=name, category=category, aliases=ALIASES.get(name, [])))
                     existing.add(name)
                     inserted += 1
         await session.commit()
