@@ -37,3 +37,5 @@ Thumbs.db
 # Local service data
 postgres-data/
 redis-data/
+uploads/
+backend/uploads/

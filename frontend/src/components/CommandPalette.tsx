@@ -136,13 +136,68 @@ export function CommandPalette({
 
                   <Command.Item
                     onSelect={() => {
-                      onSelectStudentTab("teams");
+                      onSelectStudentTab("gaps");
+                      onOpenChange(false);
+                    }}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] hover:bg-blue-50 dark:hover:bg-[#151e29] hover:text-[#3b71d9] dark:hover:text-[#b0c6ff] cursor-pointer transition-colors font-sans"
+                  >
+                    <Activity className="h-4 w-4" />
+                    <span>Skill Gaps & Goals</span>
+                  </Command.Item>
+
+                  <Command.Item
+                    onSelect={() => {
+                      onSelectStudentTab("assessments");
+                      onOpenChange(false);
+                    }}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] hover:bg-blue-50 dark:hover:bg-[#151e29] hover:text-[#3b71d9] dark:hover:text-[#b0c6ff] cursor-pointer transition-colors font-sans"
+                  >
+                    <Award className="h-4 w-4" />
+                    <span>Diagnostic Assessments</span>
+                  </Command.Item>
+
+                  <Command.Item
+                    onSelect={() => {
+                      onSelectStudentTab("learning");
+                      onOpenChange(false);
+                    }}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] hover:bg-blue-50 dark:hover:bg-[#151e29] hover:text-[#3b71d9] dark:hover:text-[#b0c6ff] cursor-pointer transition-colors font-sans"
+                  >
+                    <ListTodo className="h-4 w-4" />
+                    <span>Adaptive Learning Hub</span>
+                  </Command.Item>
+
+                  <Command.Item
+                    onSelect={() => {
+                      onSelectStudentTab("placements");
+                      onOpenChange(false);
+                    }}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] hover:bg-blue-50 dark:hover:bg-[#151e29] hover:text-[#3b71d9] dark:hover:text-[#b0c6ff] cursor-pointer transition-colors font-sans"
+                  >
+                    <Briefcase className="h-4 w-4" />
+                    <span>Campus Placement Drives</span>
+                  </Command.Item>
+
+                  <Command.Item
+                    onSelect={() => {
+                      onSelectStudentTab("collaborations");
                       onOpenChange(false);
                     }}
                     className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] hover:bg-blue-50 dark:hover:bg-[#151e29] hover:text-[#3b71d9] dark:hover:text-[#b0c6ff] cursor-pointer transition-colors font-sans"
                   >
                     <User className="h-4 w-4" />
-                    <span>Team Formation</span>
+                    <span>Mentorship & Hackathons</span>
+                  </Command.Item>
+
+                  <Command.Item
+                    onSelect={() => {
+                      onSelectStudentTab("teams");
+                      onOpenChange(false);
+                    }}
+                    className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] hover:bg-blue-50 dark:hover:bg-[#151e29] hover:text-[#3b71d9] dark:hover:text-[#b0c6ff] cursor-pointer transition-colors font-sans"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    <span>Team Formation Engine</span>
                   </Command.Item>
                 </>
               ) : (

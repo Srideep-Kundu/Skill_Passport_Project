@@ -3,13 +3,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Check, GraduationCap, Briefcase } from "lucide-react";
+import { Check, GraduationCap, Briefcase, BookOpen, Building2 } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import { ApiError, api } from "../api";
 import { useAuth } from "../auth/AuthContext";
 
 type Mode = "login" | "register";
-type RegistrationRole = "student" | "recruiter";
+type RegistrationRole = "student" | "recruiter" | "academician" | "institution";
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email address"),
@@ -18,25 +18,46 @@ const loginSchema = z.object({
 
 const registerStudentSchema = z.object({
   email: z.string().email("Enter a valid email address"),
-  password: z.string().min(10, "Password must be at least 10 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
   fullName: z.string().min(2, "Full name is required"),
   university: z.string().optional(),
 });
 
 const registerRecruiterSchema = z.object({
   email: z.string().email("Enter a valid email address"),
-  password: z.string().min(10, "Password must be at least 10 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
   companyName: z.string().min(2, "Company name is required"),
+});
+
+const registerAcademicianSchema = z.object({
+  email: z.string().email("Enter a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  fullName: z.string().min(2, "Full name is required"),
+  institutionName: z.string().min(2, "Institution name is required"),
+  department: z.string().min(2, "Department is required"),
+  designation: z.string().min(2, "Designation is required"),
+});
+
+const registerInstitutionSchema = z.object({
+  email: z.string().email("Enter a valid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  institutionName: z.string().min(2, "Institution name is required"),
+  institutionCode: z.string().min(2, "Institution code is required"),
+  state: z.string().optional(),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
 type RegisterStudentFormData = z.infer<typeof registerStudentSchema>;
 type RegisterRecruiterFormData = z.infer<typeof registerRecruiterSchema>;
+type RegisterAcademicianFormData = z.infer<typeof registerAcademicianSchema>;
+type RegisterInstitutionFormData = z.infer<typeof registerInstitutionSchema>;
 
 const DEMO_PERSONAS = [
   { name: "Maya Rivera", role: "Student (Full Evidence)", email: "maya@example.demo", pass: "DemoPassword123" },
   { name: "Noah Chen", role: "Student (Mid-Match)", email: "noah@example.demo", pass: "DemoPassword123" },
   { name: "Demo Recruiter", role: "Recruiter View", email: "recruiter@example.demo", pass: "DemoPassword123" },
+  { name: "Dr. Arvind Rao", role: "Faculty / Academician", email: "faculty@example.demo", pass: "DemoPassword123" },
+  { name: "Dean Analytics", role: "Institution / University", email: "dean@example.demo", pass: "DemoPassword123" },
 ];
 
 export function AuthPage() {
@@ -58,6 +79,16 @@ export function AuthPage() {
   const recruiterForm = useForm<RegisterRecruiterFormData>({
     resolver: zodResolver(registerRecruiterSchema),
     defaultValues: { email: "", password: "", companyName: "" },
+  });
+
+  const academicianForm = useForm<RegisterAcademicianFormData>({
+    resolver: zodResolver(registerAcademicianSchema),
+    defaultValues: { email: "", password: "", fullName: "", institutionName: "", department: "Computer Science", designation: "Associate Professor" },
+  });
+
+  const institutionForm = useForm<RegisterInstitutionFormData>({
+    resolver: zodResolver(registerInstitutionSchema),
+    defaultValues: { email: "", password: "", institutionName: "", institutionCode: "", state: "Maharashtra" },
   });
 
   async function handleLoginSubmit(data: LoginFormData) {
@@ -103,6 +134,45 @@ export function AuthPage() {
       toast.success("Recruiter account created successfully!");
     } catch (caught) {
       const msg = caught instanceof ApiError ? caught.detail : "Unable to register recruiter account.";
+      setError(msg);
+      toast.error(msg);
+    }
+  }
+
+  async function handleAcademicianRegisterSubmit(data: RegisterAcademicianFormData) {
+    setError(null);
+    try {
+      const session = await api.registerAcademician({
+        email: data.email,
+        password: data.password,
+        full_name: data.fullName,
+        institution_name: data.institutionName,
+        department: data.department,
+        designation: data.designation,
+      });
+      setSession(session, data.email);
+      toast.success("Academician account created successfully!");
+    } catch (caught) {
+      const msg = caught instanceof ApiError ? caught.detail : "Unable to register academician account.";
+      setError(msg);
+      toast.error(msg);
+    }
+  }
+
+  async function handleInstitutionRegisterSubmit(data: RegisterInstitutionFormData) {
+    setError(null);
+    try {
+      const session = await api.registerInstitution({
+        email: data.email,
+        password: data.password,
+        institution_name: data.institutionName,
+        institution_code: data.institutionCode,
+        state: data.state,
+      });
+      setSession(session, data.email);
+      toast.success("Institution account created successfully!");
+    } catch (caught) {
+      const msg = caught instanceof ApiError ? caught.detail : "Unable to register institution account.";
       setError(msg);
       toast.error(msg);
     }
@@ -292,8 +362,8 @@ export function AuthPage() {
 
             <fieldset className="space-y-2 pt-1">
               <legend className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-[#98a4b3]">I am registering as</legend>
-              <div className="grid grid-cols-2 gap-3">
-                <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-lg border p-2.5 text-sm font-medium transition-all ${
+              <div className="grid grid-cols-2 gap-2">
+                <label className={`flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border p-2 text-xs font-medium transition-all ${
                   role === "student" ? "border-[#3b71d9] bg-blue-50/50 dark:bg-[#182337] text-[#3b71d9] dark:text-[#b0c6ff] shadow-sm" : "border-slate-200 dark:border-white/10 text-slate-600 dark:text-[#98a4b3] hover:bg-slate-50 dark:hover:bg-[#151e29]"
                 }`}>
                   <input
@@ -303,10 +373,11 @@ export function AuthPage() {
                     checked={role === "student"}
                     onChange={() => setRole("student")}
                   />
-                  <GraduationCap className="h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
+                  <GraduationCap className="h-3.5 w-3.5 shrink-0 text-[#3b71d9]" aria-hidden="true" />
                   <span>Student</span>
                 </label>
-                <label className={`flex cursor-pointer items-center justify-center gap-2 rounded-lg border p-2.5 text-sm font-medium transition-all ${
+
+                <label className={`flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border p-2 text-xs font-medium transition-all ${
                   role === "recruiter" ? "border-[#3b71d9] bg-blue-50/50 dark:bg-[#182337] text-[#3b71d9] dark:text-[#b0c6ff] shadow-sm" : "border-slate-200 dark:border-white/10 text-slate-600 dark:text-[#98a4b3] hover:bg-slate-50 dark:hover:bg-[#151e29]"
                 }`}>
                   <input
@@ -316,13 +387,41 @@ export function AuthPage() {
                     checked={role === "recruiter"}
                     onChange={() => setRole("recruiter")}
                   />
-                  <Briefcase className="h-4 w-4 shrink-0 text-indigo-600 dark:text-indigo-400" aria-hidden="true" />
+                  <Briefcase className="h-3.5 w-3.5 shrink-0 text-[#3b71d9]" aria-hidden="true" />
                   <span>Recruiter</span>
+                </label>
+
+                <label className={`flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border p-2 text-xs font-medium transition-all ${
+                  role === "academician" ? "border-[#3b71d9] bg-blue-50/50 dark:bg-[#182337] text-[#3b71d9] dark:text-[#b0c6ff] shadow-sm" : "border-slate-200 dark:border-white/10 text-slate-600 dark:text-[#98a4b3] hover:bg-slate-50 dark:hover:bg-[#151e29]"
+                }`}>
+                  <input
+                    type="radio"
+                    className="sr-only"
+                    name="role"
+                    checked={role === "academician"}
+                    onChange={() => setRole("academician")}
+                  />
+                  <BookOpen className="h-3.5 w-3.5 shrink-0 text-[#3b71d9]" aria-hidden="true" />
+                  <span>Faculty</span>
+                </label>
+
+                <label className={`flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border p-2 text-xs font-medium transition-all ${
+                  role === "institution" ? "border-[#3b71d9] bg-blue-50/50 dark:bg-[#182337] text-[#3b71d9] dark:text-[#b0c6ff] shadow-sm" : "border-slate-200 dark:border-white/10 text-slate-600 dark:text-[#98a4b3] hover:bg-slate-50 dark:hover:bg-[#151e29]"
+                }`}>
+                  <input
+                    type="radio"
+                    className="sr-only"
+                    name="role"
+                    checked={role === "institution"}
+                    onChange={() => setRole("institution")}
+                  />
+                  <Building2 className="h-3.5 w-3.5 shrink-0 text-[#3b71d9]" aria-hidden="true" />
+                  <span>University</span>
                 </label>
               </div>
             </fieldset>
 
-            {role === "student" ? (
+            {role === "student" && (
               <form onSubmit={studentForm.handleSubmit(handleStudentRegisterSubmit)} className="space-y-3">
                 <label className="block text-sm font-medium text-slate-700 dark:text-[#f1f0e8]">
                   Full name
@@ -385,7 +484,9 @@ export function AuthPage() {
                   {isSubmitting ? "Creating Student Account..." : "Create Student Account"}
                 </button>
               </form>
-            ) : (
+            )}
+
+            {role === "recruiter" && (
               <form onSubmit={recruiterForm.handleSubmit(handleRecruiterRegisterSubmit)} className="space-y-3">
                 <label className="block text-sm font-medium text-slate-700 dark:text-[#f1f0e8]">
                   Company name
@@ -437,6 +538,135 @@ export function AuthPage() {
                   className="w-full rounded-lg bg-[#3b71d9] py-2.5 font-semibold text-white shadow-md shadow-[#3b71d9]/25 hover:bg-[#2563eb] focus:outline-none disabled:opacity-50 cursor-pointer transition-all text-sm"
                 >
                   {isSubmitting ? "Creating Recruiter Account..." : "Create Recruiter Account"}
+                </button>
+              </form>
+            )}
+
+            {role === "academician" && (
+              <form onSubmit={academicianForm.handleSubmit(handleAcademicianRegisterSubmit)} className="space-y-3">
+                <label className="block text-sm font-medium text-slate-700 dark:text-[#f1f0e8]">
+                  Full name
+                  <input
+                    {...academicianForm.register("fullName")}
+                    placeholder="e.g. Dr. Arvind Rao"
+                    className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
+                  />
+                </label>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-[#f1f0e8]">
+                    Institution
+                    <input
+                      {...academicianForm.register("institutionName")}
+                      placeholder="e.g. IIT Bombay"
+                      className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
+                    />
+                  </label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-[#f1f0e8]">
+                    Department
+                    <input
+                      {...academicianForm.register("department")}
+                      placeholder="e.g. Computer Science"
+                      className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
+                    />
+                  </label>
+                </div>
+
+                <label className="block text-sm font-medium text-slate-700 dark:text-[#f1f0e8]">
+                  Designation
+                  <input
+                    {...academicianForm.register("designation")}
+                    placeholder="e.g. Professor & Head of AI"
+                    className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
+                  />
+                </label>
+
+                <label className="block text-sm font-medium text-slate-700 dark:text-[#f1f0e8]">
+                  Email address
+                  <input
+                    {...academicianForm.register("email")}
+                    type="email"
+                    placeholder="faculty@example.edu"
+                    className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
+                  />
+                </label>
+
+                <label className="block text-sm font-medium text-slate-700 dark:text-[#f1f0e8]">
+                  Password
+                  <input
+                    {...academicianForm.register("password")}
+                    type="password"
+                    placeholder="••••••••"
+                    className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
+                  />
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full rounded-lg bg-[#3b71d9] py-2.5 font-semibold text-white shadow-md shadow-[#3b71d9]/25 hover:bg-[#2563eb] focus:outline-none disabled:opacity-50 cursor-pointer transition-all text-sm"
+                >
+                  {isSubmitting ? "Creating Faculty Account..." : "Create Faculty Account"}
+                </button>
+              </form>
+            )}
+
+            {role === "institution" && (
+              <form onSubmit={institutionForm.handleSubmit(handleInstitutionRegisterSubmit)} className="space-y-3">
+                <label className="block text-sm font-medium text-slate-700 dark:text-[#f1f0e8]">
+                  Institution Name
+                  <input
+                    {...institutionForm.register("institutionName")}
+                    placeholder="e.g. National Institute of Technology"
+                    className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
+                  />
+                </label>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-[#f1f0e8]">
+                    Institution Code (AISHE)
+                    <input
+                      {...institutionForm.register("institutionCode")}
+                      placeholder="e.g. C-12345"
+                      className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
+                    />
+                  </label>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-[#f1f0e8]">
+                    State / Region
+                    <input
+                      {...institutionForm.register("state")}
+                      placeholder="e.g. Karnataka"
+                      className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
+                    />
+                  </label>
+                </div>
+
+                <label className="block text-sm font-medium text-slate-700 dark:text-[#f1f0e8]">
+                  Administrative Email
+                  <input
+                    {...institutionForm.register("email")}
+                    type="email"
+                    placeholder="dean@university.edu"
+                    className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
+                  />
+                </label>
+
+                <label className="block text-sm font-medium text-slate-700 dark:text-[#f1f0e8]">
+                  Password
+                  <input
+                    {...institutionForm.register("password")}
+                    type="password"
+                    placeholder="••••••••"
+                    className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
+                  />
+                </label>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full rounded-lg bg-[#3b71d9] py-2.5 font-semibold text-white shadow-md shadow-[#3b71d9]/25 hover:bg-[#2563eb] focus:outline-none disabled:opacity-50 cursor-pointer transition-all text-sm"
+                >
+                  {isSubmitting ? "Creating University Account..." : "Create University Account"}
                 </button>
               </form>
             )}

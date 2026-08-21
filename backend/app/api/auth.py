@@ -11,9 +11,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import get_settings
 from app.core.db import get_session
 from app.core.security import create_access_token, hash_password, verify_password
-from app.models import AccountEmail, Admin, Recruiter, Role, Student
+from app.models import (
+    Academician,
+    AccountEmail,
+    Admin,
+    Institution,
+    Recruiter,
+    Role,
+    Student,
+)
 from app.schemas.contracts import (
+    AcademicianRegistration,
     GoogleAuthRequest,
+    InstitutionRegistration,
     LoginRequest,
     RecruiterRegistration,
     StudentRegistration,
@@ -51,8 +61,10 @@ async def _email_taken(session: AsyncSession, email: str) -> bool:
         return True
     student = (await session.scalars(select(Student.id).where(Student.email == normalized))).first()
     recruiter = (await session.scalars(select(Recruiter.id).where(Recruiter.email == normalized))).first()
+    academician = (await session.scalars(select(Academician.id).where(Academician.email == normalized))).first()
+    institution = (await session.scalars(select(Institution.id).where(Institution.email == normalized))).first()
     admin = (await session.scalars(select(Admin.id).where(Admin.email == normalized))).first()
-    return student is not None or recruiter is not None or admin is not None
+    return student is not None or recruiter is not None or academician is not None or institution is not None or admin is not None
 
 
 @router.post("/register/student", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -89,16 +101,67 @@ async def register_recruiter(payload: RecruiterRegistration, request: Request, s
     return TokenResponse(access_token=create_access_token(recruiter.id, recruiter.role), role="recruiter")
 
 
+@router.post("/register/academician", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+async def register_academician(payload: AcademicianRegistration, request: Request, session: Annotated[AsyncSession, Depends(get_session)]) -> TokenResponse:
+    await enforce_rate_limit("registration", _request_subject(request), get_settings().registration_rate_limit_per_minute)
+    if await _email_taken(session, payload.email):
+        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
+    academician = Academician(
+        email=payload.email.casefold(),
+        password_hash=hash_password(payload.password),
+        full_name=payload.full_name,
+        institution_name=payload.institution_name,
+        department=payload.department,
+        designation=payload.designation,
+        research_areas=payload.research_areas,
+    )
+    session.add(academician)
+    await session.flush()
+    session.add(AccountEmail(email=academician.email, account_id=academician.id, role=Role.academician))
+    try:
+        await session.commit()
+    except IntegrityError as error:
+        await session.rollback()
+        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered") from error
+    return TokenResponse(access_token=create_access_token(academician.id, academician.role), role="academician")
+
+
+@router.post("/register/institution", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+async def register_institution(payload: InstitutionRegistration, request: Request, session: Annotated[AsyncSession, Depends(get_session)]) -> TokenResponse:
+    await enforce_rate_limit("registration", _request_subject(request), get_settings().registration_rate_limit_per_minute)
+    if await _email_taken(session, payload.email):
+        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
+    institution = Institution(
+        email=payload.email.casefold(),
+        password_hash=hash_password(payload.password),
+        institution_name=payload.institution_name,
+        institution_code=payload.institution_code,
+        state=payload.state,
+        departments=payload.departments,
+    )
+    session.add(institution)
+    await session.flush()
+    session.add(AccountEmail(email=institution.email, account_id=institution.id, role=Role.institution))
+    try:
+        await session.commit()
+    except IntegrityError as error:
+        await session.rollback()
+        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered") from error
+    return TokenResponse(access_token=create_access_token(institution.id, institution.role), role="institution")
+
+
 @router.post("/login", response_model=TokenResponse)
 async def login(payload: LoginRequest, request: Request, session: Annotated[AsyncSession, Depends(get_session)]) -> TokenResponse:
     await enforce_rate_limit("login", _request_subject(request), get_settings().login_rate_limit_per_minute)
     email = payload.email.casefold()
     student = (await session.scalars(select(Student).where(Student.email == email))).first()
     recruiter = (await session.scalars(select(Recruiter).where(Recruiter.email == email))).first()
+    academician = (await session.scalars(select(Academician).where(Academician.email == email))).first()
+    institution = (await session.scalars(select(Institution).where(Institution.email == email))).first()
     admin = (await session.scalars(select(Admin).where(Admin.email == email))).first()
-    for account in (student, recruiter, admin):
+    for account in (student, recruiter, academician, institution, admin):
         if account is not None and verify_password(payload.password, account.password_hash):
-            role = cast(Literal["student", "recruiter", "admin"], account.role)
+            role = cast(Literal["student", "recruiter", "admin", "academician", "institution"], account.role)
             return TokenResponse(access_token=create_access_token(account.id, role), role=role)
     raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password")
 
@@ -129,7 +192,7 @@ async def login_with_google(
     registry = await session.get(AccountEmail, email)
     if registry is not None:
         role_value = registry.role.value if hasattr(registry.role, "value") else str(registry.role)
-        role = cast(Literal["student", "recruiter", "admin"], role_value)
+        role = cast(Literal["student", "recruiter", "admin", "academician", "institution"], role_value)
         return TokenResponse(access_token=create_access_token(registry.account_id, role), role=role)
 
     # Fallback search directly in tables in case AccountEmail was migrated
@@ -144,6 +207,18 @@ async def login_with_google(
         session.add(AccountEmail(email=email, account_id=recruiter.id, role=Role.recruiter))
         await session.commit()
         return TokenResponse(access_token=create_access_token(recruiter.id, Role.recruiter), role="recruiter")
+
+    academician = (await session.scalars(select(Academician).where(Academician.email == email))).first()
+    if academician is not None:
+        session.add(AccountEmail(email=email, account_id=academician.id, role=Role.academician))
+        await session.commit()
+        return TokenResponse(access_token=create_access_token(academician.id, Role.academician), role="academician")
+
+    institution = (await session.scalars(select(Institution).where(Institution.email == email))).first()
+    if institution is not None:
+        session.add(AccountEmail(email=email, account_id=institution.id, role=Role.institution))
+        await session.commit()
+        return TokenResponse(access_token=create_access_token(institution.id, Role.institution), role="institution")
 
     admin = (await session.scalars(select(Admin).where(Admin.email == email))).first()
     if admin is not None:
@@ -167,6 +242,43 @@ async def login_with_google(
             await session.rollback()
             raise HTTPException(status.HTTP_409_CONFLICT, "Account registration conflict") from error
         return TokenResponse(access_token=create_access_token(new_recruiter.id, Role.recruiter), role="recruiter")
+    elif payload.role == "academician":
+        new_academician = Academician(
+            email=email,
+            password_hash=pwd_hash,
+            full_name=full_name,
+            institution_name=payload.company_name or "Partner University",
+            department="Computer Science & Engineering",
+            designation="Assistant Professor",
+            research_areas=["Artificial Intelligence", "Distributed Systems"],
+        )
+        session.add(new_academician)
+        await session.flush()
+        session.add(AccountEmail(email=email, account_id=new_academician.id, role=Role.academician))
+        try:
+            await session.commit()
+        except IntegrityError as error:
+            await session.rollback()
+            raise HTTPException(status.HTTP_409_CONFLICT, "Account registration conflict") from error
+        return TokenResponse(access_token=create_access_token(new_academician.id, Role.academician), role="academician")
+    elif payload.role == "institution":
+        new_institution = Institution(
+            email=email,
+            password_hash=pwd_hash,
+            institution_name=payload.company_name or f"{full_name} Institute",
+            institution_code=f"INST-{secrets.token_hex(3).upper()}",
+            state="Karnataka",
+            departments=["Computer Science", "Information Technology", "Electronics"],
+        )
+        session.add(new_institution)
+        await session.flush()
+        session.add(AccountEmail(email=email, account_id=new_institution.id, role=Role.institution))
+        try:
+            await session.commit()
+        except IntegrityError as error:
+            await session.rollback()
+            raise HTTPException(status.HTTP_409_CONFLICT, "Account registration conflict") from error
+        return TokenResponse(access_token=create_access_token(new_institution.id, Role.institution), role="institution")
     else:
         new_student = Student(email=email, password_hash=pwd_hash, full_name=full_name)
         session.add(new_student)
@@ -178,3 +290,4 @@ async def login_with_google(
             await session.rollback()
             raise HTTPException(status.HTTP_409_CONFLICT, "Account registration conflict") from error
         return TokenResponse(access_token=create_access_token(new_student.id, Role.student), role="student")
+

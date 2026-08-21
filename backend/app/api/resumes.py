@@ -88,6 +88,16 @@ async def upload_resume(
             return await resume_response(session, existing)
         raise HTTPException(status.HTTP_409_CONFLICT, "A matching resume already exists") from error
     await session.refresh(document)
+
+    # Automatic zero-effort analysis: parse and extract immediately upon upload
+    if document.parse_status != ResumeParseStatus.unsupported:
+        try:
+            await parse_resume_document(session, document, storage)
+            await activate_resume(session, document)
+            await session.refresh(document)
+        except Exception:
+            pass  # Fall back to uploaded status if background worker is busy
+
     return await resume_response(session, document)
 
 
@@ -128,12 +138,16 @@ async def set_active_resume(document_id: UUID, principal: Annotated[Student, Dep
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_resume(document_id: UUID, principal: Annotated[Student, Depends(require_role("student"))], session: Annotated[AsyncSession, Depends(get_session)]) -> Response:
+    from sqlalchemy import update
     document = await _owned_resume(session, document_id, principal.id)
-    count = int((await session.scalar(select(func.count()).select_from(Evidence).where(Evidence.resume_document_id == document.id))) or 0)
-    if count:
-        raise HTTPException(status.HTTP_409_CONFLICT, "Delete generated evidence before deleting this resume")
+    
+    # Safely detach derived evidence foreign key so resume deletion succeeds cleanly
+    await session.execute(
+        update(Evidence).where(Evidence.resume_document_id == document.id).values(resume_document_id=None)
+    )
     storage = LocalResumeStorage()
     storage.delete(document.storage_key)
     await session.delete(document)
     await session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+

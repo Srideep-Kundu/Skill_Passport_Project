@@ -1,13 +1,74 @@
 import { request } from "./client";
 import type {
-  Application, ApplicationForm, ApplicationStatusEvent, ApplicationSubmissionAttempt, AuthSession, AutomationPolicy, AutomationQueueItem, CandidateMatch, CandidateProfile, EvidenceDetail, EvidenceSubmission, EvidenceSummary, EvidenceUpdate, ExternalJob, ExternalJobMatch, Internship, InternshipCreate, InternshipUpdate, JobDiscovery, JobDiscoveryRun,
-  LoginRequest, GoogleAuthRequest, MatchExplanation, PaginatedResponse, Passport, RecruiterRegistration, Skill,
-  StudentMatch, StudentRegistration, TeamSuggestion, TeamSuggestionRequest, VerificationResult, RecruiterEvidenceConsent, GitHubIdentity, ResumeDocument, LinkedInImport,
+  AcademicianRegistration,
+  Application,
+  ApplicationForm,
+  ApplicationStatusEvent,
+  ApplicationSubmissionAttempt,
+  Assessment,
+  AssessmentAttempt,
+  AuthSession,
+  AutomationPolicy,
+  AutomationQueueItem,
+  CandidateMatch,
+  CandidateProfile,
+  CareerGoals,
+  CareerGuidanceOverview,
+  CourseEnrollment,
+  EvidenceDetail,
+  EvidenceSubmission,
+  EvidenceSummary,
+  EvidenceUpdate,
+  ExternalJob,
+  ExternalJobMatch,
+  FacultyApplication,
+  FacultyOpportunity,
+  GitHubIdentity,
+  GoogleAuthRequest,
+  InnovationChallenge,
+  InstitutionAnalyticsOverview,
+  InstitutionRegistration,
+  Internship,
+  InternshipCreate,
+  InternshipEngagement,
+  InternshipUpdate,
+  JobDiscovery,
+  JobDiscoveryRun,
+  LearningCourse,
+  LinkedInImport,
+  LoginRequest,
+  MatchExplanation,
+  MentorFeedbackRequest,
+  MentorshipSession,
+  PaginatedResponse,
+  Passport,
+  PlacementCandidateRanking,
+  PlacementDrive,
+  ProjectApplication,
+  RecruiterAnalyticsOverview,
+  RecruiterEvidenceConsent,
+  RecruiterRegistration,
+  ResumeDocument,
+  StudentAchievement,
+  StudentAchievementCreate,
+  UserDocument,
+  UserDocumentCreate,
+  Skill,
+  SkillGapAnalysis,
+  StudentMatch,
+  StudentRegistration,
+  TeamSuggestion,
+  TeamSuggestionRequest,
+  VerificationResult,
+  CopilotResponse,
+  ProfessionalProfile,
 } from "./types";
 
 export const api = {
   registerStudent: (input: StudentRegistration) => request<AuthSession>("/auth/register/student", { method: "POST", body: JSON.stringify(input) }),
   registerRecruiter: (input: RecruiterRegistration) => request<AuthSession>("/auth/register/recruiter", { method: "POST", body: JSON.stringify(input) }),
+  registerAcademician: (input: AcademicianRegistration) => request<AuthSession>("/auth/register/academician", { method: "POST", body: JSON.stringify(input) }),
+  registerInstitution: (input: InstitutionRegistration) => request<AuthSession>("/auth/register/institution", { method: "POST", body: JSON.stringify(input) }),
   login: (input: LoginRequest) => request<AuthSession>("/auth/login", { method: "POST", body: JSON.stringify(input) }),
   loginGoogle: (input: GoogleAuthRequest) => request<AuthSession>("/auth/google", { method: "POST", body: JSON.stringify(input) }),
   passport: (token: string) => request<Passport>("/passport/me", {}, token),
@@ -74,4 +135,73 @@ export const api = {
   githubIdentity: (token: string) => request<GitHubIdentity>("/passport/github-identity", {}, token),
   setGithubIdentity: (githubUsername: string, token: string) => request<GitHubIdentity>("/passport/github-identity", { method: "PUT", body: JSON.stringify({ github_username: githubUsername }) }, token),
   suggestTeams: (input: TeamSuggestionRequest, token: string) => request<TeamSuggestion[]>("/teams/suggest", { method: "POST", body: JSON.stringify(input) }, token),
+
+  // Career Goals & Skill Gaps
+  getCareerGoals: (token: string) => request<CareerGoals>("/career-goals", {}, token),
+  updateCareerGoals: (input: CareerGoals, token: string) => request<CareerGoals>("/career-goals", { method: "PUT", body: JSON.stringify(input) }, token),
+  getSkillGapAnalysis: (token: string, targetRole?: string) => request<SkillGapAnalysis>(`/skill-gaps/analyze${targetRole ? `?target_role=${encodeURIComponent(targetRole)}` : ""}`, {}, token),
+
+  // Skill Assessments
+  getAssessments: (token?: string) => request<Assessment[]>("/assessments", {}, token),
+  getAssessment: (id: string, token?: string) => request<Assessment>(`/assessments/${encodeURIComponent(id)}`, {}, token),
+  submitAssessment: (id: string, answers: Record<string, string>, token: string) => request<AssessmentAttempt>(`/assessments/${encodeURIComponent(id)}/submit`, { method: "POST", body: JSON.stringify({ answers }) }, token),
+
+  // Learning Hub
+  getCourses: (token: string, category?: string, skill?: string) => {
+    const params = new URLSearchParams();
+    if (category) params.append("category", category);
+    if (skill) params.append("skill", skill);
+    return request<LearningCourse[]>(`/learning/courses?${params.toString()}`, {}, token);
+  },
+  enrollCourse: (courseId: string, token: string) => request<CourseEnrollment>(`/learning/courses/${encodeURIComponent(courseId)}/enroll`, { method: "POST" }, token),
+  updateCourseProgress: (courseId: string, progress: number, token: string) => request<CourseEnrollment>(`/learning/courses/${encodeURIComponent(courseId)}/progress`, { method: "PUT", body: JSON.stringify({ progress }) }, token),
+
+  // Campus Placement Drives
+  getPlacementDrives: (token: string) => request<PlacementDrive[]>("/placements/drives", {}, token),
+  createPlacementDrive: (input: Omit<PlacementDrive, "id" | "is_registered" | "registration_status">, token: string) => request<PlacementDrive>("/placements/drives", { method: "POST", body: JSON.stringify(input) }, token),
+  registerPlacement: (placementDriveId: string, token: string, notes?: string) => request<PlacementDrive>("/placements/register", { method: "POST", body: JSON.stringify({ placement_drive_id: placementDriveId, notes }) }, token),
+  getPlacementCandidates: (driveId: string, token: string) => request<PlacementCandidateRanking[]>(`/placements/drives/${encodeURIComponent(driveId)}/candidates`, {}, token),
+  updatePlacementStage: (registrationId: string, stage: string, token: string, extra?: { interview_date?: string; interview_notes?: string; offer_details?: Record<string, any> }) => request<PlacementCandidateRanking>(`/placements/registrations/${encodeURIComponent(registrationId)}/stage`, { method: "PATCH", body: JSON.stringify({ stage, ...extra }) }, token),
+
+  // Internship Engagements & Mentorship Lifecycle
+  getMyInternshipEngagements: (token: string) => request<InternshipEngagement[]>("/internship-engagements/me", {}, token),
+  getRecruiterInternshipEngagements: (token: string, internshipId?: string) => request<InternshipEngagement[]>(`/internship-engagements/recruiter${internshipId ? `?internship_id=${encodeURIComponent(internshipId)}` : ""}`, {}, token),
+  createInternshipEngagement: (input: { internship_id: string; student_id: string; mentor_name?: string; mentor_email?: string; start_date?: string; end_date?: string }, token: string) => request<InternshipEngagement>("/internship-engagements", { method: "POST", body: JSON.stringify(input) }, token),
+  updateInternshipEngagementStatus: (id: string, input: { status?: string; progress_percentage?: number; mentor_name?: string; mentor_email?: string; completion_notes?: string; final_rating?: number }, token: string) => request<InternshipEngagement>(`/internship-engagements/${encodeURIComponent(id)}/status`, { method: "PATCH", body: JSON.stringify(input) }, token),
+  submitMentorFeedback: (id: string, feedback: MentorFeedbackRequest, token: string) => request<InternshipEngagement>(`/internship-engagements/${encodeURIComponent(id)}/feedback`, { method: "POST", body: JSON.stringify(feedback) }, token),
+
+  // Academician & Faculty Opportunities
+  getFacultyOpportunities: (token: string, opportunityType?: string) => request<FacultyOpportunity[]>(`/academician/opportunities${opportunityType ? `?opportunity_type=${encodeURIComponent(opportunityType)}` : ""}`, {}, token),
+  applyFacultyOpportunity: (opportunityId: string, proposalText: string, token: string) => request<FacultyApplication>("/academician/apply", { method: "POST", body: JSON.stringify({ opportunity_id: opportunityId, proposal_text: proposalText }) }, token),
+
+  // Institution Analytics
+  getInstitutionAnalytics: (token: string) => request<InstitutionAnalyticsOverview>("/institution/analytics", {}, token),
+
+  // Collaborations & Live Industry Projects
+  getMentorshipSessions: (token: string) => request<MentorshipSession[]>("/collaborations/mentorship", {}, token),
+  getInnovationChallenges: (token: string, challengeType?: string) => request<InnovationChallenge[]>(`/collaborations/challenges${challengeType ? `?challenge_type=${encodeURIComponent(challengeType)}` : ""}`, {}, token),
+  applyProjectApplication: (challengeId: string, teamMembers: string[], token: string, submissionNotes?: string) => request<ProjectApplication>("/collaborations/projects/apply", { method: "POST", body: JSON.stringify({ challenge_id: challengeId, team_members: teamMembers, submission_notes: submissionNotes }) }, token),
+  getMyProjectApplications: (token: string) => request<ProjectApplication[]>("/collaborations/projects/me", {}, token),
+
+  // Career Guidance Module
+  getCareerGuidance: (token: string) => request<CareerGuidanceOverview>("/career-guidance/overview", {}, token),
+
+  // Secure Document Management Vault
+  getUserDocuments: (token: string, documentType?: string) => request<UserDocument[]>(`/documents${documentType ? `?document_type=${encodeURIComponent(documentType)}` : ""}`, {}, token),
+  uploadUserDocument: (input: UserDocumentCreate, token: string) => request<UserDocument>("/documents", { method: "POST", body: JSON.stringify(input) }, token),
+  deleteUserDocument: (id: string, token: string) => request<void>(`/documents/${encodeURIComponent(id)}`, { method: "DELETE" }, token),
+
+  // Student Digital Portfolio Achievements
+  getStudentAchievements: (token: string) => request<StudentAchievement[]>("/achievements/me", {}, token),
+  addStudentAchievement: (input: StudentAchievementCreate, token: string) => request<StudentAchievement>("/achievements", { method: "POST", body: JSON.stringify(input) }, token),
+
+  // Recruiter / Industry Skill Demand Analytics
+  getRecruiterAnalytics: (token: string) => request<RecruiterAnalyticsOverview>("/recruiter-analytics/me", {}, token),
+
+  // Skill Passport Copilot
+  queryCopilot: (query: string, token: string) => request<CopilotResponse>("/copilot/query", { method: "POST", body: JSON.stringify({ query }) }, token),
+
+  // LinkedIn Direct URL Import
+  importLinkedInUrl: (profile_url: string, token: string) => request<ProfessionalProfile>("/linkedin/imports/import-url", { method: "POST", body: JSON.stringify({ profile_url }) }, token),
+  saveLinkedInProfile: (profile: ProfessionalProfile, token: string) => request<EvidenceSummary>("/linkedin/imports/save-profile", { method: "POST", body: JSON.stringify(profile) }, token),
 };

@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.db import get_session
-from app.models import Admin, Recruiter, Student
+from app.models import Academician, Admin, Institution, Recruiter, Student
 
 bearer = HTTPBearer(auto_error=False)
 
@@ -33,7 +33,7 @@ def create_access_token(subject: UUID, role: str) -> str:
 async def current_principal(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
     session: Annotated[AsyncSession, Depends(get_session)],
-) -> Student | Recruiter | Admin:
+) -> Student | Recruiter | Admin | Academician | Institution:
     if credentials is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Authentication required")
     settings = get_settings()
@@ -42,11 +42,15 @@ async def current_principal(
         subject, role = UUID(payload["sub"]), payload["role"]
     except (JWTError, KeyError, ValueError) as error:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid authentication token") from error
-    principal: Student | Recruiter | Admin | None
+    principal: Student | Recruiter | Admin | Academician | Institution | None
     if role == "student":
         principal = (await session.scalars(select(Student).where(Student.id == subject))).first()
     elif role == "recruiter":
         principal = (await session.scalars(select(Recruiter).where(Recruiter.id == subject))).first()
+    elif role == "academician":
+        principal = (await session.scalars(select(Academician).where(Academician.id == subject))).first()
+    elif role == "institution":
+        principal = (await session.scalars(select(Institution).where(Institution.id == subject))).first()
     elif role == "admin":
         principal = (await session.scalars(select(Admin).where(Admin.id == subject))).first()
     else:
@@ -57,9 +61,10 @@ async def current_principal(
 
 
 def require_role(*roles: str):
-    async def dependency(principal: Annotated[Student | Recruiter | Admin, Depends(current_principal)]):
+    async def dependency(principal: Annotated[Student | Recruiter | Admin | Academician | Institution, Depends(current_principal)]):
         if principal.role not in roles:
             raise HTTPException(status.HTTP_403_FORBIDDEN, "Insufficient permissions")
         return principal
 
     return dependency
+

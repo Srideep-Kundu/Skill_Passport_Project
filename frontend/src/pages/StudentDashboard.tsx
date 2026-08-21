@@ -46,6 +46,7 @@ import { LinkedInIntelligence } from "../components/LinkedInIntelligence";
 import { UnifiedCandidateProfile } from "../components/UnifiedCandidateProfile";
 import { GitHubVerification } from "./GitHubVerification";
 import { MatchExplanationPanel } from "../components/MatchExplanationPanel";
+import { SkillPassportCopilot } from "../components/SkillPassportCopilot";
 import { SkillBadge } from "../components/SkillBadge";
 import { TeamSuggestions } from "./TeamSuggestions";
 import { AnimatedNumber } from "../components/AnimatedNumber";
@@ -54,6 +55,11 @@ import { CircularReadinessGauge } from "../components/CircularReadinessGauge";
 import { TypewriterText } from "../components/TypewriterText";
 import { TypewriterReveal } from "../components/TypewriterReveal";
 import { diagonalPageVariants, reducedMotionVariants, pageAssemblyItemVariants } from "../theme/motion";
+import { SkillGapAnalyzer } from "../components/SkillGapAnalyzer";
+import { SkillAssessments } from "../components/SkillAssessments";
+import { LearningHub } from "../components/LearningHub";
+import { PlacementDrives } from "../components/PlacementDrives";
+import { CollaborationHub } from "../components/CollaborationHub";
 import type { StudentTab } from "../App";
 
 const headerContentMap: Record<StudentTab, { title: string; subtitle: string }> = {
@@ -64,6 +70,26 @@ const headerContentMap: Record<StudentTab, { title: string; subtitle: string }> 
   passport: {
     title: "Unified Evidence-Backed Profile",
     subtitle: "Consolidated verifiable skill records, evidence graph, and deterministic profile completeness.",
+  },
+  gaps: {
+    title: "Career Goals & Skill Gap Analysis",
+    subtitle: "Compare your verified passport against target roles to identify critical missing competencies.",
+  },
+  assessments: {
+    title: "Diagnostic Skill Assessments",
+    subtitle: "Standardized technical testing with automatic scoring and verified Skill Passport credit.",
+  },
+  learning: {
+    title: "Adaptive Learning Hub",
+    subtitle: "Curated industry coursework directly addressing your career readiness gaps.",
+  },
+  placements: {
+    title: "Campus Placement Drives",
+    subtitle: "Apply directly to verified institutional placement opportunities with full evidence portfolios.",
+  },
+  collaborations: {
+    title: "Mentorship & Collaborative Ecosystem",
+    subtitle: "Book 1-on-1 industry mentorship slots and enter innovation challenges.",
   },
   evidence: {
     title: "Technical Evidence & Verification Engine",
@@ -865,8 +891,64 @@ export function StudentDashboard({
         </motion.div>
       )}
 
+      {activeTab === "gaps" && (
+        <motion.div variants={prefersReducedMotion ? undefined : pageAssemblyItemVariants}>
+          <SkillGapAnalyzer
+            token={token}
+            onNavigateToLearning={() => onNavigateTab?.("learning")}
+            onNavigateToAssessment={() => onNavigateTab?.("assessments")}
+          />
+        </motion.div>
+      )}
+
+      {activeTab === "assessments" && (
+        <motion.div variants={prefersReducedMotion ? undefined : pageAssemblyItemVariants}>
+          <SkillAssessments
+            token={token}
+            onAssessmentCompleted={() => {
+              void loadData();
+            }}
+          />
+        </motion.div>
+      )}
+
+      {activeTab === "learning" && (
+        <motion.div variants={prefersReducedMotion ? undefined : pageAssemblyItemVariants}>
+          <LearningHub
+            token={token}
+            onCourseCompleted={() => {
+              void loadData();
+            }}
+          />
+        </motion.div>
+      )}
+
+      {activeTab === "placements" && (
+        <motion.div variants={prefersReducedMotion ? undefined : pageAssemblyItemVariants}>
+          <PlacementDrives token={token} />
+        </motion.div>
+      )}
+
+      {activeTab === "collaborations" && (
+        <motion.div variants={prefersReducedMotion ? undefined : pageAssemblyItemVariants}>
+          <CollaborationHub token={token} />
+        </motion.div>
+      )}
+
       {/* Match Explanation Modal / Drawer */}
-      {selectedExplanation && <MatchExplanationPanel explanation={selectedExplanation} />}
+      {selectedExplanation && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="w-full max-w-2xl">
+            <MatchExplanationPanel
+              explanation={selectedExplanation}
+              onClose={() => setSelectedExplanation(null)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Floating Skill Passport Copilot */}
+      <SkillPassportCopilot token={token} onNavigate={(tab) => onNavigateTab?.(tab as StudentTab)} />
     </motion.div>
   </AnimatePresence>
   </div>

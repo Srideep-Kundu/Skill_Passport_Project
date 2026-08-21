@@ -169,7 +169,8 @@ async def seed_demo_data() -> None:
         if greenhouse_match is None:
             raise RuntimeError("Demo recommendation could not be computed")
         # Matching activates the restricted role; fixture writes resume as the app role.
-        await session.execute(text("RESET ROLE"))
+        if (await session.connection()).dialect.name == "postgresql":
+            await session.execute(text("RESET ROLE"))
         await session.commit()
         discovery = JobDiscovery(student_id=students["maya"].id, name="Remote backend internships", enabled=True, query="backend intern", remote_preference=True, providers=["greenhouse", "lever", "ashby"], freshness_days=30, minimum_match_score=0.2, cadence_hours=24, next_run_at=_NOW + timedelta(days=1))
         session.add(discovery)
@@ -184,7 +185,8 @@ async def seed_demo_data() -> None:
         lever_match = await compute_and_persist_external_job_match(session, students["maya"].id, lever.id)
         if lever_match is None:
             raise RuntimeError("Demo application recommendation could not be computed")
-        await session.execute(text("RESET ROLE"))
+        if (await session.connection()).dialect.name == "postgresql":
+            await session.execute(text("RESET ROLE"))
         await session.commit()
         historical = await create_application_intent(session, student=students["maya"], external_job_id=lever.id, external_job_match_id=lever_match.id)
         historical = await approve_application(session, application=historical, student=students["maya"])

@@ -202,24 +202,91 @@ async def delete_linkedin_import_endpoint(
     principal: Annotated[Student, Depends(require_role("student"))],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> Response:
+    from sqlalchemy import update
     document = await _owned_linkedin_import(session, import_id, principal.id)
-    count = int(
-        (
-            await session.scalar(
-                select(func.count())
-                .select_from(Evidence)
-                .where(Evidence.linkedin_import_id == document.id)
-            )
-        )
-        or 0
+    await session.execute(
+        update(Evidence).where(Evidence.linkedin_import_id == document.id).values(linkedin_import_id=None)
     )
-    if count:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT,
-            "Delete generated evidence before deleting this LinkedIn import",
-        )
     storage = LocalLinkedInStorage()
     storage.delete(document.storage_key)
     await session.delete(document)
     await session.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+from app.schemas.contracts import APIModel, EvidenceResponse
+from app.services.integrations.linkedin_import_provider import (
+    ProfessionalProfile,
+    get_linkedin_import_provider,
+)
+from app.models import EvidenceType, ExtractionStatus, Skill, StudentSkill, VerificationTier
+
+
+class LinkedInUrlRequest(APIModel):
+    profile_url: str
+
+
+@router.post("/import-url", response_model=ProfessionalProfile)
+async def import_linkedin_profile_url(
+    payload: LinkedInUrlRequest,
+    principal: Annotated[Student, Depends(require_role("student"))],
+) -> ProfessionalProfile:
+    provider = get_linkedin_import_provider()
+    return await provider.fetch_profile(payload.profile_url)
+
+
+@router.post("/save-profile", response_model=EvidenceResponse)
+async def save_imported_linkedin_profile(
+    profile: ProfessionalProfile,
+    principal: Annotated[Student, Depends(require_role("student"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> EvidenceResponse:
+    evidence = Evidence(
+        student_id=principal.id,
+        evidence_type=EvidenceType.project,
+        title=f"LinkedIn Profile: {profile.headline or profile.full_name}",
+        description=f"{profile.summary}\n\nExperience: {len(profile.experiences)} roles | Education: {len(profile.education)} records | Skills: {', '.join(profile.skills)}",
+        external_url=f"https://linkedin.com/in/{principal.id}",
+        raw_metadata=profile.model_dump(),
+        extraction_status=ExtractionStatus.extracted,
+    )
+    session.add(evidence)
+    await session.flush()
+
+    for skill_name in profile.skills:
+        skill = (await session.scalars(select(Skill).where(Skill.canonical_name.ilike(skill_name)))).first()
+        if not skill:
+            skill = Skill(canonical_name=skill_name, category="Imported", aliases=[])
+            session.add(skill)
+            await session.flush()
+
+        existing = (await session.scalars(select(StudentSkill).where(StudentSkill.student_id == principal.id, StudentSkill.skill_id == skill.id))).all()
+        has_verified = any(s.verification_tier == VerificationTier.verified for s in existing)
+        tier = VerificationTier.verified if has_verified else VerificationTier.partially_verified
+
+        session.add(
+            StudentSkill(
+                student_id=principal.id,
+                skill_id=skill.id,
+                source_evidence_id=evidence.id,
+                extraction_confidence=profile.source_confidence,
+                verification_tier=tier,
+                proficiency_hint=f"LinkedIn: {profile.headline}",
+                evidence_span=f"Imported from verified LinkedIn profile {profile.full_name}",
+            )
+        )
+
+    await session.commit()
+    await session.refresh(evidence)
+
+    return EvidenceResponse(
+        id=evidence.id,
+        evidence_type=evidence.evidence_type.value,
+        title=evidence.title,
+        description=evidence.description,
+        external_url=evidence.external_url,
+        extraction_status=evidence.extraction_status.value,
+        submitted_at=evidence.submitted_at,
+    )
+
+

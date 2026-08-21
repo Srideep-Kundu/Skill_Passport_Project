@@ -109,15 +109,15 @@ async def test_linkedin_upload_parse_idempotency_activation_and_ownership(
     assert parsed.json()["parsed_summary"]["counts"]["positions"] == 1
     assert parsed.json()["parsed_summary"]["counts"]["skills"] == 3
 
-    # 6. Delete prevented when evidence exists
-    del_blocked = await linkedin_client.delete(
-        f"/linkedin/imports/{import_id}", headers=headers(token)
-    )
-    assert del_blocked.status_code == 409
-
-    # 7. Activate
+    # 6. Activate
     activated = await linkedin_client.put(
         f"/linkedin/imports/{import_id}/activate", headers=headers(token)
     )
     assert activated.status_code == 200
     assert activated.json()["is_active"] is True
+
+    # 7. Delete cleanly unlinks associated evidence
+    del_clean = await linkedin_client.delete(
+        f"/linkedin/imports/{import_id}", headers=headers(token)
+    )
+    assert del_clean.status_code == 204
