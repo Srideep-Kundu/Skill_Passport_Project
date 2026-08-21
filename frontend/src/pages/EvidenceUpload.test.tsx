@@ -37,12 +37,13 @@ describe("EvidenceUpload extraction status", () => {
     render(<EvidenceUpload token="token" onSubmitted={vi.fn()} />);
 
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "API" } });
-    fireEvent.change(screen.getByLabelText("Technical description"), { target: { value: "Built with Python" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save and extract skills" }));
+    fireEvent.change(screen.getByLabelText("Technical Details & Description"), { target: { value: "Built with Python" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save and Extract Skills" }));
     await act(async () => { await Promise.resolve(); });
     await act(async () => { await vi.advanceTimersByTimeAsync(2_000); });
 
     expect(api.evidence).toHaveBeenCalledWith("evidence-id", "token");
-    expect(screen.getByText("Extracted skills: Python")).toBeInTheDocument();
+    expect(screen.getByText(/Extracted skills:/)).toBeInTheDocument();
+    expect(screen.getByText(/Python/)).toBeInTheDocument();
   });
 });

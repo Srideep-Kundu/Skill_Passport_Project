@@ -56,6 +56,10 @@ class Settings(BaseSettings):
         default=None,
         validation_alias=AliasChoices("SKILL_PASSPORT_GITHUB_TOKEN", "GITHUB_TOKEN"),
     )
+    google_client_id: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("SKILL_PASSPORT_GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_ID"),
+    )
     embedding_provider: Literal["disabled", "gemini", "deterministic_test"] = Field(
         default="disabled",
         validation_alias=AliasChoices(
@@ -311,6 +315,20 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices(
             "SKILL_PASSPORT_RESUME_MAX_EXTRACTED_CHARACTERS",
             "RESUME_MAX_EXTRACTED_CHARACTERS",
+        ),
+    )
+    linkedin_storage_dir: Path = Field(
+        default=Path("./uploads/linkedin"),
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_LINKEDIN_STORAGE_DIR", "LINKEDIN_STORAGE_DIR"
+        ),
+    )
+    linkedin_max_upload_bytes: int = Field(
+        default=10 * 1024 * 1024,
+        ge=1,
+        le=50 * 1024 * 1024,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_LINKEDIN_MAX_UPLOAD_BYTES", "LINKEDIN_MAX_UPLOAD_BYTES"
         ),
     )
 

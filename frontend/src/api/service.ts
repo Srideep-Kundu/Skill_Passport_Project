@@ -1,14 +1,15 @@
 import { request } from "./client";
 import type {
   Application, ApplicationForm, ApplicationStatusEvent, ApplicationSubmissionAttempt, AuthSession, AutomationPolicy, AutomationQueueItem, CandidateMatch, CandidateProfile, EvidenceDetail, EvidenceSubmission, EvidenceSummary, EvidenceUpdate, ExternalJob, ExternalJobMatch, Internship, InternshipCreate, InternshipUpdate, JobDiscovery, JobDiscoveryRun,
-  LoginRequest, MatchExplanation, PaginatedResponse, Passport, RecruiterRegistration, Skill,
-  StudentMatch, StudentRegistration, TeamSuggestion, TeamSuggestionRequest, VerificationResult, RecruiterEvidenceConsent, GitHubIdentity, ResumeDocument,
+  LoginRequest, GoogleAuthRequest, MatchExplanation, PaginatedResponse, Passport, RecruiterRegistration, Skill,
+  StudentMatch, StudentRegistration, TeamSuggestion, TeamSuggestionRequest, VerificationResult, RecruiterEvidenceConsent, GitHubIdentity, ResumeDocument, LinkedInImport,
 } from "./types";
 
 export const api = {
   registerStudent: (input: StudentRegistration) => request<AuthSession>("/auth/register/student", { method: "POST", body: JSON.stringify(input) }),
   registerRecruiter: (input: RecruiterRegistration) => request<AuthSession>("/auth/register/recruiter", { method: "POST", body: JSON.stringify(input) }),
   login: (input: LoginRequest) => request<AuthSession>("/auth/login", { method: "POST", body: JSON.stringify(input) }),
+  loginGoogle: (input: GoogleAuthRequest) => request<AuthSession>("/auth/google", { method: "POST", body: JSON.stringify(input) }),
   passport: (token: string) => request<Passport>("/passport/me", {}, token),
   candidateProfile: (token: string) => request<CandidateProfile>("/passport/profile", {}, token),
   submitEvidence: (input: EvidenceSubmission, token: string) => request<EvidenceSummary>("/evidence", { method: "POST", body: JSON.stringify(input) }, token),
@@ -21,6 +22,11 @@ export const api = {
   parseResume: (id: string, token: string) => request<ResumeDocument>(`/resumes/${encodeURIComponent(id)}/parse`, { method: "POST" }, token),
   activateResume: (id: string, token: string) => request<ResumeDocument>(`/resumes/${encodeURIComponent(id)}/activate`, { method: "PUT" }, token),
   deleteResume: (id: string, token: string) => request<void>(`/resumes/${encodeURIComponent(id)}`, { method: "DELETE" }, token),
+  linkedinImports: (token: string) => request<PaginatedResponse<LinkedInImport>>("/linkedin/imports", {}, token),
+  uploadLinkedInExport: (file: File, token: string) => { const body = new FormData(); body.append("file", file); return request<LinkedInImport>("/linkedin/imports", { method: "POST", body }, token); },
+  parseLinkedInExport: (id: string, token: string) => request<LinkedInImport>(`/linkedin/imports/${encodeURIComponent(id)}/parse`, { method: "POST" }, token),
+  activateLinkedInExport: (id: string, token: string) => request<LinkedInImport>(`/linkedin/imports/${encodeURIComponent(id)}/activate`, { method: "PUT" }, token),
+  deleteLinkedInExport: (id: string, token: string) => request<void>(`/linkedin/imports/${encodeURIComponent(id)}`, { method: "DELETE" }, token),
   requeueEvidence: (id: string, token: string) => request<EvidenceDetail>(`/evidence/${encodeURIComponent(id)}/requeue`, { method: "POST" }, token),
   verifyEvidence: (id: string, token: string) => request<VerificationResult>(`/evidence/${encodeURIComponent(id)}/verify`, { method: "POST", body: JSON.stringify({ check_type: "github_project" }) }, token),
   searchSkills: (query: string, token: string) => request<Skill[]>(`/skills/search?q=${encodeURIComponent(query)}`, {}, token),

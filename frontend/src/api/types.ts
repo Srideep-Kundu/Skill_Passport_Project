@@ -24,6 +24,12 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface GoogleAuthRequest {
+  credential: string;
+  role?: Role;
+  company_name?: string;
+}
+
 export type EvidenceType = "coursework" | "project" | "competition" | "certification" | "micro_credential";
 export type VerificationTier = "verified" | "partially_verified" | "unverified";
 
@@ -79,7 +85,7 @@ export interface ProfileEvidenceSupport {
   evidence_id: string;
   title: string;
   evidence_type: EvidenceType;
-  origin: "manual" | "resume";
+  origin: "manual" | "resume" | "linkedin_export";
   verification_tier: VerificationTier;
   extraction_confidence: number;
   effective_confidence: number;
@@ -106,8 +112,16 @@ export interface CandidateProfile {
   student_id: string;
   skills: ProfileSkill[];
   active_resume: { id: string; original_filename: string; parse_status: string; parsed_at: string | null } | null;
+  active_linkedin_import?: { id: string; original_filename: string; parse_status: string; parsed_at: string | null } | null;
   github_identity_status: "not_linked" | "claimed";
-  profile_completeness: { has_active_resume: boolean; has_project_evidence: boolean; has_verified_evidence: boolean; has_evidence_backed_skills: boolean; has_github_identity: boolean };
+  profile_completeness: {
+    has_active_resume: boolean;
+    has_linkedin_import?: boolean;
+    has_project_evidence: boolean;
+    has_verified_evidence: boolean;
+    has_evidence_backed_skills: boolean;
+    has_github_identity: boolean;
+  };
 }
 
 export interface Skill {
@@ -453,4 +467,39 @@ export interface ResumeDocument {
   parsed_summary: ResumeParsedData | null;
   generated_evidence_count: number;
   skills_status: "not_started" | "extracting" | "ready";
+}
+
+export interface LinkedInCounts {
+  positions: number;
+  projects: number;
+  certifications: number;
+  skills: number;
+  education: number;
+  publications: number;
+  courses: number;
+  languages: number;
+}
+
+export interface LinkedInParsedSummary {
+  counts: LinkedInCounts;
+  discovered_skills: string[];
+  categories_present: string[];
+  total_records: number;
+}
+
+export interface LinkedInImport {
+  id: string;
+  original_filename: string;
+  mime_type: string;
+  size_bytes: number;
+  checksum: string;
+  parse_status: "uploaded" | "parsing" | "parsed" | "processing_skills" | "completed" | "failed" | "unsupported";
+  parser_version: string;
+  uploaded_at: string;
+  parsed_at: string | null;
+  is_active: boolean;
+  safe_error_message: string | null;
+  parsed_summary: LinkedInParsedSummary | null;
+  generated_evidence_count: number;
+  skills_status: "not_started" | "queued" | "processing" | "completed" | "has_failures";
 }

@@ -11,6 +11,8 @@ interface AuthContextValue {
   setSession: (session: AuthSession, email: string) => void;
   signOut: () => void;
   hasRole: (...roles: Role[]) => boolean;
+  justLoggedIn: boolean;
+  completePostLoginTransition: () => void;
 }
 
 const storageKey = "skill-passport.session";
@@ -30,16 +32,36 @@ function readSession(): StoredSession | null {
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [session, updateSession] = useState<StoredSession | null>(readSession);
+  const [justLoggedIn, setJustLoggedIn] = useState<boolean>(false);
+
   const setSession = useCallback((next: AuthSession, email: string) => {
     const stored = { ...next, email };
     sessionStorage.setItem(storageKey, JSON.stringify(stored));
     updateSession(stored);
+    setJustLoggedIn(true);
   }, []);
+
+  const completePostLoginTransition = useCallback(() => {
+    setJustLoggedIn(false);
+  }, []);
+
   const signOut = useCallback(() => {
     sessionStorage.removeItem(storageKey);
     updateSession(null);
+    setJustLoggedIn(false);
   }, []);
-  const value = useMemo(() => ({ session, setSession, signOut, hasRole: (...roles: Role[]) => session !== null && roles.includes(session.role) }), [session, setSession, signOut]);
+
+  const value = useMemo(
+    () => ({
+      session,
+      setSession,
+      signOut,
+      hasRole: (...roles: Role[]) => session !== null && roles.includes(session.role),
+      justLoggedIn,
+      completePostLoginTransition,
+    }),
+    [session, setSession, signOut, justLoggedIn, completePostLoginTransition],
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

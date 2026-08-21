@@ -71,6 +71,17 @@ class ResumeParseStatus(str, enum.Enum):
     unsupported = "unsupported"
 
 
+class LinkedInParseStatus(str, enum.Enum):
+    uploaded = "uploaded"
+    parsing = "parsing"
+    parsed = "parsed"
+    evidence_created = "evidence_created"
+    processing_skills = "processing_skills"
+    completed = "completed"
+    failed = "failed"
+    unsupported = "unsupported"
+
+
 class VerificationTier(str, enum.Enum):
     verified = "verified"
     partially_verified = "partially_verified"
@@ -226,6 +237,9 @@ class Evidence(Base):
     resume_document_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("resume_documents.id"), index=True)
     resume_section: Mapped[str | None] = mapped_column(String(40))
     resume_source_hash: Mapped[str | None] = mapped_column(String(64))
+    linkedin_import_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("linkedin_imports.id", ondelete="SET NULL"), index=True)
+    linkedin_category: Mapped[str | None] = mapped_column(String(40))
+    linkedin_source_hash: Mapped[str | None] = mapped_column(String(64))
     submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     extraction_status: Mapped[ExtractionStatus] = mapped_column(Enum(ExtractionStatus), default=ExtractionStatus.pending_extraction)
     student: Mapped[Student] = relationship(back_populates="evidence")
@@ -247,6 +261,25 @@ class ResumeDocument(Base):
     parser_version: Mapped[str] = mapped_column(String(32), nullable=False)
     parsed_data: Mapped[dict[str, Any] | None] = mapped_column(Json)
     extracted_text: Mapped[str | None] = mapped_column(Text)
+    safe_error_message: Mapped[str | None] = mapped_column(String(240))
+    uploaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    parsed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+
+
+class LinkedInImport(Base):
+    __tablename__ = "linkedin_imports"
+    __table_args__ = (UniqueConstraint("student_id", "checksum", name="uq_linkedin_import_student_checksum"),)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), index=True, nullable=False)
+    original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    storage_key: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    checksum: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    parse_status: Mapped[LinkedInParseStatus] = mapped_column(Enum(LinkedInParseStatus), default=LinkedInParseStatus.uploaded, nullable=False, index=True)
+    parser_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    parsed_data: Mapped[dict[str, Any] | None] = mapped_column(Json)
     safe_error_message: Mapped[str | None] = mapped_column(String(240))
     uploaded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     parsed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

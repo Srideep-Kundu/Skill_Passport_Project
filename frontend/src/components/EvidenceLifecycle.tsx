@@ -1,9 +1,21 @@
 import { useCallback, useEffect, useState } from "react";
-
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { toast } from "sonner";
+import { Layers } from "lucide-react";
 import { ApiError, api, type EvidenceSummary, type PaginatedResponse } from "../api";
 import { EmptyState, LoadingState } from "./AsyncState";
+import { containerStaggerVariants, cardItemVariants, modalVariants } from "../theme/motion";
 
-export function EvidenceLifecycle({ token, refreshKey, onChanged }: { token: string; refreshKey: number; onChanged: () => void }) {
+export function EvidenceLifecycle({
+  token,
+  refreshKey,
+  onChanged,
+}: {
+  token: string;
+  refreshKey: number;
+  onChanged: () => void;
+}) {
+  const prefersReducedMotion = useReducedMotion();
   const [result, setResult] = useState<PaginatedResponse<EvidenceSummary> | null>(null);
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<EvidenceSummary | null>(null);
@@ -12,31 +24,189 @@ export function EvidenceLifecycle({ token, refreshKey, onChanged }: { token: str
   const [message, setMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    try { setResult(await api.evidences(token, page)); }
-    catch (caught) { setMessage(caught instanceof ApiError ? caught.detail : "Evidence could not be loaded."); }
+    try {
+      setResult(await api.evidences(token, page));
+    } catch (caught) {
+      setMessage(caught instanceof ApiError ? caught.detail : "Evidence could not be loaded.");
+    }
   }, [page, token]);
-  useEffect(() => { void load(); }, [load, refreshKey]);
 
-  function beginEdit(evidence: EvidenceSummary) { setEditing(evidence); setTitle(evidence.title); setDescription(evidence.description); setMessage(null); }
+  useEffect(() => {
+    void load();
+  }, [load, refreshKey]);
+
+  function beginEdit(evidence: EvidenceSummary) {
+    setEditing(evidence);
+    setTitle(evidence.title);
+    setDescription(evidence.description);
+    setMessage(null);
+  }
+
   async function save() {
     if (!editing) return;
     try {
       const updated = await api.updateEvidence(editing.id, { title, description }, token);
-      setEditing(null); setMessage(`Evidence saved. Extraction is ${updated.extraction_status.replaceAll("_", " ")}.`);
-      await load(); onChanged();
-    } catch (caught) { setMessage(caught instanceof ApiError ? caught.detail : "Evidence could not be updated."); }
+      setEditing(null);
+      setMessage(`Evidence saved. Extraction is ${updated.extraction_status.replaceAll("_", " ")}.`);
+      toast.success("Evidence updated and reprocessing queued!");
+      await load();
+      onChanged();
+    } catch (caught) {
+      const msg = caught instanceof ApiError ? caught.detail : "Evidence could not be updated.";
+      setMessage(msg);
+      toast.error(msg);
+    }
   }
+
   async function remove(evidence: EvidenceSummary) {
     if (!window.confirm(`Delete ${evidence.title}? This removes its evidence-backed skills.`)) return;
-    try { await api.deleteEvidence(evidence.id, token); setMessage("Evidence deleted; derived skills were removed."); await load(); onChanged(); }
-    catch (caught) { setMessage(caught instanceof ApiError ? caught.detail : "Evidence could not be deleted."); }
+    try {
+      await api.deleteEvidence(evidence.id, token);
+      toast.success("Evidence deleted.");
+      await load();
+      onChanged();
+    } catch (caught) {
+      const msg = caught instanceof ApiError ? caught.detail : "Evidence could not be deleted.";
+      setMessage(msg);
+      toast.error(msg);
+    }
   }
 
-  return <section className="rounded-xl bg-white p-5 shadow-sm"><h2 className="text-lg font-semibold">Evidence</h2>{message && <p role="status" className="mt-2 text-sm text-slate-600">{message}</p>}{!result ? <LoadingState label="Loading evidence" /> : result.items.length ? <><ul className="mt-3 space-y-2">{result.items.map((evidence) => <li key={evidence.id} className="rounded border border-slate-200 p-3"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-medium">{evidence.title}</p><p className="text-sm text-slate-600">{evidence.evidence_type} · {evidence.extraction_status.replaceAll("_", " ")}</p></div><div className="flex gap-2"><button type="button" onClick={() => beginEdit(evidence)} className="text-sm text-indigo-700">Edit</button><button type="button" onClick={() => void remove(evidence)} className="text-sm text-red-700">Delete</button></div></div>{editing?.id === evidence.id && <div className="mt-3 grid gap-2"><input aria-label="Edit evidence title" value={title} onChange={(event) => setTitle(event.target.value)} className="rounded border border-slate-300 px-2 py-1" /><textarea aria-label="Edit evidence description" value={description} onChange={(event) => setDescription(event.target.value)} className="min-h-20 rounded border border-slate-300 px-2 py-1" /><div className="flex gap-2"><button type="button" onClick={() => void save()} className="rounded bg-indigo-600 px-3 py-1 text-sm text-white">Save and reprocess</button><button type="button" onClick={() => setEditing(null)} className="text-sm">Cancel</button></div></div>}</li>)}</ul><Pagination page={result.page} pageSize={result.page_size} total={result.total} onPage={setPage} /></> : <EmptyState title="No evidence submitted">Add evidence to begin your passport.</EmptyState>}</section>;
-}
+  return (
+    <section className="rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#111821]/90 backdrop-blur-md p-5 sm:p-6 shadow-sm text-slate-900 dark:text-[#f1f0e8] flex flex-col justify-between">
+      <div className="border-b border-slate-100 dark:border-white/[0.08] pb-3.5">
+        <h2 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] flex items-center gap-2 font-sans">
+          <Layers className="h-4 w-4 text-[#3b71d9] dark:text-[#b0c6ff]" />
+          <span>Evidence Lifecycle & Extraction</span>
+        </h2>
+        <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-0.5 font-sans">
+          Updating evidence automatically re-queues skill extraction and deterministic scoring.
+        </p>
+      </div>
 
-function Pagination({ page, pageSize, total, onPage }: { page: number; pageSize: number; total: number; onPage: (page: number) => void }) {
-  const pages = Math.max(1, Math.ceil(total / pageSize));
-  if (pages === 1) return null;
-  return <div className="mt-3 flex items-center gap-3 text-sm"><button disabled={page === 1} onClick={() => onPage(page - 1)} className="disabled:text-slate-400">Previous</button><span>Page {page} of {pages}</span><button disabled={page === pages} onClick={() => onPage(page + 1)} className="disabled:text-slate-400">Next</button></div>;
+      <div className="mt-4 space-y-3">
+        {message && (
+          <p role="status" className="text-xs font-medium text-slate-600 dark:text-[#dedbc8] bg-slate-50 dark:bg-[#151e29] p-2.5 rounded-lg border border-slate-200 dark:border-white/10 font-sans">
+            {message}
+          </p>
+        )}
+
+        {!result ? (
+          <LoadingState label="Loading evidence" />
+        ) : result.items.length ? (
+          <>
+            <motion.ul
+              variants={prefersReducedMotion ? undefined : containerStaggerVariants}
+              initial="hidden"
+              animate="visible"
+              className="space-y-2.5"
+            >
+              {result.items.map((evidence) => (
+                <motion.li
+                  key={evidence.id}
+                  variants={prefersReducedMotion ? undefined : cardItemVariants}
+                  className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/50 dark:bg-[#151e29] p-3.5 space-y-2"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-bold text-xs text-slate-900 dark:text-[#f1f0e8] font-sans">{evidence.title}</p>
+                      <p className="text-[11px] text-slate-500 dark:text-[#98a4b3] mt-0.5 line-clamp-2 font-sans">
+                        {evidence.description}
+                      </p>
+                      <p className="text-[10px] font-semibold text-slate-400 dark:text-[#98a4b3] mt-1 uppercase tracking-wider font-sans">
+                        Extraction Status: {evidence.extraction_status.replaceAll("_", " ")}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3 text-xs font-semibold font-sans">
+                      <button
+                        type="button"
+                        onClick={() => beginEdit(evidence)}
+                        className="text-[#3b71d9] dark:text-[#b0c6ff] hover:underline cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                      <span className="text-slate-300 dark:text-slate-700">&middot;</span>
+                      <button
+                        type="button"
+                        onClick={() => void remove(evidence)}
+                        className="text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+
+                  <AnimatePresence>
+                    {editing?.id === evidence.id && (
+                      <motion.div
+                        variants={prefersReducedMotion ? undefined : modalVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        className="mt-3 grid gap-2.5 border-t border-slate-200/60 dark:border-white/[0.08] pt-3"
+                      >
+                        <input
+                          aria-label="Edit evidence title"
+                          value={title}
+                          onChange={(event) => setTitle(event.target.value)}
+                          className="rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#111821] px-3 py-1.5 text-xs text-slate-900 dark:text-[#f1f0e8] focus:border-[#3b71d9] focus:outline-none"
+                        />
+                        <textarea
+                          aria-label="Edit evidence description"
+                          value={description}
+                          onChange={(event) => setDescription(event.target.value)}
+                          className="min-h-20 rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#111821] px-3 py-1.5 text-xs text-slate-900 dark:text-[#f1f0e8] focus:border-[#3b71d9] focus:outline-none"
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditing(null)}
+                            className="rounded-lg border border-slate-300 dark:border-white/10 px-3 py-1 text-xs font-medium cursor-pointer text-slate-700 dark:text-[#dedbc8]"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void save()}
+                            className="rounded-lg bg-[#3b71d9] px-3 py-1 text-xs font-semibold text-white hover:bg-[#2563eb] transition-colors cursor-pointer font-sans shadow-sm shadow-[#3b71d9]/25"
+                          >
+                            Save and reprocess
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.li>
+              ))}
+            </motion.ul>
+
+            {result.total > 20 && (
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-white/[0.08] text-xs font-sans">
+                <button
+                  disabled={page === 1}
+                  onClick={() => setPage((p) => p - 1)}
+                  className="rounded border border-slate-200 dark:border-white/10 px-2.5 py-1 disabled:opacity-40 cursor-pointer text-slate-700 dark:text-[#dedbc8]"
+                >
+                  Previous
+                </button>
+                <span className="text-slate-500 dark:text-[#98a4b3]">Page {page}</span>
+                <button
+                  disabled={page * 20 >= result.total}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="rounded border border-slate-200 dark:border-white/10 px-2.5 py-1 disabled:opacity-40 cursor-pointer text-slate-700 dark:text-[#dedbc8]"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <EmptyState title="No evidence uploaded yet">
+            Submit your first project or code sample to start generating skill claims.
+          </EmptyState>
+        )}
+      </div>
+    </section>
+  );
 }

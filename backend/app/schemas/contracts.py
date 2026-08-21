@@ -34,6 +34,12 @@ class LoginRequest(APIModel):
     password: str = Field(min_length=1, max_length=128)
 
 
+class GoogleAuthRequest(APIModel):
+    credential: str = Field(min_length=10)
+    role: Literal["student", "recruiter"] = "student"
+    company_name: str | None = Field(default=None, max_length=255)
+
+
 class EvidenceCreate(APIModel):
     evidence_type: Literal[
         "coursework", "project", "competition", "certification", "micro_credential"
@@ -151,6 +157,41 @@ class ResumeDocumentResponse(APIModel):
     is_active: bool
     safe_error_message: str | None
     parsed_summary: ResumeParsedData | None = None
+    generated_evidence_count: int = 0
+    skills_status: str = "not_started"
+
+
+class LinkedInCounts(APIModel):
+    positions: int = 0
+    projects: int = 0
+    certifications: int = 0
+    skills: int = 0
+    education: int = 0
+    publications: int = 0
+    courses: int = 0
+    languages: int = 0
+
+
+class LinkedInParsedSummary(APIModel):
+    counts: LinkedInCounts = Field(default_factory=LinkedInCounts)
+    discovered_skills: list[str] = Field(default_factory=list)
+    categories_present: list[str] = Field(default_factory=list)
+    total_records: int = 0
+
+
+class LinkedInImportResponse(APIModel):
+    id: UUID
+    original_filename: str
+    mime_type: str
+    size_bytes: int
+    checksum: str
+    parse_status: str
+    parser_version: str
+    uploaded_at: datetime
+    parsed_at: datetime | None
+    is_active: bool
+    safe_error_message: str | None
+    parsed_summary: LinkedInParsedSummary | None = None
     generated_evidence_count: int = 0
     skills_status: str = "not_started"
 
@@ -697,7 +738,7 @@ class ProfileEvidenceSupport(APIModel):
     evidence_id: UUID
     title: str
     evidence_type: str
-    origin: Literal["manual", "resume"]
+    origin: Literal["manual", "resume", "linkedin_export"]
     verification_tier: Literal["verified", "partially_verified", "unverified"]
     extraction_confidence: float
     effective_confidence: float
@@ -727,8 +768,16 @@ class ActiveResumeReference(APIModel):
     parsed_at: datetime | None
 
 
+class ActiveLinkedInReference(APIModel):
+    id: UUID
+    original_filename: str
+    parse_status: str
+    parsed_at: datetime | None
+
+
 class ProfileCompleteness(APIModel):
     has_active_resume: bool
+    has_linkedin_import: bool = False
     has_project_evidence: bool
     has_verified_evidence: bool
     has_evidence_backed_skills: bool
@@ -739,6 +788,7 @@ class CandidateProfileResponse(APIModel):
     student_id: UUID
     skills: list[ProfileSkill]
     active_resume: ActiveResumeReference | None
+    active_linkedin_import: ActiveLinkedInReference | None = None
     github_identity_status: Literal["not_linked", "claimed"]
     profile_completeness: ProfileCompleteness
 

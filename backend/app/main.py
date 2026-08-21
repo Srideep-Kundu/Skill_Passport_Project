@@ -21,6 +21,7 @@ from app.api import (
     external_jobs,
     internships,
     job_discoveries,
+    linkedin,
     matches,
     passport,
     resumes,
@@ -61,6 +62,7 @@ app.include_router(evidence.router)
 app.include_router(external_job_matches.router)
 app.include_router(external_jobs.router)
 app.include_router(resumes.router)
+app.include_router(linkedin.router)
 app.include_router(skills.router)
 app.include_router(internships.router)
 app.include_router(matches.router)

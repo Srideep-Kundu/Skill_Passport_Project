@@ -15,7 +15,13 @@ const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000"
 function getErrorDetail(payload: unknown): string {
   if (typeof payload === "object" && payload !== null && "detail" in payload) {
     const detail = payload.detail;
-    return typeof detail === "string" ? detail : "The request could not be completed.";
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail) && detail.length > 0) {
+      const first = detail[0];
+      if (typeof first === "object" && first !== null && "msg" in first) {
+        return String(first.msg);
+      }
+    }
   }
   return "The request could not be completed.";
 }

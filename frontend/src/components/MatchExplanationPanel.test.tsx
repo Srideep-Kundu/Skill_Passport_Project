@@ -36,6 +36,6 @@ describe("MatchExplanationPanel", () => {
     );
 
     expect(screen.getByLabelText("Deterministic match explanation")).toHaveTextContent("Python");
-    expect(screen.getByText("Persisted final score: 63%")).toBeInTheDocument();
+    expect(screen.getByText(/63%\s*Final Score/)).toBeInTheDocument();
   });
 });

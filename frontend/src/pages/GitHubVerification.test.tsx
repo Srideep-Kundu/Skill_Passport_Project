@@ -20,9 +20,9 @@ describe("GitHubVerification", () => {
     });
     render(<GitHubVerification token="token" onVerified={vi.fn()} evidence={[{ id: "evidence-id", evidence_type: "project", title: "API", description: "Python", external_url: "https://github.com/candidate/project", extraction_status: "extracted", submitted_at: "2026-01-01T00:00:00Z" }]} />);
 
-    expect(await screen.findByText("Claimed GitHub account: @candidate. This is not OAuth-authenticated.")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Verify project" }));
-    expect(await screen.findByText("Overall: verified")).toBeInTheDocument();
-    expect(screen.getByText(/3 candidate-attributed commits/)).toBeInTheDocument();
+    expect(await screen.findByText("Linked GitHub handle: @candidate")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Run GitHub Verification" }));
+    expect(await screen.findByText(/verified/i)).toBeInTheDocument();
+    expect(screen.getByText(/3 candidate-attributed commit/)).toBeInTheDocument();
   });
 });

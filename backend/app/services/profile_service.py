@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
     Evidence,
+    LinkedInImport,
     ResumeDocument,
     Skill,
     Student,
@@ -16,6 +17,7 @@ from app.models import (
     VerificationTier,
 )
 from app.schemas.contracts import (
+    ActiveLinkedInReference,
     ActiveResumeReference,
     CandidateProfileResponse,
     MatchingProfileResponse,
@@ -49,12 +51,20 @@ def _normalize_title(title: str) -> str:
 
 
 def _duplicate_key(row: SupportRow) -> tuple[str, str]:
-    # Exact same type/title across resume and manual evidence is a conservative flag only.
+    # Exact same type/title across resume, linkedin, and manual evidence is a conservative flag only.
     return row.evidence.evidence_type.value, _normalize_title(row.evidence.title)
 
 
+def _origin(evidence: Evidence) -> str:
+    if evidence.linkedin_import_id is not None or (evidence.raw_metadata and evidence.raw_metadata.get("source") == "linkedin_export"):
+        return "linkedin_export"
+    if evidence.resume_document_id is not None:
+        return "resume"
+    return "manual"
+
+
 def _source_types(row: SupportRow) -> set[str]:
-    sources = {"resume" if row.evidence.resume_document_id is not None else "manual", row.evidence.evidence_type.value}
+    sources = {_origin(row.evidence), row.evidence.evidence_type.value}
     if row.evidence.external_url and "github.com/" in row.evidence.external_url.casefold() and row.student_skill.verification_tier != VerificationTier.unverified:
         sources.add("github_verified")
     return sources
@@ -97,12 +107,14 @@ def _aggregate_skill(rows: list[SupportRow]) -> ProfileSkill:
     for row in ordered:
         key = _duplicate_key(row)
         root = duplicate_roots.get(key)
-        # Same source type does not become a duplicate relationship. Resume/manual pairs do.
+        # Same source type does not become a duplicate relationship.
+        origin = _origin(row.evidence)
         if root is None:
             duplicate_roots[key] = row.evidence.id
+            duplicate_id = None
         else:
             root_row = next(item for item in ordered if item.evidence.id == root)
-            if (root_row.evidence.resume_document_id is None) != (row.evidence.resume_document_id is None):
+            if _origin(root_row.evidence) != origin:
                 duplicate_id = root
             else:
                 duplicate_id = None
@@ -111,13 +123,13 @@ def _aggregate_skill(rows: list[SupportRow]) -> ProfileSkill:
                 evidence_id=row.evidence.id,
                 title=row.evidence.title,
                 evidence_type=row.evidence.evidence_type.value,
-                origin="resume" if row.evidence.resume_document_id is not None else "manual",
+                origin=origin,  # type: ignore[arg-type]
                 verification_tier=row.student_skill.verification_tier.value,
                 extraction_confidence=float(row.student_skill.extraction_confidence),
                 effective_confidence=_effective_confidence(row),
                 evidence_span=row.student_skill.evidence_span,
                 source_types=sorted(_source_types(row)),
-                likely_duplicate_of=duplicate_id if root is not None else None,
+                likely_duplicate_of=duplicate_id,
             )
         )
     highest = max(supports, key=lambda item: (TIER_ORDER[item.verification_tier], item.effective_confidence)).verification_tier
@@ -144,16 +156,19 @@ async def build_candidate_profile(session: AsyncSession, student: Student) -> Ca
     grouped: dict[UUID, list[SupportRow]] = defaultdict(list)
     for row in rows:
         grouped[row.skill.id].append(row)
-    active = await session.scalar(select(ResumeDocument).where(ResumeDocument.student_id == student.id, ResumeDocument.is_active.is_(True)))
+    active_resume = await session.scalar(select(ResumeDocument).where(ResumeDocument.student_id == student.id, ResumeDocument.is_active.is_(True)))
+    active_linkedin = await session.scalar(select(LinkedInImport).where(LinkedInImport.student_id == student.id, LinkedInImport.is_active.is_(True)))
     skills = [_aggregate_skill(grouped[key]) for key in sorted(grouped, key=lambda item: grouped[item][0].skill.canonical_name.casefold())]
     all_supports = [support for skill in skills for support in skill.supports]
     return CandidateProfileResponse(
         student_id=student.id,
         skills=skills,
-        active_resume=ActiveResumeReference(id=active.id, original_filename=active.original_filename, parse_status=active.parse_status.value, parsed_at=active.parsed_at) if active else None,
+        active_resume=ActiveResumeReference(id=active_resume.id, original_filename=active_resume.original_filename, parse_status=active_resume.parse_status.value, parsed_at=active_resume.parsed_at) if active_resume else None,
+        active_linkedin_import=ActiveLinkedInReference(id=active_linkedin.id, original_filename=active_linkedin.original_filename, parse_status=active_linkedin.parse_status.value, parsed_at=active_linkedin.parsed_at) if active_linkedin else None,
         github_identity_status="claimed" if student.github_username else "not_linked",
         profile_completeness=ProfileCompleteness(
-            has_active_resume=active is not None,
+            has_active_resume=active_resume is not None,
+            has_linkedin_import=active_linkedin is not None,
             has_project_evidence=any(support.evidence_type == "project" for support in all_supports),
             has_verified_evidence=any(support.verification_tier == "verified" for support in all_supports),
             has_evidence_backed_skills=bool(skills),

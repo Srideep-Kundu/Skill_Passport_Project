@@ -1,17 +1,250 @@
 import { useCallback, useEffect, useState } from "react";
-
+import { toast } from "sonner";
+import { FileText, Upload, CheckCircle2, Loader2 } from "lucide-react";
 import { ApiError, api, type ResumeDocument } from "../api";
 import { EmptyState, LoadingState } from "./AsyncState";
+
+function getWorkflowStep(parseStatus: string): number {
+  switch (parseStatus) {
+    case "uploaded":
+      return 1;
+    case "parsing":
+    case "processing":
+      return 2;
+    case "extracted":
+    case "completed":
+    case "parsed":
+      return 4;
+    default:
+      return 0;
+  }
+}
+
+const WORKFLOW_STEPS = [
+  "Uploaded",
+  "Reading Document",
+  "Extracting Evidence",
+  "Passport Ready",
+];
 
 export function ResumeIntelligence({ token, onChanged }: { token: string; onChanged: () => void }) {
   const [resumes, setResumes] = useState<ResumeDocument[] | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const load = useCallback(async () => { try { setResumes((await api.resumes(token)).items); } catch (caught) { setMessage(caught instanceof ApiError ? caught.detail : "Resumes could not be loaded."); } }, [token]);
-  useEffect(() => { void load(); }, [load]);
-  async function upload() { if (!file) return; try { const result = await api.uploadResume(file, token); setMessage(result.parse_status === "unsupported" ? result.safe_error_message : "Resume uploaded. Parse it to create evidence."); await load(); } catch (caught) { setMessage(caught instanceof ApiError ? caught.detail : "Resume upload failed."); } }
-  async function parse(id: string) { try { const result = await api.parseResume(id, token); setMessage(result.safe_error_message ?? "Resume parsed. Evidence was generated and skills are extracting."); await load(); onChanged(); } catch (caught) { setMessage(caught instanceof ApiError ? caught.detail : "Resume parsing failed."); } }
-  async function activate(id: string) { try { await api.activateResume(id, token); await load(); } catch (caught) { setMessage(caught instanceof ApiError ? caught.detail : "Could not activate resume."); } }
-  async function remove(resume: ResumeDocument) { if (!window.confirm(`Delete ${resume.original_filename}?`)) return; try { await api.deleteResume(resume.id, token); await load(); } catch (caught) { setMessage(caught instanceof ApiError ? caught.detail : "Delete generated evidence before deleting this resume."); } }
-  return <section className="rounded-xl bg-white p-5 shadow-sm"><h2 className="text-lg font-semibold">Resume intelligence</h2><p className="mt-1 text-sm text-slate-600">PDF and DOCX only. Resume claims become evidence before they can affect your passport.</p><div className="mt-3 flex flex-wrap gap-2"><input aria-label="Resume file" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(event) => setFile(event.target.files?.[0] ?? null)} /><button disabled={!file} type="button" onClick={() => void upload()} className="rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white disabled:bg-indigo-300">Upload resume</button></div>{message && <p role="status" className="mt-3 text-sm text-slate-600">{message}</p>}{!resumes ? <LoadingState label="Loading resumes" /> : resumes.length ? <ul className="mt-4 space-y-3">{resumes.map((resume) => <li key={resume.id} className="rounded border border-slate-200 p-3"><div className="flex flex-wrap items-start justify-between gap-2"><div><p className="font-medium">{resume.original_filename} {resume.is_active && <span className="text-sm text-emerald-700">Active</span>}</p><p className="text-sm text-slate-600">Resume Parsed: {resume.parse_status} · Evidence Generated: {resume.generated_evidence_count} · Skills: {resume.skills_status}</p></div><div className="flex gap-2 text-sm"><button type="button" onClick={() => void parse(resume.id)} disabled={resume.parse_status === "unsupported"} className="text-indigo-700 disabled:text-slate-400">Parse</button><button type="button" onClick={() => void activate(resume.id)} className="text-indigo-700">Activate</button><button type="button" onClick={() => void remove(resume)} className="text-red-700">Delete</button></div></div>{resume.safe_error_message && <p className="mt-2 text-sm text-amber-700">{resume.safe_error_message}</p>}{resume.parsed_summary && <p className="mt-2 text-sm text-slate-600">Projects: {resume.parsed_summary.projects.length} · Certifications: {resume.parsed_summary.certifications.length} · Explicit skills: {resume.parsed_summary.explicit_technical_skills.join(", ") || "none"}</p>}</li>)}</ul> : <EmptyState title="No resume uploaded">Upload a text-based PDF or DOCX to generate evidence.</EmptyState>}</section>;
+  const [isParsingId, setIsParsingId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      setResumes((await api.resumes(token)).items);
+    } catch (caught) {
+      setMessage(caught instanceof ApiError ? caught.detail : "Resumes could not be loaded.");
+    }
+  }, [token]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  async function upload() {
+    if (!file) return;
+    try {
+      const result = await api.uploadResume(file, token);
+      const msg = result.parse_status === "unsupported" ? result.safe_error_message : "Resume uploaded. Parse it to create evidence.";
+      setMessage(msg);
+      toast.success("Resume uploaded successfully!");
+      setFile(null);
+      await load();
+    } catch (caught) {
+      const msg = caught instanceof ApiError ? caught.detail : "Resume upload failed.";
+      setMessage(msg);
+      toast.error(msg);
+    }
+  }
+
+  async function parse(id: string) {
+    setIsParsingId(id);
+    try {
+      const result = await api.parseResume(id, token);
+      const msg = result.safe_error_message ?? "Resume parsed. Evidence was generated and skills are extracting.";
+      setMessage(msg);
+      toast.success("Resume parsed into skill evidence!");
+      await load();
+      onChanged();
+    } catch (caught) {
+      const msg = caught instanceof ApiError ? caught.detail : "Resume parsing failed.";
+      setMessage(msg);
+      toast.error(msg);
+    } finally {
+      setIsParsingId(null);
+    }
+  }
+
+  async function activate(id: string) {
+    try {
+      await api.activateResume(id, token);
+      toast.success("Resume set as active!");
+      await load();
+    } catch (caught) {
+      const msg = caught instanceof ApiError ? caught.detail : "Could not activate resume.";
+      setMessage(msg);
+      toast.error(msg);
+    }
+  }
+
+  async function remove(resume: ResumeDocument) {
+    if (!window.confirm(`Delete ${resume.original_filename}?`)) return;
+    try {
+      await api.deleteResume(resume.id, token);
+      toast.success("Resume deleted.");
+      await load();
+    } catch (caught) {
+      const msg = caught instanceof ApiError ? caught.detail : "Delete generated evidence before deleting this resume.";
+      setMessage(msg);
+      toast.error(msg);
+    }
+  }
+
+  return (
+    <section className="rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-[#0c1222]/90 backdrop-blur-xs p-5 sm:p-6 shadow-sm text-slate-900 dark:text-slate-100 flex flex-col justify-between">
+      <div className="border-b border-slate-100 dark:border-slate-800 pb-3.5">
+        <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+          <FileText className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+          <span>Resume Intelligence</span>
+        </h2>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          PDF and DOCX only. Resume claims become evidence before they can affect your passport.
+        </p>
+      </div>
+
+      <div className="mt-4 space-y-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <input
+            aria-label="Resume file"
+            type="file"
+            accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+            className="flex-1 rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3 py-1.5 text-xs text-slate-900 dark:text-[#f1f0e8]"
+          />
+          <button
+            disabled={!file}
+            type="button"
+            onClick={() => void upload()}
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#3b71d9] hover:bg-[#2563eb] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50 transition-colors cursor-pointer shadow-sm shadow-[#3b71d9]/25"
+          >
+            <Upload className="h-3.5 w-3.5" />
+            <span>Upload resume</span>
+          </button>
+        </div>
+
+        {message && (
+          <p role="status" className="text-xs font-medium text-slate-600 dark:text-[#98a4b3] bg-slate-50 dark:bg-[#151e29] p-2.5 rounded-lg border border-slate-200 dark:border-white/[0.08]">
+            {message}
+          </p>
+        )}
+
+        {!resumes ? (
+          <LoadingState label="Loading resumes" />
+        ) : resumes.length ? (
+          <ul className="space-y-3">
+            {resumes.map((resume) => {
+              const currentStep = isParsingId === resume.id ? 2 : getWorkflowStep(resume.parse_status);
+
+              return (
+                <li
+                  key={resume.id}
+                  className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/50 dark:bg-[#151e29] p-4 space-y-3"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="font-bold text-xs text-slate-900 dark:text-[#f1f0e8] flex items-center gap-2">
+                        <span>{resume.original_filename}</span>
+                        {resume.is_active && (
+                          <span className="inline-flex items-center gap-1 rounded bg-emerald-100 dark:bg-emerald-950/80 border border-emerald-200/60 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold px-2 py-0.5">
+                            <CheckCircle2 className="h-3 w-3" /> Active
+                          </span>
+                        )}
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-[#98a4b3] mt-0.5">
+                        Resume Parsed: {resume.parse_status} &middot; Evidence Generated: {resume.generated_evidence_count} &middot; Skills: {resume.skills_status}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs font-semibold">
+                      <button
+                        type="button"
+                        onClick={() => void parse(resume.id)}
+                        disabled={resume.parse_status === "unsupported" || isParsingId === resume.id}
+                        className="text-[#3b71d9] dark:text-[#b0c6ff] hover:underline disabled:opacity-40 cursor-pointer inline-flex items-center gap-1"
+                      >
+                        {isParsingId === resume.id && <Loader2 className="h-3 w-3 animate-spin" />}
+                        <span>Parse</span>
+                      </button>
+                      <span className="text-slate-300 dark:text-slate-700">&middot;</span>
+                      <button
+                        type="button"
+                        onClick={() => void activate(resume.id)}
+                        className="text-[#3b71d9] dark:text-[#b0c6ff] hover:underline cursor-pointer"
+                      >
+                        Activate
+                      </button>
+                      <span className="text-slate-300 dark:text-slate-700">&middot;</span>
+                      <button
+                        type="button"
+                        onClick={() => void remove(resume)}
+                        className="text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* PARSING WORKFLOW STEPPER */}
+                  <div className="pt-2 border-t border-slate-200/60 dark:border-white/[0.08]">
+                    <ol className="grid grid-cols-4 gap-1 text-[10px] font-semibold text-slate-400 dark:text-[#98a4b3]">
+                      {WORKFLOW_STEPS.map((stepName, idx) => {
+                        const stepNum = idx + 1;
+                        const isDone = currentStep >= stepNum;
+                        const isCurrent = currentStep === stepNum || (isParsingId === resume.id && stepNum === 2);
+
+                        return (
+                          <li key={stepName} className="flex flex-col gap-1">
+                            <div
+                              className={`h-1 w-full rounded-full transition-colors ${
+                                isDone
+                                  ? "bg-[#3b71d9] dark:bg-[#b0c6ff]"
+                                  : isCurrent
+                                  ? "bg-blue-400 animate-pulse"
+                                  : "bg-slate-200 dark:bg-[#1d2025]"
+                              }`}
+                            />
+                            <span className={isDone ? "text-[#3b71d9] dark:text-[#dedbc8] font-bold" : ""}>
+                              {stepName}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  </div>
+
+                  {resume.safe_error_message && (
+                    <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                      {resume.safe_error_message}
+                    </p>
+                  )}
+
+                  {resume.parsed_summary && (
+                    <p className="text-[11px] text-slate-600 dark:text-[#98a4b3] pt-1">
+                      Projects: {resume.parsed_summary.projects.length} &middot; Certifications: {resume.parsed_summary.certifications.length} &middot; Skills: {resume.parsed_summary.explicit_technical_skills.join(", ") || "none"}
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <EmptyState title="No resume uploaded">Upload a text-based PDF or DOCX to generate evidence.</EmptyState>
+        )}
+      </div>
+    </section>
+  );
 }

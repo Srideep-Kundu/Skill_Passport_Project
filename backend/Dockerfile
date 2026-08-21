@@ -17,6 +17,8 @@ COPY alembic ./alembic
 COPY alembic.ini ./alembic.ini
 COPY seed ./seed
 
+RUN mkdir -p /app/uploads/resumes /app/uploads/linkedin && chown -R appuser:appuser /app/uploads
+
 USER appuser
 
 EXPOSE 8000
