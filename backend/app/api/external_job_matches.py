@@ -68,32 +68,60 @@ async def recommended_external_job_matches(
     session: Annotated[AsyncSession, Depends(get_session)],
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
+    provider: Annotated[str | None, Query(max_length=64)] = None,
     location: Annotated[str | None, Query(max_length=255)] = None,
     remote: bool | None = None,
     employment_type: Annotated[str | None, Query(max_length=64)] = None,
+    query: Annotated[str | None, Query(max_length=200)] = None,
+    sort_by: Annotated[str | None, Query(max_length=32)] = "best_match",
 ) -> PaginatedResponse[ExternalJobMatchResponse]:
+    from sqlalchemy import or_
+
     filters: list[ColumnElement[bool]] = [
         ExternalJobMatch.student_id == principal.id,
         ExternalJob.is_active.is_(True),
         ExternalJobMatch.final_score >= get_settings().external_job_min_match_score,
     ]
+    if provider and provider.strip() and provider.strip().casefold() != "all":
+        filters.append(ExternalJob.provider == provider.strip().casefold())
     if location and location.strip():
         filters.append(ExternalJob.location.ilike(f"%{location.strip()}%"))
     if remote is not None:
         filters.append(ExternalJob.remote_status == ("remote" if remote else "not_remote"))
     if employment_type and employment_type.strip():
-        filters.append(ExternalJob.employment_type == employment_type.strip())
-    statement = (
-        select(ExternalJobMatch)
-        .join(ExternalJob, ExternalJob.id == ExternalJobMatch.external_job_id)
-        .where(*filters)
-        .order_by(
+        filters.append(ExternalJob.employment_type.ilike(f"%{employment_type.strip()}%"))
+    if query and query.strip():
+        val = f"%{query.strip()}%"
+        filters.append(or_(ExternalJob.title.ilike(val), ExternalJob.company_name.ilike(val)))
+
+    # Determine sort order
+    if sort_by == "newest":
+        order_clause = [
+            ExternalJob.posted_at.desc().nullslast(),
+            ExternalJobMatch.final_score.desc(),
+            ExternalJob.company_name,
+            ExternalJob.title,
+        ]
+    elif sort_by == "recently_added":
+        order_clause = [
+            ExternalJobMatch.computed_at.desc(),
+            ExternalJobMatch.final_score.desc(),
+            ExternalJob.company_name,
+        ]
+    else:  # best_match
+        order_clause = [
             ExternalJobMatch.final_score.desc(),
             ExternalJob.posted_at.desc().nullslast(),
             ExternalJob.company_name,
             ExternalJob.title,
             ExternalJob.external_id,
-        )
+        ]
+
+    statement = (
+        select(ExternalJobMatch)
+        .join(ExternalJob, ExternalJob.id == ExternalJobMatch.external_job_id)
+        .where(*filters)
+        .order_by(*order_clause)
     )
     total = int(await session.scalar(select(func.count()).select_from(statement.subquery())) or 0)
     matches = list((await session.scalars(statement.offset((page - 1) * page_size).limit(page_size))).all())

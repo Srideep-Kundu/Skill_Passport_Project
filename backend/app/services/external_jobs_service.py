@@ -3,6 +3,7 @@
 import re
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import delete, select
@@ -48,7 +49,15 @@ def _now() -> datetime:
 def configured_provider_source(provider: str, source_key: str) -> bool:
     settings = get_settings()
     return (
-        (provider == "greenhouse" and source_key in settings.greenhouse_board_tokens)
+        (
+            provider == "yc"
+            and (
+                not settings.yc_source_keys
+                or source_key in settings.yc_source_keys
+                or source_key in ("yc_startups", "default")
+            )
+        )
+        or (provider == "greenhouse" and source_key in settings.greenhouse_board_tokens)
         or (provider == "lever" and source_key in settings.lever_site_tokens)
         or (provider == "ashby" and source_key in settings.ashby_job_board_names)
     )
@@ -331,3 +340,78 @@ async def sync_discovery_source(
     return job_ids, ExternalJobSyncResult(
         provider_name, source_key, created, updated, 0, len(fetched), now
     )
+
+
+async def sync_all_configured_sources(
+    session: AsyncSession,
+    *,
+    actor_id: UUID | None = None,
+) -> dict[str, Any]:
+    """Sync all live providers safely without failing the whole sync if one source is rate-limited."""
+    settings = get_settings()
+    results: dict[str, Any] = {}
+    total_created = total_updated = total_synced = 0
+
+    sources_map: dict[str, list[str]] = {
+        "yc": list(settings.yc_source_keys or ["yc_startups"]),
+        "greenhouse": list(settings.greenhouse_board_tokens),
+        "lever": list(settings.lever_site_tokens),
+        "ashby": list(settings.ashby_job_board_names),
+    }
+
+    for provider_name, source_keys in sources_map.items():
+        if provider_name not in provider_registry.names():
+            results[provider_name] = {"status": "unavailable", "jobs_synced": 0}
+            continue
+        provider = provider_registry.get(provider_name)
+        if not provider.capabilities.search:
+            results[provider_name] = {"status": "api_required", "jobs_synced": 0}
+            continue
+
+        provider_synced = provider_created = provider_updated = provider_errors = 0
+        for source_key in source_keys[:5]:
+            try:
+                res = await sync_external_jobs(
+                    session,
+                    provider_name=provider_name,
+                    source_key=source_key,
+                    actor_id=actor_id,
+                )
+                provider_synced += res.synced
+                provider_created += res.created
+                provider_updated += res.updated
+            except Exception:
+                provider_errors += 1
+                continue
+
+        total_created += provider_created
+        total_updated += provider_updated
+        total_synced += provider_synced
+        results[provider_name] = {
+            "status": "live" if (provider_synced > 0 or not provider_errors) else "degraded",
+            "jobs_synced": provider_synced,
+            "jobs_created": provider_created,
+            "jobs_updated": provider_updated,
+            "errors": provider_errors,
+        }
+
+    # Record provider integrations requiring API configuration
+    results["indeed"] = {
+        "status": "api_required",
+        "jobs_synced": 0,
+        "reason": "Publisher/Partner API credentials required",
+    }
+    results["jobsuit"] = {
+        "status": "integration_status",
+        "jobs_synced": 0,
+        "reason": "Partner API configuration required",
+    }
+
+    return {
+        "total_created": total_created,
+        "total_updated": total_updated,
+        "total_synced": total_synced,
+        "providers": results,
+        "synced_at": _now().isoformat(),
+    }
+

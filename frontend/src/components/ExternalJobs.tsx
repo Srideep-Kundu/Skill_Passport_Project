@@ -1,506 +1,774 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { Briefcase, RefreshCw, ExternalLink, CheckCircle2, AlertTriangle } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import {
+  RefreshCw,
+  ExternalLink,
+  Search,
+  MapPin,
+  Building2,
+  CheckCircle2,
+  AlertTriangle,
+  Bookmark,
+  BookmarkCheck,
+  Send,
+  X,
+  Compass,
+  ListFilter,
+  FileCheck2,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
 import { ApiError, api } from "../api";
-import type { Application, ExternalJob, ExternalJobMatch, MatchExplanation } from "../api";
+import type {
+  Application,
+  ExternalJob,
+  ExternalJobMatch,
+  ProviderStatusItem,
+} from "../api";
 import { ApplicationPreparation } from "./ApplicationPreparation";
-import { AutomationPreferences } from "./AutomationPreferences";
 import { SavedDiscoveries } from "./SavedDiscoveries";
-import { EmptyState, ErrorState, LoadingState } from "./AsyncState";
+import { ErrorState, LoadingState } from "./AsyncState";
 
-function syncedLabel(value: string): string {
+function syncedLabel(value: string | null): string {
+  if (!value) return "Just now";
   const parsed = new Date(value);
-  return Number.isNaN(parsed.valueOf()) ? "Sync time unavailable" : `Synced ${parsed.toLocaleString()}`;
+  if (Number.isNaN(parsed.valueOf())) return "Recently synced";
+  const minutesAgo = Math.floor((Date.now() - parsed.getTime()) / (1000 * 60));
+  if (minutesAgo < 1) return "Just now";
+  if (minutesAgo === 1) return "1 min ago";
+  if (minutesAgo < 60) return `${minutesAgo} mins ago`;
+  const hoursAgo = Math.floor(minutesAgo / 60);
+  return `${hoursAgo}h ago`;
 }
 
-function locationLabel(job: Pick<ExternalJob, "location" | "remote_status">): string {
-  return `${job.location ? ` · ${job.location}` : ""}${job.remote_status === "remote" && !job.location?.toLowerCase().includes("remote") ? " · Remote" : ""}`;
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return "Recent";
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.valueOf())) return "Recent";
+  const daysAgo = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
+  if (daysAgo <= 0) return "Today";
+  if (daysAgo === 1) return "Yesterday";
+  return `${daysAgo}d ago`;
 }
 
-function Explanation({ explanation }: { explanation: MatchExplanation }) {
-  return (
-    <details className="mt-3 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-[#151e29] p-3.5 text-xs text-slate-900 dark:text-[#f1f0e8]">
-      <summary className="cursor-pointer font-bold text-[#3b71d9] dark:text-[#b0c6ff] hover:underline font-sans">
-        Why this match?
-      </summary>
-      <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-        <div className="rounded-lg bg-slate-50 dark:bg-[#111821] border border-slate-200/60 dark:border-white/[0.08] p-2">
-          <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#98a4b3] block font-sans">Exact</span>
-          <strong className="text-sm font-black text-[#3b71d9] dark:text-[#b0c6ff] font-sans">
-            {Math.round(explanation.deterministic_score * 100)}%
-          </strong>
-        </div>
-        <div className="rounded-lg bg-slate-50 dark:bg-[#111821] border border-slate-200/60 dark:border-white/[0.08] p-2">
-          <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#98a4b3] block font-sans">Semantic</span>
-          <strong className="text-sm font-black text-purple-600 dark:text-purple-400 font-sans">
-            {Math.round(explanation.semantic_score * 100)}%
-          </strong>
-        </div>
-        <div className="rounded-lg bg-slate-50 dark:bg-[#111821] border border-slate-200/60 dark:border-white/[0.08] p-2">
-          <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#98a4b3] block font-sans">Verified</span>
-          <strong className="text-sm font-black text-emerald-600 dark:text-emerald-400 font-sans">
-            {Math.round(explanation.verification_bonus * 100)}%
-          </strong>
-        </div>
-      </div>
-      <ul className="mt-3 space-y-2 text-xs">
-        {explanation.items.map((item) => (
-          <li key={item.skill_id} className="flex items-start gap-1.5 text-slate-700 dark:text-[#98a4b3] font-sans">
-            <span className="shrink-0 mt-0.5">
-              {item.status === "missing" ? (
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
-              ) : (
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
-              )}
-            </span>
-            <span>
-              <strong className="text-slate-900 dark:text-[#f1f0e8]">{item.skill_name}</strong>
-              {item.status === "missing" ? ` — missing ${item.is_required === false ? "preferred" : "required"} skill` : ""}
-              {item.evidence_title ? ` · ${item.evidence_title}` : ""}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </details>
-  );
-}
-
-function ApprovalScreen({
-  application,
-  token,
-  onChanged,
-  onClose,
-}: {
-  application: Application;
-  token: string;
-  onChanged: (application: Application) => void;
-  onClose: () => void;
-}) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const snapshot = application.application_snapshot;
-
-  async function run(action: () => Promise<Application>) {
-    try {
-      setBusy(true);
-      setError(null);
-      onChanged(await action());
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.detail : "The application action could not be completed.");
-    } finally {
-      setBusy(false);
-    }
+function getProviderBadge(provider: string) {
+  const norm = provider.toLowerCase();
+  if (norm.includes("yc")) {
+    return {
+      label: "YC STARTUP",
+      bg: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/30",
+    };
   }
-
-  const preSubmission = ["approval_pending", "approved", "needs_input", "prepared", "ready_to_submit"];
-
-  return (
-    <section
-      aria-label="Application approval"
-      className="rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/50 dark:bg-[#151e29] p-5 sm:p-6 shadow-sm space-y-4 text-slate-900 dark:text-[#f1f0e8]"
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200/60 dark:border-white/[0.08] pb-3.5">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-[#3b71d9] dark:text-[#b0c6ff] font-sans">Application Review</p>
-          <h3 className="text-lg font-bold text-slate-900 dark:text-[#f1f0e8] mt-0.5 font-sans">{snapshot.job.title}</h3>
-          <p className="text-xs text-slate-600 dark:text-[#98a4b3] font-sans">
-            {snapshot.job.company_name} · {snapshot.job.provider}
-          </p>
-        </div>
-        <span className="rounded-full bg-blue-50 dark:bg-[#111821] border border-blue-200/60 dark:border-white/10 px-3 py-1 text-xs font-bold text-[#3b71d9] dark:text-[#b0c6ff] font-sans">
-          {application.status.replaceAll("_", " ")}
-        </span>
-      </div>
-
-      <p className="text-xs text-slate-700 dark:text-[#98a4b3] font-sans">
-        Match score: <strong className="text-[#3b71d9] dark:text-[#b0c6ff]">{Math.round(snapshot.recommendation.final_score * 100)}%</strong>. This approval applies only to this job, recommendation, resume, and profile snapshot.
-      </p>
-
-      <a
-        href={snapshot.job.source_url}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-flex items-center gap-1 text-xs font-semibold text-[#3b71d9] dark:text-[#b0c6ff] underline hover:text-blue-700 font-sans"
-      >
-        <span>View job source</span>
-        <ExternalLink className="h-3 w-3" />
-      </a>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#111821] p-3.5 space-y-1.5">
-          <h4 className="font-bold text-xs text-slate-900 dark:text-[#f1f0e8] font-sans">Evidence supporting this match</h4>
-          {snapshot.recommendation.supporting_evidence.length ? (
-            <ul className="list-disc pl-4 text-xs space-y-1 text-slate-700 dark:text-[#98a4b3] font-sans">
-              {snapshot.recommendation.supporting_evidence.map((item) => (
-                <li key={`${item.skill_name}-${item.evidence_id}`}>
-                  {item.skill_name}
-                  {item.evidence_title ? ` — ${item.evidence_title}` : ""}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-xs text-slate-500 dark:text-[#98a4b3] italic font-sans">No evidence references were persisted.</p>
-          )}
-        </div>
-
-        <div className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#111821] p-3.5 space-y-1.5">
-          <h4 className="font-bold text-xs text-slate-900 dark:text-[#f1f0e8] font-sans">Missing skills</h4>
-          {snapshot.recommendation.missing_skills.length ? (
-            <ul className="list-disc pl-4 text-xs space-y-1 text-slate-700 dark:text-[#98a4b3] font-sans">
-              {snapshot.recommendation.missing_skills.map((item) => (
-                <li key={item.skill_name}>
-                  {item.skill_name} ({item.is_required ? "required" : "preferred"})
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-xs text-slate-500 dark:text-[#98a4b3] italic font-sans">No missing skills recorded.</p>
-          )}
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#111821] p-3.5 text-xs text-slate-700 dark:text-[#98a4b3] space-y-1 font-sans">
-        <h4 className="font-bold text-slate-900 dark:text-[#f1f0e8]">Application-safe profile</h4>
-        <p>Resume: {snapshot.resume.original_filename}</p>
-        <p>
-          {snapshot.application_profile.full_name} · {snapshot.application_profile.email}
-          {snapshot.application_profile.phone ? ` · ${snapshot.application_profile.phone}` : ""}
-        </p>
-        <p className="text-[11px] text-slate-500 dark:text-[#98a4b3] pt-0.5">
-          Sensitive demographic and legal questions always require your direct input and are never inferred.
-        </p>
-      </div>
-
-      {application.is_approval_stale ? (
-        <p className="rounded-lg bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900/60 p-3 text-xs text-amber-900 dark:text-amber-300 font-sans">
-          Your approved inputs changed. Review and approve the updated application again.
-        </p>
-      ) : null}
-
-      <ApplicationPreparation application={application} token={token} onChanged={onChanged} />
-
-      {error ? (
-        <p role="alert" className="text-xs font-medium text-red-700 dark:text-red-400 font-sans">
-          {error}
-        </p>
-      ) : null}
-
-      <div className="flex flex-wrap gap-2 pt-2 font-sans">
-        {application.status === "approval_pending" ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() =>
-              void run(async () => {
-                await api.requestApplicationApproval(application.id, token);
-                return api.approveApplication(application.id, token);
-              })
-            }
-            className="rounded-lg bg-[#3b71d9] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-[#3b71d9]/25 hover:bg-[#2563eb] transition-colors disabled:opacity-50 cursor-pointer font-sans"
-          >
-            Approve application
-          </button>
-        ) : null}
-
-        {application.status === "approved" && application.is_approval_stale ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void run(() => api.requestApplicationApproval(application.id, token))}
-            className="rounded-lg bg-[#3b71d9] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-[#3b71d9]/25 hover:bg-[#2563eb] transition-colors disabled:opacity-50 cursor-pointer font-sans"
-          >
-            Refresh approval review
-          </button>
-        ) : null}
-
-        {application.status === "approved" ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void run(() => api.revokeApplicationApproval(application.id, token))}
-            className="rounded-lg border border-[#3b71d9] dark:border-blue-500 bg-white dark:bg-[#111821] px-3.5 py-1.5 text-xs font-semibold text-[#3b71d9] dark:text-[#b0c6ff] hover:bg-blue-50 dark:hover:bg-[#1a2430] transition-colors cursor-pointer font-sans"
-          >
-            Revoke approval
-          </button>
-        ) : null}
-
-        {preSubmission.includes(application.status) ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void run(() => api.selectManualApplication(application.id, token))}
-            className="rounded-lg border border-[#3b71d9] dark:border-blue-500 bg-white dark:bg-[#111821] px-3.5 py-1.5 text-xs font-semibold text-[#3b71d9] dark:text-[#b0c6ff] hover:bg-blue-50 dark:hover:bg-[#1a2430] transition-colors cursor-pointer font-sans"
-          >
-            Apply manually
-          </button>
-        ) : null}
-
-        {application.status === "manual_apply" && application.manual_apply_url ? (
-          <a
-            href={application.manual_apply_url}
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-lg border border-[#3b71d9] dark:border-blue-500 bg-white dark:bg-[#111821] px-3.5 py-1.5 text-xs font-semibold text-[#3b71d9] dark:text-[#b0c6ff] hover:bg-blue-50 dark:hover:bg-[#1a2430] transition-colors font-sans"
-          >
-            Open manual application page
-          </a>
-        ) : null}
-
-        {preSubmission.includes(application.status) ? (
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void run(() => api.withdrawApplication(application.id, token))}
-            className="rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#111821] px-3.5 py-1.5 text-xs font-medium text-slate-700 dark:text-[#98a4b3] hover:bg-slate-50 dark:hover:bg-[#1a2430] transition-colors cursor-pointer font-sans"
-          >
-            Cancel application
-          </button>
-        ) : null}
-
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-lg px-3.5 py-1.5 text-xs font-medium text-slate-600 dark:text-[#98a4b3] hover:text-slate-900 dark:hover:text-[#f1f0e8] transition-colors cursor-pointer font-sans"
-        >
-          Close
-        </button>
-      </div>
-
-      <p className="text-[11px] text-slate-500 dark:text-[#98a4b3] pt-1 font-sans">
-        No external application is submitted by this product for assisted providers. No browser automation is used; submission appears only for a provider that explicitly declares that capability.
-      </p>
-    </section>
-  );
-}
-
-function RecommendedJob({
-  job,
-  application,
-  onApply,
-}: {
-  job: ExternalJobMatch;
-  application: Application | undefined;
-  onApply: () => void;
-}) {
-  return (
-    <li className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/50 dark:bg-[#151e29] p-4.5 hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 text-slate-900 dark:text-[#f1f0e8]">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="font-bold text-sm text-slate-900 dark:text-[#f1f0e8] font-sans">{job.title}</h3>
-          <p className="text-xs text-slate-600 dark:text-[#98a4b3] mt-0.5 font-sans">
-            {job.company_name}
-            {locationLabel(job)}
-          </p>
-        </div>
-        <strong className="text-xl font-black text-[#3b71d9] dark:text-[#b0c6ff] font-sans">
-          {Math.round(job.final_score * 100)}%
-        </strong>
-      </div>
-      <p className="mt-2 text-xs text-slate-500 dark:text-[#98a4b3] font-sans">
-        Source: {job.provider}
-        {job.posted_at ? ` · Posted ${new Date(job.posted_at).toLocaleDateString()}` : ""}
-        {job.is_stale ? " · Match needs refresh" : ""}
-      </p>
-      <Explanation explanation={job.explanation} />
-      <div className="mt-3 flex flex-wrap gap-3 text-xs font-semibold font-sans">
-        <a
-          href={job.source_url}
-          target="_blank"
-          rel="noreferrer"
-          className="text-[#3b71d9] dark:text-[#b0c6ff] underline hover:text-blue-700"
-        >
-          Open original listing
-        </a>
-        <button
-          type="button"
-          disabled={job.is_stale}
-          onClick={onApply}
-          className="text-[#3b71d9] dark:text-[#b0c6ff] underline hover:text-blue-700 disabled:text-slate-400 cursor-pointer font-sans"
-        >
-          {application ? "Review application" : "Apply"}
-        </button>
-      </div>
-    </li>
-  );
-}
-
-function ExternalJobsContent({ token }: { token: string }) {
-  const [jobs, setJobs] = useState<ExternalJob[] | null>(null);
-  const [recommended, setRecommended] = useState<ExternalJobMatch[] | null>(null);
-  const [applications, setApplications] = useState<Application[]>([]);
-  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const applicationsByJob = useMemo(
-    () => new Map(applications.map((application) => [application.external_job_id, application])),
-    [applications]
-  );
-
-  const load = useCallback(async () => {
-    try {
-      setError(null);
-      const [jobPage, matchPage, applicationPage] = await Promise.all([
-        api.externalJobs(token),
-        api.externalJobMatches(token),
-        api.applications(token),
-      ]);
-      setJobs(jobPage.items);
-      setRecommended(matchPage.items);
-      setApplications(applicationPage.items);
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.detail : "External jobs could not be loaded.");
-    }
-  }, [token]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
-
-  function updateApplication(next: Application) {
-    setSelectedApplication(next);
-    setApplications((current) => current.map((item) => (item.id === next.id ? next : item)));
+  if (norm.includes("greenhouse")) {
+    return {
+      label: "GREENHOUSE",
+      bg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+    };
   }
-
-  async function beginApplication(job: ExternalJobMatch) {
-    const existing = applicationsByJob.get(job.external_job_id);
-    if (existing) {
-      setSelectedApplication(existing);
-      return;
-    }
-    try {
-      setError(null);
-      const created = await api.createApplication(job.external_job_id, job.id, token);
-      setApplications((current) => [created, ...current]);
-      setSelectedApplication(created);
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.detail : "The application could not be created.");
-    }
+  if (norm.includes("lever")) {
+    return {
+      label: "LEVER",
+      bg: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30",
+    };
   }
-
-  async function refreshRecommendations() {
-    try {
-      setRefreshing(true);
-      await api.recomputeExternalJobMatches(token);
-      await load();
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.detail : "Recommendations could not be refreshed.");
-    } finally {
-      setRefreshing(false);
-    }
+  if (norm.includes("ashby")) {
+    return {
+      label: "ASHBY",
+      bg: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30",
+    };
   }
-
-  if ((!jobs || !recommended) && !error) return <LoadingState label="Loading external jobs" />;
-
-  return (
-    <section
-      aria-label="External jobs"
-      className="space-y-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#111821]/90 backdrop-blur-md p-5 sm:p-6 shadow-sm text-slate-900 dark:text-[#f1f0e8]"
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 dark:border-white/[0.08] pb-3.5">
-        <div>
-          <h2 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] flex items-center gap-2 font-sans">
-            <Briefcase className="h-4 w-4 text-[#3b71d9] dark:text-[#b0c6ff]" />
-            <span>Recommended jobs</span>
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-0.5 font-sans">
-            Persisted evidence-backed matches. Location and remote preferences filter jobs but never alter skill-fit scores.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => void refreshRecommendations()}
-          disabled={refreshing}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-[#3b71d9] dark:border-blue-500 bg-white dark:bg-[#151e29] px-3 py-1.5 text-xs font-semibold text-[#3b71d9] dark:text-[#b0c6ff] hover:bg-blue-50 dark:hover:bg-[#1a2430] disabled:opacity-50 transition-colors cursor-pointer font-sans"
-        >
-          <RefreshCw className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`} />
-          <span>{refreshing ? "Refreshing…" : "Refresh recommendations"}</span>
-        </button>
-      </div>
-
-      {selectedApplication ? (
-        <ApprovalScreen
-          application={selectedApplication}
-          token={token}
-          onChanged={updateApplication}
-          onClose={() => setSelectedApplication(null)}
-        />
-      ) : null}
-
-      {error ? (
-        <ErrorState message={error} onRetry={() => void load()} />
-      ) : recommended?.length ? (
-        <ul className="space-y-3">
-          {recommended.map((job) => (
-            <RecommendedJob
-              key={job.id}
-              job={job}
-              application={applicationsByJob.get(job.external_job_id)}
-              onApply={() => void beginApplication(job)}
-            />
-          ))}
-        </ul>
-      ) : (
-        <EmptyState title="No recommended jobs yet">
-          Refresh recommendations after jobs with canonical required skills have been synced. Jobs below the configured recommendation threshold remain searchable.
-        </EmptyState>
-      )}
-
-      <div className="border-t border-slate-100 dark:border-white/[0.08] pt-5 space-y-3">
-        <h3 className="font-bold text-sm text-slate-900 dark:text-[#f1f0e8] font-sans">All synced external jobs</h3>
-        {jobs?.length ? (
-          <ul className="space-y-3">
-            {jobs.map((job) => (
-              <li
-                key={job.id}
-                className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/50 dark:bg-[#151e29] p-4 text-slate-900 dark:text-[#f1f0e8]"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-[#f1f0e8] font-sans">{job.title}</h4>
-                    <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-0.5 font-sans">
-                      {job.company_name}
-                      {locationLabel(job)}
-                    </p>
-                  </div>
-                  <span className="rounded-md bg-slate-100 dark:bg-[#111821] border border-slate-200/60 dark:border-white/10 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:text-[#dedbc8] font-sans">
-                    Source: {job.provider}
-                  </span>
-                </div>
-                <p className="mt-2 text-xs text-slate-500 dark:text-[#98a4b3] font-sans">
-                  {syncedLabel(job.last_synced_at)}
-                  {job.requirements.some((item) => item.is_required)
-                    ? ""
-                    : " · Requirements not yet sufficient for matching"}
-                </p>
-                <a
-                  href={job.source_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-2.5 inline-flex items-center gap-1 text-xs font-semibold text-[#3b71d9] dark:text-[#b0c6ff] underline hover:text-blue-700 font-sans"
-                >
-                  <span>Open original listing</span>
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <EmptyState title="No synced external jobs">
-            An administrator can sync a configured public job source. Check back after the next sync.
-          </EmptyState>
-        )}
-      </div>
-    </section>
-  );
+  return {
+    label: provider.toUpperCase(),
+    bg: "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30",
+  };
 }
 
 export function ExternalJobs({ token }: { token: string }) {
+  const [jobs, setJobs] = useState<ExternalJob[]>([]);
+  const [matchesByJobId, setMatchesByJobId] = useState<Record<string, ExternalJobMatch>>({});
+  const [providers, setProviders] = useState<ProviderStatusItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Search & Filter State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProvider, setSelectedProvider] = useState<string>("all");
+  const [locationQuery, setLocationQuery] = useState("");
+  const [remoteOnly, setRemoteOnly] = useState(false);
+  const [employmentType, setEmploymentType] = useState<string>("all");
+  const [freshnessDays, setFreshnessDays] = useState<number>(0); // 0 = anytime
+
+  // Drawer / Modals
+  const [showSavedRules, setShowSavedRules] = useState(false);
+  const [applicationInReview, setApplicationInReview] = useState<Application | null>(null);
+  const [preparingJobId, setPreparingJobId] = useState<string | null>(null);
+  const [activeExplanationMatch, setActiveExplanationMatch] = useState<ExternalJobMatch | null>(null);
+
+  // Saved Bookmarks
+  const [savedJobIds, setSavedJobIds] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem("saved_market_job_ids");
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  const loadData = useCallback(
+    async (isManualRefresh = false) => {
+      try {
+        if (isManualRefresh) setRefreshing(true);
+        else setLoading(true);
+        setError(null);
+
+        // Fetch jobs, matches, and provider health simultaneously
+        const [jobsRes, matchesRes, providersRes] = await Promise.all([
+          api.externalJobs(token, {
+            page: 1,
+            pageSize: 50,
+            provider: selectedProvider === "all" ? undefined : selectedProvider,
+            location: locationQuery.trim() || undefined,
+            remote: remoteOnly ? true : undefined,
+            query: searchQuery.trim() || undefined,
+            employmentType: employmentType === "all" ? undefined : employmentType,
+            postedWithinDays: freshnessDays > 0 ? freshnessDays : undefined,
+          }),
+          api.externalJobMatches(token, { page: 1, pageSize: 100 }),
+          api.providers(token).catch(() => []),
+        ]);
+
+        setJobs(jobsRes.items);
+        setProviders(providersRes);
+
+        const matchMap: Record<string, ExternalJobMatch> = {};
+        for (const match of matchesRes.items) {
+          matchMap[match.external_job_id] = match;
+        }
+        setMatchesByJobId(matchMap);
+      } catch (err) {
+        setError(err instanceof ApiError ? err.detail : "Failed to load live discovery market.");
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [token, selectedProvider, locationQuery, remoteOnly, searchQuery, employmentType, freshnessDays]
+  );
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
+
+  const handleSyncAllSources = async () => {
+    try {
+      setRefreshing(true);
+      toast.loading("Ingesting fresh postings from YC, Greenhouse, Lever, and Ashby...");
+      await api.syncAllExternalJobs(token);
+      toast.dismiss();
+      toast.success("Job discovery feed synchronized!");
+      await loadData(true);
+    } catch (err) {
+      toast.dismiss();
+      toast.error(err instanceof ApiError ? err.detail : "Failed to sync external providers.");
+      setRefreshing(false);
+    }
+  };
+
+  const handleToggleSave = (jobId: string) => {
+    setSavedJobIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(jobId)) {
+        next.delete(jobId);
+        toast.info("Removed from saved list");
+      } else {
+        next.add(jobId);
+        toast.success("Saved opportunity");
+      }
+      try {
+        localStorage.setItem("saved_market_job_ids", JSON.stringify(Array.from(next)));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
+  const handlePrepareApplication = async (job: ExternalJob) => {
+    try {
+      setPreparingJobId(job.id);
+      const match = matchesByJobId[job.id];
+      if (!match) {
+        // Recompute match if not ready yet
+        toast.info("Calculating match verification for this role...");
+        await api.recomputeExternalJobMatches(token);
+        const refreshed = await api.externalJobMatches(token, { page: 1, pageSize: 100 });
+        const found = refreshed.items.find((m) => m.external_job_id === job.id);
+        if (found) {
+          const app = await api.createApplication(job.id, found.id, token);
+          setApplicationInReview(app);
+          return;
+        }
+      }
+      const matchId = match ? match.id : job.id; // fallback if computed
+      const app = await api.createApplication(job.id, matchId, token);
+      setApplicationInReview(app);
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.detail : "Could not initialize application.");
+    } finally {
+      setPreparingJobId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <AutomationPreferences token={token} />
-      <SavedDiscoveries token={token} />
-      <ExternalJobsContent token={token} />
+      {/* HEADER */}
+      <div className="rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-[#111821]/80 backdrop-blur-md p-6 sm:p-8 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-500/10 text-[#4f46e5] dark:text-[#38bdf8]">
+                <Compass className="h-5 w-5" />
+              </span>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#4f46e5] dark:text-[#38bdf8] font-sans">
+                Real-Time Opportunity Engine
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-[#f1f0e8] tracking-tight font-sans">
+              Live Opportunity Discovery
+            </h1>
+            <p className="text-sm text-slate-600 dark:text-[#98a4b3] font-sans">
+              Discover startup, internship, and engineering opportunities from real external ATS boards and YC networks.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowSavedRules(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50 dark:bg-[#151e29] px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-[#f1f0e8] hover:bg-slate-100 dark:hover:bg-[#1c2838] transition-all cursor-pointer font-sans"
+            >
+              <ListFilter className="h-4 w-4 text-[#4f46e5] dark:text-[#38bdf8]" />
+              <span>Discovery Rules</span>
+            </button>
+
+            <button
+              type="button"
+              disabled={refreshing || loading}
+              onClick={handleSyncAllSources}
+              className="flex items-center gap-2 rounded-xl bg-[#4f46e5] dark:bg-[#38bdf8] px-4 py-2 text-xs font-bold text-white dark:text-slate-950 shadow-md shadow-indigo-500/20 hover:opacity-90 active:scale-95 transition-all cursor-pointer disabled:opacity-50 font-sans"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+              <span>{refreshing ? "Ingesting..." : "Refresh Opportunities"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* PROVIDER HEALTH & STATUS STRIP */}
+        <div className="mt-6 pt-5 border-t border-slate-100 dark:border-white/[0.08]">
+          <div className="flex items-center justify-between gap-2 mb-2.5">
+            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              Connected Opportunity Providers:
+            </span>
+            <span className="text-[11px] font-medium text-slate-400 dark:text-[#8ea2c6]">
+              {providers.filter((p) => p.status === "live").length} Live Channels
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+            {providers.map((p) => {
+              const isLive = p.status === "live";
+              return (
+                <div
+                  key={p.provider}
+                  title={p.reason || `${p.name}: Active live ingestion`}
+                  className={`rounded-2xl border p-3 flex flex-col justify-between transition-all ${
+                    isLive
+                      ? "bg-slate-50/70 dark:bg-[#151e29]/70 border-slate-200/60 dark:border-white/[0.08]"
+                      : "bg-slate-50/40 dark:bg-[#111821]/40 border-dashed border-slate-200 dark:border-white/[0.06] opacity-75"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-xs font-black text-slate-800 dark:text-slate-200 font-sans truncate">
+                      {p.name.replace(" Jobs", "")}
+                    </span>
+                    <span className="flex h-2 w-2 relative">
+                      {isLive && (
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      )}
+                      <span
+                        className={`relative inline-flex rounded-full h-2 w-2 ${
+                          isLive ? "bg-emerald-500" : "bg-slate-400 dark:bg-slate-600"
+                        }`}
+                      />
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] mt-2 text-slate-500 dark:text-[#8ea2c6]">
+                    <span className="font-semibold">{isLive ? `${p.active_jobs_count} jobs` : "API req."}</span>
+                    <span>{isLive ? syncedLabel(p.last_synced_at) : "Inactive"}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* SEARCH & MULTI-CRITERIA FILTERS */}
+        <div className="mt-5 pt-5 border-t border-slate-100 dark:border-white/[0.08] space-y-3">
+          <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-4">
+            {/* Search Input */}
+            <div className="md:col-span-2 relative">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by role, required skills (e.g. Python, React)..."
+                className="w-full rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/70 dark:bg-[#151e29] pl-10 pr-4 py-2.5 text-xs text-slate-900 dark:text-[#f1f0e8] placeholder:text-slate-400 focus:border-[#4f46e5] focus:outline-none font-sans"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Location Input */}
+            <div className="relative">
+              <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                value={locationQuery}
+                onChange={(e) => setLocationQuery(e.target.value)}
+                placeholder="Location (e.g. India, SF)..."
+                className="w-full rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/70 dark:bg-[#151e29] pl-10 pr-4 py-2.5 text-xs text-slate-900 dark:text-[#f1f0e8] placeholder:text-slate-400 focus:border-[#4f46e5] focus:outline-none font-sans"
+              />
+            </div>
+
+            {/* Provider Selector */}
+            <div>
+              <select
+                value={selectedProvider}
+                onChange={(e) => setSelectedProvider(e.target.value)}
+                aria-label="Filter by provider"
+                className="w-full rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/70 dark:bg-[#151e29] px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] focus:border-[#4f46e5] focus:outline-none cursor-pointer font-sans"
+              >
+                <option value="all">All Providers</option>
+                <option value="yc">YC Startup Jobs</option>
+                <option value="greenhouse">Greenhouse</option>
+                <option value="lever">Lever</option>
+                <option value="ashby">Ashby</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Quick Filter Badges */}
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setRemoteOnly((v) => !v)}
+              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer font-sans ${
+                remoteOnly
+                  ? "bg-[#4f46e5] dark:bg-[#182337] text-white dark:text-[#38bdf8] border border-transparent dark:border-[#38bdf8]/40"
+                  : "bg-slate-100 dark:bg-[#151e29] text-slate-600 dark:text-[#8ea2c6] hover:bg-slate-200/70 dark:hover:bg-[#1c2838] border border-slate-200/60 dark:border-white/[0.06]"
+              }`}
+            >
+              Remote Only
+            </button>
+
+            <select
+              value={employmentType}
+              onChange={(e) => setEmploymentType(e.target.value)}
+              aria-label="Employment type filter"
+              className="rounded-full border border-slate-200/60 dark:border-white/[0.06] bg-slate-100 dark:bg-[#151e29] px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-[#8ea2c6] focus:outline-none cursor-pointer font-sans"
+            >
+              <option value="all">Type: All</option>
+              <option value="internship">Internship</option>
+              <option value="full_time">Full-Time</option>
+              <option value="contract">Contract</option>
+            </select>
+
+            <select
+              value={freshnessDays}
+              onChange={(e) => setFreshnessDays(Number(e.target.value))}
+              aria-label="Posted date freshness filter"
+              className="rounded-full border border-slate-200/60 dark:border-white/[0.06] bg-slate-100 dark:bg-[#151e29] px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-[#8ea2c6] focus:outline-none cursor-pointer font-sans"
+            >
+              <option value={0}>Posted: Anytime</option>
+              <option value={1}>Posted: Last 24 hours</option>
+              <option value={3}>Posted: Last 3 days</option>
+              <option value={7}>Posted: Last 7 days</option>
+              <option value={30}>Posted: Last 30 days</option>
+            </select>
+
+            {(searchQuery || locationQuery || selectedProvider !== "all" || remoteOnly || employmentType !== "all" || freshnessDays > 0) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  setLocationQuery("");
+                  setSelectedProvider("all");
+                  setRemoteOnly(false);
+                  setEmploymentType("all");
+                  setFreshnessDays(0);
+                }}
+                className="text-xs font-bold text-rose-600 dark:text-rose-400 hover:underline ml-auto font-sans"
+              >
+                Clear all filters
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* JOBS GRID */}
+      {loading ? (
+        <LoadingState label="Discovering live opportunities across configured provider sources..." />
+      ) : error ? (
+        <ErrorState message={error} onRetry={() => void loadData()} />
+      ) : jobs.length === 0 ? (
+        <div className="rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-[#111821]/80 backdrop-blur-md p-10 sm:p-14 text-center space-y-4 shadow-sm">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-[#151e29] text-[#4f46e5] dark:text-[#38bdf8] border border-indigo-200/60 dark:border-white/10">
+            <Compass className="h-7 w-7" />
+          </div>
+          <div className="max-w-md mx-auto space-y-1.5">
+            <h3 className="text-lg font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">
+              No live opportunities matching filter criteria
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-[#98a4b3] font-sans">
+              Try adjusting your keyword, provider, or location filters, or trigger a live synchronization across all connected sources.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleSyncAllSources}
+            disabled={refreshing}
+            className="rounded-xl bg-[#4f46e5] dark:bg-[#38bdf8] px-5 py-2.5 text-xs font-bold text-white dark:text-slate-950 shadow-md shadow-indigo-500/20 hover:opacity-90 transition-all cursor-pointer font-sans"
+          >
+            Refresh Connected Boards
+          </button>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {jobs.map((job) => {
+            const providerBadge = getProviderBadge(job.provider);
+            const match = matchesByJobId[job.id];
+            const isSaved = savedJobIds.has(job.id);
+
+            return (
+              <motion.div
+                key={job.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white/90 dark:bg-[#111821]/90 backdrop-blur-md p-5 sm:p-6 flex flex-col justify-between shadow-sm hover:border-[#4f46e5]/40 dark:hover:border-[#38bdf8]/40 transition-all group"
+              >
+                <div className="space-y-3">
+                  {/* Top Bar: Provider & Match Score */}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className={`rounded-lg border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${providerBadge.bg}`}>
+                      {providerBadge.label}
+                    </span>
+
+                    {match ? (
+                      <button
+                        type="button"
+                        onClick={() => setActiveExplanationMatch(match)}
+                        className="rounded-xl bg-indigo-50 dark:bg-[#182337] border border-indigo-200/60 dark:border-[#38bdf8]/40 px-2.5 py-1 text-[11px] font-black text-[#4f46e5] dark:text-[#38bdf8] hover:scale-105 transition-transform cursor-pointer font-sans"
+                      >
+                        {Math.round(match.final_score * 100)}% Match
+                      </button>
+                    ) : (
+                      <span className="text-[11px] font-semibold text-slate-400 font-sans">
+                        Live posting
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Title & Company */}
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] group-hover:text-[#4f46e5] dark:group-hover:text-[#38bdf8] transition-colors font-sans line-clamp-2">
+                      {job.title}
+                    </h3>
+                    <p className="text-xs font-semibold text-slate-700 dark:text-[#8ea2c6] mt-1 flex items-center gap-1 font-sans">
+                      <Building2 className="h-3.5 w-3.5 text-slate-400" />
+                      <span>{job.company_name}</span>
+                    </p>
+                  </div>
+
+                  {/* Location & Metadata */}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-[#98a4b3] font-sans">
+                    {job.location && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                        {job.location}
+                      </span>
+                    )}
+                    {job.remote_status && (
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold capitalize">
+                        &bull; {job.remote_status.replace("_", " ")}
+                      </span>
+                    )}
+                    <span className="text-slate-400 text-[11px]">
+                      &bull; {formatDate(job.posted_at)}
+                    </span>
+                  </div>
+
+                  {/* Normalized Requirements Tags */}
+                  {job.requirements && job.requirements.length > 0 && (
+                    <div className="space-y-1 pt-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block font-sans">
+                        Required & Preferred Skills
+                      </span>
+                      <div className="flex flex-wrap gap-1">
+                        {job.requirements.slice(0, 4).map((req) => (
+                          <span
+                            key={req.id}
+                            className={`rounded-lg px-2 py-0.5 text-[11px] font-medium font-sans ${
+                              req.is_required
+                                ? "bg-indigo-50 dark:bg-[#182337] text-indigo-700 dark:text-[#38bdf8] border border-indigo-200/50 dark:border-[#38bdf8]/30"
+                                : "bg-slate-100 dark:bg-[#151e29] text-slate-600 dark:text-[#8ea2c6] border border-slate-200/40 dark:border-white/[0.06]"
+                            }`}
+                          >
+                            {req.skill_name}
+                          </span>
+                        ))}
+                        {job.requirements.length > 4 && (
+                          <span className="text-[10px] text-slate-400 font-medium self-center">
+                            +{job.requirements.length - 4} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Bottom Actions */}
+                <div className="mt-4 pt-3.5 border-t border-slate-100 dark:border-white/[0.08] flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <a
+                      href={job.source_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50 dark:bg-[#151e29] p-2 text-slate-600 dark:text-[#8ea2c6] hover:text-slate-900 dark:hover:text-white transition-colors"
+                      title="View original posting"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+
+                    <button
+                      type="button"
+                      onClick={() => handleToggleSave(job.id)}
+                      className={`rounded-xl border p-2 transition-colors cursor-pointer ${
+                        isSaved
+                          ? "bg-amber-50 dark:bg-amber-950/40 border-amber-300 text-amber-600 dark:text-amber-400"
+                          : "border-slate-200/80 dark:border-white/[0.08] bg-slate-50 dark:bg-[#151e29] text-slate-500 dark:text-[#8ea2c6] hover:text-slate-900 dark:hover:text-white"
+                      }`}
+                      title={isSaved ? "Saved" : "Save opportunity"}
+                    >
+                      {isSaved ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={preparingJobId === job.id}
+                    onClick={() => handlePrepareApplication(job)}
+                    className="flex items-center gap-1.5 rounded-xl bg-[#4f46e5] dark:bg-[#38bdf8] px-3.5 py-1.5 text-xs font-bold text-white dark:text-slate-950 shadow-sm shadow-indigo-500/20 hover:opacity-90 active:scale-95 transition-all cursor-pointer font-sans disabled:opacity-50"
+                  >
+                    <Send className="h-3 w-3" />
+                    <span>{preparingJobId === job.id ? "Preparing..." : "Apply / Prepare"}</span>
+                  </button>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* SAVED DISCOVERY RULES MODAL */}
+      <AnimatePresence>
+        {showSavedRules && (
+          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-2xl rounded-3xl border border-slate-200/80 dark:border-white/[0.12] bg-white dark:bg-[#111821] shadow-2xl p-6 sm:p-8 space-y-5 text-slate-900 dark:text-[#f1f0e8]"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3.5">
+                <div className="flex items-center gap-2">
+                  <ListFilter className="h-5 w-5 text-[#4f46e5] dark:text-[#38bdf8]" />
+                  <h3 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">
+                    Saved Discovery Rules & Cadence
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSavedRules(false)}
+                  className="rounded-xl p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <SavedDiscoveries token={token} />
+
+              <div className="pt-3 border-t border-slate-100 dark:border-white/[0.08] flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowSavedRules(false)}
+                  className="rounded-xl bg-[#4f46e5] dark:bg-[#38bdf8] px-5 py-2 text-xs font-bold text-white dark:text-slate-950 hover:opacity-90 cursor-pointer font-sans"
+                >
+                  Done
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* WHY THIS MATCH EXPLANATION MODAL */}
+      <AnimatePresence>
+        {activeExplanationMatch && (
+          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-xl rounded-3xl border border-slate-200/80 dark:border-white/[0.12] bg-white dark:bg-[#111821] shadow-2xl p-6 sm:p-8 space-y-5 text-slate-900 dark:text-[#f1f0e8]"
+            >
+              <div className="flex items-start justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3.5">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#4f46e5] dark:text-[#38bdf8] font-sans">
+                    Match Explanation
+                  </span>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-[#f1f0e8] mt-0.5 font-sans">
+                    {activeExplanationMatch.title}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-[#98a4b3] font-sans">
+                    {activeExplanationMatch.company_name} · Score: {Math.round(activeExplanationMatch.final_score * 100)}%
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveExplanationMatch(null)}
+                  className="rounded-xl p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="rounded-2xl bg-slate-50 dark:bg-[#151e29] border border-slate-200/60 dark:border-white/[0.08] p-2.5">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block font-sans">Exact</span>
+                  <strong className="text-base font-black text-[#4f46e5] dark:text-[#38bdf8] font-sans">
+                    {Math.round(activeExplanationMatch.deterministic_score * 100)}%
+                  </strong>
+                </div>
+                <div className="rounded-2xl bg-slate-50 dark:bg-[#151e29] border border-slate-200/60 dark:border-white/[0.08] p-2.5">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block font-sans">Semantic</span>
+                  <strong className="text-base font-black text-purple-600 dark:text-purple-400 font-sans">
+                    {Math.round(activeExplanationMatch.semantic_score * 100)}%
+                  </strong>
+                </div>
+                <div className="rounded-2xl bg-slate-50 dark:bg-[#151e29] border border-slate-200/60 dark:border-white/[0.08] p-2.5">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 block font-sans">Verification</span>
+                  <strong className="text-base font-black text-emerald-600 dark:text-emerald-400 font-sans">
+                    +{Math.round(activeExplanationMatch.verification_bonus * 100)}%
+                  </strong>
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                {activeExplanationMatch.explanation?.items?.map((item) => (
+                  <div
+                    key={item.skill_id}
+                    className="flex items-start gap-2.5 rounded-xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/50 dark:bg-[#151e29] p-2.5 text-xs"
+                  >
+                    {item.status === "missing" ? (
+                      <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                    )}
+                    <div>
+                      <span className="font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">
+                        {item.skill_name}
+                      </span>
+                      <span className="text-slate-500 dark:text-[#98a4b3] ml-1.5 font-sans">
+                        {item.status === "missing"
+                          ? "Missing from Skill Passport"
+                          : item.evidence_title
+                          ? `✓ Proven in: ${item.evidence_title}`
+                          : "✓ Verified in Skill Passport"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setActiveExplanationMatch(null)}
+                  className="rounded-xl bg-[#4f46e5] dark:bg-[#38bdf8] px-5 py-2 text-xs font-bold text-white dark:text-slate-950 hover:opacity-90 cursor-pointer font-sans"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* APPLICATION PREPARATION MODAL */}
+      <AnimatePresence>
+        {applicationInReview && (
+          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-2xl rounded-3xl border border-slate-200/80 dark:border-white/[0.12] bg-white dark:bg-[#111821] shadow-2xl p-6 sm:p-8 space-y-4"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3.5">
+                <div className="flex items-center gap-2">
+                  <FileCheck2 className="h-5 w-5 text-[#4f46e5] dark:text-[#38bdf8]" />
+                  <h3 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">
+                    Application Review & Verification
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setApplicationInReview(null)}
+                  className="rounded-xl p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <ApplicationPreparation
+                application={applicationInReview}
+                token={token}
+                onChanged={(updated) => setApplicationInReview(updated)}
+              />
+
+              <div className="pt-3 border-t border-slate-100 dark:border-white/[0.08] flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setApplicationInReview(null)}
+                  className="rounded-xl border border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-bold text-slate-700 dark:text-[#f1f0e8] hover:bg-slate-100 dark:hover:bg-[#151e29] cursor-pointer font-sans"
+                >
+                  Done Reviewing
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -30,6 +30,7 @@ import { CommandPalette } from "./components/CommandPalette";
 import { PostLoginTransition } from "./components/PostLoginTransition";
 import { LuminaAmbientHorizon } from "./components/LuminaAmbientHorizon";
 import { sidebarIndicatorTransition } from "./theme/motion";
+import { SkillPassportCopilot } from "./components/SkillPassportCopilot";
 
 const RecruiterDashboard = lazy(async () => ({
   default: (await import("./pages/RecruiterDashboard")).RecruiterDashboard,
@@ -475,6 +476,14 @@ export function App() {
           )}
         </main>
       </div>
+
+      {/* Global Viewport-Fixed Skill Passport Copilot Floating Assistant */}
+      {isStudent && (
+        <SkillPassportCopilot
+          token={session.access_token}
+          onNavigate={(tab) => setStudentTab(tab as StudentTab)}
+        />
+      )}
     </div>
   );
 }

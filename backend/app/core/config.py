@@ -201,21 +201,27 @@ class Settings(BaseSettings):
         ),
     )
     greenhouse_board_tokens: Annotated[list[str], NoDecode] = Field(
-        default_factory=list,
+        default_factory=lambda: ["stripe", "anthropic", "figma", "github", "cloudflare", "datadog", "scaleai"],
         validation_alias=AliasChoices(
             "SKILL_PASSPORT_GREENHOUSE_BOARD_TOKENS", "GREENHOUSE_BOARD_TOKENS"
         ),
     )
     lever_site_tokens: Annotated[list[str], NoDecode] = Field(
-        default_factory=list,
+        default_factory=lambda: ["vanta", "postman", "palantir"],
         validation_alias=AliasChoices(
             "SKILL_PASSPORT_LEVER_SITE_TOKENS", "LEVER_SITE_TOKENS"
         ),
     )
     ashby_job_board_names: Annotated[list[str], NoDecode] = Field(
-        default_factory=list,
+        default_factory=lambda: ["openai", "ramp", "replit", "modal", "linear", "cursor"],
         validation_alias=AliasChoices(
             "SKILL_PASSPORT_ASHBY_JOB_BOARD_NAMES", "ASHBY_JOB_BOARD_NAMES"
+        ),
+    )
+    yc_source_keys: Annotated[list[str], NoDecode] = Field(
+        default_factory=lambda: ["yc_startups"],
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_YC_SOURCE_KEYS", "YC_SOURCE_KEYS"
         ),
     )
     discovery_max_active_per_student: int = Field(
@@ -364,6 +370,13 @@ class Settings(BaseSettings):
     def split_ashby_job_board_names(cls, value: str | list[str]) -> list[str]:
         if isinstance(value, str):
             return [name.strip() for name in value.split(",") if name.strip()]
+        return value
+
+    @field_validator("yc_source_keys", mode="before")
+    @classmethod
+    def split_yc_source_keys(cls, value: str | list[str]) -> list[str]:
+        if isinstance(value, str):
+            return [k.strip() for k in value.split(",") if k.strip()]
         return value
 
     def validate_for_runtime(self) -> None:

@@ -494,3 +494,60 @@ async def test_controlled_lever_submission_normalizes_rate_limit_and_ambiguous_t
     )
     with pytest.raises(ProviderError):
         await ambiguous.submit_application(payload, idempotency_key="two")
+
+
+@pytest.mark.asyncio
+async def test_yc_provider_normalizes_and_discovers_startup_jobs() -> None:
+    from app.services.job_providers import YCJobProvider
+
+    def _mock_yc(request: httpx.Request) -> httpx.Response:
+        if "hn.algolia.com" in str(request.url):
+            return httpx.Response(
+                200,
+                json={
+                    "hits": [
+                        {
+                            "objectID": "40001",
+                            "title": "PostHog (YC W20) is hiring a Backend Engineer (Remote)",
+                            "story_text": "<p>We are looking for Python and ClickHouse developers.</p>",
+                            "url": "https://posthog.com/careers",
+                            "created_at": "2026-08-20T10:00:00Z",
+                        },
+                        {
+                            "objectID": "40002",
+                            "title": "Supabase – Founding Frontend Engineer in San Francisco",
+                            "story_text": "Join us to build open-source tools with React and TypeScript.",
+                            "url": "https://supabase.com/careers",
+                            "created_at": "2026-08-21T12:00:00Z",
+                        },
+                    ]
+                },
+            )
+        return httpx.Response(404)
+
+    yc_provider = YCJobProvider(transport=httpx.MockTransport(_mock_yc))
+    assert yc_provider.capabilities.search is True
+    page = await yc_provider.search_jobs(JobSearchFilters(page_size=10), source_key="yc_startups")
+    assert len(page.jobs) == 2
+    assert page.jobs[0].company_name == "PostHog"
+    assert page.jobs[0].title == "Backend Engineer"
+    assert page.jobs[0].remote_status == "remote"
+    assert page.jobs[0].raw_metadata is not None and page.jobs[0].raw_metadata.get("batch") == "YC W20"
+    assert page.jobs[1].company_name == "Supabase"
+    assert page.jobs[1].location == "San Francisco, CA"
+
+
+@pytest.mark.asyncio
+async def test_indeed_and_jobsuit_degrade_gracefully() -> None:
+    from app.services.job_providers import IndeedJobProvider, JobsuitJobProvider
+
+    indeed = IndeedJobProvider()
+    assert indeed.capabilities.search is False
+    with pytest.raises(ProviderError, match="Indeed integration requires official Indeed Publisher/Partner API credentials"):
+        await indeed.search_jobs(JobSearchFilters(), source_key="default")
+
+    jobsuit = JobsuitJobProvider()
+    assert jobsuit.capabilities.search is False
+    with pytest.raises(ProviderError, match="Jobsuit.ai integration requires active partner API configuration"):
+        await jobsuit.search_jobs(JobSearchFilters(), source_key="default")
+

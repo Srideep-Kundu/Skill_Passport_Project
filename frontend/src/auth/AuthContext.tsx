@@ -23,7 +23,18 @@ function readSession(): StoredSession | null {
     const value = sessionStorage.getItem(storageKey);
     if (!value) return null;
     const parsed: unknown = JSON.parse(value);
-    if (typeof parsed === "object" && parsed !== null && "access_token" in parsed && typeof parsed.access_token === "string" && "role" in parsed && ["student", "recruiter", "admin"].includes(String(parsed.role)) && "email" in parsed && typeof parsed.email === "string") return parsed as StoredSession;
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      "access_token" in parsed &&
+      typeof parsed.access_token === "string" &&
+      "role" in parsed &&
+      ["student", "recruiter", "admin", "academician", "institution"].includes(String(parsed.role)) &&
+      "email" in parsed &&
+      typeof parsed.email === "string"
+    ) {
+      return parsed as StoredSession;
+    }
   } catch {
     sessionStorage.removeItem(storageKey);
   }
@@ -50,6 +61,18 @@ export function AuthProvider({ children }: PropsWithChildren) {
     updateSession(null);
     setJustLoggedIn(false);
   }, []);
+
+  // Automatically reset session and return to clean login screen if token expires/invalidates
+  useState(() => {
+    if (typeof window === "undefined") return;
+    const handleUnauthorized = () => {
+      sessionStorage.removeItem(storageKey);
+      updateSession(null);
+      setJustLoggedIn(false);
+    };
+    window.addEventListener("skill-passport:unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("skill-passport:unauthorized", handleUnauthorized);
+  });
 
   const value = useMemo(
     () => ({

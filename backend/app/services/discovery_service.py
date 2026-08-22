@@ -39,6 +39,8 @@ def _now() -> datetime:
 
 def _sources(provider: str) -> list[str]:
     settings = get_settings()
+    if provider == "yc":
+        return list(settings.yc_source_keys or ["yc_startups"])
     if provider == "greenhouse":
         return list(settings.greenhouse_board_tokens)
     if provider == "lever":

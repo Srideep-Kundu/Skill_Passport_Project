@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.db import get_session
-from app.models import Academician, Admin, Institution, Recruiter, Student
+from app.models import Academician, Admin, Institution, Recruiter, Role, Student
 
 bearer = HTTPBearer(auto_error=False)
 
@@ -24,10 +24,15 @@ def verify_password(password: str, password_hash: str) -> bool:
     return bcrypt.checkpw(password.encode(), password_hash.encode())
 
 
-def create_access_token(subject: UUID, role: str) -> str:
+def create_access_token(subject: UUID, role: str | Role) -> str:
     settings = get_settings()
+    role_str = role.value if hasattr(role, "value") else str(role)
     expires = datetime.now(UTC) + timedelta(minutes=settings.jwt_expire_minutes)
-    return jwt.encode({"sub": str(subject), "role": role, "exp": expires}, settings.jwt_secret, settings.jwt_algorithm)
+    return jwt.encode(
+        {"sub": str(subject), "role": role_str.lower(), "exp": expires},
+        settings.jwt_secret,
+        settings.jwt_algorithm,
+    )
 
 
 async def current_principal(
@@ -38,8 +43,16 @@ async def current_principal(
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Authentication required")
     settings = get_settings()
     try:
-        payload = jwt.decode(credentials.credentials, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
-        subject, role = UUID(payload["sub"]), payload["role"]
+        payload = jwt.decode(
+            credentials.credentials,
+            settings.jwt_secret,
+            algorithms=[settings.jwt_algorithm],
+        )
+        subject, role = UUID(payload["sub"]), str(payload["role"]).lower()
+    except jwt.ExpiredSignatureError as error:
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED, "Authentication token has expired. Please sign in again."
+        ) from error
     except (JWTError, KeyError, ValueError) as error:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid authentication token") from error
     principal: Student | Recruiter | Admin | Academician | Institution | None

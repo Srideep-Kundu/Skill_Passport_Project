@@ -41,12 +41,12 @@ import { ErrorState } from "../components/AsyncState";
 import { EvidenceUpload } from "./EvidenceUpload";
 import { EvidenceLifecycle } from "../components/EvidenceLifecycle";
 import { ExternalJobs } from "../components/ExternalJobs";
+import { InternshipMatches } from "../components/InternshipMatches";
 import { ResumeIntelligence } from "../components/ResumeIntelligence";
 import { LinkedInIntelligence } from "../components/LinkedInIntelligence";
 import { UnifiedCandidateProfile } from "../components/UnifiedCandidateProfile";
 import { GitHubVerification } from "./GitHubVerification";
 import { MatchExplanationPanel } from "../components/MatchExplanationPanel";
-import { SkillPassportCopilot } from "../components/SkillPassportCopilot";
 import { SkillBadge } from "../components/SkillBadge";
 import { TeamSuggestions } from "./TeamSuggestions";
 import { AnimatedNumber } from "../components/AnimatedNumber";
@@ -879,7 +879,16 @@ export function StudentDashboard({
         </motion.div>
       )}
 
-      {(isOverview || activeTab === "discovery") && (
+      {(isOverview || activeTab === "matches") && (
+        <motion.div variants={prefersReducedMotion ? undefined : pageAssemblyItemVariants}>
+          <InternshipMatches
+            token={token}
+            onNavigateToDiscovery={() => onNavigateTab?.("discovery")}
+          />
+        </motion.div>
+      )}
+
+      {activeTab === "discovery" && (
         <motion.div variants={prefersReducedMotion ? undefined : pageAssemblyItemVariants}>
           <ExternalJobs token={token} />
         </motion.div>
@@ -946,9 +955,6 @@ export function StudentDashboard({
           </div>
         </div>
       )}
-
-      {/* Floating Skill Passport Copilot */}
-      <SkillPassportCopilot token={token} onNavigate={(tab) => onNavigateTab?.(tab as StudentTab)} />
     </motion.div>
   </AnimatePresence>
   </div>

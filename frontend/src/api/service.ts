@@ -21,6 +21,7 @@ import type {
   EvidenceUpdate,
   ExternalJob,
   ExternalJobMatch,
+  ExternalJobSyncAllResponse,
   FacultyApplication,
   FacultyOpportunity,
   GitHubIdentity,
@@ -45,6 +46,7 @@ import type {
   PlacementCandidateRanking,
   PlacementDrive,
   ProjectApplication,
+  ProviderStatusItem,
   RecruiterAnalyticsOverview,
   RecruiterEvidenceConsent,
   RecruiterRegistration,
@@ -97,8 +99,58 @@ export const api = {
   deleteInternship: (id: string, token: string) => request<void>(`/internships/${encodeURIComponent(id)}`, { method: "DELETE" }, token),
   internshipMatches: (id: string, token: string, page = 1, pageSize = 20) => request<PaginatedResponse<CandidateMatch>>(`/internships/${encodeURIComponent(id)}/matches?page=${page}&page_size=${pageSize}`, {}, token),
   internships: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<Internship>>(`/internships?page=${page}&page_size=${pageSize}`, {}, token),
-  externalJobs: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<ExternalJob>>(`/external-jobs?page=${page}&page_size=${pageSize}`, {}, token),
-  externalJobMatches: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<ExternalJobMatch>>(`/external-jobs/matches?page=${page}&page_size=${pageSize}`, {}, token),
+  externalJobs: (
+    token: string,
+    options?: {
+      page?: number;
+      pageSize?: number;
+      provider?: string;
+      location?: string;
+      remote?: boolean;
+      query?: string;
+      employmentType?: string;
+      experienceLevel?: string;
+      postedWithinDays?: number;
+    }
+  ) => {
+    const page = options?.page ?? 1;
+    const pageSize = options?.pageSize ?? 20;
+    const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+    if (options?.provider && options.provider !== "all") params.append("provider", options.provider);
+    if (options?.location) params.append("location", options.location);
+    if (options?.remote !== undefined) params.append("remote", String(options.remote));
+    if (options?.query) params.append("query", options.query);
+    if (options?.employmentType) params.append("employment_type", options.employmentType);
+    if (options?.experienceLevel) params.append("experience_level", options.experienceLevel);
+    if (options?.postedWithinDays) params.append("posted_within_days", String(options.postedWithinDays));
+    return request<PaginatedResponse<ExternalJob>>(`/external-jobs?${params.toString()}`, {}, token);
+  },
+  providers: (token: string) => request<ProviderStatusItem[]>("/external-jobs/providers", {}, token),
+  syncAllExternalJobs: (token: string) => request<ExternalJobSyncAllResponse>("/external-jobs/sync-all", { method: "POST" }, token),
+  externalJobMatches: (
+    token: string,
+    options?: {
+      page?: number;
+      pageSize?: number;
+      provider?: string;
+      location?: string;
+      remote?: boolean;
+      employmentType?: string;
+      query?: string;
+      sortBy?: "best_match" | "newest" | "recently_added";
+    }
+  ) => {
+    const page = options?.page ?? 1;
+    const pageSize = options?.pageSize ?? 20;
+    const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+    if (options?.provider && options.provider !== "all") params.append("provider", options.provider);
+    if (options?.location) params.append("location", options.location);
+    if (options?.remote !== undefined) params.append("remote", String(options.remote));
+    if (options?.employmentType) params.append("employment_type", options.employmentType);
+    if (options?.query) params.append("query", options.query);
+    if (options?.sortBy) params.append("sort_by", options.sortBy);
+    return request<PaginatedResponse<ExternalJobMatch>>(`/external-jobs/matches?${params.toString()}`, {}, token);
+  },
   recomputeExternalJobMatches: (token: string) => request<ExternalJobMatch[]>("/external-jobs/matches/recompute", { method: "POST" }, token),
   applications: (token: string, page = 1, pageSize = 20) => request<PaginatedResponse<Application>>(`/applications?page=${page}&page_size=${pageSize}`, {}, token),
   createApplication: (externalJobId: string, externalJobMatchId: string, token: string) => request<Application>("/applications", { method: "POST", body: JSON.stringify({ external_job_id: externalJobId, external_job_match_id: externalJobMatchId }) }, token),

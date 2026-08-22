@@ -49,6 +49,7 @@ export function LinkedInIntelligence({
     try {
       setImports((await api.linkedinImports(token)).items);
     } catch (caught) {
+      setImports([]);
       setMessage(caught instanceof ApiError ? caught.detail : "LinkedIn imports could not be loaded.");
     }
   }, [token]);
