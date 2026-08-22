@@ -488,6 +488,7 @@ export interface ResumeParsedData {
   contact: { name: string | null; email: string | null; phone: string | null; github_links: string[]; portfolio_links: string[] };
   projects: { title: string; description: string }[];
   certifications: { name: string; detail: string }[];
+  achievements?: { title: string; detail: string }[];
   explicit_technical_skills: string[];
 }
 
