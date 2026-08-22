@@ -87,3 +87,17 @@ async def test_external_job_api_filters_provenance_and_role_boundaries(
     monkeypatch.setattr(external_jobs_api, "sync_external_jobs", fake_sync)
     synced = await client.post("/external-jobs/sync", headers={"Authorization": f"Bearer {admin_token}"}, json={"provider": "greenhouse", "source_key": "acme"})
     assert synced.status_code == 200 and synced.json()["marked_inactive"] == 3
+
+    providers_resp = await client.get("/external-jobs/providers", headers={"Authorization": f"Bearer {student_token}"})
+    assert providers_resp.status_code == 200
+    provider_data = providers_resp.json()
+    provider_names = [p["provider"] for p in provider_data]
+    assert "yc" in provider_names
+    assert "greenhouse" in provider_names
+    assert "indeed" in provider_names
+    assert "jobsuit" in provider_names
+    yc_entry = next(p for p in provider_data if p["provider"] == "yc")
+    assert yc_entry["status"] == "live"
+    indeed_entry = next(p for p in provider_data if p["provider"] == "indeed")
+    assert indeed_entry["status"] == "api_required"
+

@@ -240,6 +240,26 @@ export interface ExternalJobMatchState {
   match: ExternalJobMatch | null;
 }
 
+export interface ProviderStatusItem {
+  provider: string;
+  name: string;
+  status: "live" | "api_required" | "integration_status" | "not_configured";
+  badge_label: string;
+  search_supported: boolean;
+  status_tracking_supported: boolean;
+  active_jobs_count: number;
+  last_synced_at: string | null;
+  reason?: string | null;
+}
+
+export interface ExternalJobSyncAllResponse {
+  total_created: number;
+  total_updated: number;
+  total_synced: number;
+  providers: Record<string, any>;
+  synced_at: string;
+}
+
 export type ApplicationStatus = "approval_pending" | "approved" | "preparing" | "needs_input" | "prepared" | "ready_to_submit" | "submitting" | "submitted" | "failed" | "unknown_submission_state" | "manual_apply" | "withdrawn";
 export type ApplicationTrackingStatus = "submitted" | "received" | "in_review" | "rejected" | "interview" | "offer" | "hired" | "withdrawn" | "unknown";
 export type ApplicationStatusSource = "system" | "provider" | "user" | "admin";

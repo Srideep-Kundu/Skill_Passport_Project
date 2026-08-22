@@ -45,7 +45,15 @@ export async function request<T>(
 
   if (response.status === 204) return undefined as T;
   const payload: unknown = await response.json().catch(() => undefined);
-  if (!response.ok) throw new ApiError(response.status, getErrorDetail(payload));
+  if (!response.ok) {
+    const errorDetail = getErrorDetail(payload);
+    if (response.status === 401 && token && typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("skill-passport:unauthorized", { detail: { detail: errorDetail } })
+      );
+    }
+    throw new ApiError(response.status, errorDetail);
+  }
   return payload as T;
 }
 

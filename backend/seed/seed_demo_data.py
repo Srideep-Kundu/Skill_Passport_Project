@@ -159,11 +159,12 @@ async def seed_demo_data() -> None:
         await session.commit()
         for internship in (backend, frontend, weak):
             await recompute_matches_for_internship(session, internship.id)
+        yc = await _external_job(session, provider="yc", source="yc_startups", external_id="yc-ai-001", title="Founding Fullstack & API Intern", description="Join our YC W24 backed team building Python FastAPI services with Docker and PostgreSQL.", requirement_names=["Python", "FastAPI", "Docker", "PostgreSQL"], skills=skills, metadata={"batch": "YC W24", "source": "y_combinator"})
         greenhouse = await _external_job(session, provider="greenhouse", source="demo-board", external_id="gh-backend-001", title="Backend Reliability Intern", description="Build Python FastAPI and PostgreSQL services; Kubernetes and AWS are valuable.", requirement_names=["Python", "FastAPI", "PostgreSQL", "Kubernetes", "AWS"], skills=skills, metadata={"application_questions": [{"id": "why_interested", "label": "Why are you interested?", "type": "textarea", "required": True}]})
         lever = await _external_job(session, provider="lever", source="demo-site", external_id="lever-data-001", title="Data API Intern", description="Build Python and PostgreSQL APIs with Docker.", requirement_names=["Python", "PostgreSQL", "Docker"], skills=skills)
         ashby = await _external_job(session, provider="ashby", source="demo-board", external_id="ashby-ml-001", title="ML Platform Intern", description="TensorFlow model platform internship.", requirement_names=["TensorFlow"], skills=skills)
         await session.commit()
-        for job in (greenhouse, lever, ashby):
+        for job in (yc, greenhouse, lever, ashby):
             await compute_and_persist_external_job_match(session, students["maya"].id, job.id)
         greenhouse_match = await compute_and_persist_external_job_match(session, students["maya"].id, greenhouse.id)
         if greenhouse_match is None:
@@ -195,6 +196,9 @@ async def seed_demo_data() -> None:
         historical = await record_manual_submission(session, application=historical, submitted_at=_NOW - timedelta(days=1), provider_reference="DEMO-LEVER-001")
         record_status_event(session, historical, event_type="user_reported_in_review", source=ApplicationStatusSource.user, tracking_status=ApplicationTrackingStatus.in_review, safe_metadata={"fixture": "offline_demo", "user_reported": True}, created_at=_NOW)
         await session.commit()
+
+    from seed.seed_sih_ecosystem import seed_sih_ecosystem
+    await seed_sih_ecosystem()
 
 
 if __name__ == "__main__":

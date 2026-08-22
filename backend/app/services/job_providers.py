@@ -1466,6 +1466,330 @@ class AshbyJobProvider(JobProvider):
         )
 
 
+class YCJobProvider(JobProvider):
+    """Official public Y Combinator & Hacker News startup jobs discovery provider."""
+
+    name = "yc"
+    capabilities = ProviderCapabilities(
+        search=True, detail_fetch=True, auto_apply=False, status_tracking=False
+    )
+    _algolia_url = "https://hn.algolia.com/api/v1/search_by_date"
+    _firebase_base = "https://hacker-news.firebaseio.com/v0"
+
+    def __init__(self, *, transport: httpx.AsyncBaseTransport | None = None) -> None:
+        self._transport = transport
+
+    async def get_status_capability(self) -> ProviderStatusCapability:
+        return ProviderStatusCapability(
+            False,
+            "none",
+            False,
+            "YC Startup Jobs does not provide machine applicant-status tracking.",
+        )
+
+    def _parse_yc_title(self, raw_title: str) -> tuple[str, str, str | None]:
+        """Extract company, role, and batch tag if available."""
+        title = raw_title.strip()
+        batch = None
+        batch_match = re.search(r"\b(YC\s*[WwSsFf]\d{2})\b", title, re.IGNORECASE)
+        if batch_match:
+            batch = batch_match.group(1).upper()
+            title = re.sub(r"\s*\((?:YC\s*)?[WwSsFf]\d{2}\)", "", title, flags=re.IGNORECASE)
+
+        split_match = re.search(
+            r"^(.*?)\s+(?:is\s+hiring|is\s+looking\s+for)\s+(.*)$",
+            title,
+            flags=re.IGNORECASE,
+        )
+        if split_match:
+            company = split_match.group(1).strip()
+            role = split_match.group(2).strip()
+        elif " - " in title:
+            parts = title.split(" - ", 1)
+            company, role = parts[0].strip(), parts[1].strip()
+        elif " – " in title:
+            parts = title.split(" – ", 1)
+            company, role = parts[0].strip(), parts[1].strip()
+        elif ": " in title:
+            parts = title.split(": ", 1)
+            company, role = parts[0].strip(), parts[1].strip()
+        else:
+            company = "YC Startup"
+            role = title
+
+        company = re.sub(r"[\[\(\{].*?[\]\}\)]", "", company).strip() or "YC Startup"
+        role = re.sub(r"^(?:a|an|the)\s+", "", role, flags=re.IGNORECASE).strip()
+        role = re.sub(
+            r"\s*[\(\[](?:remote|hybrid|onsite|on-site|in-person|sf|nyc|india|san francisco|new york|bengaluru)[^\)\]]*[\)\]]",
+            "",
+            role,
+            flags=re.IGNORECASE,
+        ).strip()
+        return company[:200], (role or title)[:200], batch
+
+    def _normalize_item(self, item: dict[str, Any], *, source_key: str) -> NormalizedExternalJob:
+        external_id = str(item.get("objectID") or item.get("id") or "").strip()
+        raw_title = str(item.get("title") or item.get("story_title") or "").strip()
+        if not external_id or not raw_title:
+            raise ProviderPayloadError()
+
+        company, role_title, batch = self._parse_yc_title(raw_title)
+        raw_text = item.get("story_text") or item.get("comment_text") or item.get("text") or ""
+        clean_description = html_to_safe_text(raw_text) if "<" in str(raw_text) else str(raw_text).strip()
+        if not clean_description or len(clean_description) < 20:
+            clean_description = (
+                f"{raw_title}\n\nJoin {company} ({batch or 'YC Startup'}). "
+                f"Work on cutting-edge engineering and scale product architecture."
+            )
+
+        combo_text = f"{raw_title} {clean_description}".casefold()
+        remote_status = (
+            "remote"
+            if "remote" in combo_text
+            else "hybrid"
+            if "hybrid" in combo_text
+            else "not_remote"
+            if any(w in combo_text for w in ["onsite", "on-site", "in-person", "san francisco", "new york", "bengaluru", "india"])
+            else None
+        )
+
+        location = None
+        if "san francisco" in combo_text or "sf" in combo_text:
+            location = "San Francisco, CA"
+        elif "new york" in combo_text or "nyc" in combo_text:
+            location = "New York, NY"
+        elif "bengaluru" in combo_text or "bangalore" in combo_text or "india" in combo_text:
+            location = "Bengaluru, India"
+        elif "london" in combo_text:
+            location = "London, UK"
+        elif remote_status == "remote":
+            location = "Remote"
+
+        employment_type = (
+            "Internship"
+            if "intern" in combo_text
+            else "Contract"
+            if "contract" in combo_text
+            else "Full-time"
+        )
+
+        item_url = item.get("url")
+        source_url = (
+            item_url
+            if isinstance(item_url, str) and item_url.startswith("https://")
+            else f"https://news.ycombinator.com/item?id={external_id}"
+        )
+
+        posted_time = None
+        if item.get("created_at"):
+            posted_time = _parse_time(item.get("created_at"))
+        elif item.get("time"):
+            try:
+                posted_time = datetime.fromtimestamp(int(item["time"]), tz=UTC)
+            except Exception:
+                posted_time = None
+
+        metadata = _safe_metadata(
+            {
+                "source": "y_combinator",
+                "batch": batch,
+                "hn_id": external_id,
+                "author": item.get("author") or item.get("by"),
+                "points": item.get("points"),
+            }
+        )
+
+        return NormalizedExternalJob(
+            provider=self.name,
+            provider_source=source_key,
+            external_id=external_id,
+            title=role_title or raw_title,
+            company_name=company,
+            description=clean_description[:20000],
+            location=location,
+            remote_status=remote_status,
+            employment_type=employment_type,
+            experience_level="Entry-Level" if ("junior" in combo_text or "intern" in combo_text or "entry" in combo_text) else None,
+            salary_min=None,
+            salary_max=None,
+            salary_currency=None,
+            apply_url=source_url,
+            source_url=source_url,
+            posted_at=posted_time,
+            expires_at=None,
+            raw_metadata=metadata if isinstance(metadata, dict) else None,
+        )
+
+    async def search_jobs(
+        self, filters: JobSearchFilters, *, source_key: str
+    ) -> ProviderSearchPage:
+        # 1. Try Algolia HN jobs search API
+        hits: list[dict[str, Any]] = []
+        try:
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(10.0, connect=5.0),
+                transport=self._transport,
+                follow_redirects=True,
+            ) as client:
+                query_params = {"tags": "job", "hitsPerPage": "50"}
+                if filters.query:
+                    query_params["query"] = filters.query
+                response = await client.get(self._algolia_url, params=query_params)
+                if response.status_code == 200:
+                    data = response.json()
+                    if isinstance(data, dict) and isinstance(data.get("hits"), list):
+                        hits = [h for h in data["hits"] if isinstance(h, dict)]
+        except Exception:
+            hits = []
+
+        # 2. Fallback to Firebase HN job stories if needed
+        if not hits:
+            try:
+                async with httpx.AsyncClient(
+                    timeout=httpx.Timeout(10.0, connect=5.0),
+                    transport=self._transport,
+                    follow_redirects=True,
+                ) as client:
+                    stories_resp = await client.get(f"{self._firebase_base}/jobstories.json")
+                    if stories_resp.status_code == 200:
+                        story_ids = stories_resp.json()
+                        if isinstance(story_ids, list):
+                            for story_id in story_ids[:20]:
+                                item_resp = await client.get(f"{self._firebase_base}/item/{story_id}.json")
+                                if item_resp.status_code == 200 and isinstance(item_resp.json(), dict):
+                                    hits.append(item_resp.json())
+            except Exception:
+                pass
+
+        if not hits:
+            return ProviderSearchPage(jobs=(), next_cursor=None)
+
+        jobs: list[NormalizedExternalJob] = []
+        for hit in hits:
+            try:
+                jobs.append(self._normalize_item(hit, source_key=source_key))
+            except Exception:
+                continue
+
+        filtered = [job for job in jobs if self._matches(job, filters)]
+        try:
+            start = int(filters.cursor or "0")
+        except ValueError as error:
+            raise ProviderPayloadError() from error
+        if start < 0:
+            raise ProviderPayloadError()
+        page_size = min(max(filters.page_size, 1), 100)
+        page = tuple(filtered[start : start + page_size])
+        next_cursor = (
+            str(start + page_size) if start + page_size < len(filtered) else None
+        )
+        return ProviderSearchPage(jobs=page, next_cursor=next_cursor)
+
+    async def get_job(
+        self, external_id: str, *, source_key: str
+    ) -> NormalizedExternalJob:
+        try:
+            async with httpx.AsyncClient(
+                timeout=httpx.Timeout(10.0, connect=5.0),
+                transport=self._transport,
+                follow_redirects=True,
+            ) as client:
+                resp = await client.get(f"{self._firebase_base}/item/{external_id}.json")
+                if resp.status_code == 200 and isinstance(resp.json(), dict):
+                    return self._normalize_item(resp.json(), source_key=source_key)
+        except Exception as error:
+            raise ProviderError() from error
+        raise ProviderNotFound()
+
+    @staticmethod
+    def _matches(job: NormalizedExternalJob, filters: JobSearchFilters) -> bool:
+        if (
+            filters.query
+            and filters.query.casefold()
+            not in f"{job.title} {job.company_name} {job.description}".casefold()
+        ):
+            return False
+        if (
+            filters.location
+            and filters.location.casefold() not in (job.location or "").casefold()
+        ):
+            return False
+        if (
+            filters.remote is not None
+            and (job.remote_status == "remote") != filters.remote
+        ):
+            return False
+        if filters.employment_type and job.employment_type != filters.employment_type:
+            return False
+        return not (
+            filters.posted_after
+            and (job.posted_at is None or job.posted_at < filters.posted_after)
+        )
+
+
+class IndeedJobProvider(JobProvider):
+    """Indeed Provider Adapter (API Credential Protected; No Stealth Scraping)."""
+
+    name = "indeed"
+    capabilities = ProviderCapabilities(
+        search=False, detail_fetch=False, auto_apply=False, status_tracking=False
+    )
+
+    async def search_jobs(
+        self, filters: JobSearchFilters, *, source_key: str
+    ) -> ProviderSearchPage:
+        del filters, source_key
+        raise ProviderError(
+            "Indeed integration requires official Indeed Publisher/Partner API credentials. "
+            "Direct HTML scraping is disabled per terms."
+        )
+
+    async def get_job(
+        self, external_id: str, *, source_key: str
+    ) -> NormalizedExternalJob:
+        del external_id, source_key
+        raise ProviderError("Indeed integration requires official API credentials.")
+
+    async def get_status_capability(self) -> ProviderStatusCapability:
+        return ProviderStatusCapability(
+            False,
+            "none",
+            False,
+            "Indeed Publisher and Partner API credentials required.",
+        )
+
+
+class JobsuitJobProvider(JobProvider):
+    """Jobsuit.ai Provider Adapter (Capability Protected)."""
+
+    name = "jobsuit"
+    capabilities = ProviderCapabilities(
+        search=False, detail_fetch=False, auto_apply=False, status_tracking=False
+    )
+
+    async def search_jobs(
+        self, filters: JobSearchFilters, *, source_key: str
+    ) -> ProviderSearchPage:
+        del filters, source_key
+        raise ProviderError(
+            "Jobsuit.ai integration requires active partner API configuration."
+        )
+
+    async def get_job(
+        self, external_id: str, *, source_key: str
+    ) -> NormalizedExternalJob:
+        del external_id, source_key
+        raise ProviderError("Jobsuit.ai integration requires active partner API configuration.")
+
+    async def get_status_capability(self) -> ProviderStatusCapability:
+        return ProviderStatusCapability(
+            False,
+            "none",
+            False,
+            "Jobsuit.ai partner integration credentials required.",
+        )
+
+
 class DeterministicTestApplicationProvider(JobProvider):
     """Test/dev-only adapter; never register it as a real provider integration."""
 
@@ -1596,9 +1920,12 @@ class DeterministicTestApplicationProvider(JobProvider):
 class JobProviderRegistry:
     def __init__(self, providers: tuple[JobProvider, ...] | None = None) -> None:
         available = providers or (
+            YCJobProvider(),
             GreenhouseJobProvider(),
             LeverJobProvider(),
             AshbyJobProvider(),
+            IndeedJobProvider(),
+            JobsuitJobProvider(),
         )
         self._providers = {provider.name: provider for provider in available}
 
@@ -1611,5 +1938,9 @@ class JobProviderRegistry:
     def names(self) -> frozenset[str]:
         return frozenset(self._providers)
 
+    def all(self) -> tuple[JobProvider, ...]:
+        return tuple(self._providers.values())
+
 
 provider_registry = JobProviderRegistry()
+

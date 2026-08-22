@@ -37,6 +37,7 @@ export function ResumeIntelligence({ token, onChanged }: { token: string; onChan
     try {
       setResumes((await api.resumes(token)).items);
     } catch (caught) {
+      setResumes([]);
       setMessage(caught instanceof ApiError ? caught.detail : "Resumes could not be loaded.");
     }
   }, [token]);

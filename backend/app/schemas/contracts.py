@@ -375,6 +375,26 @@ class ExternalJobSyncResponse(APIModel):
     synced_at: datetime
 
 
+class ProviderStatusItem(APIModel):
+    provider: str
+    name: str
+    status: str  # "live" | "api_required" | "integration_status" | "not_configured"
+    badge_label: str
+    search_supported: bool
+    status_tracking_supported: bool
+    active_jobs_count: int = 0
+    last_synced_at: datetime | None = None
+    reason: str | None = None
+
+
+class ExternalJobSyncAllResponse(APIModel):
+    total_created: int
+    total_updated: int
+    total_synced: int
+    providers: dict[str, Any]
+    synced_at: datetime
+
+
 ItemT = TypeVar("ItemT")
 
 

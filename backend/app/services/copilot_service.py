@@ -148,15 +148,17 @@ async def answer_copilot_query(session: AsyncSession, student_id: UUID, query: s
         )
 
     # 2. Skill Passport & Verification
-    if any(k in q for k in ["passport", "evidence", "verify", "verification", "provenance"]):
+    if any(k in q for k in ["passport", "evidence", "verify", "verification", "provenance", "partially", "unverified", "tier", "python"]):
         return CopilotResponse(
             message=(
                 f"Your Skill Passport contains {ctx['total_skills']} evidence-backed skills. "
-                f"You have {len(ctx['verified_skills'])} externally verified skills ({', '.join(ctx['verified_skills'][:4]) or 'None'}) "
-                f"and {len(ctx['partially_verified_skills'])} partially verified skills from diagnostics or courses. "
-                f"To verify more skills, link your GitHub repositories or upload project code."
+                f"Skills are categorized into 3 provenance tiers:\n"
+                f"• **Verified (1.00x)**: External cryptographic code or GitHub proofs ({len(ctx['verified_skills'])} skills, e.g., {', '.join(ctx['verified_skills'][:3]) or 'None'}).\n"
+                f"• **Partially Verified (0.85x)**: Validated via diagnostic assessments or verified course certifications ({len(ctx['partially_verified_skills'])} skills).\n"
+                f"• **Unverified (0.65x)**: Self-reported claims awaiting code proof.\n\n"
+                f"To upgrade partially verified skills like Python to fully verified, link your GitHub repositories in GitHub Verification."
             ),
-            sources=["StudentSkills Table", "Evidence Hash Provenance"],
+            sources=["StudentSkills Table", "Evidence Provenance Multiplier Policy"],
             actions=[
                 CopilotAction(label="View Skill Passport", target_tab="passport"),
                 CopilotAction(label="Verify GitHub Projects", target_tab="github"),

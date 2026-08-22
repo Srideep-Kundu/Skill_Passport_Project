@@ -12,9 +12,11 @@ from app.models import Admin, ExternalJob, ExternalJobRequirement, Skill, Studen
 from app.schemas.contracts import (
     ExternalJobRequirementResponse,
     ExternalJobResponse,
+    ExternalJobSyncAllResponse,
     ExternalJobSyncRequest,
     ExternalJobSyncResponse,
     PaginatedResponse,
+    ProviderStatusItem,
 )
 from app.services.external_jobs_service import sync_external_jobs
 from app.services.job_providers import (
@@ -74,6 +76,60 @@ async def _response(session: AsyncSession, external_job: ExternalJob) -> Externa
     )
 
 
+@router.get("/providers", response_model=list[ProviderStatusItem])
+async def list_providers(
+    principal: Annotated[Student | Admin, Depends(require_role("student", "admin"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[ProviderStatusItem]:
+    del principal
+    settings = get_settings()
+
+    # Query counts and last sync times per provider
+    rows = (
+        await session.execute(
+            select(
+                ExternalJob.provider,
+                func.count(ExternalJob.id).label("count"),
+                func.max(ExternalJob.last_synced_at).label("last_synced"),
+            )
+            .where(ExternalJob.is_active.is_(True))
+            .group_by(ExternalJob.provider)
+        )
+    ).all()
+    stats = {r.provider: (r.count, r.last_synced) for r in rows}
+
+    provider_defs = [
+        ("yc", "YC Startup Jobs", "YC STARTUP", True, False, "Live Hacker News & YC directory integration"),
+        ("greenhouse", "Greenhouse", "GREENHOUSE", True, False, "Official Greenhouse public job board API"),
+        ("lever", "Lever", "LEVER", True, False, "Official Lever postings public API"),
+        ("ashby", "Ashby", "ASHBY", True, False, "Official Ashby public job board API"),
+        ("indeed", "Indeed", "INDEED", False, False, "Indeed Publisher/Partner API credentials required"),
+        ("jobsuit", "Jobsuit.ai", "JOBSUIT", False, False, "Jobsuit.ai partner integration credentials required"),
+    ]
+
+    items: list[ProviderStatusItem] = []
+    for key, name, badge_label, search_supported, status_tracking, reason in provider_defs:
+        count, last_synced = stats.get(key, (0, None))
+        if not search_supported:
+            status = "api_required" if key == "indeed" else "integration_status"
+        else:
+            status = "live"
+        items.append(
+            ProviderStatusItem(
+                provider=key,
+                name=name,
+                status=status,
+                badge_label=badge_label,
+                search_supported=search_supported,
+                status_tracking_supported=status_tracking,
+                active_jobs_count=count,
+                last_synced_at=last_synced,
+                reason=reason if status != "live" else None,
+            )
+        )
+    return items
+
+
 @router.get("", response_model=PaginatedResponse[ExternalJobResponse])
 async def list_external_jobs(
     principal: Annotated[Student, Depends(require_role("student"))],
@@ -86,11 +142,13 @@ async def list_external_jobs(
     query: Annotated[str | None, Query(max_length=200)] = None,
     employment_type: Annotated[str | None, Query(max_length=64)] = None,
     experience_level: Annotated[str | None, Query(max_length=64)] = None,
+    posted_within_days: Annotated[int | None, Query(ge=1, le=365)] = None,
     active: bool = True,
 ) -> PaginatedResponse[ExternalJobResponse]:
     del principal
+    from datetime import UTC, datetime, timedelta
     filters: list[ColumnElement[bool]] = [ExternalJob.is_active.is_(active)]
-    if provider and provider.strip():
+    if provider and provider.strip() and provider.strip().casefold() != "all":
         filters.append(ExternalJob.provider == provider.strip().casefold())
     if location and location.strip():
         filters.append(ExternalJob.location.ilike(f"%{location.strip()}%"))
@@ -98,11 +156,14 @@ async def list_external_jobs(
         filters.append(ExternalJob.remote_status == ("remote" if remote else "not_remote"))
     if query and query.strip():
         value = f"%{query.strip()}%"
-        filters.append(or_(ExternalJob.title.ilike(value), ExternalJob.company_name.ilike(value)))
+        filters.append(or_(ExternalJob.title.ilike(value), ExternalJob.company_name.ilike(value), ExternalJob.description.ilike(value)))
     if employment_type and employment_type.strip():
-        filters.append(ExternalJob.employment_type == employment_type.strip())
+        filters.append(ExternalJob.employment_type.ilike(f"%{employment_type.strip()}%"))
     if experience_level and experience_level.strip():
-        filters.append(ExternalJob.experience_level == experience_level.strip())
+        filters.append(ExternalJob.experience_level.ilike(f"%{experience_level.strip()}%"))
+    if posted_within_days is not None:
+        cutoff = datetime.now(UTC) - timedelta(days=posted_within_days)
+        filters.append(or_(ExternalJob.posted_at >= cutoff, ExternalJob.last_synced_at >= cutoff))
     total = int((await session.scalar(select(func.count()).select_from(ExternalJob).where(*filters))) or 0)
     jobs = list(
         (
@@ -155,3 +216,32 @@ async def sync_jobs(
         synced=result.synced,
         synced_at=result.synced_at,
     )
+
+
+@router.post("/sync-all", response_model=ExternalJobSyncAllResponse, status_code=status.HTTP_200_OK)
+async def sync_all_jobs(
+    principal: Annotated[Student | Admin, Depends(require_role("student", "admin"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ExternalJobSyncAllResponse:
+    from app.services.external_jobs_service import sync_all_configured_sources
+    from app.services.matching_service import recompute_external_job_matches_for_student
+    from datetime import UTC, datetime
+
+    await enforce_rate_limit("external-job-sync-all", str(principal.id), get_settings().external_job_sync_rate_limit_per_minute)
+    results = await sync_all_configured_sources(session, actor_id=principal.id)
+
+    # Recompute student matches if principal is a student
+    if isinstance(principal, Student):
+        try:
+            await recompute_external_job_matches_for_student(session, principal.id)
+        except Exception:
+            pass
+
+    return ExternalJobSyncAllResponse(
+        total_created=results["total_created"],
+        total_updated=results["total_updated"],
+        total_synced=results["total_synced"],
+        providers=results["providers"],
+        synced_at=datetime.fromisoformat(results["synced_at"]) if isinstance(results["synced_at"], str) else datetime.now(UTC),
+    )
+
