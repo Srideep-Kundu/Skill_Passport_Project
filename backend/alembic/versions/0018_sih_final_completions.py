@@ -101,6 +101,25 @@ def upgrade() -> None:
             sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), onupdate=sa.func.now(), nullable=False),
         )
 
+    # 6. Extend placement_registrations for match scoring and interviews
+    if "placement_registrations" in tables:
+        cols = _columns(bind, "placement_registrations")
+        if "match_score" not in cols:
+            op.add_column("placement_registrations", sa.Column("match_score", sa.Numeric(5, 4), nullable=False, server_default="0.0"))
+        if "deterministic_score" not in cols:
+            op.add_column("placement_registrations", sa.Column("deterministic_score", sa.Numeric(5, 4), nullable=False, server_default="0.0"))
+        if "semantic_score" not in cols:
+            op.add_column("placement_registrations", sa.Column("semantic_score", sa.Numeric(5, 4), nullable=False, server_default="0.0"))
+        if "verification_bonus" not in cols:
+            op.add_column("placement_registrations", sa.Column("verification_bonus", sa.Numeric(5, 4), nullable=False, server_default="0.0"))
+        if "interview_date" not in cols:
+            op.add_column("placement_registrations", sa.Column("interview_date", sa.DateTime(timezone=True), nullable=True))
+        if "interview_notes" not in cols:
+            op.add_column("placement_registrations", sa.Column("interview_notes", sa.Text(), nullable=True))
+        if "offer_details" not in cols:
+            op.add_column("placement_registrations", sa.Column("offer_details", json_type, nullable=True))
+
 
 def downgrade() -> None:
     pass
+
