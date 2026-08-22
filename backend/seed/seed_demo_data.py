@@ -10,6 +10,7 @@ from app.core.config import get_settings
 from app.core.db import SessionLocal
 from app.core.security import hash_password
 from app.models import (
+    Academician,
     AccountEmail,
     ApplicationStatusSource,
     ApplicationTrackingStatus,
@@ -23,6 +24,7 @@ from app.models import (
     ExtractionJob,
     ExtractionJobStatus,
     ExtractionStatus,
+    Institution,
     Internship,
     InternshipRequirement,
     JobDiscovery,
@@ -137,6 +139,33 @@ async def seed_demo_data() -> None:
             department="Computer Science & Engineering",
             designation="Professor & Placement Dean",
             research_areas=["Distributed Systems", "Explainable AI", "Verification Systems"],
+            bio="Professor with 14+ years of academic research and industry consulting experience in scalable microservices, cryptographic verification pipelines, and explainable ML models.",
+            years_experience=14,
+            technical_skills=["Python", "FastAPI", "Distributed Systems", "PostgreSQL", "PyTorch", "Docker", "Explainable AI"],
+            certifications=[
+                {"name": "Google Cloud Professional Architect", "issuer": "Google Cloud", "year": "2024"},
+                {"name": "AICTE Advanced Industry Immersion Fellow", "issuer": "AICTE India", "year": "2023"},
+            ],
+            publications=[
+                {"title": "Deterministic and Auditable Match Verification in Heterogeneous Workspaces", "journal_or_conf": "IEEE Trans. Services Computing", "year": "2025"},
+                {"title": "Zero-Demographic Bias Talent Pipelines via Cryptographic Competency Spans", "journal_or_conf": "ACM SIGKDD Workshop", "year": "2024"},
+            ],
+            patents=[
+                {"title": "System and Method for Provable Skill Provenance Verification", "patent_number": "IN-2024-99881", "status": "Granted", "year": "2024"},
+            ],
+            past_industry_experience=[
+                {"company": "Intel India R&D", "role": "Visiting Research Scientist", "duration_years": 2, "description": "Researched low-latency vector indexing acceleration on multi-core clusters."},
+            ],
+            completed_fdps=[
+                {"title": "National FDP on Explainable Artificial Intelligence", "organizer": "IIT Bombay", "year": "2024"},
+            ],
+            completed_trainings=[
+                {"title": "Cloud-Native Infrastructure Immersion", "company": "Microsoft India", "duration_weeks": 4, "year": "2023"},
+            ],
+            collaboration_availability="available",
+            phone="+91 98765 43210",
+            linkedin_url="https://linkedin.com/in/demo-dr-arvind-rao",
+            google_scholar_url="https://scholar.google.com/citations?user=demo_arvind_rao",
         )
         institution = Institution(
             email="dean@example.demo",

@@ -19,11 +19,19 @@ import type {
   EvidenceSubmission,
   EvidenceSummary,
   EvidenceUpdate,
+  CollaborationWorkspace,
   ExternalJob,
   ExternalJobMatch,
   ExternalJobSyncAllResponse,
+  FacultyAdvisedProject,
   FacultyApplication,
+  FacultyApplicationCreate,
+  FacultyCollaborationHistoryItem,
+  FacultyEventRegistration,
+  FacultyNotification,
   FacultyOpportunity,
+  FacultyPassport,
+  FacultyPassportUpdate,
   GitHubIdentity,
   GoogleAuthRequest,
   InnovationChallenge,
@@ -240,9 +248,45 @@ export const api = {
   updateInternshipEngagementStatus: (id: string, input: { status?: string; progress_percentage?: number; mentor_name?: string; mentor_email?: string; completion_notes?: string; final_rating?: number }, token: string) => request<InternshipEngagement>(`/internship-engagements/${encodeURIComponent(id)}/status`, { method: "PATCH", body: JSON.stringify(input) }, token),
   submitMentorFeedback: (id: string, feedback: MentorFeedbackRequest, token: string) => request<InternshipEngagement>(`/internship-engagements/${encodeURIComponent(id)}/feedback`, { method: "POST", body: JSON.stringify(feedback) }, token),
 
-  // Academician & Faculty Opportunities
-  getFacultyOpportunities: (token: string, opportunityType?: string) => request<FacultyOpportunity[]>(`/academician/opportunities${opportunityType ? `?opportunity_type=${encodeURIComponent(opportunityType)}` : ""}`, {}, token),
+  // Academician & Faculty Ecosystem (Phase 1 & Phase 2)
+  getFacultyPassport: (token: string) => request<FacultyPassport>("/academician/passport/me", {}, token),
+  updateFacultyPassport: (input: FacultyPassportUpdate, token: string) => request<FacultyPassport>("/academician/passport/me", { method: "PUT", body: JSON.stringify(input) }, token),
+  getFacultyPublicPassport: (facultyId: string, token: string) => request<FacultyPassport>(`/academician/passport/${encodeURIComponent(facultyId)}`, {}, token),
+  getFacultyOpportunities: (token: string, opportunityType?: string) => request<FacultyOpportunity[]>(`/academician/opportunities${opportunityType && opportunityType !== "all" ? `?opportunity_type=${encodeURIComponent(opportunityType)}` : ""}`, {}, token),
+  getFacultyOpportunityDetail: (id: string, token: string) => request<FacultyOpportunity>(`/academician/opportunities/${encodeURIComponent(id)}`, {}, token),
+  getFacultyApplications: (token: string, status?: string) => request<FacultyApplication[]>(`/academician/applications/me${status ? `?status=${encodeURIComponent(status)}` : ""}`, {}, token),
+  createFacultyApplication: (input: FacultyApplicationCreate, token: string) => request<FacultyApplication>("/academician/applications", { method: "POST", body: JSON.stringify(input) }, token),
   applyFacultyOpportunity: (opportunityId: string, proposalText: string, token: string) => request<FacultyApplication>("/academician/apply", { method: "POST", body: JSON.stringify({ opportunity_id: opportunityId, proposal_text: proposalText }) }, token),
+  getFacultyApplicationDetail: (id: string, token: string) => request<FacultyApplication>(`/academician/applications/${encodeURIComponent(id)}`, {}, token),
+  updateFacultyApplication: (id: string, input: Partial<FacultyApplicationCreate>, token: string) => request<FacultyApplication>(`/academician/applications/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(input) }, token),
+  submitFacultyApplication: (id: string, token: string) => request<FacultyApplication>(`/academician/applications/${encodeURIComponent(id)}/submit`, { method: "POST" }, token),
+  withdrawFacultyApplication: (id: string, token: string) => request<FacultyApplication>(`/academician/applications/${encodeURIComponent(id)}/withdraw`, { method: "POST" }, token),
+
+  // Workspaces
+  getFacultyWorkspaces: (token: string) => request<CollaborationWorkspace[]>("/academician/workspaces", {}, token),
+  getFacultyWorkspace: (id: string, token: string) => request<CollaborationWorkspace>(`/academician/workspaces/${encodeURIComponent(id)}`, {}, token),
+  updateWorkspaceMilestones: (workspaceId: string, payload: { milestone_id: string; title?: string; status: string; due_date?: string; notes?: string }, token: string) => request<CollaborationWorkspace>(`/academician/workspaces/${encodeURIComponent(workspaceId)}/milestones`, { method: "PUT", body: JSON.stringify(payload) }, token),
+  createWorkspaceTask: (workspaceId: string, payload: { title: string; assigned_to: string; due_date?: string; priority?: string; status?: string }, token: string) => request<CollaborationWorkspace>(`/academician/workspaces/${encodeURIComponent(workspaceId)}/tasks`, { method: "POST", body: JSON.stringify(payload) }, token),
+  updateWorkspaceTask: (workspaceId: string, payload: { task_id: string; status: string }, token: string) => request<CollaborationWorkspace>(`/academician/workspaces/${encodeURIComponent(workspaceId)}/tasks`, { method: "PUT", body: JSON.stringify(payload) }, token),
+  createWorkspaceDiscussion: (workspaceId: string, payload: { author_name: string; author_role: string; content: string }, token: string) => request<CollaborationWorkspace>(`/academician/workspaces/${encodeURIComponent(workspaceId)}/discussions`, { method: "POST", body: JSON.stringify(payload) }, token),
+  submitWorkspaceDeliverable: (workspaceId: string, payload: { title: string; deliverable_type: string; url_or_key: string; notes?: string }, token: string) => request<CollaborationWorkspace>(`/academician/workspaces/${encodeURIComponent(workspaceId)}/deliverables`, { method: "POST", body: JSON.stringify(payload) }, token),
+  submitWorkspaceFeedback: (workspaceId: string, payload: { author_name: string; author_role: string; rating: number; comments: string }, token: string) => request<CollaborationWorkspace>(`/academician/workspaces/${encodeURIComponent(workspaceId)}/feedback`, { method: "POST", body: JSON.stringify(payload) }, token),
+  completeWorkspace: (workspaceId: string, token: string, outcomeSummary?: string) => request<CollaborationWorkspace>(`/academician/workspaces/${encodeURIComponent(workspaceId)}/complete${outcomeSummary ? `?outcome_summary=${encodeURIComponent(outcomeSummary)}` : ""}`, { method: "POST" }, token),
+
+  // Events, Mentorship & History
+  registerFacultyEvent: (input: { event_id: string; event_type: string; event_title: string; host_organization: string; role?: string; scheduled_at?: string }, token: string) => request<FacultyEventRegistration>("/academician/events/register", { method: "POST", body: JSON.stringify(input) }, token),
+  getMyFacultyEvents: (token: string) => request<FacultyEventRegistration[]>("/academician/events/me", {}, token),
+  getFacultyNotifications: (token: string) => request<FacultyNotification[]>("/academician/notifications", {}, token),
+  markFacultyNotificationRead: (id: string, token: string) => request<void>(`/academician/notifications/${encodeURIComponent(id)}/read`, { method: "PUT" }, token),
+  getFacultyCollaborationHistory: (token: string) => request<FacultyCollaborationHistoryItem[]>("/academician/history/me", {}, token),
+
+  // Live Project Advising
+  getFacultyAdvisedProjects: (token: string) => request<FacultyAdvisedProject[]>("/academician/live-projects/advising", {}, token),
+  submitFacultyProjectFeedback: (projectApplicationId: string, feedback: string, grade: string | undefined, token: string) => request<{ status: string; message: string }>("/academician/live-projects/feedback", { method: "POST", body: JSON.stringify({ project_application_id: projectApplicationId, feedback, grade_or_endorsement: grade }) }, token),
+
+  // Recruiter Faculty Application Review
+  getRecruiterFacultyApplications: (token: string) => request<FacultyApplication[]>("/academician/recruiter/applications", {}, token),
+  updateRecruiterFacultyApplicationStatus: (applicationId: string, payload: { status: string; reviewer_notes?: string; feedback?: string; industry_mentor_name?: string; industry_mentor_email?: string }, token: string) => request<FacultyApplication>(`/academician/recruiter/applications/${encodeURIComponent(applicationId)}/status`, { method: "PUT", body: JSON.stringify(payload) }, token),
 
   // Institution Decision-Support Portal & Analytics
   getInstitutionAnalytics: (token: string) => request<InstitutionAnalyticsOverview>("/institution/analytics", {}, token),

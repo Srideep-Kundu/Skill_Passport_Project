@@ -984,6 +984,53 @@ class PlacementRegistrationRequest(APIModel):
     notes: str | None = None
 
 
+class FacultyPassportResponse(APIModel):
+    id: UUID
+    email: str
+    full_name: str
+    institution_name: str
+    department: str
+    designation: str
+    research_areas: list[str] = Field(default_factory=list)
+    bio: str | None = None
+    years_experience: int = 0
+    technical_skills: list[str] = Field(default_factory=list)
+    certifications: list[dict[str, Any]] = Field(default_factory=list)
+    publications: list[dict[str, Any]] = Field(default_factory=list)
+    patents: list[dict[str, Any]] = Field(default_factory=list)
+    past_industry_experience: list[dict[str, Any]] = Field(default_factory=list)
+    completed_fdps: list[dict[str, Any]] = Field(default_factory=list)
+    completed_trainings: list[dict[str, Any]] = Field(default_factory=list)
+    collaboration_availability: str = "available"
+    phone: str | None = None
+    linkedin_url: str | None = None
+    google_scholar_url: str | None = None
+    active_collaborations_count: int = 0
+    completed_collaborations_count: int = 0
+    total_grants_secured: float = 0.0
+
+
+class FacultyPassportUpdateRequest(APIModel):
+    full_name: str | None = None
+    institution_name: str | None = None
+    department: str | None = None
+    designation: str | None = None
+    research_areas: list[str] | None = None
+    bio: str | None = None
+    years_experience: int | None = None
+    technical_skills: list[str] | None = None
+    certifications: list[dict[str, Any]] | None = None
+    publications: list[dict[str, Any]] | None = None
+    patents: list[dict[str, Any]] | None = None
+    past_industry_experience: list[dict[str, Any]] | None = None
+    completed_fdps: list[dict[str, Any]] | None = None
+    completed_trainings: list[dict[str, Any]] | None = None
+    collaboration_availability: str | None = None
+    phone: str | None = None
+    linkedin_url: str | None = None
+    google_scholar_url: str | None = None
+
+
 class FacultyOpportunityResponse(APIModel):
     id: UUID
     title: str
@@ -991,17 +1038,59 @@ class FacultyOpportunityResponse(APIModel):
     organization_name: str
     description: str
     domain: str
-    stipend_or_grant: float | None
+    stipend_or_grant: float | None = None
     duration_weeks: int
-    deadline: datetime | None
+    deadline: datetime | None = None
     status: str
+    objectives: list[str] = Field(default_factory=list)
+    mode: str = "hybrid"
+    location: str | None = None
+    eligibility: str | None = None
+    required_expertise: list[str] = Field(default_factory=list)
+    deliverables: list[str] = Field(default_factory=list)
+    required_documents: list[str] = Field(default_factory=list)
+    contact_email: str | None = None
+    contact_person: str | None = None
     has_applied: bool = False
     application_status: str | None = None
+    application_id: UUID | None = None
 
 
 class FacultyApplicationRequest(APIModel):
     opportunity_id: UUID
-    proposal_text: str = Field(min_length=10)
+    proposal_text: str = Field(default="", min_length=0)
+    proposal_title: str | None = None
+    application_type: str = "general"
+    problem_statement: str | None = None
+    objectives: list[str] = Field(default_factory=list)
+    methodology: str | None = None
+    team_members: list[dict[str, Any]] = Field(default_factory=list)
+    student_researchers: list[dict[str, Any]] = Field(default_factory=list)
+    deliverables: list[str] = Field(default_factory=list)
+    milestones: list[dict[str, Any]] = Field(default_factory=list)
+    timeline_weeks: int | None = None
+    budget_requested: float | None = None
+    industry_support_required: str | None = None
+    attachments: list[dict[str, Any]] = Field(default_factory=list)
+    is_draft: bool = False
+
+
+class FacultyApplicationUpdateRequest(APIModel):
+    proposal_title: str | None = None
+    proposal_text: str | None = None
+    problem_statement: str | None = None
+    objectives: list[str] | None = None
+    methodology: str | None = None
+    team_members: list[dict[str, Any]] | None = None
+    student_researchers: list[dict[str, Any]] | None = None
+    deliverables: list[str] | None = None
+    milestones: list[dict[str, Any]] | None = None
+    timeline_weeks: int | None = None
+    budget_requested: float | None = None
+    industry_support_required: str | None = None
+    attachments: list[dict[str, Any]] | None = None
+    status: str | None = None
+    completion_report: str | None = None
 
 
 class FacultyApplicationResponse(APIModel):
@@ -1011,8 +1100,185 @@ class FacultyApplicationResponse(APIModel):
     organization_name: str
     opportunity_type: str
     status: str
-    proposal_text: str | None
+    application_type: str = "general"
+    proposal_title: str | None = None
+    proposal_text: str | None = None
+    problem_statement: str | None = None
+    objectives: list[str] = Field(default_factory=list)
+    methodology: str | None = None
+    team_members: list[dict[str, Any]] = Field(default_factory=list)
+    student_researchers: list[dict[str, Any]] = Field(default_factory=list)
+    deliverables: list[str] = Field(default_factory=list)
+    milestones: list[dict[str, Any]] = Field(default_factory=list)
+    timeline_weeks: int | None = None
+    budget_requested: float | None = None
+    industry_support_required: str | None = None
+    attachments: list[dict[str, Any]] = Field(default_factory=list)
+    reviewer_notes: str | None = None
+    feedback: str | None = None
+    industry_mentor_name: str | None = None
+    industry_mentor_email: str | None = None
+    engagement_status: str = "not_started"
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    completion_report: str | None = None
+    completion_certificate_url: str | None = None
+    rating_or_grade: str | None = None
+    outcome_type: str | None = None
+    outcome_details: dict[str, Any] = Field(default_factory=dict)
     applied_at: datetime
+    updated_at: datetime | None = None
+    workspace_id: UUID | None = None
+    faculty_name: str | None = None
+    faculty_department: str | None = None
+    faculty_institution: str | None = None
+
+
+class FacultyApplicationStatusUpdateRequest(APIModel):
+    status: str
+    reviewer_notes: str | None = None
+    feedback: str | None = None
+    industry_mentor_name: str | None = None
+    industry_mentor_email: str | None = None
+
+
+class CollaborationWorkspaceResponse(APIModel):
+    id: UUID
+    application_id: UUID | None = None
+    challenge_id: UUID | None = None
+    title: str
+    collaboration_type: str
+    organization_name: str
+    faculty_lead_id: UUID
+    faculty_lead_name: str | None = None
+    faculty_lead_department: str | None = None
+    industry_lead_name: str
+    industry_lead_email: str | None = None
+    status: str
+    progress_percentage: int = 0
+    objectives: list[str] = Field(default_factory=list)
+    participants: list[dict[str, Any]] = Field(default_factory=list)
+    milestones: list[dict[str, Any]] = Field(default_factory=list)
+    tasks: list[dict[str, Any]] = Field(default_factory=list)
+    meetings: list[dict[str, Any]] = Field(default_factory=list)
+    discussion_posts: list[dict[str, Any]] = Field(default_factory=list)
+    deliverables: list[dict[str, Any]] = Field(default_factory=list)
+    feedback: list[dict[str, Any]] = Field(default_factory=list)
+    outcome_summary: str | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class WorkspaceMilestoneUpdate(APIModel):
+    milestone_id: str
+    title: str | None = None
+    status: str  # pending, in_progress, completed
+    due_date: str | None = None
+    notes: str | None = None
+
+
+class WorkspaceTaskCreate(APIModel):
+    title: str
+    assigned_to: str
+    due_date: str | None = None
+    priority: str = "medium"
+    status: str = "todo"
+
+
+class WorkspaceTaskUpdate(APIModel):
+    task_id: str
+    status: str  # todo, in_progress, done
+
+
+class WorkspaceDiscussionPostCreate(APIModel):
+    author_name: str
+    author_role: str  # faculty, industry_mentor, student
+    content: str
+
+
+class WorkspaceDeliverableSubmit(APIModel):
+    title: str
+    deliverable_type: str  # report, code, dataset, paper, presentation
+    url_or_key: str
+    notes: str | None = None
+
+
+class WorkspaceFeedbackSubmit(APIModel):
+    author_name: str
+    author_role: str
+    rating: int = 5
+    comments: str
+
+
+class FacultyEventRegistrationCreate(APIModel):
+    event_id: UUID
+    event_type: str = "workshop"  # workshop, guest_lecture, mentorship, fdp, challenge
+    event_title: str
+    host_organization: str
+    role: str = "attendee"  # attendee, speaker, coordinator
+    scheduled_at: datetime | None = None
+
+
+class FacultyEventRegistrationResponse(APIModel):
+    id: UUID
+    faculty_id: UUID
+    event_id: UUID
+    event_type: str
+    event_title: str
+    host_organization: str
+    role: str
+    status: str
+    feedback: str | None = None
+    certificate_url: str | None = None
+    scheduled_at: datetime | None = None
+    registered_at: datetime
+
+
+class FacultyNotificationResponse(APIModel):
+    id: UUID
+    faculty_id: UUID
+    title: str
+    message: str
+    category: str
+    is_read: bool
+    link_url: str | None = None
+    created_at: datetime
+
+
+class FacultyCollaborationHistoryItem(APIModel):
+    id: UUID
+    title: str
+    collaboration_type: str
+    organization_name: str
+    role: str
+    duration_weeks: int | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    status: str
+    outcome_summary: str | None = None
+    outcome_type: str | None = None
+    certificate_url: str | None = None
+    stipend_or_grant: float | None = None
+
+
+class FacultyAdvisedProjectResponse(APIModel):
+    challenge_id: UUID
+    title: str
+    host_company: str
+    problem_statement: str
+    duration_weeks: int
+    milestones: list[dict[str, Any]] = Field(default_factory=list)
+    student_teams: list[dict[str, Any]] = Field(default_factory=list)
+    advisor_feedback: list[dict[str, Any]] = Field(default_factory=list)
+    status: str
+
+
+class FacultyProjectFeedbackRequest(APIModel):
+    project_application_id: UUID
+    feedback: str
+    grade_or_endorsement: str | None = None
 
 
 class MentorshipSessionResponse(APIModel):

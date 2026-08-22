@@ -1,24 +1,82 @@
-"""API Router for Academician & Faculty Opportunities (FDP, Immersion, Consultancy, Grants)."""
+"""API Router for Academician & Faculty Ecosystem (Passport, Applications, Workspaces, Events, Advising)."""
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
-from app.core.security import require_role
-from app.models import Academician
+from app.core.security import current_principal, require_role
+from app.models import Academician, Recruiter
 from app.schemas.contracts import (
+    CollaborationWorkspaceResponse,
+    FacultyAdvisedProjectResponse,
     FacultyApplicationRequest,
     FacultyApplicationResponse,
+    FacultyApplicationStatusUpdateRequest,
+    FacultyApplicationUpdateRequest,
+    FacultyCollaborationHistoryItem,
+    FacultyEventRegistrationCreate,
+    FacultyEventRegistrationResponse,
+    FacultyNotificationResponse,
     FacultyOpportunityResponse,
+    FacultyPassportResponse,
+    FacultyPassportUpdateRequest,
+    FacultyProjectFeedbackRequest,
+    WorkspaceDeliverableSubmit,
+    WorkspaceDiscussionPostCreate,
+    WorkspaceFeedbackSubmit,
+    WorkspaceMilestoneUpdate,
+    WorkspaceTaskCreate,
+    WorkspaceTaskUpdate,
 )
-from app.services.academician_service import (
-    apply_for_opportunity,
-    list_faculty_opportunities,
-)
+from app.services import academician_service
 
 router = APIRouter(prefix="/academician", tags=["academician"])
 
+
+# ============================================================================
+# 1. Faculty Passport Endpoints
+# ============================================================================
+
+@router.get("/passport/me", response_model=FacultyPassportResponse)
+async def get_my_passport(
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyPassportResponse:
+    try:
+        return await academician_service.get_faculty_passport(session, faculty.id)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.put("/passport/me", response_model=FacultyPassportResponse)
+async def update_my_passport(
+    payload: FacultyPassportUpdateRequest,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyPassportResponse:
+    try:
+        return await academician_service.update_faculty_passport(session, faculty.id, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+
+
+@router.get("/passport/{faculty_id}", response_model=FacultyPassportResponse)
+async def get_faculty_public_passport(
+    faculty_id: UUID,
+    principal: Annotated[Academician | Recruiter, Depends(current_principal)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyPassportResponse:
+    try:
+        return await academician_service.get_faculty_passport(session, faculty_id)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+# ============================================================================
+# 2. Opportunity Discovery & Details
+# ============================================================================
 
 @router.get("/opportunities", response_model=list[FacultyOpportunityResponse])
 async def get_opportunities(
@@ -26,16 +84,321 @@ async def get_opportunities(
     session: Annotated[AsyncSession, Depends(get_session)],
     opportunity_type: str | None = Query(default=None),
 ) -> list[FacultyOpportunityResponse]:
-    return await list_faculty_opportunities(session, faculty.id, opportunity_type)
+    return await academician_service.list_faculty_opportunities(session, faculty.id, opportunity_type)
 
 
-@router.post("/apply", response_model=FacultyApplicationResponse)
-async def apply_opportunity(
+@router.get("/opportunities/{opportunity_id}", response_model=FacultyOpportunityResponse)
+async def get_opportunity_detail(
+    opportunity_id: UUID,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyOpportunityResponse:
+    try:
+        return await academician_service.get_faculty_opportunity_detail(session, opportunity_id, faculty.id)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+# ============================================================================
+# 3. Application & Proposal Submission Lifecycle
+# ============================================================================
+
+@router.get("/applications/me", response_model=list[FacultyApplicationResponse])
+async def get_my_applications(
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    status_filter: str | None = Query(default=None, alias="status"),
+) -> list[FacultyApplicationResponse]:
+    return await academician_service.list_faculty_applications(session, faculty.id, status_filter)
+
+
+@router.post("/applications", response_model=FacultyApplicationResponse)
+async def create_or_save_application(
     payload: FacultyApplicationRequest,
     faculty: Annotated[Academician, Depends(require_role("academician"))],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> FacultyApplicationResponse:
     try:
-        return await apply_for_opportunity(session, faculty.id, payload)
+        return await academician_service.create_or_save_faculty_application(session, faculty.id, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.post("/apply", response_model=FacultyApplicationResponse)
+async def apply_opportunity_legacy(
+    payload: FacultyApplicationRequest,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyApplicationResponse:
+    """Legacy compatibility endpoint."""
+    try:
+        return await academician_service.create_or_save_faculty_application(session, faculty.id, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.get("/applications/{application_id}", response_model=FacultyApplicationResponse)
+async def get_application_detail(
+    application_id: UUID,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyApplicationResponse:
+    try:
+        return await academician_service.get_faculty_application(session, application_id, faculty.id)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.put("/applications/{application_id}", response_model=FacultyApplicationResponse)
+async def update_application(
+    application_id: UUID,
+    payload: FacultyApplicationUpdateRequest,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyApplicationResponse:
+    try:
+        return await academician_service.update_faculty_application(session, application_id, faculty.id, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.post("/applications/{application_id}/submit", response_model=FacultyApplicationResponse)
+async def submit_application(
+    application_id: UUID,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyApplicationResponse:
+    try:
+        return await academician_service.submit_faculty_application(session, application_id, faculty.id)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.post("/applications/{application_id}/withdraw", response_model=FacultyApplicationResponse)
+async def withdraw_application(
+    application_id: UUID,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyApplicationResponse:
+    try:
+        return await academician_service.withdraw_faculty_application(session, application_id, faculty.id)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+
+
+# ============================================================================
+# 4. Collaboration Workspaces (Phase 2)
+# ============================================================================
+
+@router.get("/workspaces", response_model=list[CollaborationWorkspaceResponse])
+async def get_workspaces(
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[CollaborationWorkspaceResponse]:
+    return await academician_service.list_faculty_workspaces(session, faculty.id)
+
+
+@router.get("/workspaces/{workspace_id}", response_model=CollaborationWorkspaceResponse)
+async def get_workspace(
+    workspace_id: UUID,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> CollaborationWorkspaceResponse:
+    try:
+        return await academician_service.get_faculty_workspace(session, workspace_id, faculty.id)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.put("/workspaces/{workspace_id}/milestones", response_model=CollaborationWorkspaceResponse)
+async def update_workspace_milestones(
+    workspace_id: UUID,
+    payload: WorkspaceMilestoneUpdate,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> CollaborationWorkspaceResponse:
+    try:
+        return await academician_service.update_workspace_milestone(session, workspace_id, faculty.id, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.post("/workspaces/{workspace_id}/tasks", response_model=CollaborationWorkspaceResponse)
+async def create_workspace_task(
+    workspace_id: UUID,
+    payload: WorkspaceTaskCreate,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> CollaborationWorkspaceResponse:
+    try:
+        return await academician_service.add_workspace_task(session, workspace_id, faculty.id, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.put("/workspaces/{workspace_id}/tasks", response_model=CollaborationWorkspaceResponse)
+async def update_workspace_task(
+    workspace_id: UUID,
+    payload: WorkspaceTaskUpdate,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> CollaborationWorkspaceResponse:
+    try:
+        return await academician_service.update_workspace_task_status(session, workspace_id, faculty.id, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.post("/workspaces/{workspace_id}/discussions", response_model=CollaborationWorkspaceResponse)
+async def create_workspace_discussion(
+    workspace_id: UUID,
+    payload: WorkspaceDiscussionPostCreate,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> CollaborationWorkspaceResponse:
+    try:
+        return await academician_service.add_workspace_discussion(session, workspace_id, faculty.id, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.post("/workspaces/{workspace_id}/deliverables", response_model=CollaborationWorkspaceResponse)
+async def submit_deliverable(
+    workspace_id: UUID,
+    payload: WorkspaceDeliverableSubmit,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> CollaborationWorkspaceResponse:
+    try:
+        return await academician_service.submit_workspace_deliverable(session, workspace_id, faculty.id, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.post("/workspaces/{workspace_id}/feedback", response_model=CollaborationWorkspaceResponse)
+async def submit_feedback(
+    workspace_id: UUID,
+    payload: WorkspaceFeedbackSubmit,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> CollaborationWorkspaceResponse:
+    try:
+        return await academician_service.submit_workspace_feedback(session, workspace_id, faculty.id, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.post("/workspaces/{workspace_id}/complete", response_model=CollaborationWorkspaceResponse)
+async def complete_workspace_action(
+    workspace_id: UUID,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    outcome_summary: str | None = Query(default=None),
+) -> CollaborationWorkspaceResponse:
+    try:
+        return await academician_service.complete_workspace(session, workspace_id, faculty.id, outcome_summary)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+# ============================================================================
+# 5. Events & Workshops (Phase 2)
+# ============================================================================
+
+@router.post("/events/register", response_model=FacultyEventRegistrationResponse)
+async def register_event(
+    payload: FacultyEventRegistrationCreate,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyEventRegistrationResponse:
+    try:
+        return await academician_service.register_faculty_event(session, faculty.id, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+
+
+@router.get("/events/me", response_model=list[FacultyEventRegistrationResponse])
+async def get_my_events(
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[FacultyEventRegistrationResponse]:
+    return await academician_service.list_faculty_events(session, faculty.id)
+
+
+# ============================================================================
+# 6. Notifications & History
+# ============================================================================
+
+@router.get("/notifications", response_model=list[FacultyNotificationResponse])
+async def get_notifications(
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[FacultyNotificationResponse]:
+    return await academician_service.list_faculty_notifications(session, faculty.id)
+
+
+@router.put("/notifications/{notification_id}/read", status_code=status.HTTP_204_NO_CONTENT)
+async def mark_notif_read(
+    notification_id: UUID,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> None:
+    await academician_service.mark_notification_read(session, notification_id, faculty.id)
+
+
+@router.get("/history/me", response_model=list[FacultyCollaborationHistoryItem])
+async def get_my_history(
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[FacultyCollaborationHistoryItem]:
+    return await academician_service.get_faculty_collaboration_history(session, faculty.id)
+
+
+# ============================================================================
+# 7. Live Project Advising
+# ============================================================================
+
+@router.get("/live-projects/advising", response_model=list[FacultyAdvisedProjectResponse])
+async def get_advised_projects(
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[FacultyAdvisedProjectResponse]:
+    return await academician_service.list_advised_projects(session, faculty.id)
+
+
+@router.post("/live-projects/feedback", status_code=status.HTTP_200_OK)
+async def submit_advising_feedback(
+    payload: FacultyProjectFeedbackRequest,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> dict[str, str]:
+    try:
+        await academician_service.submit_project_advising_feedback(session, faculty.id, payload)
+        return {"status": "success", "message": "Advising feedback recorded"}
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+# ============================================================================
+# 8. Recruiter / Industry Review Flow
+# ============================================================================
+
+@router.get("/recruiter/applications", response_model=list[FacultyApplicationResponse])
+async def get_recruiter_faculty_applications(
+    recruiter: Annotated[Recruiter, Depends(require_role("recruiter"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[FacultyApplicationResponse]:
+    return await academician_service.list_recruiter_faculty_applications(session, recruiter.id)
+
+
+@router.put("/recruiter/applications/{application_id}/status", response_model=FacultyApplicationResponse)
+async def update_faculty_application_status(
+    application_id: UUID,
+    payload: FacultyApplicationStatusUpdateRequest,
+    recruiter: Annotated[Recruiter, Depends(require_role("recruiter"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyApplicationResponse:
+    try:
+        return await academician_service.update_faculty_application_status_recruiter(session, application_id, payload)
     except ValueError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
