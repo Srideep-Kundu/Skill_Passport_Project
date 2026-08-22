@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 from datetime import UTC, datetime, timedelta
+from uuid import uuid4
 
 from sqlalchemy import select, text
 
@@ -15,6 +16,7 @@ from app.models import (
     ApplicationStatusSource,
     ApplicationTrackingStatus,
     AutomationPolicy,
+    CollaborationWorkspace,
     DiscoveryRecommendation,
     DiscoveryRunStatus,
     Evidence,
@@ -24,6 +26,9 @@ from app.models import (
     ExtractionJob,
     ExtractionJobStatus,
     ExtractionStatus,
+    FacultyApplication,
+    FacultyEventRegistration,
+    FacultyOpportunity,
     Institution,
     Internship,
     InternshipRequirement,
@@ -176,13 +181,122 @@ async def seed_demo_data() -> None:
             departments=["Computer Science", "Information Technology", "Electronics"],
         )
         students = {
-            "maya": Student(email=DEMO_STUDENT_EMAIL, password_hash=hash_password(DEMO_PASSWORD), full_name="Maya Rivera", university="Harbor Polytechnic", recruiter_evidence_consent=True),
+            "maya": Student(email=DEMO_STUDENT_EMAIL, password_hash=hash_password(DEMO_PASSWORD), full_name="Maya Rivera", university="Harbor Polytechnic University", recruiter_evidence_consent=True),
             "noah": Student(email="noah@example.demo", password_hash=hash_password(DEMO_PASSWORD), full_name="Noah Chen", university="Northwind Institute", recruiter_evidence_consent=True),
             "aria": Student(email="aria@example.demo", password_hash=hash_password(DEMO_PASSWORD), full_name="Aria Patel", university="Eastlake College", recruiter_evidence_consent=True),
             "blake": Student(email="blake@example.demo", password_hash=hash_password(DEMO_PASSWORD), full_name="Blake Morgan", university="Summit University", recruiter_evidence_consent=True),
         }
         session.add_all([recruiter, faculty, institution, *students.values()])
         await session.flush()
+
+        faculty_opportunities = [
+            FacultyOpportunity(
+                title="Cloud Systems Faculty Immersion",
+                opportunity_type="industrial_immersion",
+                organization_name="Skill Passport Demo Labs",
+                description="Offline demo record for a faculty cloud-systems immersion program.",
+                domain="Distributed Systems",
+                duration_weeks=6,
+                deadline=_NOW + timedelta(days=30),
+                status="open",
+                required_expertise=["Python", "Distributed Systems"],
+                created_by_recruiter_id=recruiter.id,
+            ),
+            FacultyOpportunity(
+                title="Explainable AI Faculty Development Program",
+                opportunity_type="fdp",
+                organization_name="Skill Passport Demo Labs",
+                description="Offline demo faculty development program.",
+                domain="Explainable AI",
+                duration_weeks=2,
+                deadline=_NOW + timedelta(days=45),
+                status="open",
+                required_expertise=["Machine Learning"],
+                created_by_recruiter_id=recruiter.id,
+            ),
+            FacultyOpportunity(
+                title="Evidence Provenance Research Grant",
+                opportunity_type="research_grant",
+                organization_name="Skill Passport Demo Labs",
+                description="Offline demo sponsored research opportunity.",
+                domain="Verification Systems",
+                stipend_or_grant=750000,
+                duration_weeks=24,
+                deadline=_NOW + timedelta(days=60),
+                status="open",
+                required_expertise=["PostgreSQL", "FastAPI"],
+                created_by_recruiter_id=recruiter.id,
+            ),
+            FacultyOpportunity(
+                title="Curriculum Architecture Consultancy",
+                opportunity_type="consultancy_request",
+                organization_name="Skill Passport Demo Labs",
+                description="Offline demo consultancy request.",
+                domain="Cloud Curriculum",
+                duration_weeks=8,
+                deadline=_NOW + timedelta(days=35),
+                status="open",
+                required_expertise=["Docker", "Distributed Systems"],
+                created_by_recruiter_id=recruiter.id,
+            ),
+        ]
+        session.add_all(faculty_opportunities)
+        await session.flush()
+        faculty_application = FacultyApplication(
+            faculty_id=faculty.id,
+            opportunity_id=faculty_opportunities[0].id,
+            status="accepted",
+            application_type="industrial_immersion",
+            proposal_title="Auditable cloud-native teaching lab",
+            proposal_text="Offline demo proposal for a deterministic faculty lifecycle.",
+            objectives=["Create a reproducible cloud lab", "Publish curriculum outcomes"],
+            engagement_status="active",
+            start_date=_NOW - timedelta(days=14),
+            end_date=_NOW + timedelta(days=28),
+        )
+        session.add(faculty_application)
+        await session.flush()
+        session.add(
+            CollaborationWorkspace(
+                application_id=faculty_application.id,
+                title="Auditable Cloud Teaching Lab",
+                collaboration_type="industrial_training",
+                organization_name="Skill Passport Demo Labs",
+                faculty_lead_id=faculty.id,
+                industry_lead_name="Demo Industry Mentor",
+                status="active",
+                progress_percentage=45,
+                objectives=["Build the lab", "Validate learning outcomes"],
+                milestones=[{"id": "m1", "title": "Lab design", "status": "completed"}],
+                discussion_posts=[{"author_name": "Demo Industry Mentor", "content": "Offline fixture workspace initialized."}],
+                start_date=_NOW - timedelta(days=14),
+                end_date=_NOW + timedelta(days=28),
+            )
+        )
+        session.add_all(
+            [
+                FacultyEventRegistration(
+                    faculty_id=faculty.id,
+                    event_id=uuid4(),
+                    event_type="workshop",
+                    event_title="Cloud-Native Microservices Architecture Masterclass",
+                    host_organization="Skill Passport Demo Labs",
+                    role="attendee",
+                    status="registered",
+                    scheduled_at=_NOW + timedelta(days=10),
+                ),
+                FacultyEventRegistration(
+                    faculty_id=faculty.id,
+                    event_id=uuid4(),
+                    event_type="fdp",
+                    event_title="Applied Generative AI and Embeddings Workshop",
+                    host_organization="Skill Passport Demo Labs",
+                    role="speaker",
+                    status="registered",
+                    scheduled_at=_NOW + timedelta(days=18),
+                ),
+            ]
+        )
         session.add_all([
             AccountEmail(email=recruiter.email, account_id=recruiter.id, role=Role.recruiter),
             AccountEmail(email=faculty.email, account_id=faculty.id, role=Role.academician),

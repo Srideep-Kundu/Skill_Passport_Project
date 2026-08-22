@@ -27,7 +27,7 @@ This guide uses Docker Compose for PostgreSQL, Redis, migrations, the API, worke
    docker compose run --rm --no-deps backend alembic current
    ```
 
-   This uses the exact database credentials and service hostname from `.env`; no credentials need to be guessed. The expected current revision is `0015_automation_policy`.
+   This uses the exact database credentials and service hostname from `.env`; no credentials need to be guessed. The expected current revision is `0021_faculty_portal_lifecycle`.
 
 4. Seed the canonical taxonomy (and, optionally, the demo data) after services are healthy:
 
@@ -61,6 +61,10 @@ This guide uses Docker Compose for PostgreSQL, Redis, migrations, the API, worke
 | `EMBEDDING_PROVIDER` | `disabled` by default; set to `gemini` only with a configured Gemini key. |
 | `SEMANTIC_MATCHING_ENABLED` | `false` by default; enable only with a compatible embedding provider. |
 | `GREENHOUSE_BOARD_TOKENS` | Optional comma-separated allowlist of public Greenhouse board tokens. |
+| `LEVER_SITE_TOKENS` / `ASHBY_JOB_BOARD_NAMES` / `YC_SOURCE_KEYS` | Explicit public source identifiers; empty sources are reported as disabled. |
+| `INSTITUTION_REGISTRATION_ALLOWLIST` | Comma-separated invited institution emails; enforced when `APP_ENV=production`. |
+| `LINKEDIN_STORAGE_DIR` | Managed directory for user-provided LinkedIn export archives. |
+| `VITE_DEMO_MODE` | Shows demo account shortcuts only when exactly `true`; keep false for public builds. |
 | `LEVER_SITE_TOKENS` | Optional comma-separated allowlist of public Lever site tokens. |
 | `ASHBY_JOB_BOARD_NAMES` | Optional comma-separated allowlist of public Ashby job-board names. |
 | `DISCOVERY_RUN_RATE_LIMIT_PER_MINUTE` | Per-student limit for manual discovery runs. |

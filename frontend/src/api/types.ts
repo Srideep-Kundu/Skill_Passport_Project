@@ -256,7 +256,7 @@ export interface ExternalJobSyncAllResponse {
   total_created: number;
   total_updated: number;
   total_synced: number;
-  providers: Record<string, any>;
+  providers: Record<string, unknown>;
   synced_at: string;
 }
 
@@ -663,7 +663,7 @@ export interface PlacementCandidateRanking {
   missing_skills: string[];
   registered_at: string;
   interview_date?: string | null;
-  offer_details?: Record<string, any> | null;
+  offer_details?: Record<string, unknown> | null;
 }
 
 export interface FacultyPassport {
@@ -701,12 +701,12 @@ export interface FacultyPassportUpdate {
   bio?: string | null;
   years_experience?: number;
   technical_skills?: string[];
-  certifications?: Array<Record<string, any>>;
-  publications?: Array<Record<string, any>>;
-  patents?: Array<Record<string, any>>;
-  past_industry_experience?: Array<Record<string, any>>;
-  completed_fdps?: Array<Record<string, any>>;
-  completed_trainings?: Array<Record<string, any>>;
+  certifications?: Array<Record<string, unknown>>;
+  publications?: Array<Record<string, unknown>>;
+  patents?: Array<Record<string, unknown>>;
+  past_industry_experience?: Array<Record<string, unknown>>;
+  completed_fdps?: Array<Record<string, unknown>>;
+  completed_trainings?: Array<Record<string, unknown>>;
   collaboration_availability?: string;
   phone?: string | null;
   linkedin_url?: string | null;
@@ -770,7 +770,7 @@ export interface FacultyApplication {
   completion_certificate_url?: string | null;
   rating_or_grade?: string | null;
   outcome_type?: string | null;
-  outcome_details?: Record<string, any>;
+  outcome_details?: Record<string, unknown>;
   applied_at: string;
   updated_at?: string | null;
   workspace_id?: string | null;
@@ -787,14 +787,14 @@ export interface FacultyApplicationCreate {
   problem_statement?: string;
   objectives?: string[];
   methodology?: string;
-  team_members?: Array<Record<string, any>>;
-  student_researchers?: Array<Record<string, any>>;
+  team_members?: Array<Record<string, unknown>>;
+  student_researchers?: Array<Record<string, unknown>>;
   deliverables?: string[];
-  milestones?: Array<Record<string, any>>;
+  milestones?: Array<Record<string, unknown>>;
   timeline_weeks?: number;
   budget_requested?: number;
   industry_support_required?: string;
-  attachments?: Array<Record<string, any>>;
+  attachments?: Array<Record<string, unknown>>;
   is_draft?: boolean;
 }
 
@@ -875,7 +875,7 @@ export interface FacultyAdvisedProject {
   host_company: string;
   problem_statement: string;
   duration_weeks: number;
-  milestones: Array<Record<string, any>>;
+  milestones: Array<Record<string, unknown>>;
   student_teams: Array<{
     id: string;
     student_id: string;
@@ -885,7 +885,7 @@ export interface FacultyAdvisedProject {
     feedback?: string | null;
     score_or_grade?: string | null;
   }>;
-  advisor_feedback: Array<Record<string, any>>;
+  advisor_feedback: Array<Record<string, unknown>>;
   status: string;
 }
 
@@ -1032,7 +1032,7 @@ export interface UserDocument {
   file_url?: string | null;
   verification_status: string;
   related_entity_id?: string | null;
-  metadata_payload?: Record<string, any>;
+  metadata_payload?: Record<string, unknown>;
   created_at: string;
 }
 
@@ -1044,7 +1044,7 @@ export interface UserDocumentCreate {
   mime_type?: string;
   file_url?: string;
   related_entity_id?: string;
-  metadata_payload?: Record<string, any>;
+  metadata_payload?: Record<string, unknown>;
 }
 
 export interface StudentAchievement {
@@ -1095,14 +1095,14 @@ export interface CopilotAction {
   label: string;
   target_tab: string;
   action_type: string;
-  payload?: Record<string, any>;
+  payload?: Record<string, unknown>;
 }
 
 export interface CopilotResponse {
   message: string;
   sources: string[];
   actions: CopilotAction[];
-  grounding_data: Record<string, any>;
+  grounding_data: Record<string, unknown>;
 }
 
 export interface ProfessionalProfile {
@@ -1117,6 +1117,9 @@ export interface ProfessionalProfile {
   projects: Array<{ title: string; description: string }>;
   source: string;
   source_confidence: number;
+  persistable: boolean;
+  is_demo_fixture: boolean;
+  disclaimer: string;
 }
 
 // =========================================================================
@@ -1307,12 +1310,12 @@ export interface IndustryPartnerDetail {
   partner_name: string;
   domain: string;
   partner_overview: string;
-  student_engagements: Array<Record<string, any>>;
-  faculty_engagements: Array<Record<string, any>>;
-  posted_opportunities: Array<Record<string, any>>;
-  placement_drives: Array<Record<string, any>>;
-  research_and_consultancy: Array<Record<string, any>>;
-  outcome_metrics: Record<string, any>;
+  student_engagements: Array<{ program: string; students_enrolled: number; status: string; avg_rating: number }>;
+  faculty_engagements: Array<{ faculty: string; department: string; role: string; status: string }>;
+  posted_opportunities: Array<{ title: string; type: string; stipend?: string; ctc?: string; location: string }>;
+  placement_drives: Array<{ drive_title: string; passing_year: number; offers_made: number; status: string }>;
+  research_and_consultancy: Array<{ title: string; grant_amount: string; duration_months: number; status: string }>;
+  outcome_metrics: Record<string, number>;
 }
 
 export interface CourseEffectivenessMetric {
@@ -1421,7 +1424,7 @@ export interface InstitutionReportResponse {
   report_title: string;
   generated_at: string;
   columns: string[];
-  rows: Array<Record<string, any>>;
+  rows: Array<Record<string, unknown>>;
   csv_export_url?: string | null;
 }
 

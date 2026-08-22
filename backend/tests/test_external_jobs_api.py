@@ -97,7 +97,11 @@ async def test_external_job_api_filters_provenance_and_role_boundaries(
     assert "indeed" in provider_names
     assert "jobsuit" in provider_names
     yc_entry = next(p for p in provider_data if p["provider"] == "yc")
-    assert yc_entry["status"] == "live"
+    assert yc_entry["status"] == "configured"
+    assert yc_entry["last_synced_at"] is None
+    greenhouse_entry = next(p for p in provider_data if p["provider"] == "greenhouse")
+    assert greenhouse_entry["status"] == "disabled"
+    assert greenhouse_entry["active_jobs_count"] == 1
     indeed_entry = next(p for p in provider_data if p["provider"] == "indeed")
-    assert indeed_entry["status"] == "api_required"
+    assert indeed_entry["status"] == "unavailable"
 

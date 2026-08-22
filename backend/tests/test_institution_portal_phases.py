@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.core.db import Base, create_matching_view, get_session
 from app.core.security import create_access_token
 from app.main import app
-from app.models import Academician, Admin, Institution, Role
+from app.models import Academician, Institution, Role, Student
 
 
 @pytest_asyncio.fixture
@@ -44,7 +44,19 @@ async def test_institution_phase1_endpoints(
             state="Karnataka",
             departments=["Computer Science & Engineering", "Information Technology"],
         )
-        session.add(inst)
+        in_scope_student = Student(
+            email="student@nit.example",
+            password_hash="hashed",
+            full_name="Scoped Student",
+            university="  NATIONAL INSTITUTE OF TECHNOLOGY ",
+        )
+        out_of_scope_student = Student(
+            email="student@other.example",
+            password_hash="hashed",
+            full_name="Other Student",
+            university="Other University",
+        )
+        session.add_all([inst, in_scope_student, out_of_scope_student])
         await session.commit()
         await session.refresh(inst)
         inst_id = inst.id
@@ -57,8 +69,8 @@ async def test_institution_phase1_endpoints(
     assert res.status_code == 200, res.text
     data = res.json()
     assert data["institution_name"] == "National Institute of Technology"
-    assert data["total_students"] > 0
-    assert len(data["department_metrics"]) >= 3
+    assert data["total_students"] == 1
+    assert len(data["department_metrics"]) == 1
 
     # 2. Department Drill-Down
     dept_res = await client.get("/institution/departments/Computer Science & Engineering", headers=headers)

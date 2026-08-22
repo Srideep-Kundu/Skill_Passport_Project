@@ -2,7 +2,6 @@
 Academician, Institution, Assessments, Learning, Placement, Skill Gaps, and Collaboration.
 """
 from datetime import UTC, datetime
-from uuid import UUID
 
 import httpx
 import pytest
@@ -13,17 +12,10 @@ from app.api import auth as auth_api
 from app.core.db import Base, create_matching_view, get_session
 from app.main import app
 from app.models import (
-    Academician,
     Assessment,
     AssessmentQuestion,
-    Evidence,
-    Institution,
     LearningCourse,
     PlacementDrive,
-    Skill,
-    Student,
-    StudentSkill,
-    VerificationTier,
 )
 
 
@@ -105,7 +97,7 @@ async def test_academician_and_institution_auth(ecosystem_client):
 
 @pytest.mark.asyncio
 async def test_career_goals_and_skill_gap_analysis(ecosystem_client):
-    client, factory = ecosystem_client
+    client, _factory = ecosystem_client
 
     # Register student
     st_resp = await client.post(

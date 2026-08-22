@@ -60,6 +60,13 @@ class Settings(BaseSettings):
         default=None,
         validation_alias=AliasChoices("SKILL_PASSPORT_GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_ID"),
     )
+    institution_registration_allowlist: Annotated[list[str], NoDecode] = Field(
+        default_factory=list,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_INSTITUTION_REGISTRATION_ALLOWLIST",
+            "INSTITUTION_REGISTRATION_ALLOWLIST",
+        ),
+    )
     embedding_provider: Literal["disabled", "gemini", "deterministic_test"] = Field(
         default="disabled",
         validation_alias=AliasChoices(
@@ -201,19 +208,19 @@ class Settings(BaseSettings):
         ),
     )
     greenhouse_board_tokens: Annotated[list[str], NoDecode] = Field(
-        default_factory=lambda: ["stripe", "anthropic", "figma", "github", "cloudflare", "datadog", "scaleai"],
+        default_factory=list,
         validation_alias=AliasChoices(
             "SKILL_PASSPORT_GREENHOUSE_BOARD_TOKENS", "GREENHOUSE_BOARD_TOKENS"
         ),
     )
     lever_site_tokens: Annotated[list[str], NoDecode] = Field(
-        default_factory=lambda: ["vanta", "postman", "palantir"],
+        default_factory=list,
         validation_alias=AliasChoices(
             "SKILL_PASSPORT_LEVER_SITE_TOKENS", "LEVER_SITE_TOKENS"
         ),
     )
     ashby_job_board_names: Annotated[list[str], NoDecode] = Field(
-        default_factory=lambda: ["openai", "ramp", "replit", "modal", "linear", "cursor"],
+        default_factory=list,
         validation_alias=AliasChoices(
             "SKILL_PASSPORT_ASHBY_JOB_BOARD_NAMES", "ASHBY_JOB_BOARD_NAMES"
         ),
@@ -372,6 +379,15 @@ class Settings(BaseSettings):
             return [name.strip() for name in value.split(",") if name.strip()]
         return value
 
+    @field_validator("institution_registration_allowlist", mode="before")
+    @classmethod
+    def split_institution_registration_allowlist(
+        cls, value: str | list[str]
+    ) -> list[str]:
+        if isinstance(value, str):
+            return [email.strip().casefold() for email in value.split(",") if email.strip()]
+        return [email.strip().casefold() for email in value if email.strip()]
+
     @field_validator("yc_source_keys", mode="before")
     @classmethod
     def split_yc_source_keys(cls, value: str | list[str]) -> list[str]:
@@ -406,6 +422,8 @@ class Settings(BaseSettings):
             raise RuntimeError(
                 "CORS_ORIGINS must contain exact HTTPS origins in production"
             )
+        if not self.google_client_id:
+            raise RuntimeError("GOOGLE_CLIENT_ID is required in production")
         if self.extraction_provider == "gemini" and not self.gemini_api_key:
             raise RuntimeError(
                 "GEMINI_API_KEY is required when EXTRACTION_PROVIDER=gemini"

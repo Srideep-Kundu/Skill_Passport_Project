@@ -147,7 +147,7 @@ export function ExternalJobs({ token }: { token: string }) {
         }
         setMatchesByJobId(matchMap);
       } catch (err) {
-        setError(err instanceof ApiError ? err.detail : "Failed to load live discovery market.");
+        setError(err instanceof ApiError ? err.detail : "Failed to load the opportunity market.");
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -268,10 +268,10 @@ export function ExternalJobs({ token }: { token: string }) {
         <div className="mt-6 pt-5 border-t border-slate-100 dark:border-white/[0.08]">
           <div className="flex items-center justify-between gap-2 mb-2.5">
             <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Connected Opportunity Providers:
+              Opportunity provider status:
             </span>
             <span className="text-[11px] font-medium text-slate-400 dark:text-[#8ea2c6]">
-              {providers.filter((p) => p.status === "live").length} Live Channels
+              {providers.filter((p) => p.status === "live").length} verified live
             </span>
           </div>
 
@@ -281,7 +281,7 @@ export function ExternalJobs({ token }: { token: string }) {
               return (
                 <div
                   key={p.provider}
-                  title={p.reason || `${p.name}: Active live ingestion`}
+                  title={p.reason || `${p.name}: successful configured sync recorded`}
                   className={`rounded-2xl border p-3 flex flex-col justify-between transition-all ${
                     isLive
                       ? "bg-slate-50/70 dark:bg-[#151e29]/70 border-slate-200/60 dark:border-white/[0.08]"
@@ -304,8 +304,8 @@ export function ExternalJobs({ token }: { token: string }) {
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-[10px] mt-2 text-slate-500 dark:text-[#8ea2c6]">
-                    <span className="font-semibold">{isLive ? `${p.active_jobs_count} jobs` : "API req."}</span>
-                    <span>{isLive ? syncedLabel(p.last_synced_at) : "Inactive"}</span>
+                    <span className="font-semibold">{p.active_jobs_count ? `${p.active_jobs_count} jobs` : "No jobs"}</span>
+                    <span>{isLive ? syncedLabel(p.last_synced_at) : p.status.replaceAll("_", " ")}</span>
                   </div>
                 </div>
               );
@@ -427,7 +427,7 @@ export function ExternalJobs({ token }: { token: string }) {
 
       {/* JOBS GRID */}
       {loading ? (
-        <LoadingState label="Discovering live opportunities across configured provider sources..." />
+        <LoadingState label="Loading persisted opportunities and configured provider status..." />
       ) : error ? (
         <ErrorState message={error} onRetry={() => void loadData()} />
       ) : jobs.length === 0 ? (
@@ -437,10 +437,10 @@ export function ExternalJobs({ token }: { token: string }) {
           </div>
           <div className="max-w-md mx-auto space-y-1.5">
             <h3 className="text-lg font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">
-              No live opportunities matching filter criteria
+              No opportunities match these filters
             </h3>
             <p className="text-xs text-slate-500 dark:text-[#98a4b3] font-sans">
-              Try adjusting your keyword, provider, or location filters, or trigger a live synchronization across all connected sources.
+              Try adjusting your keyword, provider, or location filters. Refresh only queries sources that are configured and available.
             </p>
           </div>
           <button

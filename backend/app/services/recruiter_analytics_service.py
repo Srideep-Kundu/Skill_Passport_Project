@@ -3,6 +3,7 @@
 Computes skill supply vs demand ratios, applicant skill gaps, and recruitment
 funnel metrics from real platform data for corporate recruiters.
 """
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -73,7 +74,7 @@ async def get_recruiter_skill_analytics(
     ).all()
     drive_ids = list(drives)
 
-    registrations = []
+    registrations: Sequence[PlacementRegistration] = ()
     if drive_ids:
         registrations = (
             await session.scalars(
@@ -82,12 +83,12 @@ async def get_recruiter_skill_analytics(
         ).all()
 
     total_apps = len(engagements) + len(registrations)
-    shortlisted = sum(1 for e in engagements if e.status in ("shortlisted", "selected", "active", "completed")) + sum(1 for r in registrations if r.status in ("shortlisted", "interview_scheduled", "interviewed", "offered", "accepted"))
-    interviews = sum(1 for r in registrations if r.status in ("interview_scheduled", "interviewed", "offered", "accepted"))
-    offered = sum(1 for r in registrations if r.status in ("offered", "accepted")) + sum(1 for e in engagements if e.status in ("selected", "active", "completed"))
-    accepted = sum(1 for r in registrations if r.status == "accepted") + sum(1 for e in engagements if e.status == "completed")
+    shortlisted = len([e for e in engagements if e.status in ("shortlisted", "selected", "active", "completed")]) + len([r for r in registrations if r.status in ("shortlisted", "interview_scheduled", "interviewed", "offered", "accepted")])
+    interviews = len([r for r in registrations if r.status in ("interview_scheduled", "interviewed", "offered", "accepted")])
+    offered = len([r for r in registrations if r.status in ("offered", "accepted")]) + len([e for e in engagements if e.status in ("selected", "active", "completed")])
+    accepted = len([r for r in registrations if r.status == "accepted"]) + len([e for e in engagements if e.status == "completed"])
 
-    funnel = [
+    funnel: list[dict[str, str | int]] = [
         {"stage": "Applications Received", "count": max(total_apps, 18)},
         {"stage": "Skill-Matched Shortlist", "count": max(shortlisted, 12)},
         {"stage": "Technical Interviews", "count": max(interviews, 7)},
@@ -131,7 +132,7 @@ async def get_recruiter_skill_analytics(
             )
         )
 
-    gaps = [
+    gaps: list[dict[str, str | int]] = [
         {"skill": "Docker & Containerization", "gap_percentage": "62%", "impact": "High (Delays backend onboarding)"},
         {"skill": "System Architecture & Async Queues", "gap_percentage": "54%", "impact": "High (Microservice scaling)"},
         {"skill": "CI/CD & Automated Testing", "gap_percentage": "41%", "impact": "Medium (Code quality)"},

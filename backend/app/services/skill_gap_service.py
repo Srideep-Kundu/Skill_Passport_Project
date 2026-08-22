@@ -8,7 +8,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Evidence, Skill, Student, StudentSkill, VerificationTier
+from app.models import Skill, Student, StudentSkill, VerificationTier
 from app.schemas.contracts import (
     CareerGoalsResponse,
     CareerGoalsUpdate,
@@ -134,7 +134,7 @@ async def analyze_skill_gaps(session: AsyncSession, student_id: UUID, target_rol
                     status="missing",
                     proficiency_score=0.0,
                     importance=imp,
-                    recommended_action=f"High-priority gap. Take diagnostic assessment or complete recommended course.",
+                    recommended_action="High-priority gap. Take diagnostic assessment or complete recommended course.",
                 )
             )
 

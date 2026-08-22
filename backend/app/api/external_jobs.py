@@ -1,3 +1,5 @@
+import logging
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 from uuid import UUID
 
@@ -27,6 +29,7 @@ from app.services.job_providers import (
 from app.services.rate_limit_service import enforce_rate_limit
 
 router = APIRouter(prefix="/external-jobs", tags=["external-jobs"])
+logger = logging.getLogger(__name__)
 
 
 async def _response(session: AsyncSession, external_job: ExternalJob) -> ExternalJobResponse:
@@ -96,37 +99,67 @@ async def list_providers(
             .group_by(ExternalJob.provider)
         )
     ).all()
-    stats = {r.provider: (r.count, r.last_synced) for r in rows}
+    stats: dict[str, tuple[int, datetime | None]] = {
+        str(row[0]): (int(row[1]), row[2]) for row in rows
+    }
 
     provider_defs = [
-        ("yc", "YC Startup Jobs", "YC STARTUP", True, False, "Live Hacker News & YC directory integration"),
-        ("greenhouse", "Greenhouse", "GREENHOUSE", True, False, "Official Greenhouse public job board API"),
-        ("lever", "Lever", "LEVER", True, False, "Official Lever postings public API"),
-        ("ashby", "Ashby", "ASHBY", True, False, "Official Ashby public job board API"),
-        ("indeed", "Indeed", "INDEED", False, False, "Indeed Publisher/Partner API credentials required"),
-        ("jobsuit", "Jobsuit.ai", "JOBSUIT", False, False, "Jobsuit.ai partner integration credentials required"),
+        ("yc", "YC Startup Jobs", "YC STARTUP", settings.yc_source_keys, "Public YC startup source"),
+        ("greenhouse", "Greenhouse", "GREENHOUSE", settings.greenhouse_board_tokens, "Official Greenhouse public job board API"),
+        ("lever", "Lever", "LEVER", settings.lever_site_tokens, "Official Lever postings public API"),
+        ("ashby", "Ashby", "ASHBY", settings.ashby_job_board_names, "Official Ashby public job board API"),
     ]
 
     items: list[ProviderStatusItem] = []
-    for key, name, badge_label, search_supported, status_tracking, reason in provider_defs:
+    for key, name, badge_label, configured_sources, reason in provider_defs:
         count, last_synced = stats.get(key, (0, None))
-        if not search_supported:
-            status = "api_required" if key == "indeed" else "integration_status"
+        if settings.environment.casefold() == "demo" and count:
+            provider_status = "fixture"
+            status_reason = "Offline demo fixture data; no live provider health is implied"
+        elif not configured_sources:
+            provider_status = "disabled"
+            status_reason = "No approved provider source identifiers are configured"
+        elif last_synced is None:
+            provider_status = "configured"
+            status_reason = "Configured, but no successful sync is recorded"
         else:
-            status = "live"
+            provider_status = "live"
+            status_reason = None
         items.append(
             ProviderStatusItem(
                 provider=key,
                 name=name,
-                status=status,
+                status=provider_status,
                 badge_label=badge_label,
-                search_supported=search_supported,
-                status_tracking_supported=status_tracking,
+                search_supported=bool(configured_sources),
+                status_tracking_supported=False,
                 active_jobs_count=count,
                 last_synced_at=last_synced,
-                reason=reason if status != "live" else None,
+                reason=status_reason or reason if provider_status != "live" else None,
             )
         )
+    items.extend(
+        [
+            ProviderStatusItem(
+                provider="indeed",
+                name="Indeed",
+                status="unavailable",
+                badge_label="INDEED",
+                search_supported=False,
+                status_tracking_supported=False,
+                reason="Official Indeed partner access is required",
+            ),
+            ProviderStatusItem(
+                provider="jobsuit",
+                name="Jobsuit.ai",
+                status="unavailable",
+                badge_label="JOBSUIT",
+                search_supported=False,
+                status_tracking_supported=False,
+                reason="Jobsuit.ai partner access is required",
+            ),
+        ]
+    )
     return items
 
 
@@ -146,7 +179,6 @@ async def list_external_jobs(
     active: bool = True,
 ) -> PaginatedResponse[ExternalJobResponse]:
     del principal
-    from datetime import UTC, datetime, timedelta
     filters: list[ColumnElement[bool]] = [ExternalJob.is_active.is_(active)]
     if provider and provider.strip() and provider.strip().casefold() != "all":
         filters.append(ExternalJob.provider == provider.strip().casefold())
@@ -225,8 +257,6 @@ async def sync_all_jobs(
 ) -> ExternalJobSyncAllResponse:
     from app.services.external_jobs_service import sync_all_configured_sources
     from app.services.matching_service import recompute_external_job_matches_for_student
-    from datetime import UTC, datetime
-
     await enforce_rate_limit("external-job-sync-all", str(principal.id), get_settings().external_job_sync_rate_limit_per_minute)
     results = await sync_all_configured_sources(session, actor_id=principal.id)
 
@@ -235,7 +265,10 @@ async def sync_all_jobs(
         try:
             await recompute_external_job_matches_for_student(session, principal.id)
         except Exception:
-            pass
+            logger.exception(
+                "External job match recomputation failed after provider sync",
+                extra={"student_id": str(principal.id)},
+            )
 
     return ExternalJobSyncAllResponse(
         total_created=results["total_created"],

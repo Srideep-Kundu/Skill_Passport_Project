@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Building2,
   ShieldCheck,
@@ -32,6 +32,7 @@ import {
   Cell,
 } from "recharts";
 import { api } from "../api/service";
+import { errorMessage } from "../api/client";
 import type {
   ActionPlanPayload,
   AtRiskCohortSummary,
@@ -54,6 +55,14 @@ import type {
   PlacementMonitoringOverview,
 } from "../api/types";
 import { toast } from "sonner";
+
+function displayReportValue(value: unknown): string {
+  if (value === null || value === undefined) return "-";
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  return JSON.stringify(value);
+}
 
 interface Props {
   token: string;
@@ -140,21 +149,7 @@ export function InstitutionDashboard({ token }: Props) {
     outcome_notes: "",
   });
 
-  useEffect(() => {
-    loadAllData();
-  }, [token]);
-
-  useEffect(() => {
-    if (activeTab === "departments") {
-      loadDepartmentDetail(selectedDept);
-    } else if (activeTab === "cohorts") {
-      loadCohorts();
-    } else if (activeTab === "reports") {
-      loadReport(selectedReportType);
-    }
-  }, [activeTab, selectedDept, cohortDeptFilter, cohortYearFilter, cohortReadinessFilter, selectedReportType]);
-
-  async function loadAllData() {
+  const loadAllData = useCallback(async () => {
     try {
       setLoading(true);
       const [
@@ -203,26 +198,26 @@ export function InstitutionDashboard({ token }: Props) {
       if (learnRes.status === "fulfilled") setLearningData(learnRes.value);
       if (riskRes.status === "fulfilled") setAtRiskData(riskRes.value);
       if (relRes.status === "fulfilled") setRelationshipsData(relRes.value);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to load institutional intelligence data");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to load institutional intelligence data"));
     } finally {
       setLoading(false);
     }
-  }
+  }, [token]);
 
-  async function loadDepartmentDetail(deptName: string) {
+  const loadDepartmentDetail = useCallback(async (deptName: string) => {
     try {
       setDeptLoading(true);
       const data = await api.getDepartmentDetail(deptName, token);
       setDeptDetail(data);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to load department detail");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to load department detail"));
     } finally {
       setDeptLoading(false);
     }
-  }
+  }, [token]);
 
-  async function loadCohorts() {
+  const loadCohorts = useCallback(async () => {
     try {
       const data = await api.getCohorts(token, {
         department: cohortDeptFilter !== "All" ? cohortDeptFilter : undefined,
@@ -230,29 +225,43 @@ export function InstitutionDashboard({ token }: Props) {
         readiness_band: cohortReadinessFilter !== "All" ? cohortReadinessFilter : undefined,
       });
       setCohortData(data);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to filter cohorts");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to filter cohorts"));
     }
-  }
+  }, [cohortDeptFilter, cohortReadinessFilter, cohortYearFilter, token]);
 
-  async function loadReport(rtype: string) {
+  const loadReport = useCallback(async (rtype: string) => {
     try {
       setReportLoading(true);
       const data = await api.getInstitutionReport(rtype, token);
       setReportData(data);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to generate report");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to generate report"));
     } finally {
       setReportLoading(false);
     }
-  }
+  }, [token]);
+
+  useEffect(() => {
+    void loadAllData();
+  }, [loadAllData]);
+
+  useEffect(() => {
+    if (activeTab === "departments") {
+      void loadDepartmentDetail(selectedDept);
+    } else if (activeTab === "cohorts") {
+      void loadCohorts();
+    } else if (activeTab === "reports") {
+      void loadReport(selectedReportType);
+    }
+  }, [activeTab, loadCohorts, loadDepartmentDetail, loadReport, selectedDept, selectedReportType]);
 
   async function handlePartnerClick(partnerName: string) {
     try {
       const data = await api.getIndustryPartnerDetail(partnerName, token);
       setSelectedPartner(data);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to load partner details");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to load partner details"));
     }
   }
 
@@ -280,8 +289,8 @@ export function InstitutionDashboard({ token }: Props) {
         notes: "",
       });
       toast.success("Skill Gap Intervention Plan created successfully!");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to create intervention plan");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to create intervention plan"));
     }
   }
 
@@ -290,8 +299,8 @@ export function InstitutionDashboard({ token }: Props) {
       const res = await api.updateInterventionPlan(planId, { status: newStatus }, token);
       setInterventionPlans((prev) => prev.map((p) => (p.id === planId ? res : p)));
       toast.success(`Plan updated to ${newStatus}`);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to update plan");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to update plan"));
     }
   }
 
@@ -300,8 +309,8 @@ export function InstitutionDashboard({ token }: Props) {
       await api.deleteInterventionPlan(planId, token);
       setInterventionPlans((prev) => prev.filter((p) => p.id !== planId));
       toast.success("Intervention plan deleted");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to delete plan");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to delete plan"));
     }
   }
 
@@ -326,8 +335,8 @@ export function InstitutionDashboard({ token }: Props) {
         outcome_notes: "",
       });
       toast.success("Institutional Action Plan saved!");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to create action plan");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to create action plan"));
     }
   }
 
@@ -416,10 +425,17 @@ export function InstitutionDashboard({ token }: Props) {
             </p>
           </div>
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.03]">
-            <span className="text-xs text-slate-400 uppercase font-semibold">Employability Index</span>
+            <span className="text-xs text-slate-400 uppercase font-semibold">Verified Student Coverage</span>
             <p className="text-2xl font-black text-amber-500 mt-1">{analytics.overall_employability_index}%</p>
           </div>
         </div>
+      </div>
+
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-950/20 dark:text-amber-100">
+        <strong>Data boundary:</strong> overview student, skill, internship, and placement counters are scoped to
+        registered students whose normalized university matches this institution. Department, cohort, curriculum,
+        partnership, intervention, and report modules are planning scenarios until institution-owned source records
+        are connected; they must not be treated as measured outcomes.
       </div>
 
       {/* Actionable Alerts Bar */}
@@ -1778,7 +1794,7 @@ export function InstitutionDashboard({ token }: Props) {
                       <tr key={idx} className="hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition-colors">
                         {reportData.columns.map((col) => (
                           <td key={col} className="p-3.5 whitespace-nowrap font-medium text-slate-900 dark:text-white">
-                            {row[col] ?? "-"}
+                            {displayReportValue(row[col])}
                           </td>
                         ))}
                       </tr>

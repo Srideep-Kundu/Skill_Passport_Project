@@ -161,7 +161,10 @@ export function ResumeIntelligence({
       setActiveResume(active);
 
       if (active) {
-        if (active.parse_status === "completed" || active.parse_status === "parsed") {
+        if (
+          (active.parse_status === "completed" || active.parse_status === "parsed") &&
+          active.skills_status === "ready"
+        ) {
           setPhase("complete");
         } else if (active.parse_status === "failed") {
           setPhase("error");
@@ -246,7 +249,7 @@ export function ResumeIntelligence({
       // Check if background worker is still processing skills
       if (parsedDoc.parse_status === "processing_skills" || parsedDoc.skills_status === "extracting") {
         // Poll status until completed or terminal
-        await new Promise<void>((resolve) => {
+        const outcome = await new Promise<"ready" | "failed" | "timeout" | "unavailable">((resolve) => {
           let attempts = 0;
           pollingRef.current = setInterval(async () => {
             attempts++;
@@ -255,28 +258,56 @@ export function ResumeIntelligence({
               const latest = (res.items || []).find((r) => r.id === parsedDoc.id);
               if (latest) {
                 setActiveResume(latest);
-                if (latest.parse_status === "completed" || latest.parse_status === "parsed" || latest.skills_status === "ready" || attempts > 15) {
+                if (latest.skills_status === "ready") {
                   stopPolling();
-                  resolve();
+                  resolve("ready");
                 } else if (latest.parse_status === "failed") {
                   stopPolling();
-                  resolve();
+                  resolve("failed");
+                } else if (attempts > 15) {
+                  stopPolling();
+                  resolve("timeout");
                 }
               }
             } catch {
               stopPolling();
-              resolve();
+              resolve("unavailable");
             }
           }, 1200);
         });
+
+        if (outcome !== "ready") {
+          setPhase(outcome === "failed" ? "error" : "discovering");
+          setErrorType(outcome === "failed" ? "parse" : null);
+          setErrorMessage(
+            outcome === "failed"
+              ? "Resume skill extraction failed. You can retry the analysis."
+              : "Your resume is still processing. Check back shortly; it has not yet updated your passport.",
+          );
+          if (outcome === "failed") {
+            toast.error("Resume skill extraction failed.");
+          } else {
+            toast.info("Resume uploaded; skill extraction is still processing.");
+          }
+          await load();
+          return;
+        }
+      } else if (parsedDoc.skills_status !== "ready") {
+        setPhase("discovering");
+        setErrorMessage("Your resume is still processing. It has not yet updated your passport.");
+        return;
       }
 
       // 5. Automated Skill Passport Update (Internal Activation)
       setPhase("building_passport");
       try {
         await api.activateResume(uploadedDoc.id, token);
-      } catch {
-        // Soft fallback if already active
+      } catch (caught) {
+        setPhase("error");
+        setErrorType("activate");
+        setErrorMessage(caught instanceof ApiError ? caught.detail : "Passport update failed.");
+        toast.error("Resume analysis finished, but the passport update failed.");
+        return;
       }
 
       // 6. Complete
@@ -306,6 +337,12 @@ export function ResumeIntelligence({
       setActiveResume(parsedDoc);
       setPhase("discovering");
 
+      if (parsedDoc.skills_status !== "ready") {
+        setErrorMessage("Re-analysis is still processing. Your passport has not been updated yet.");
+        toast.info("Resume re-analysis is still processing.");
+        return;
+      }
+
       await api.activateResume(activeResume.id, token);
       setPhase("building_passport");
       await load();
@@ -326,6 +363,11 @@ export function ResumeIntelligence({
   // Retry passport update without re-upload or re-parsing
   async function retryPassportUpdate() {
     if (!activeResume) return;
+    if (activeResume.skills_status !== "ready") {
+      setPhase("discovering");
+      setErrorMessage("Skill extraction is still processing. Passport activation is not available yet.");
+      return;
+    }
     setErrorMessage(null);
     setErrorType(null);
     setPhase("building_passport");

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import select
@@ -12,16 +12,12 @@ from app.models import (
     Internship,
     InternshipEngagement,
     Recruiter,
-    Student,
-    StudentSkill,
-    VerificationTier,
 )
 from app.schemas.contracts import (
     InternshipEngagementCreate,
     InternshipEngagementResponse,
     InternshipEngagementUpdate,
     MentorFeedbackRequest,
-    MilestoneUpdateRequest,
 )
 
 
@@ -168,7 +164,7 @@ async def create_internship_engagement(
         recruiter_id=recruiter_id,
         mentor_name=payload.mentor_name,
         mentor_email=payload.mentor_email,
-        start_date=payload.start_date or datetime.now(),
+        start_date=payload.start_date or datetime.now(UTC),
         end_date=payload.end_date,
         status="active",
         progress_percentage=0,
@@ -240,7 +236,7 @@ async def update_engagement_status(
                 "engagement_id": str(engagement.id),
                 "company_name": company,
                 "final_rating": float(engagement.final_rating) if engagement.final_rating else 4.5,
-                "completed_at": datetime.now().isoformat(),
+                "completed_at": datetime.now(UTC).isoformat(),
             },
             extraction_status=ExtractionStatus.extracted,
         )
@@ -292,7 +288,7 @@ async def submit_mentor_feedback(
         "problem_solving_rating": payload.problem_solving_rating,
         "overall_rating": payload.overall_rating,
         "comments": payload.comments,
-        "submitted_at": datetime.now().isoformat(),
+        "submitted_at": datetime.now(UTC).isoformat(),
     }
     engagement.mentor_feedback = feedback_dict
     engagement.final_rating = payload.overall_rating

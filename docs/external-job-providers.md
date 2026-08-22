@@ -2,7 +2,7 @@
 
 External providers are ingestion-only data sources. The dependency flow is:
 
-`provider adapter → normalized external job → PostgreSQL → future external-job match adapter`
+`provider adapter → normalized external job → PostgreSQL → deterministic external-job matching`
 
 Provider payloads never enter candidate-profile, fairness, recommendation, or scoring code. Normal GET endpoints read only the persisted `external_jobs` records, so availability of an external source cannot change a displayed result.
 
@@ -10,7 +10,9 @@ Provider payloads never enter candidate-profile, fairness, recommendation, or sc
 
 `JobProvider` exposes `search_jobs`, `get_job`, and `get_application_url`. Its `ProviderCapabilities` explicitly declares `search`, `detail_fetch`, `auto_apply`, and `status_tracking`; unsupported capabilities are `false`, not emulated.
 
-The adapters are Greenhouse Job Board API, Lever's public postings API, and Ashby's documented public Job Postings API. Each source identifier must be explicitly allowlisted before discovery or an admin sync can access it. Ashby board names are configured through `ASHBY_JOB_BOARD_NAMES`; its adapter uses only `https://api.ashbyhq.com/posting-api/job-board/{JOB_BOARD_NAME}` and is discovery-only. See [Ashby provider details](ashby-job-provider.md).
+The adapters are YC startup jobs, Greenhouse Job Board API, Lever's public postings API, and Ashby's documented public Job Postings API. Each source identifier must be explicitly configured before discovery or an admin sync can access it. Ashby board names are configured through `ASHBY_JOB_BOARD_NAMES`; its adapter uses only `https://api.ashbyhq.com/posting-api/job-board/{JOB_BOARD_NAME}` and is discovery-only. Indeed and Jobsuit are unavailable until formal partner access exists. See [Ashby provider details](ashby-job-provider.md).
+
+`GET /external-jobs/providers` distinguishes `disabled`, `configured`, `fixture`, `degraded`, `live`, and `unavailable`. Configuration or stored demo rows alone never produce `live`; the public UI preserves these labels. Demo fixture metadata includes `fixture=offline_demo` and `live_provider_call=false`.
 
 ## Data and normalization
 
@@ -28,7 +30,7 @@ The Greenhouse client uses a fixed HTTPS host, validates source keys and outgoin
 
 Students may use `GET /external-jobs` and `GET /external-jobs/{id}` with pagination plus provider, location, remote, query, employment-type, experience-level, and active filters. The response includes provider, external ID, source URL, and sync freshness, but never raw metadata. `POST /external-jobs/sync` is admin-only and Redis rate-limited.
 
-Location is a search/eligibility filter only; it is not a candidate-quality signal. Existing matching remains restricted to `matching_view`, which excludes names, education, location, and protected attributes. `external_job_requirements` can be read as the same `RequirementInput` shape used by the deterministic matcher, but Phase 8 intentionally does not persist or display external-job scores/explanations yet. This avoids creating a second formula or prematurely changing the internship `matches` contract.
+Location is a search/eligibility filter only; it is not a candidate-quality signal. Matching remains restricted to approved skill inputs and excludes names, education, location, and protected attributes. External-job scores and explanations are persisted separately from internship matches but reuse the same deterministic component formula and provenance rules. Recommendations below `MIN_EXTERNAL_JOB_MATCH_SCORE` are not returned.
 
 ## Adding an adapter
 

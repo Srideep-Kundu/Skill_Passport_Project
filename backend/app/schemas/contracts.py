@@ -378,7 +378,7 @@ class ExternalJobSyncResponse(APIModel):
 class ProviderStatusItem(APIModel):
     provider: str
     name: str
-    status: str  # "live" | "api_required" | "integration_status" | "not_configured"
+    status: str  # "disabled" | "configured" | "fixture" | "degraded" | "live" | "unavailable"
     badge_label: str
     search_supported: bool
     status_tracking_supported: bool

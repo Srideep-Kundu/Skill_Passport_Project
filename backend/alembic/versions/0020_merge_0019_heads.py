@@ -1,7 +1,7 @@
-"""Merge 0019_institution_decision_portal and 0019_placement_fields heads.
+"""Compatibility marker following 0019_institution_decision_portal.
 
 Revision ID: 0020_merge_0019_heads
-Revises: 0019_institution_decision_portal, 0019_placement_fields
+Revises: 0019_institution_decision_portal
 """
 
 from alembic import op  # noqa: F401

@@ -10,6 +10,7 @@ test("student sees a safe authentication error from the browser UI", async ({ pa
   });
 
   await page.goto("/");
+  await page.getByRole("button", { name: "Sign in or create an account" }).click();
   await page.getByLabel("Email").fill("demo@example.test");
   await page.getByLabel("Password").fill("incorrect-password");
   await page.locator("form").getByRole("button", { name: "Sign in" }).click();

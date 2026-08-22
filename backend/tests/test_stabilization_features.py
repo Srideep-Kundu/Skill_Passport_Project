@@ -5,8 +5,7 @@
 - Canonical profile completeness & GitHub synchronization
 """
 import uuid
-from datetime import UTC, datetime
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 import pytest_asyncio
@@ -14,7 +13,6 @@ from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.core.config import get_settings
 from app.core.db import Base, get_session
 from app.core.security import create_access_token
 from app.main import app
@@ -29,10 +27,9 @@ from app.models import (
     StudentSkill,
     VerificationTier,
 )
-from app.services.copilot_service import answer_copilot_query, get_student_context
+from app.services.copilot_service import answer_copilot_query
 from app.services.integrations.linkedin_import_provider import (
     MockDemoProvider,
-    ProfessionalProfile,
 )
 
 
@@ -68,7 +65,9 @@ async def test_mock_linkedin_import_provider():
     assert profile.full_name == "Maya Rivera"
     assert len(profile.skills) > 0
     assert "Python" in profile.skills
-    assert profile.source_confidence == 0.88
+    assert profile.source_confidence == 0
+    assert profile.is_demo_fixture is True
+    assert profile.persistable is False
     assert len(profile.experiences) > 0
 
 
@@ -177,18 +176,15 @@ async def test_linkedin_url_import_api(client: AsyncClient, db_session: AsyncSes
     assert profile_data["full_name"] == "Maya Rivera"
     assert len(profile_data["skills"]) > 0
 
-    # Step 2: Save Extracted Profile to Passport
+    # Step 2: Simulated URL previews cannot enter the evidence-backed passport.
     save_resp = await client.post(
         "/linkedin/imports/save-profile",
         json=profile_data,
         headers=headers,
     )
-    assert save_resp.status_code == 200
-    ev = save_resp.json()
-    assert "LinkedIn Profile" in ev["title"]
+    assert save_resp.status_code == 422
 
-    # Verify skills created in DB with partially_verified tier
+    # Verify no skills were fabricated from the preview.
     skills_in_db = (await db_session.scalars(select(StudentSkill).where(StudentSkill.student_id == student.id))).all()
-    assert len(skills_in_db) > 0
-    assert all(s.verification_tier in (VerificationTier.partially_verified, VerificationTier.verified) for s in skills_in_db)
+    assert skills_in_db == []
 

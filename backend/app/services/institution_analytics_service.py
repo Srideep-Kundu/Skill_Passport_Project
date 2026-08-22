@@ -5,30 +5,17 @@ curriculum-to-market alignment, cohort monitoring, intervention planning,
 and faculty-industry engagement without exposing individual PII.
 """
 from datetime import UTC, datetime
-from typing import Any
-from uuid import UUID, uuid4
+from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
-    Academician,
     Application,
     ApplicationTrackingStatus,
-    Assessment,
-    AssessmentAttempt,
-    CourseEnrollment,
-    FacultyApplication,
-    FacultyOpportunity,
-    InnovationChallenge,
     Institution,
     InstitutionActionPlan,
     InstitutionInterventionPlan,
-    Internship,
-    InternshipEngagement,
-    LearningCourse,
-    MentorshipSession,
-    PlacementDrive,
     PlacementRegistration,
     Skill,
     Student,
@@ -72,52 +59,82 @@ async def get_institution_analytics(
     session: AsyncSession,
     institution_id: UUID | None = None,
 ) -> InstitutionAnalyticsOverview:
-    inst_name = "State Technical University"
+    inst_name = "All institutions"
+    student_scope = None
     if institution_id:
         inst = await session.get(Institution, institution_id)
-        if inst:
-            inst_name = inst.institution_name
+        if not inst:
+            raise ValueError("Institution not found")
+        inst_name = inst.institution_name
+        student_scope = func.lower(func.trim(Student.university)) == inst_name.strip().casefold()
 
-    total_students = (await session.scalar(select(func.count(Student.id)))) or 0
+    student_count_stmt = select(func.count(Student.id))
+    if student_scope is not None:
+        student_count_stmt = student_count_stmt.where(student_scope)
+    total_students = (await session.scalar(student_count_stmt)) or 0
+
+    verified_students_stmt = (
+        select(func.count(StudentSkill.student_id.distinct()))
+        .join(Student, Student.id == StudentSkill.student_id)
+        .where(StudentSkill.verification_tier == VerificationTier.verified)
+    )
+    if student_scope is not None:
+        verified_students_stmt = verified_students_stmt.where(student_scope)
+    verified_students = (await session.scalar(verified_students_stmt)) or 0
+
+    verified_skills_stmt = (
+        select(func.count(StudentSkill.id))
+        .join(Student, Student.id == StudentSkill.student_id)
+        .where(StudentSkill.verification_tier == VerificationTier.verified)
+    )
+    if student_scope is not None:
+        verified_skills_stmt = verified_skills_stmt.where(student_scope)
     total_verified = (
-        await session.scalar(
-            select(func.count(StudentSkill.id)).where(
-                StudentSkill.verification_tier == VerificationTier.verified
-            )
-        )
+        await session.scalar(verified_skills_stmt)
     ) or 0
 
-    active_internships = (
-        await session.scalar(
-            select(func.count(Application.id)).where(
-                Application.tracking_status.in_([
-                    ApplicationTrackingStatus.interview,
-                    ApplicationTrackingStatus.offer,
-                    ApplicationTrackingStatus.hired,
-                ])
-            )
+    active_internships_stmt = (
+        select(func.count(Application.id))
+        .join(Student, Student.id == Application.student_id)
+        .where(
+            Application.tracking_status.in_([
+                ApplicationTrackingStatus.interview,
+                ApplicationTrackingStatus.offer,
+                ApplicationTrackingStatus.hired,
+            ])
         )
-    ) or 0
+    )
+    if student_scope is not None:
+        active_internships_stmt = active_internships_stmt.where(student_scope)
+    active_internships = (await session.scalar(active_internships_stmt)) or 0
 
-    placements_count = (
-        await session.scalar(
-            select(func.count(PlacementRegistration.id)).where(
-                PlacementRegistration.status.in_(["offered", "shortlisted", "accepted"])
-            )
-        )
-    ) or 0
+    placements_stmt = (
+        select(func.count(PlacementRegistration.id))
+        .join(Student, Student.id == PlacementRegistration.student_id)
+        .where(PlacementRegistration.status.in_(["offered", "shortlisted", "accepted"]))
+    )
+    if student_scope is not None:
+        placements_stmt = placements_stmt.where(student_scope)
+    placements_count = (await session.scalar(placements_stmt)) or 0
 
     skill_dist_stmt = (
         select(
             Skill.canonical_name,
             func.count(StudentSkill.student_id.distinct()).label("student_count"),
             func.avg(StudentSkill.extraction_confidence).label("avg_conf"),
+            func.sum(
+                case((StudentSkill.verification_tier == VerificationTier.verified, 1), else_=0)
+            ).label("verified_count"),
+            func.count(StudentSkill.id).label("skill_count"),
         )
         .join(Skill, StudentSkill.skill_id == Skill.id)
+        .join(Student, Student.id == StudentSkill.student_id)
         .group_by(Skill.canonical_name)
         .order_by(func.count(StudentSkill.student_id.distinct()).desc())
         .limit(8)
     )
+    if student_scope is not None:
+        skill_dist_stmt = skill_dist_stmt.where(student_scope)
     skill_rows = (await session.execute(skill_dist_stmt)).all()
 
     top_skills: list[InstitutionSkillDistribution] = [
@@ -125,69 +142,34 @@ async def get_institution_analytics(
             skill_name=row[0],
             student_count=row[1],
             average_proficiency=round(float(row[2] or 0.8), 2),
-            verified_ratio=0.85,
+            verified_ratio=round(float(row[3] or 0) / max(int(row[4] or 0), 1), 2),
         )
         for row in skill_rows
     ]
 
-    if not top_skills:
-        top_skills = [
-            InstitutionSkillDistribution(skill_name="Python", student_count=max(total_students, 42), average_proficiency=0.88, verified_ratio=0.90),
-            InstitutionSkillDistribution(skill_name="React", student_count=max(int(total_students * 0.8), 35), average_proficiency=0.82, verified_ratio=0.85),
-            InstitutionSkillDistribution(skill_name="PostgreSQL", student_count=max(int(total_students * 0.7), 28), average_proficiency=0.79, verified_ratio=0.80),
-            InstitutionSkillDistribution(skill_name="Machine Learning", student_count=max(int(total_students * 0.6), 24), average_proficiency=0.84, verified_ratio=0.78),
-            InstitutionSkillDistribution(skill_name="Docker", student_count=max(int(total_students * 0.5), 19), average_proficiency=0.76, verified_ratio=0.75),
-        ]
-
-    dept_metrics: list[DepartmentMetric] = [
-        DepartmentMetric(
-            department="Computer Science & Engineering",
-            total_students=max(int(total_students * 0.45), 58),
-            verified_skills_average=4.6,
-            placement_rate=88.5,
-            internship_rate=92.0,
-        ),
-        DepartmentMetric(
-            department="Information Technology",
-            total_students=max(int(total_students * 0.30), 38),
-            verified_skills_average=4.2,
-            placement_rate=84.0,
-            internship_rate=86.5,
-        ),
-        DepartmentMetric(
-            department="Electronics & Communication",
-            total_students=max(int(total_students * 0.25), 32),
-            verified_skills_average=3.8,
-            placement_rate=76.0,
-            internship_rate=80.0,
-        ),
-        DepartmentMetric(
-            department="Mechanical Engineering",
-            total_students=max(int(total_students * 0.20), 26),
-            verified_skills_average=3.2,
-            placement_rate=68.0,
-            internship_rate=72.0,
-        ),
-    ]
-
-    market_gaps = [
-        {"skill": "Cloud / Kubernetes", "industry_demand_index": 92, "student_supply_index": 48, "gap_severity": "High", "affected_students": 47},
-        {"skill": "PyTorch / GenAI", "industry_demand_index": 89, "student_supply_index": 62, "gap_severity": "Medium", "affected_students": 32},
-        {"skill": "TypeScript / React", "industry_demand_index": 85, "student_supply_index": 82, "gap_severity": "Balanced", "affected_students": 12},
-        {"skill": "Cybersecurity & OAuth", "industry_demand_index": 78, "student_supply_index": 35, "gap_severity": "Critical", "affected_students": 56},
-        {"skill": "FastAPI & Microservices", "industry_demand_index": 84, "student_supply_index": 55, "gap_severity": "Medium", "affected_students": 28},
-    ]
+    student_denominator = max(total_students, 1)
+    dept_metrics: list[DepartmentMetric] = []
+    if total_students:
+        dept_metrics.append(
+            DepartmentMetric(
+                department="All registered students",
+                total_students=total_students,
+                verified_skills_average=round(total_verified / student_denominator, 2),
+                placement_rate=round(100 * placements_count / student_denominator, 1),
+                internship_rate=round(100 * active_internships / student_denominator, 1),
+            )
+        )
 
     return InstitutionAnalyticsOverview(
         institution_name=inst_name,
-        total_students=max(total_students, 128),
-        total_verified_skills=max(total_verified, 480),
-        active_internships=max(active_internships, 46),
-        placements_secured=max(placements_count, 62),
-        overall_employability_index=84.5,
+        total_students=total_students,
+        total_verified_skills=total_verified,
+        active_internships=active_internships,
+        placements_secured=placements_count,
+        overall_employability_index=round(100 * verified_students / student_denominator, 1),
         department_metrics=dept_metrics,
         top_skills_distribution=top_skills,
-        market_skill_demand_gaps=market_gaps,
+        market_skill_demand_gaps=[],
     )
 
 

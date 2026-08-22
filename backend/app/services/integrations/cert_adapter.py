@@ -4,7 +4,7 @@ Provides a pluggable adapter protocol for validating external verifiable credent
 (e.g., Badgr, Credly, IEEE, AWS, Google Cloud).
 """
 from abc import ABC, abstractmethod
-from typing import Any
+
 from pydantic import BaseModel
 
 

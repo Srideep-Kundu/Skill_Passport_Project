@@ -65,6 +65,8 @@ const DEMO_PERSONAS = [
   { name: "Dean Analytics", role: "Institution / University", email: "dean@example.demo", pass: "DemoPassword123" },
 ];
 
+const demoMode = import.meta.env.VITE_DEMO_MODE === "true";
+
 export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
   const { setSession } = useAuth();
   const [mode, setMode] = useState<Mode>("login");
@@ -660,6 +662,9 @@ export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
 
             {role === "institution" && (
               <form onSubmit={institutionForm.handleSubmit(handleInstitutionRegisterSubmit)} className="space-y-3">
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-950/20 dark:text-amber-200">
+                  Public-pilot institution accounts are invite-only. Use the administrative email included in your invitation.
+                </div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-[#f1f0e8]">
                   Institution Name
                   <input
@@ -770,8 +775,8 @@ export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
           />
         </div>
 
-        {/* 1-Click Demo Launcher */}
-        <div className="mt-6 border-t border-slate-100 dark:border-white/[0.08] pt-5">
+        {/* Demo credentials are excluded from public builds. */}
+        {demoMode && <div className="mt-6 border-t border-slate-100 dark:border-white/[0.08] pt-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-[#98a4b3] mb-2.5">
             Quick 1-Click Demo Accounts
           </p>
@@ -789,7 +794,7 @@ export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
               </button>
             ))}
           </div>
-        </div>
+        </div>}
       </section>
 
       {/* Google Role Selection Modal */}

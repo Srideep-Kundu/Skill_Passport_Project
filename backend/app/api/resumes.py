@@ -1,4 +1,5 @@
 import hashlib
+import logging
 from pathlib import Path
 from typing import Annotated
 from uuid import UUID
@@ -13,7 +14,7 @@ from fastapi import (
     UploadFile,
     status,
 )
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,6 +36,7 @@ from app.services.resume_service import (
 )
 
 router = APIRouter(prefix="/resumes", tags=["resumes"])
+logger = logging.getLogger(__name__)
 
 
 async def _owned_resume(session: AsyncSession, document_id: UUID, student_id: UUID) -> ResumeDocument:
@@ -96,7 +98,10 @@ async def upload_resume(
             await activate_resume(session, document)
             await session.refresh(document)
         except Exception:
-            pass  # Fall back to uploaded status if background worker is busy
+            logger.exception(
+                "Automatic resume processing failed",
+                extra={"resume_document_id": str(document.id)},
+            )
 
     return await resume_response(session, document)
 
@@ -138,7 +143,6 @@ async def set_active_resume(document_id: UUID, principal: Annotated[Student, Dep
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_resume(document_id: UUID, principal: Annotated[Student, Depends(require_role("student"))], session: Annotated[AsyncSession, Depends(get_session)]) -> Response:
-    from sqlalchemy import update
     document = await _owned_resume(session, document_id, principal.id)
     
     # Safely detach derived evidence foreign key so resume deletion succeeds cleanly

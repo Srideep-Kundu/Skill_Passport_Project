@@ -5,11 +5,9 @@ and curriculum gaps into actionable, transparent career recommendations without 
 """
 from uuid import UUID
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
-from app.models import Student, StudentSkill, VerificationTier
+from app.models import Student
 from app.schemas.contracts import APIModel
 from app.services.skill_gap_service import (
     ROLE_SKILL_PROFILES,

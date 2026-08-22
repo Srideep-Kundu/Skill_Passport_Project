@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useCallback, useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
@@ -17,6 +17,7 @@ import { toast } from "sonner";
 interface Props {
   token: string;
   isOpen?: boolean;
+  onOpen?: () => void;
   onClose?: () => void;
   onNavigate?: (tab: string) => void;
 }
@@ -40,6 +41,7 @@ const QUICK_PROMPTS = [
 export function SkillPassportCopilot({
   token,
   isOpen: controlledIsOpen,
+  onOpen,
   onClose,
   onNavigate,
 }: Props) {
@@ -48,22 +50,30 @@ export function SkillPassportCopilot({
   const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
   const prefersReducedMotion = useReducedMotion();
   const [mounted, setMounted] = useState(false);
+  const messageSequence = useRef(0);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (isControlled && onClose) {
       onClose();
     } else {
       setInternalIsOpen(false);
     }
+  }, [isControlled, onClose]);
+
+  const nextMessageId = () => {
+    messageSequence.current += 1;
+    return String(messageSequence.current);
   };
 
   const handleToggle = () => {
     if (isOpen) {
       handleClose();
+    } else if (isControlled && onOpen) {
+      onOpen();
     } else {
       setInternalIsOpen(true);
     }
@@ -100,14 +110,14 @@ export function SkillPassportCopilot({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isControlled, onClose]);
+  }, [handleClose, isOpen]);
 
   async function handleSend(queryText?: string) {
     const textToSend = queryText || input;
     if (!textToSend.trim() || loading) return;
 
     const userMsg: Message = {
-      id: String(Date.now()),
+      id: nextMessageId(),
       sender: "user",
       text: textToSend.trim(),
     };
@@ -119,19 +129,19 @@ export function SkillPassportCopilot({
     try {
       const res: CopilotResponse = await api.queryCopilot(userMsg.text, token);
       const botMsg: Message = {
-        id: String(Date.now() + 1),
+        id: nextMessageId(),
         sender: "copilot",
         text: res.message,
         sources: res.sources,
         actions: res.actions,
       };
       setMessages((prev) => [...prev, botMsg]);
-    } catch (err: any) {
+    } catch {
       toast.error("Copilot could not process query");
       setMessages((prev) => [
         ...prev,
         {
-          id: String(Date.now() + 1),
+          id: nextMessageId(),
           sender: "copilot",
           text: "I could not retrieve your records at this moment. Please check your connection and try again.",
         },

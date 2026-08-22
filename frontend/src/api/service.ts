@@ -239,7 +239,7 @@ export const api = {
   createPlacementDrive: (input: Omit<PlacementDrive, "id" | "is_registered" | "registration_status">, token: string) => request<PlacementDrive>("/placements/drives", { method: "POST", body: JSON.stringify(input) }, token),
   registerPlacement: (placementDriveId: string, token: string, notes?: string) => request<PlacementDrive>("/placements/register", { method: "POST", body: JSON.stringify({ placement_drive_id: placementDriveId, notes }) }, token),
   getPlacementCandidates: (driveId: string, token: string) => request<PlacementCandidateRanking[]>(`/placements/drives/${encodeURIComponent(driveId)}/candidates`, {}, token),
-  updatePlacementStage: (registrationId: string, stage: string, token: string, extra?: { interview_date?: string; interview_notes?: string; offer_details?: Record<string, any> }) => request<PlacementCandidateRanking>(`/placements/registrations/${encodeURIComponent(registrationId)}/stage`, { method: "PATCH", body: JSON.stringify({ stage, ...extra }) }, token),
+  updatePlacementStage: (registrationId: string, stage: string, token: string, extra?: { interview_date?: string; interview_notes?: string; offer_details?: Record<string, unknown> }) => request<PlacementCandidateRanking>(`/placements/registrations/${encodeURIComponent(registrationId)}/stage`, { method: "PATCH", body: JSON.stringify({ stage, ...extra }) }, token),
 
   // Internship Engagements & Mentorship Lifecycle
   getMyInternshipEngagements: (token: string) => request<InternshipEngagement[]>("/internship-engagements/me", {}, token),

@@ -121,3 +121,29 @@ async def test_linkedin_upload_parse_idempotency_activation_and_ownership(
         f"/linkedin/imports/{import_id}", headers=headers(token)
     )
     assert del_clean.status_code == 204
+
+
+@pytest.mark.asyncio
+async def test_linkedin_url_preview_is_labeled_and_cannot_persist(
+    linkedin_client: httpx.AsyncClient,
+) -> None:
+    token = await register(linkedin_client, "linkedin-preview@example.test")
+    preview = await linkedin_client.post(
+        "/linkedin/imports/import-url",
+        headers=headers(token),
+        json={"profile_url": "https://www.linkedin.com/in/maya-rivera"},
+    )
+    assert preview.status_code == 200
+    profile = preview.json()
+    assert profile["source"] == "demo_fixture"
+    assert profile["source_confidence"] == 0
+    assert profile["is_demo_fixture"] is True
+    assert profile["persistable"] is False
+
+    saved = await linkedin_client.post(
+        "/linkedin/imports/save-profile",
+        headers=headers(token),
+        json=profile,
+    )
+    assert saved.status_code == 422
+    assert "simulated" in saved.json()["detail"].lower()

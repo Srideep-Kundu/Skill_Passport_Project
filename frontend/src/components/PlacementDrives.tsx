@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Briefcase,
   Building2,
@@ -9,6 +9,7 @@ import {
   Send,
 } from "lucide-react";
 import { api } from "../api/service";
+import { errorMessage } from "../api/client";
 import type { PlacementDrive } from "../api/types";
 import { toast } from "sonner";
 
@@ -23,21 +24,21 @@ export function PlacementDrives({ token }: Props) {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    loadDrives();
-  }, [token]);
-
-  async function loadDrives() {
+  const loadDrives = useCallback(async () => {
     try {
       setLoading(true);
       const data = await api.getPlacementDrives(token);
       setDrives(data);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to load campus placement drives");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to load campus placement drives"));
     } finally {
       setLoading(false);
     }
-  }
+  }, [token]);
+
+  useEffect(() => {
+    void loadDrives();
+  }, [loadDrives]);
 
   async function handleRegister(driveId: string) {
     try {
@@ -47,8 +48,8 @@ export function PlacementDrives({ token }: Props) {
       setRegisteringId(null);
       setNotes("");
       loadDrives();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to register for drive");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to register for drive"));
     } finally {
       setSubmitting(false);
     }

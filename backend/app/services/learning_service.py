@@ -4,10 +4,12 @@ Curates courses mapped to canonical skills, computes explainable recommendation
 reasons tied to student skill gaps, tracks progress, and links completed coursework
 into the student's Skill Passport.
 """
-from datetime import datetime
+import logging
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import (
@@ -27,6 +29,8 @@ from app.schemas.contracts import (
     LearningCourseResponse,
 )
 from app.services.skill_gap_service import analyze_skill_gaps
+
+logger = logging.getLogger(__name__)
 
 
 async def list_courses(
@@ -61,14 +65,16 @@ async def list_courses(
             for item in gap_analysis.gap_items:
                 if item.status == "missing":
                     missing_gaps_map[item.skill_name.casefold()] = (item.importance, target_role)
-        except Exception:
-            pass
+        except (SQLAlchemyError, ValueError):
+            logger.warning(
+                "Skill-gap analysis unavailable while listing courses",
+                extra={"student_id": str(student_id)},
+            )
 
     results: list[LearningCourseResponse] = []
     for c in courses:
-        if skill_name:
-            if not any(skill_name.casefold() in s.casefold() for s in c.skills):
-                continue
+        if skill_name and not any(skill_name.casefold() in s.casefold() for s in c.skills):
+            continue
         enr = enrollment_map.get(c.id)
 
         # Generate explainable recommendation reason
@@ -187,7 +193,7 @@ async def update_course_progress(
     enrollment.progress = payload.progress
     if payload.progress >= 100:
         enrollment.status = "completed"
-        enrollment.completed_at = datetime.now()
+        enrollment.completed_at = datetime.now(UTC)
 
         # Create Coursework Evidence for Passport
         evidence = Evidence(

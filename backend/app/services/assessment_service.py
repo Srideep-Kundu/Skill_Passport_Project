@@ -3,8 +3,8 @@
 Manages diagnostic assessments, autograding, and synchronizes verified outcomes
 into the student's Skill Passport with full evidence provenance.
 """
-from datetime import datetime
-from uuid import UUID, uuid4
+from datetime import UTC, datetime
+from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,7 +13,6 @@ from sqlalchemy.orm import selectinload
 from app.models import (
     Assessment,
     AssessmentAttempt,
-    AssessmentQuestion,
     Evidence,
     EvidenceType,
     ExtractionStatus,
@@ -159,7 +158,7 @@ async def submit_assessment(
                 "assessment_id": str(assessment.id),
                 "attempt_id": str(attempt.id),
                 "score_percentage": percentage,
-                "verified_at": datetime.now().isoformat(),
+                "verified_at": datetime.now(UTC).isoformat(),
             },
             extraction_status=ExtractionStatus.extracted,
         )

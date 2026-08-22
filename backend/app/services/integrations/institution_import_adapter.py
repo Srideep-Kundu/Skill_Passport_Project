@@ -5,8 +5,6 @@ into the institution directory without manual record entry.
 """
 import csv
 import io
-from typing import Any
-from uuid import UUID
 
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -65,8 +63,8 @@ async def import_students_csv(
             )
             session.add(student)
             imported += 1
-        except Exception as exc:
-            errors.append(f"Row {idx + 1}: {str(exc)}")
+        except (KeyError, TypeError, ValueError) as exc:
+            errors.append(f"Row {idx + 1}: {exc!s}")
 
     await session.commit()
     return BatchImportSummary(

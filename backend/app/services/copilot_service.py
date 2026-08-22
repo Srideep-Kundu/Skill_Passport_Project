@@ -7,25 +7,18 @@ zero PII leaks, and zero LLM scoring authority.
 from typing import Any
 from uuid import UUID
 
+from pydantic import Field
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.models import (
     Application,
-    AssessmentAttempt,
-    Evidence,
     Internship,
-    LearningCourse,
     Match,
-    PlacementDrive,
     PlacementRegistration,
     ResumeDocument,
     Student,
-    StudentAchievement,
-    StudentSkill,
-    UserDocument,
-    VerificationTier,
 )
 from app.schemas.contracts import APIModel
 from app.services.career_guidance_service import generate_career_guidance
@@ -37,14 +30,14 @@ class CopilotAction(APIModel):
     label: str
     target_tab: str
     action_type: str = "navigate"
-    action_data: dict[str, Any] = {}
+    action_data: dict[str, Any] = Field(default_factory=dict)
 
 
 class CopilotResponse(APIModel):
     message: str
-    sources: list[str] = []
-    actions: list[CopilotAction] = []
-    grounding_data: dict[str, Any] = {}
+    sources: list[str] = Field(default_factory=list)
+    actions: list[CopilotAction] = Field(default_factory=list)
+    grounding_data: dict[str, Any] = Field(default_factory=dict)
 
 
 async def get_student_context(session: AsyncSession, student_id: UUID) -> dict[str, Any]:
@@ -73,7 +66,7 @@ async def get_student_context(session: AsyncSession, student_id: UUID) -> dict[s
     # Guidance
     try:
         guidance = await generate_career_guidance(session, student_id)
-    except Exception:
+    except (SQLAlchemyError, ValueError):
         guidance = None
 
     # Matches with joined internship title
@@ -138,9 +131,9 @@ async def answer_copilot_query(session: AsyncSession, student_id: UUID, query: s
     if any(k in q for k in ["assessment", "test", "quiz", "aptitude", "soft skill", "diagnostic"]):
         return CopilotResponse(
             message=(
-                f"You have completed your diagnostic skill assessments. Skill assessments grant "
-                f"partially verified status without fabricating external code proof. "
-                f"You can take Quantitative Reasoning, Soft Skills Situational Judgment, or Technical Diagnostics anytime."
+                "You have completed your diagnostic skill assessments. Skill assessments grant "
+                "partially verified status without fabricating external code proof. "
+                "You can take Quantitative Reasoning, Soft Skills Situational Judgment, or Technical Diagnostics anytime."
             ),
             sources=["Assessment Attempts DB", "Skill Provenance Policy"],
             actions=[CopilotAction(label="Open Skill Assessments", target_tab="assessments")],
@@ -192,9 +185,9 @@ async def answer_copilot_query(session: AsyncSession, student_id: UUID, query: s
     if any(k in q for k in ["learn", "course", "curriculum", "improve", "study", "recommend"]):
         return CopilotResponse(
             message=(
-                f"The Adaptive Learning Hub has curated programs tailored to bridge your skill gaps. "
-                f"Courses include 'Advanced PostgreSQL & Query Optimization', 'FastAPI Production Microservices', "
-                f"and 'Modern React & TypeScript Architecture'. Completing these courses adds verified coursework evidence."
+                "The Adaptive Learning Hub has curated programs tailored to bridge your skill gaps. "
+                "Courses include 'Advanced PostgreSQL & Query Optimization', 'FastAPI Production Microservices', "
+                "and 'Modern React & TypeScript Architecture'. Completing these courses adds verified coursework evidence."
             ),
             sources=["Learning Hub Catalog", "Deterministic Gap Recommender"],
             actions=[CopilotAction(label="Go to Learning Hub", target_tab="learning")],
@@ -254,8 +247,8 @@ async def answer_copilot_query(session: AsyncSession, student_id: UUID, query: s
     if any(k in q for k in ["team", "mentor", "hackathon", "challenge", "collaborat"]):
         return CopilotResponse(
             message=(
-                f"In the Collaboration Hub, you can reserve 1-on-1 sessions with corporate mentors from Google Research and Atlassian, "
-                f"or register your team for industry hackathons and live projects."
+                "In the Collaboration Hub, you can reserve 1-on-1 sessions with corporate mentors from Google Research and Atlassian, "
+                "or register your team for industry hackathons and live projects."
             ),
             sources=["Mentorship & Challenges DB"],
             actions=[

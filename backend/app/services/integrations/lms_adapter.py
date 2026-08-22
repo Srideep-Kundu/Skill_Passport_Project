@@ -4,8 +4,6 @@ Provides a pluggable adapter protocol for syncing coursework and completions fro
 external learning platforms (e.g. Canvas, Moodle, Coursera, NPTEL/SWAYAM).
 """
 from abc import ABC, abstractmethod
-from typing import Any
-from uuid import UUID
 
 from pydantic import BaseModel
 

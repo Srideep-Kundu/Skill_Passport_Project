@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Target,
@@ -15,6 +15,7 @@ import {
   Briefcase,
 } from "lucide-react";
 import { api } from "../api/service";
+import { errorMessage } from "../api/client";
 import type { CareerGoals, CareerGuidanceOverview, SkillGapAnalysis } from "../api/types";
 import { CircularReadinessGauge } from "./CircularReadinessGauge";
 import { toast } from "sonner";
@@ -41,11 +42,7 @@ export function SkillGapAnalyzer({ token, onNavigateToLearning, onNavigateToAsse
   const [loading, setLoading] = useState(true);
   const [savingGoals, setSavingGoals] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, [token]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [userGoals, guidanceData] = await Promise.all([
@@ -58,12 +55,16 @@ export function SkillGapAnalyzer({ token, onNavigateToLearning, onNavigateToAsse
       setSelectedRole(activeRole);
       const gapData = await api.getSkillGapAnalysis(token, activeRole);
       setAnalysis(gapData);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to load skill gap analysis");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to load skill gap analysis"));
     } finally {
       setLoading(false);
     }
-  }
+  }, [token]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   async function handleRoleChange(role: string) {
     setSelectedRole(role);
@@ -71,8 +72,8 @@ export function SkillGapAnalyzer({ token, onNavigateToLearning, onNavigateToAsse
       setLoading(true);
       const gapData = await api.getSkillGapAnalysis(token, role);
       setAnalysis(gapData);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to analyze target role");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to analyze target role"));
     } finally {
       setLoading(false);
     }
@@ -91,8 +92,8 @@ export function SkillGapAnalyzer({ token, onNavigateToLearning, onNavigateToAsse
       );
       setGoals(updated);
       toast.success(`Target role set to ${selectedRole}`);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to update target role");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to update target role"));
     } finally {
       setSavingGoals(false);
     }

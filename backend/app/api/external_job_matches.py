@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -93,6 +93,7 @@ async def recommended_external_job_matches(
     filters: list[ColumnElement[bool]] = [
         ExternalJobMatch.student_id == principal.id,
         ExternalJob.is_active.is_(True),
+        ExternalJobMatch.final_score >= get_settings().external_job_min_match_score,
     ]
     if provider and provider.strip() and provider.strip().casefold() != "all":
         filters.append(ExternalJob.provider == provider.strip().casefold())
@@ -107,6 +108,7 @@ async def recommended_external_job_matches(
         filters.append(or_(ExternalJob.title.ilike(val), ExternalJob.company_name.ilike(val)))
 
     # Determine sort order
+    order_clause: list[Any]
     if sort_by == "newest":
         order_clause = [
             ExternalJob.posted_at.desc().nullslast(),

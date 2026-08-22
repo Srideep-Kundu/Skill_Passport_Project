@@ -10,6 +10,7 @@ def production_settings(**overrides: object) -> Settings:
         "database_url": "postgresql+asyncpg://user:password@db:5432/skill_passport",
         "redis_url": "redis://redis:6379/0",
         "cors_origins": ["https://app.example.test"],
+        "google_client_id": "public-web-client-id.apps.googleusercontent.com",
     }
     values.update(overrides)
     return Settings(**values)
@@ -22,6 +23,7 @@ def production_settings(**overrides: object) -> Settings:
         ({"database_url": "sqlite+aiosqlite:///./skill_passport.db"}, "PostgreSQL"),
         ({"redis_url": None}, "REDIS_URL"),
         ({"cors_origins": ["*"]}, "CORS_ORIGINS"),
+        ({"google_client_id": None}, "GOOGLE_CLIENT_ID"),
         ({"extraction_provider": "gemini", "gemini_api_key": None}, "GEMINI_API_KEY"),
         ({"semantic_matching_enabled": True}, "Semantic matching"),
     ],

@@ -1,8 +1,7 @@
 """API Router for Student Career Goals and Ambition Profiles."""
 from typing import Annotated
-from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session

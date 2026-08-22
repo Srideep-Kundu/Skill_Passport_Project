@@ -9,6 +9,7 @@ Covers:
 """
 import uuid
 from datetime import UTC, datetime, timedelta
+
 import httpx
 import pytest
 import pytest_asyncio
@@ -26,10 +27,7 @@ from app.models import (
     EvidenceType,
     ExtractionStatus,
     Internship,
-    InternshipEngagement,
     LearningCourse,
-    PlacementDrive,
-    PlacementRegistration,
     Recruiter,
     Role,
     Skill,

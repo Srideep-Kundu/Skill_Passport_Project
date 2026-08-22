@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   BookOpen,
   CheckCircle2,
@@ -8,6 +8,7 @@ import {
   PlayCircle,
 } from "lucide-react";
 import { api } from "../api/service";
+import { errorMessage } from "../api/client";
 import type { LearningCourse } from "../api/types";
 import { toast } from "sonner";
 
@@ -21,30 +22,30 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
-  useEffect(() => {
-    loadCourses();
-  }, [token, selectedCategory]);
-
-  async function loadCourses() {
+  const loadCourses = useCallback(async () => {
     try {
       setLoading(true);
       const cat = selectedCategory === "All" ? undefined : selectedCategory;
       const data = await api.getCourses(token, cat);
       setCourses(data);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to load learning courses");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to load learning courses"));
     } finally {
       setLoading(false);
     }
-  }
+  }, [selectedCategory, token]);
+
+  useEffect(() => {
+    void loadCourses();
+  }, [loadCourses]);
 
   async function handleEnroll(courseId: string) {
     try {
       await api.enrollCourse(courseId, token);
       toast.success("Enrolled in course successfully!");
       loadCourses();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to enroll in course");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to enroll in course"));
     }
   }
 
@@ -58,8 +59,8 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
         toast.info(`Course progress updated to ${newProgress}%`);
       }
       loadCourses();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to update progress");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to update progress"));
     }
   }
 
