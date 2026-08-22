@@ -124,7 +124,7 @@ export function EvidenceUpload({
     trackedEvidence?.extraction_status === "dead_lettered";
 
   return (
-    <section className="rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#111821]/90 backdrop-blur-md p-5 sm:p-6 shadow-sm flex flex-col justify-between text-slate-900 dark:text-[#f1f0e8]">
+    <section className="rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#111821]/90 backdrop-blur-md p-5 sm:p-6 shadow-sm text-slate-900 dark:text-[#f1f0e8] space-y-4">
       <div className="border-b border-slate-100 dark:border-white/[0.08] pb-3.5">
         <h2 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">Add Technical Evidence</h2>
         <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-0.5 font-sans">
@@ -132,7 +132,7 @@ export function EvidenceUpload({
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmitForm)} className="mt-4 space-y-3">
+      <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-3">
         <div className="grid grid-cols-2 gap-2">
           <label className="block text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] col-span-2 sm:col-span-1 font-sans">
             Evidence Type

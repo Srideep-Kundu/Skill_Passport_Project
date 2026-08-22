@@ -111,10 +111,10 @@ export function ApplicationTracking({
         <div>
           <h4 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] flex items-center gap-2 font-sans">
             <FileCheck className="h-4 w-4 text-[#3b71d9] dark:text-[#b0c6ff]" />
-            <span>{(application as any).job?.title || "Application"}</span>
+            <span>{application.application_snapshot?.job?.title || "Application"}</span>
           </h4>
           <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-0.5 font-sans">
-            {(application as any).job?.company_name || "Unknown Company"} &middot; Lifecycle: {label(application.status)}
+            {application.application_snapshot?.job?.company_name || "Unknown Company"} &middot; Lifecycle: {label(application.status)}
           </p>
         </div>
 

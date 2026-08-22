@@ -72,10 +72,22 @@ async def recommended_external_job_matches(
     remote: bool | None = None,
     employment_type: Annotated[str | None, Query(max_length=64)] = None,
 ) -> PaginatedResponse[ExternalJobMatchResponse]:
+    existing_count = int(
+        (
+            await session.scalar(
+                select(func.count())
+                .select_from(ExternalJobMatch)
+                .where(ExternalJobMatch.student_id == principal.id)
+            )
+        )
+        or 0
+    )
+    if existing_count == 0:
+        await recompute_external_job_matches_for_student(session, principal.id)
+
     filters: list[ColumnElement[bool]] = [
         ExternalJobMatch.student_id == principal.id,
         ExternalJob.is_active.is_(True),
-        ExternalJobMatch.final_score >= get_settings().external_job_min_match_score,
     ]
     if location and location.strip():
         filters.append(ExternalJob.location.ilike(f"%{location.strip()}%"))

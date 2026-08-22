@@ -21,6 +21,7 @@ interface CommandPaletteProps {
   role: "student" | "recruiter";
   onSelectStudentTab: (tab: StudentTab) => void;
   onSelectRecruiterTab: (tab: RecruiterTab) => void;
+  onOpenCopilot?: () => void;
 }
 
 export function CommandPalette({
@@ -29,6 +30,7 @@ export function CommandPalette({
   role,
   onSelectStudentTab,
   onSelectRecruiterTab,
+  onOpenCopilot,
 }: CommandPaletteProps) {
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -64,6 +66,24 @@ export function CommandPalette({
             <Command.Empty className="py-6 text-center text-xs text-slate-400 dark:text-[#98a4b3]">
               No matching pages or actions found.
             </Command.Empty>
+
+            {onOpenCopilot && (
+              <Command.Group heading="AI Tools" className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#98a4b3] px-2 py-1 font-sans">
+                <Command.Item
+                  onSelect={() => {
+                    onOpenCopilot();
+                    onOpenChange(false);
+                  }}
+                  className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-semibold bg-indigo-50/50 dark:bg-indigo-950/30 text-indigo-700 dark:text-[#7dd3fc] hover:bg-indigo-100/80 dark:hover:bg-[#1b2738] cursor-pointer transition-colors font-sans border border-indigo-200/50 dark:border-[#38bdf8]/20"
+                >
+                  <Sparkles className="h-4 w-4 text-indigo-600 dark:text-[#38bdf8] animate-pulse" />
+                  <span className="flex-1">Open Skill Copilot (AI Assistant)</span>
+                  <span className="text-[10px] font-extrabold uppercase bg-indigo-200/60 dark:bg-indigo-900/60 text-indigo-800 dark:text-[#38bdf8] px-1.5 py-0.5 rounded">
+                    Ctrl+J
+                  </span>
+                </Command.Item>
+              </Command.Group>
+            )}
 
             <Command.Group heading="Navigation Pages" className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#98a4b3] px-2 py-1 font-sans">
               {role === "student" ? (

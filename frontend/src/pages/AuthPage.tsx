@@ -3,13 +3,18 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Check, GraduationCap, Briefcase } from "lucide-react";
+import { Check, GraduationCap, Briefcase, X } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import { ApiError, api } from "../api";
 import { useAuth } from "../auth/AuthContext";
 
 type Mode = "login" | "register";
 type RegistrationRole = "student" | "recruiter";
+
+export interface AuthPageProps {
+  isModal?: boolean;
+  onClose?: () => void;
+}
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email address"),
@@ -39,7 +44,7 @@ const DEMO_PERSONAS = [
   { name: "Demo Recruiter", role: "Recruiter View", email: "recruiter@example.demo", pass: "DemoPassword123" },
 ];
 
-export function AuthPage() {
+export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
   const { setSession } = useAuth();
   const [mode, setMode] = useState<Mode>("login");
   const [role, setRole] = useState<RegistrationRole>("student");
@@ -164,7 +169,25 @@ export function AuthPage() {
     recruiterForm.formState.isSubmitting;
 
   return (
-    <main className="mx-auto grid min-h-screen max-w-6xl items-center gap-12 px-6 py-12 lg:grid-cols-2 bg-slate-50 dark:bg-[#101319] text-slate-900 dark:text-[#f1f0e8]">
+    <main
+      className={`relative mx-auto grid items-center gap-8 lg:gap-12 text-slate-900 dark:text-[#f1f0e8] transition-all ${
+        isModal
+          ? "w-full max-w-5xl p-6 sm:p-8 lg:p-10 lg:grid-cols-2 bg-slate-50/95 dark:bg-[#101319]/95"
+          : "min-h-screen max-w-6xl px-6 py-12 lg:grid-cols-2 bg-slate-50 dark:bg-[#101319]"
+      }`}
+    >
+      {/* Close button in modal mode */}
+      {onClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close authentication modal"
+          className="absolute top-4 right-4 z-20 flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-[#151e29]/80 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1a2536] transition-all cursor-pointer shadow-xs"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      )}
+
       {/* Brand & Value Proposition */}
       <section className="space-y-6">
         <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 dark:border-white/10 bg-blue-50/80 dark:bg-[#151e29] px-3.5 py-1 text-xs font-semibold uppercase tracking-wider text-[#3b71d9] dark:text-[#dedbc8]">

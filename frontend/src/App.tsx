@@ -18,10 +18,12 @@ import {
   Code2,
   Compass,
   Users,
+  Sparkles,
 } from "lucide-react";
-import { AuthPage } from "./pages/AuthPage";
+import { LandingPage } from "./pages/LandingPage";
 import { useAuth } from "./auth/AuthContext";
 import { CommandPalette } from "./components/CommandPalette";
+import { CopilotSidebar } from "./components/CopilotSidebar";
 import { PostLoginTransition } from "./components/PostLoginTransition";
 import { LuminaAmbientHorizon } from "./components/LuminaAmbientHorizon";
 import { sidebarIndicatorTransition } from "./theme/motion";
@@ -42,6 +44,7 @@ export function App() {
   const [recruiterTab, setRecruiterTab] = useState<RecruiterTab>("overview");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
+  const [copilotOpen, setCopilotOpen] = useState(false);
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem("skill-passport.theme");
@@ -65,12 +68,15 @@ export function App() {
     localStorage.setItem("skill_passport_sidebar_collapsed", String(isCollapsed));
   }, [isCollapsed]);
 
-  // Keyboard shortcut (Ctrl+B / Cmd+B) to toggle sidebar
+  // Keyboard shortcut (Ctrl+B / Cmd+B) to toggle sidebar, and (Ctrl+J / Cmd+J) for Copilot
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
         e.preventDefault();
         setIsCollapsed((prev) => !prev);
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "j") {
+        e.preventDefault();
+        setCopilotOpen((prev) => !prev);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -81,7 +87,9 @@ export function App() {
     setIsDarkMode((prev) => !prev);
   }
 
-  if (!session) return <AuthPage />;
+  if (!session) {
+    return <LandingPage isDarkMode={isDarkMode} onToggleTheme={toggleTheme} />;
+  }
 
   if (justLoggedIn) {
     return (
@@ -120,7 +128,7 @@ export function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#101319] flex font-sans text-slate-900 dark:text-[#f1f0e8] relative">
+    <div className="min-h-screen bg-transparent flex font-sans text-slate-900 dark:text-[#f1f0e8] relative">
       {/* Dynamic Ambient Horizon Background Animation */}
       <LuminaAmbientHorizon />
 
@@ -134,6 +142,7 @@ export function App() {
         role={session.role as "student" | "recruiter"}
         onSelectStudentTab={setStudentTab}
         onSelectRecruiterTab={setRecruiterTab}
+        onOpenCopilot={() => setCopilotOpen(true)}
       />
 
       {/* Mobile Backdrop */}
@@ -144,9 +153,9 @@ export function App() {
         />
       )}
 
-      {/* Sticky Left Sidebar (Pinned to top on desktop while page scrolls) */}
+      {/* Sticky Left Sidebar (Pinned to top on desktop with ultra-transparent frosted glass) */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 h-screen md:sticky md:top-0 bg-white dark:bg-[#0b0e13] border-r border-slate-200/80 dark:border-white/[0.08] flex flex-col justify-between transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none md:translate-x-0 shrink-0 ${
+        className={`fixed inset-y-0 left-0 z-40 h-screen md:sticky md:top-0 bg-white/20 dark:bg-black/25 backdrop-blur-md border-r border-slate-200/40 dark:border-white/[0.05] flex flex-col justify-between transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none md:translate-x-0 shrink-0 shadow-lg shadow-black/10 ${
           isCollapsed ? "md:w-20" : "md:w-72"
         } w-72 ${mobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}
       >
@@ -183,7 +192,7 @@ export function App() {
               aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
               aria-expanded={!isCollapsed}
               title={isCollapsed ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
-              className="hidden md:flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50 dark:bg-[#151e29] text-slate-500 dark:text-[#98a4b3] hover:bg-slate-100 dark:hover:bg-[#1a2430] hover:text-[#4f46e5] dark:hover:text-white active:scale-95 transition-all duration-200 cursor-pointer"
+              className="hidden md:flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-slate-200/60 dark:border-white/[0.06] bg-white/40 dark:bg-[#151e29]/40 backdrop-blur-md text-slate-500 dark:text-[#98a4b3] hover:bg-white/70 dark:hover:bg-[#1a2430]/70 hover:text-[#4f46e5] dark:hover:text-white active:scale-95 transition-all duration-200 cursor-pointer"
             >
               <MoreHorizontal className={`h-4 w-4 transition-transform duration-200 ${isCollapsed ? "rotate-90" : "rotate-0"}`} />
             </button>
@@ -290,19 +299,60 @@ export function App() {
           </div>
         </div>
 
-        {/* ALWAYS VISIBLE FOOTER (Account Card + Dark Theme Toggle + Sign Out) */}
-        <div className={`shrink-0 border-t border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0b0e13] space-y-2.5 sticky bottom-0 z-20 shadow-md transition-all duration-300 ${isCollapsed ? "p-2.5" : "p-4"}`}>
+        {/* ALWAYS VISIBLE FOOTER (Skill Copilot + Account Card + Dark Theme Toggle + Sign Out with Frosted Glass) */}
+        <div className={`shrink-0 border-t border-slate-200/60 dark:border-white/[0.06] bg-white/40 dark:bg-[#0b0e13]/40 backdrop-blur-2xl space-y-2.5 sticky bottom-0 z-20 shadow-md transition-all duration-300 ${isCollapsed ? "p-2" : "p-3.5"}`}>
+          {/* AI Skill Copilot in Bottom Section */}
+          <button
+            type="button"
+            onClick={() => {
+              setCopilotOpen((prev) => !prev);
+              setMobileMenuOpen(false);
+            }}
+            title={isCollapsed ? "Skill Copilot (AI Assistant) • Ctrl+J" : undefined}
+            className={`relative w-full flex items-center rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer border ${
+              copilotOpen
+                ? "bg-gradient-to-r from-[#4338ca] to-[#6366f1] text-white border-indigo-500/80 shadow-md shadow-indigo-500/25 dark:shadow-[0_0_16px_rgba(99,102,241,0.25)]"
+                : "bg-indigo-50/70 dark:bg-[#131a27]/90 border-indigo-200/70 dark:border-[#38bdf8]/20 text-indigo-700 dark:text-[#93c5fd] hover:bg-indigo-100/80 dark:hover:bg-[#1a253a] hover:border-indigo-300 dark:hover:border-[#38bdf8]/40"
+            } ${isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-2.5"}`}
+          >
+            <span
+              className={`relative z-10 text-base shrink-0 flex items-center justify-center w-5 h-5 ${
+                copilotOpen ? "text-white" : "text-indigo-600 dark:text-[#38bdf8]"
+              }`}
+            >
+              <Sparkles className="h-4 w-4 animate-pulse" />
+            </span>
+            <span
+              className={`relative z-10 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out font-sans flex-1 text-left ${
+                isCollapsed ? "max-w-0 opacity-0" : "max-w-xs opacity-100"
+              }`}
+            >
+              Skill Copilot
+            </span>
+            {!isCollapsed && (
+              <span
+                className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded tracking-wider ${
+                  copilotOpen
+                    ? "bg-white/20 text-white"
+                    : "bg-indigo-200/70 text-indigo-800 dark:bg-indigo-950/80 dark:text-[#38bdf8] border border-indigo-300/40 dark:border-[#38bdf8]/30"
+                }`}
+              >
+                AI
+              </span>
+            )}
+          </button>
+
           {/* User Profile Card */}
           {isCollapsed ? (
             <div
-              className="flex h-10 w-10 mx-auto items-center justify-center rounded-xl bg-blue-50 dark:bg-[#151e29] font-bold text-[#3b71d9] dark:text-[#b0c6ff] text-xs shadow-xs border border-blue-200/60 dark:border-white/[0.08]"
+              className="flex h-10 w-10 mx-auto items-center justify-center rounded-xl bg-blue-50/70 dark:bg-[#151e29]/70 backdrop-blur-md font-bold text-[#3b71d9] dark:text-[#b0c6ff] text-xs shadow-xs border border-blue-200/60 dark:border-white/[0.08]"
               title={`${session.email} (${session.role})`}
             >
               {session.email[0].toUpperCase()}
             </div>
           ) : (
-            <div className="flex items-center gap-3 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/70 dark:bg-[#111821] p-3 min-w-0">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-[#151e29] font-bold text-[#3b71d9] dark:text-[#b0c6ff] text-xs border border-blue-200/60 dark:border-blue-400/20">
+            <div className="flex items-center gap-3 rounded-xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/50 dark:bg-[#111821]/50 backdrop-blur-md p-2.5 min-w-0">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100/80 dark:bg-[#151e29]/80 font-bold text-[#3b71d9] dark:text-[#b0c6ff] text-xs border border-blue-200/60 dark:border-blue-400/20 shadow-xs">
                 {session.email[0].toUpperCase()}
               </div>
               <div className="min-w-0 flex-1 whitespace-nowrap overflow-hidden">
@@ -323,7 +373,7 @@ export function App() {
               <button
                 type="button"
                 onClick={toggleTheme}
-                className="flex h-9 w-full items-center justify-center rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#111821] text-xs text-slate-700 dark:text-[#f1f0e8] hover:bg-slate-100 dark:hover:bg-[#151e29] transition-colors cursor-pointer"
+                className="flex h-9 w-full items-center justify-center rounded-xl border border-slate-200/60 dark:border-white/[0.06] bg-white/40 dark:bg-[#111821]/40 backdrop-blur-md text-xs text-slate-700 dark:text-[#f1f0e8] hover:bg-white/70 dark:hover:bg-[#151e29]/70 transition-colors cursor-pointer"
                 title={`Switch to ${isDarkMode ? "Light" : "Dark"} Mode`}
                 aria-label={`Switch to ${isDarkMode ? "Light" : "Dark"} Mode`}
               >
@@ -333,7 +383,7 @@ export function App() {
               <button
                 type="button"
                 onClick={signOut}
-                className="flex h-9 w-full items-center justify-center rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#111821] text-xs text-slate-700 dark:text-[#f1f0e8] hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition-colors cursor-pointer"
+                className="flex h-9 w-full items-center justify-center rounded-xl border border-slate-200/60 dark:border-white/[0.06] bg-white/40 dark:bg-[#111821]/40 backdrop-blur-md text-xs text-slate-700 dark:text-[#f1f0e8] hover:bg-rose-50/80 hover:text-rose-700 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition-colors cursor-pointer"
                 title="Sign out"
                 aria-label="Sign out"
               >
@@ -345,7 +395,7 @@ export function App() {
               <button
                 type="button"
                 onClick={toggleTheme}
-                className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-[#111821] py-2 text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] hover:bg-slate-100 dark:hover:bg-[#151e29] transition-colors cursor-pointer"
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200/60 dark:border-white/[0.06] bg-white/40 dark:bg-[#111821]/40 backdrop-blur-md py-2 text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] hover:bg-white/70 dark:hover:bg-[#151e29]/70 transition-colors cursor-pointer"
                 title="Toggle Dark / Light Mode"
               >
                 {isDarkMode ? <Sun className="h-3.5 w-3.5" aria-hidden="true" /> : <Moon className="h-3.5 w-3.5" aria-hidden="true" />}
@@ -355,7 +405,7 @@ export function App() {
               <button
                 type="button"
                 onClick={signOut}
-                className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#111821] py-2 text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition-colors cursor-pointer"
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200/60 dark:border-white/[0.06] bg-white/40 dark:bg-[#111821]/40 backdrop-blur-md py-2 text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] hover:bg-rose-50/80 hover:text-rose-700 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition-colors cursor-pointer"
               >
                 <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>Sign out</span>
@@ -382,6 +432,15 @@ export function App() {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setCopilotOpen(true)}
+              className="p-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-600 dark:text-[#38bdf8] text-xs cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/60"
+              aria-label="Open Skill Copilot"
+              title="Skill Copilot"
+            >
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+            </button>
             <button
               type="button"
               onClick={() => setCmdOpen(true)}
@@ -435,6 +494,15 @@ export function App() {
           )}
         </main>
       </div>
+
+      {/* Right Slide-in Copilot Sidebar */}
+      <CopilotSidebar
+        open={copilotOpen}
+        onClose={() => setCopilotOpen(false)}
+        role={session.role as "student" | "recruiter"}
+        onNavigateStudentTab={setStudentTab}
+        onNavigateRecruiterTab={setRecruiterTab}
+      />
     </div>
   );
 }
