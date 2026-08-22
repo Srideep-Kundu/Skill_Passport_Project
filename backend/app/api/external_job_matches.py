@@ -77,10 +77,22 @@ async def recommended_external_job_matches(
 ) -> PaginatedResponse[ExternalJobMatchResponse]:
     from sqlalchemy import or_
 
+    existing_count = int(
+        (
+            await session.scalar(
+                select(func.count())
+                .select_from(ExternalJobMatch)
+                .where(ExternalJobMatch.student_id == principal.id)
+            )
+        )
+        or 0
+    )
+    if existing_count == 0:
+        await recompute_external_job_matches_for_student(session, principal.id)
+
     filters: list[ColumnElement[bool]] = [
         ExternalJobMatch.student_id == principal.id,
         ExternalJob.is_active.is_(True),
-        ExternalJobMatch.final_score >= get_settings().external_job_min_match_score,
     ]
     if provider and provider.strip() and provider.strip().casefold() != "all":
         filters.append(ExternalJob.provider == provider.strip().casefold())

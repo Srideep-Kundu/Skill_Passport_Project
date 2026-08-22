@@ -115,7 +115,7 @@ export function LuminaAmbientHorizon({ className = "" }: LuminaAmbientHorizonPro
     let time = 0;
 
     const render = () => {
-      time += 0.012;
+      time += 0.0035; // Calibrated slow, majestic undulating speed
 
       // Smooth pointer interpolation (lerp)
       mouseX += (targetMouseX - mouseX) * 0.04;
@@ -134,7 +134,7 @@ export function LuminaAmbientHorizon({ className = "" }: LuminaAmbientHorizonPro
       for (const s of stars) {
         s.x += s.speedX + mouseNormX * (s.depth * 0.2);
         s.y += s.speedY + mouseNormY * (s.depth * 0.2);
-        s.twinklePhase += s.twinkleSpeed;
+        s.twinklePhase += s.twinkleSpeed * 0.4;
 
         // Wrap boundaries
         if (s.x < 0) s.x = width;
@@ -148,71 +148,75 @@ export function LuminaAmbientHorizon({ className = "" }: LuminaAmbientHorizonPro
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
         ctx.fillStyle = isDark
-          ? `rgba(225, 235, 255, ${s.alpha})`
-          : `rgba(99, 102, 241, ${s.alpha * 0.6})`;
-        ctx.shadowBlur = s.depth > 0.7 ? 8 : 4;
-        ctx.shadowColor = isDark ? "rgba(176, 198, 255, 0.6)" : "rgba(99, 102, 241, 0.3)";
+          ? `rgba(224, 231, 255, ${s.alpha})`
+          : `rgba(99, 102, 241, ${s.alpha * 0.7})`;
+        ctx.shadowBlur = s.hasFlare ? 12 : 4;
+        ctx.shadowColor = isDark ? "rgba(165, 180, 252, 0.6)" : "rgba(99, 102, 241, 0.4)";
         ctx.fill();
 
-        // Cross-flare for bright stars
-        if (s.hasFlare && s.alpha > 0.45) {
-          const flareLen = s.size * 3.5;
+        // Cross flare on bright foreground stars
+        if (s.hasFlare) {
           ctx.strokeStyle = isDark
-            ? `rgba(255, 255, 255, ${s.alpha * 0.6})`
-            : `rgba(99, 102, 241, ${s.alpha * 0.35})`;
-          ctx.lineWidth = 0.8;
+            ? `rgba(255, 255, 255, ${s.alpha * 0.7})`
+            : `rgba(99, 102, 241, ${s.alpha * 0.4})`;
+          ctx.lineWidth = 0.7;
           ctx.beginPath();
-          ctx.moveTo(s.x - flareLen, s.y);
-          ctx.lineTo(s.x + flareLen, s.y);
-          ctx.moveTo(s.x, s.y - flareLen);
-          ctx.lineTo(s.x, s.y + flareLen);
+          ctx.moveTo(s.x - s.size * 2.8, s.y);
+          ctx.lineTo(s.x + s.size * 2.8, s.y);
+          ctx.moveTo(s.x, s.y - s.size * 2.8);
+          ctx.lineTo(s.x, s.y + s.size * 2.8);
           ctx.stroke();
         }
       }
+      ctx.restore();
 
-      // Shooting Star Cycle
-      if (!shootingStar.active) {
-        timeToNextShootingStar -= 1;
-        if (timeToNextShootingStar <= 0) {
-          shootingStar.active = true;
-          shootingStar.x = Math.random() * width * 0.7;
-          shootingStar.y = Math.random() * height * 0.3;
-          shootingStar.alpha = 1;
-          timeToNextShootingStar = Math.random() * 400 + 250;
-        }
-      } else {
+      // Shooting star interval logic
+      timeToNextShootingStar -= 1;
+      if (timeToNextShootingStar <= 0 && !shootingStar.active) {
+        shootingStar.x = Math.random() * (width * 0.65);
+        shootingStar.y = Math.random() * (height * 0.25);
+        shootingStar.speed = Math.random() * 8 + 12;
+        shootingStar.length = Math.random() * 80 + 90;
+        shootingStar.alpha = 1.0;
+        shootingStar.active = true;
+        timeToNextShootingStar = Math.random() * 450 + 250;
+      }
+
+      if (shootingStar.active) {
         shootingStar.x += Math.cos(shootingStar.angle) * shootingStar.speed;
         shootingStar.y += Math.sin(shootingStar.angle) * shootingStar.speed;
-        shootingStar.alpha -= 0.015;
+        shootingStar.alpha -= 0.016;
 
         if (shootingStar.alpha <= 0 || shootingStar.x > width || shootingStar.y > height) {
           shootingStar.active = false;
         } else {
-          ctx.beginPath();
+          ctx.save();
           const tailX = shootingStar.x - Math.cos(shootingStar.angle) * shootingStar.length;
           const tailY = shootingStar.y - Math.sin(shootingStar.angle) * shootingStar.length;
+
           const grad = ctx.createLinearGradient(tailX, tailY, shootingStar.x, shootingStar.y);
-          grad.addColorStop(0, "rgba(56, 189, 248, 0)");
-          grad.addColorStop(0.7, `rgba(176, 198, 255, ${shootingStar.alpha * 0.6})`);
+          grad.addColorStop(0, "rgba(255, 255, 255, 0)");
+          grad.addColorStop(0.7, `rgba(165, 180, 252, ${shootingStar.alpha * 0.6})`);
           grad.addColorStop(1, `rgba(255, 255, 255, ${shootingStar.alpha})`);
 
+          ctx.beginPath();
           ctx.strokeStyle = grad;
           ctx.lineWidth = 1.8;
           ctx.moveTo(tailX, tailY);
           ctx.lineTo(shootingStar.x, shootingStar.y);
           ctx.stroke();
+          ctx.restore();
         }
       }
-      ctx.restore();
 
       // ==========================================
       // 2. RENDER UPPER MICRO-DATA GLYPH MATRIX
       // ==========================================
       ctx.save();
       for (const g of glyphs) {
-        g.x += g.speedX;
-        g.y += g.speedY;
-        g.pulsePhase += g.pulseSpeed;
+        g.x += g.speedX * 0.5;
+        g.y += g.speedY * 0.5;
+        g.pulsePhase += g.pulseSpeed * 0.5;
 
         if (g.x < 0) g.x = width;
         if (g.x > width) g.x = 0;
@@ -244,69 +248,69 @@ export function LuminaAmbientHorizon({ className = "" }: LuminaAmbientHorizonPro
       // 3. RENDER DYNAMIC FLUID WAVE HORIZON RIBBONS
       // ==========================================
       // Multi-harmonic sine waves modulated by cursor hover lift
-      const hoverLift = (mouseY / height - 0.5) * 45; // hover dynamic vertical shift
+      const hoverLift = (mouseY / height - 0.5) * 35; // subtle hover shift
       const hoverTilt = (mouseX / width - 0.5) * 35;
 
       const ribbons = [
         {
           // Deep Foundation Glow (Cobalt to Apricot/Amber)
           baseY: height * 0.52 + hoverLift * 0.5,
-          amp1: 42,
+          amp1: 56,
           freq1: 0.0022,
-          speed1: 0.9,
-          amp2: 24,
+          speed1: 0.35,
+          amp2: 32,
           freq2: 0.0045,
-          speed2: -0.6,
-          lineWidth: 58,
-          blur: 52,
-          colorStart: isDark ? "rgba(59, 113, 217, 0.28)" : "rgba(99, 102, 241, 0.14)",
-          colorMid: isDark ? "rgba(255, 183, 131, 0.34)" : "rgba(165, 180, 252, 0.20)",
-          colorEnd: isDark ? "rgba(56, 189, 248, 0.22)" : "rgba(56, 189, 248, 0.12)",
+          speed2: -0.25,
+          lineWidth: 65,
+          blur: 48,
+          colorStart: isDark ? "rgba(59, 113, 217, 0.45)" : "rgba(99, 102, 241, 0.25)",
+          colorMid: isDark ? "rgba(255, 183, 131, 0.55)" : "rgba(165, 180, 252, 0.35)",
+          colorEnd: isDark ? "rgba(56, 189, 248, 0.40)" : "rgba(56, 189, 248, 0.22)",
         },
         {
           // Active Vibrant Middle Wave (Warm Amber, Cyan, Electric Blue)
           baseY: height * 0.48 + hoverLift * 0.8,
-          amp1: 54,
+          amp1: 68,
           freq1: 0.0028,
-          speed1: -1.2,
-          amp2: 32,
+          speed1: -0.45,
+          amp2: 40,
           freq2: 0.0052,
-          speed2: 0.8,
-          lineWidth: 24,
-          blur: 28,
-          colorStart: isDark ? "rgba(176, 198, 255, 0.42)" : "rgba(79, 70, 229, 0.22)",
-          colorMid: isDark ? "rgba(255, 218, 180, 0.52)" : "rgba(199, 210, 254, 0.30)",
-          colorEnd: isDark ? "rgba(56, 189, 248, 0.35)" : "rgba(147, 197, 253, 0.18)",
+          speed2: 0.30,
+          lineWidth: 30,
+          blur: 24,
+          colorStart: isDark ? "rgba(176, 198, 255, 0.60)" : "rgba(79, 70, 229, 0.35)",
+          colorMid: isDark ? "rgba(255, 218, 180, 0.72)" : "rgba(199, 210, 254, 0.45)",
+          colorEnd: isDark ? "rgba(56, 189, 248, 0.55)" : "rgba(147, 197, 253, 0.30)",
         },
         {
           // High-Frequency Luminous Core Streak
           baseY: height * 0.47 + hoverLift,
-          amp1: 36,
+          amp1: 45,
           freq1: 0.0035,
-          speed1: 1.4,
-          amp2: 18,
+          speed1: 0.55,
+          amp2: 24,
           freq2: 0.0068,
-          speed2: -1.1,
-          lineWidth: 8,
-          blur: 14,
-          colorStart: isDark ? "rgba(255, 255, 255, 0.55)" : "rgba(255, 255, 255, 0.4)",
-          colorMid: isDark ? "rgba(255, 230, 200, 0.65)" : "rgba(224, 231, 255, 0.45)",
-          colorEnd: isDark ? "rgba(147, 197, 253, 0.50)" : "rgba(165, 180, 252, 0.35)",
+          speed2: -0.40,
+          lineWidth: 10,
+          blur: 12,
+          colorStart: isDark ? "rgba(255, 255, 255, 0.85)" : "rgba(255, 255, 255, 0.65)",
+          colorMid: isDark ? "rgba(255, 230, 200, 0.90)" : "rgba(224, 231, 255, 0.70)",
+          colorEnd: isDark ? "rgba(147, 197, 253, 0.75)" : "rgba(165, 180, 252, 0.55)",
         },
         {
           // Upper Counter-Harmonic Ambient Ribbon (Luminous Cyan / Cream)
           baseY: height * 0.42 + hoverLift * 0.4,
-          amp1: 45,
+          amp1: 58,
           freq1: 0.0018,
-          speed1: -0.7,
-          amp2: 28,
+          speed1: -0.30,
+          amp2: 36,
           freq2: 0.0038,
-          speed2: 1.1,
-          lineWidth: 40,
-          blur: 44,
-          colorStart: isDark ? "rgba(56, 189, 248, 0.18)" : "rgba(56, 189, 248, 0.10)",
-          colorMid: isDark ? "rgba(59, 113, 217, 0.24)" : "rgba(99, 102, 241, 0.12)",
-          colorEnd: isDark ? "rgba(222, 219, 200, 0.22)" : "rgba(224, 231, 255, 0.14)",
+          speed2: 0.40,
+          lineWidth: 48,
+          blur: 38,
+          colorStart: isDark ? "rgba(56, 189, 248, 0.35)" : "rgba(56, 189, 248, 0.20)",
+          colorMid: isDark ? "rgba(59, 113, 217, 0.42)" : "rgba(99, 102, 241, 0.25)",
+          colorEnd: isDark ? "rgba(222, 219, 200, 0.38)" : "rgba(224, 231, 255, 0.25)",
         },
       ];
 
