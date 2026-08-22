@@ -7,7 +7,7 @@ Revises: 0019_institution_decision_portal, 0019_placement_fields
 from alembic import op  # noqa: F401
 
 revision = "0020_merge_0019_heads"
-down_revision = ("0019_institution_decision_portal", "0019_placement_fields")
+down_revision = "0019_institution_decision_portal"
 branch_labels = None
 depends_on = None
 
