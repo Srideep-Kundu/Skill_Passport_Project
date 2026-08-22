@@ -665,10 +665,57 @@ export interface PlacementCandidateRanking {
   offer_details?: Record<string, any> | null;
 }
 
+export interface FacultyPassport {
+  id: string;
+  email: string;
+  full_name: string;
+  institution_name: string;
+  department: string;
+  designation: string;
+  research_areas: string[];
+  bio?: string | null;
+  years_experience: number;
+  technical_skills: string[];
+  certifications: Array<{ name: string; issuer?: string; year?: string | number; credential_url?: string }>;
+  publications: Array<{ title: string; journal_or_conf?: string; year?: string | number; doi_or_url?: string }>;
+  patents: Array<{ title: string; patent_number?: string; status?: string; year?: string | number }>;
+  past_industry_experience: Array<{ company: string; role: string; duration_years?: number; description?: string }>;
+  completed_fdps: Array<{ title: string; organizer?: string; year?: string | number; certificate_url?: string }>;
+  completed_trainings: Array<{ title: string; company?: string; duration_weeks?: number; year?: string | number }>;
+  collaboration_availability: "available" | "busy" | "sabbatical_only" | "not_available" | string;
+  phone?: string | null;
+  linkedin_url?: string | null;
+  google_scholar_url?: string | null;
+  active_collaborations_count: number;
+  completed_collaborations_count: number;
+  total_grants_secured: number;
+}
+
+export interface FacultyPassportUpdate {
+  full_name?: string;
+  institution_name?: string;
+  department?: string;
+  designation?: string;
+  research_areas?: string[];
+  bio?: string | null;
+  years_experience?: number;
+  technical_skills?: string[];
+  certifications?: Array<Record<string, any>>;
+  publications?: Array<Record<string, any>>;
+  patents?: Array<Record<string, any>>;
+  past_industry_experience?: Array<Record<string, any>>;
+  completed_fdps?: Array<Record<string, any>>;
+  completed_trainings?: Array<Record<string, any>>;
+  collaboration_availability?: string;
+  phone?: string | null;
+  linkedin_url?: string | null;
+  google_scholar_url?: string | null;
+}
+
 export interface FacultyOpportunity {
   id: string;
   title: string;
-  opportunity_type: "fdp" | "industrial_immersion" | "research_grant" | "consultancy_request" | string;
+  opportunity_type: "fdp" | "industrial_immersion" | "industrial_training" | "faculty_internship" | "research_grant" | "consultancy_request" | string;
   organization_name: string;
   description: string;
   domain: string;
@@ -676,8 +723,18 @@ export interface FacultyOpportunity {
   duration_weeks: number;
   deadline?: string | null;
   status: string;
+  objectives?: string[];
+  mode?: "remote" | "on_site" | "hybrid" | string;
+  location?: string | null;
+  eligibility?: string | null;
+  required_expertise?: string[];
+  deliverables?: string[];
+  required_documents?: string[];
+  contact_email?: string | null;
+  contact_person?: string | null;
   has_applied: boolean;
   application_status?: string | null;
+  application_id?: string | null;
 }
 
 export interface FacultyApplication {
@@ -686,9 +743,149 @@ export interface FacultyApplication {
   opportunity_title: string;
   organization_name: string;
   opportunity_type: string;
-  status: string;
+  status: "draft" | "submitted" | "under_review" | "shortlisted" | "discussion" | "accepted" | "rejected" | "withdrawn" | "active" | "completed" | string;
+  application_type: string;
+  proposal_title?: string | null;
   proposal_text?: string | null;
+  problem_statement?: string | null;
+  objectives?: string[];
+  methodology?: string | null;
+  team_members?: Array<{ name: string; role: string; department?: string; email?: string }>;
+  student_researchers?: Array<{ name: string; roll_no?: string; skill?: string }>;
+  deliverables?: string[];
+  milestones?: Array<{ id: string; title: string; due_week?: number; due_date?: string; status: string; notes?: string }>;
+  timeline_weeks?: number | null;
+  budget_requested?: number | null;
+  industry_support_required?: string | null;
+  attachments?: Array<{ name: string; url: string; type?: string }>;
+  reviewer_notes?: string | null;
+  feedback?: string | null;
+  industry_mentor_name?: string | null;
+  industry_mentor_email?: string | null;
+  engagement_status?: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  completion_report?: string | null;
+  completion_certificate_url?: string | null;
+  rating_or_grade?: string | null;
+  outcome_type?: string | null;
+  outcome_details?: Record<string, any>;
   applied_at: string;
+  updated_at?: string | null;
+  workspace_id?: string | null;
+  faculty_name?: string | null;
+  faculty_department?: string | null;
+  faculty_institution?: string | null;
+}
+
+export interface FacultyApplicationCreate {
+  opportunity_id: string;
+  proposal_text?: string;
+  proposal_title?: string;
+  application_type?: string;
+  problem_statement?: string;
+  objectives?: string[];
+  methodology?: string;
+  team_members?: Array<Record<string, any>>;
+  student_researchers?: Array<Record<string, any>>;
+  deliverables?: string[];
+  milestones?: Array<Record<string, any>>;
+  timeline_weeks?: number;
+  budget_requested?: number;
+  industry_support_required?: string;
+  attachments?: Array<Record<string, any>>;
+  is_draft?: boolean;
+}
+
+export interface CollaborationWorkspace {
+  id: string;
+  application_id?: string | null;
+  challenge_id?: string | null;
+  title: string;
+  collaboration_type: string;
+  organization_name: string;
+  faculty_lead_id: string;
+  faculty_lead_name?: string | null;
+  faculty_lead_department?: string | null;
+  industry_lead_name: string;
+  industry_lead_email?: string | null;
+  status: "active" | "completed" | "paused" | "cancelled" | string;
+  progress_percentage: number;
+  objectives: string[];
+  participants: Array<{ id?: string; name: string; role: string; company?: string; department?: string }>;
+  milestones: Array<{ id: string; title: string; due_date?: string; status: "pending" | "in_progress" | "completed" | string; notes?: string }>;
+  tasks: Array<{ id: string; title: string; assigned_to: string; due_date?: string; priority: "high" | "medium" | "low" | string; status: "todo" | "in_progress" | "done" | string }>;
+  meetings: Array<{ id: string; title: string; date: string; link?: string }>;
+  discussion_posts: Array<{ id: string; author_name: string; author_role: string; content: string; created_at: string }>;
+  deliverables: Array<{ id: string; title: string; deliverable_type: string; url_or_key: string; notes?: string; submitted_at: string }>;
+  feedback: Array<{ author_name: string; author_role: string; rating: number; comments: string; created_at: string }>;
+  outcome_summary?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FacultyEventRegistration {
+  id: string;
+  faculty_id: string;
+  event_id: string;
+  event_type: "workshop" | "guest_lecture" | "mentorship" | "fdp" | "challenge" | string;
+  event_title: string;
+  host_organization: string;
+  role: "attendee" | "speaker" | "coordinator" | string;
+  status: "registered" | "attended" | "completed" | "cancelled" | string;
+  feedback?: string | null;
+  certificate_url?: string | null;
+  scheduled_at?: string | null;
+  registered_at: string;
+}
+
+export interface FacultyNotification {
+  id: string;
+  faculty_id: string;
+  title: string;
+  message: string;
+  category: "application" | "workspace" | "milestone" | "mentorship" | "event" | string;
+  is_read: boolean;
+  link_url?: string | null;
+  created_at: string;
+}
+
+export interface FacultyCollaborationHistoryItem {
+  id: string;
+  title: string;
+  collaboration_type: string;
+  organization_name: string;
+  role: string;
+  duration_weeks?: number | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  status: string;
+  outcome_summary?: string | null;
+  outcome_type?: string | null;
+  certificate_url?: string | null;
+  stipend_or_grant?: number | null;
+}
+
+export interface FacultyAdvisedProject {
+  challenge_id: string;
+  title: string;
+  host_company: string;
+  problem_statement: string;
+  duration_weeks: number;
+  milestones: Array<Record<string, any>>;
+  student_teams: Array<{
+    id: string;
+    student_id: string;
+    team_members: string[];
+    status: string;
+    submission_url?: string | null;
+    feedback?: string | null;
+    score_or_grade?: string | null;
+  }>;
+  advisor_feedback: Array<Record<string, any>>;
+  status: string;
 }
 
 export interface MentorshipSession {

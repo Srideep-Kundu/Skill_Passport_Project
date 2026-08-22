@@ -1,6 +1,7 @@
 """Seed data for SIH Ecosystem: Assessments, Learning Courses, Placement Drives, Faculty Opportunities, Mentorship, Challenges."""
 import asyncio
 from datetime import UTC, datetime, timedelta
+import uuid
 
 from sqlalchemy import select
 
@@ -11,12 +12,17 @@ from app.models import (
     AccountEmail,
     Assessment,
     AssessmentQuestion,
+    CollaborationWorkspace,
+    FacultyApplication,
+    FacultyEventRegistration,
+    FacultyNotification,
     FacultyOpportunity,
     InnovationChallenge,
     Institution,
     LearningCourse,
     MentorshipSession,
     PlacementDrive,
+    ProjectApplication,
     Recruiter,
     Role,
     Skill,
@@ -529,7 +535,8 @@ async def seed_sih_ecosystem():
             session.add(AccountEmail(email=rec.email, account_id=rec.id, role=Role.recruiter))
 
         # Academician / Faculty (Canonical SIH & Demo)
-        if not await session.scalar(select(Academician.id).where(Academician.email == "faculty@example.demo")):
+        fac_demo = (await session.scalars(select(Academician).where(Academician.email == "faculty@example.demo"))).first()
+        if not fac_demo:
             fac_demo = Academician(
                 email="faculty@example.demo",
                 password_hash=hash_password("DemoPassword123"),
@@ -538,10 +545,193 @@ async def seed_sih_ecosystem():
                 department="Computer Science & Engineering",
                 designation="Professor & Placement Dean",
                 research_areas=["Distributed Systems", "Explainable AI", "Verification Systems"],
+                bio="Professor with 14+ years of academic research and industry consulting experience in scalable microservices, cryptographic verification pipelines, and explainable ML models. Senior IEEE Member and Dean of Industry Partnerships.",
+                years_experience=14,
+                technical_skills=["Python", "FastAPI", "Distributed Systems", "PostgreSQL", "PyTorch", "Docker", "Explainable AI"],
+                certifications=[
+                    {"name": "Google Cloud Professional Architect", "issuer": "Google Cloud", "year": "2024"},
+                    {"name": "AICTE Advanced Industry Immersion Fellow", "issuer": "AICTE India", "year": "2023"},
+                ],
+                publications=[
+                    {"title": "Deterministic and Auditable Match Verification in Heterogeneous Workspaces", "journal_or_conf": "IEEE Trans. Services Computing", "year": "2025"},
+                    {"title": "Zero-Demographic Bias Talent Pipelines via Cryptographic Competency Spans", "journal_or_conf": "ACM SIGKDD Workshop", "year": "2024"},
+                ],
+                patents=[
+                    {"title": "System and Method for Provable Skill Provenance Verification", "patent_number": "IN-2024-99881", "status": "Granted", "year": "2024"},
+                ],
+                past_industry_experience=[
+                    {"company": "Intel India R&D", "role": "Visiting Research Scientist", "duration_years": 2, "description": "Researched low-latency vector indexing acceleration on multi-core clusters."},
+                ],
+                completed_fdps=[
+                    {"title": "National FDP on Explainable Artificial Intelligence", "organizer": "IIT Bombay", "year": "2024"},
+                ],
+                completed_trainings=[
+                    {"title": "Cloud-Native Infrastructure Immersion", "company": "Microsoft India", "duration_weeks": 4, "year": "2023"},
+                ],
+                collaboration_availability="available",
+                phone="+91 98765 43210",
+                linkedin_url="https://linkedin.com/in/demo-dr-arvind-rao",
+                google_scholar_url="https://scholar.google.com/citations?user=demo_arvind_rao",
             )
             session.add(fac_demo)
             await session.flush()
             session.add(AccountEmail(email=fac_demo.email, account_id=fac_demo.id, role=Role.academician))
+        else:
+            if not fac_demo.technical_skills:
+                fac_demo.technical_skills = ["Python", "FastAPI", "Distributed Systems", "PostgreSQL", "PyTorch", "Docker", "Explainable AI"]
+                fac_demo.bio = "Professor with 14+ years of academic research and industry consulting experience in scalable microservices, cryptographic verification pipelines, and explainable ML models."
+                fac_demo.years_experience = 14
+                fac_demo.certifications = [{"name": "Google Cloud Professional Architect", "issuer": "Google Cloud", "year": "2024"}]
+                fac_demo.publications = [{"title": "Deterministic and Auditable Match Verification", "journal_or_conf": "IEEE TSC", "year": "2025"}]
+                fac_demo.patents = [{"title": "System and Method for Provable Skill Provenance", "patent_number": "IN-2024-99881", "status": "Granted", "year": "2024"}]
+                fac_demo.collaboration_availability = "available"
+                await session.flush()
+
+        # Seed Faculty Applications and Workspaces if not present
+        existing_apps = (await session.scalars(select(FacultyApplication).where(FacultyApplication.faculty_id == fac_demo.id))).all()
+        if not existing_apps:
+            opps = (await session.scalars(select(FacultyOpportunity))).all()
+            opp_by_type = {o.opportunity_type: o for o in opps}
+
+            # 1. Accepted Research Grant -> Spawns Collaboration Workspace
+            if "research_grant" in opp_by_type:
+                grant_opp = opp_by_type["research_grant"]
+                grant_app = FacultyApplication(
+                    faculty_id=fac_demo.id,
+                    opportunity_id=grant_opp.id,
+                    status="accepted",
+                    application_type="research_grant",
+                    proposal_title="Cryptographic Verification Engine for National Academic Passports",
+                    proposal_text="A deterministic, privacy-preserving microservices framework to mathematically verify student skill provenance across heterogeneous assessment registries without transmitting raw demographic identifiers.",
+                    problem_statement="Centralized credentialing systems either compromise candidate privacy or lack verifiable source evidence spans.",
+                    methodology="Implement async FastAPI microservices tied to PostgreSQL pgvector and cryptographic evidence fingerprints.",
+                    deliverables=["Core Verification Engine", "PostgreSQL pgvector Schema", "Audit & Explanation Benchmark Suite"],
+                    milestones=[
+                        {"id": "m1", "title": "Protocol Specification & Threat Modeling", "status": "completed", "due_date": "Month 1"},
+                        {"id": "m2", "title": "Engine Implementation & pgvector Sandbox", "status": "completed", "due_date": "Month 3"},
+                        {"id": "m3", "title": "Live Pilot Integration & Stress Testing", "status": "in_progress", "due_date": "Month 5"},
+                        {"id": "m4", "title": "Final Technical Report & Open Standard Release", "status": "pending", "due_date": "Month 6"},
+                    ],
+                    timeline_weeks=24,
+                    budget_requested=750000.0,
+                    industry_mentor_name="Dr. Vikram Sethi (Principal Architect)",
+                    industry_mentor_email="vikram.sethi@consortium.demo",
+                    engagement_status="active",
+                    start_date=_NOW - timedelta(days=60),
+                )
+                session.add(grant_app)
+                await session.flush()
+
+                # Create active workspace
+                grant_ws = CollaborationWorkspace(
+                    application_id=grant_app.id,
+                    title="Cryptographic Verification Engine R&D Workspace",
+                    collaboration_type="research_collaboration",
+                    organization_name=grant_opp.organization_name,
+                    faculty_lead_id=fac_demo.id,
+                    industry_lead_name="Dr. Vikram Sethi",
+                    industry_lead_email="vikram.sethi@consortium.demo",
+                    status="active",
+                    progress_percentage=50,
+                    objectives=grant_app.deliverables,
+                    participants=[
+                        {"id": str(fac_demo.id), "name": fac_demo.full_name, "role": "Principal Investigator", "department": fac_demo.department},
+                        {"name": "Dr. Vikram Sethi", "role": "Industry Research Lead", "company": grant_opp.organization_name},
+                    ],
+                    milestones=grant_app.milestones,
+                    tasks=[
+                        {"id": "t1", "title": "Benchmark cryptographic hash verification latency", "assigned_to": "Dr. Arvind Rao", "status": "done", "priority": "high"},
+                        {"id": "t2", "title": "Deploy pgvector index tuning in sandbox", "assigned_to": "Research Team", "status": "in_progress", "priority": "medium"},
+                    ],
+                    meetings=[
+                        {"id": "mt1", "title": "Weekly Research Progress Review", "date": "Every Tuesday 4:00 PM IST", "link": "https://meet.google.com/verif-r-d"},
+                    ],
+                    discussion_posts=[
+                        {
+                            "id": "dp1",
+                            "author_name": "Dr. Vikram Sethi",
+                            "author_role": "industry_mentor",
+                            "content": "Preliminary benchmarks on pgvector cosine similarity show 8x throughput improvements. Proceeding with milestone 3.",
+                            "created_at": (_NOW - timedelta(days=2)).isoformat(),
+                        }
+                    ],
+                    deliverables=[
+                        {"id": "d1", "title": "Architecture Specification Document", "deliverable_type": "paper", "url_or_key": "https://docs.example.demo/arch-v1.pdf", "submitted_at": (_NOW - timedelta(days=30)).isoformat()}
+                    ],
+                    feedback=[
+                        {"author_name": "Dr. Vikram Sethi", "author_role": "industry_mentor", "rating": 5, "comments": "Outstanding technical execution and rigorous cryptographic design.", "created_at": (_NOW - timedelta(days=10)).isoformat()}
+                    ],
+                    start_date=_NOW - timedelta(days=60),
+                )
+                session.add(grant_ws)
+
+            # 2. Submitted Industrial Immersion Application
+            if "industrial_immersion" in opp_by_type:
+                imm_opp = opp_by_type["industrial_immersion"]
+                session.add(
+                    FacultyApplication(
+                        faculty_id=fac_demo.id,
+                        opportunity_id=imm_opp.id,
+                        status="submitted",
+                        application_type="industrial_immersion",
+                        proposal_title="Low-Latency Distributed Stream Processing Immersion",
+                        proposal_text="Hands-on 6-week sabbatical to collaborate with Intel systems architects on optimizing lock-free ring buffers and async I/O drivers.",
+                        timeline_weeks=6,
+                        budget_requested=150000.0,
+                    )
+                )
+
+            # 3. Completed FDP / Workshop
+            if "fdp" in opp_by_type:
+                fdp_opp = opp_by_type["fdp"]
+                session.add(
+                    FacultyApplication(
+                        faculty_id=fac_demo.id,
+                        opportunity_id=fdp_opp.id,
+                        status="completed",
+                        application_type="fdp",
+                        proposal_title="Curriculum Alignment on Explainable AI and Fairness Metrics",
+                        proposal_text="Completed national faculty development program with certified curriculum module adoption.",
+                        timeline_weeks=2,
+                        engagement_status="completed",
+                        completion_report="Successfully completed all hands-on labs and integrated deterministic fairness scoring modules into departmental coursework.",
+                        start_date=_NOW - timedelta(days=90),
+                        end_date=_NOW - timedelta(days=76),
+                    )
+                )
+
+            # Notifications
+            session.add_all([
+                FacultyNotification(
+                    faculty_id=fac_demo.id,
+                    title="Research Grant Proposal Accepted 🎉",
+                    message="Your proposal 'Cryptographic Verification Engine' has been accepted by the Ministry of Education & Industry Consortium. Collaboration workspace activated.",
+                    category="application",
+                    is_read=True,
+                ),
+                FacultyNotification(
+                    faculty_id=fac_demo.id,
+                    title="Milestone 2 Verified by Industry Lead",
+                    message="Dr. Vikram Sethi endorsed Milestone 2: Engine Implementation & pgvector Sandbox.",
+                    category="workspace",
+                    is_read=False,
+                ),
+            ])
+
+            # Event Registrations
+            session.add(
+                FacultyEventRegistration(
+                    faculty_id=fac_demo.id,
+                    event_id=uuid.uuid4(),
+                    event_type="workshop",
+                    event_title="Production pgvector & RAG Architectures Workshop",
+                    host_organization="Postgres Enterprise Guild",
+                    role="speaker",
+                    status="completed",
+                    feedback="Delivered keynote on Deterministic Skill Embeddings and Cosine Distance Thresholding.",
+                    scheduled_at=_NOW - timedelta(days=14),
+                )
+            )
 
         if not await session.scalar(select(Academician.id).where(Academician.email == "faculty@poly.demo")):
             fac = Academician(
