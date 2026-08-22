@@ -17,7 +17,7 @@ class TokenResponse(APIModel):
 
 class StudentRegistration(APIModel):
     email: str = Field(min_length=3, max_length=320)
-    password: str = Field(min_length=10, max_length=128)
+    password: str = Field(min_length=8, max_length=128)
     full_name: str = Field(min_length=1, max_length=200)
     university: str | None = Field(default=None, max_length=255)
     graduation_year: int | None = Field(default=None, ge=2020, le=2100)
@@ -25,7 +25,7 @@ class StudentRegistration(APIModel):
 
 class RecruiterRegistration(APIModel):
     email: str = Field(min_length=3, max_length=320)
-    password: str = Field(min_length=10, max_length=128)
+    password: str = Field(min_length=8, max_length=128)
     company_name: str = Field(min_length=1, max_length=255)
 
 
@@ -42,7 +42,7 @@ class GoogleAuthRequest(APIModel):
 
 class AcademicianRegistration(APIModel):
     email: str = Field(min_length=3, max_length=320)
-    password: str = Field(min_length=10, max_length=128)
+    password: str = Field(min_length=8, max_length=128)
     full_name: str = Field(min_length=1, max_length=200)
     institution_name: str = Field(min_length=1, max_length=255)
     department: str = Field(min_length=1, max_length=120)
@@ -52,7 +52,7 @@ class AcademicianRegistration(APIModel):
 
 class InstitutionRegistration(APIModel):
     email: str = Field(min_length=3, max_length=320)
-    password: str = Field(min_length=10, max_length=128)
+    password: str = Field(min_length=8, max_length=128)
     institution_name: str = Field(min_length=1, max_length=255)
     institution_code: str = Field(min_length=1, max_length=64)
     state: str | None = Field(default=None, max_length=100)
@@ -1197,5 +1197,334 @@ class ProjectApplicationResponse(APIModel):
     feedback: str | None = None
     score_or_grade: str | None = None
     applied_at: datetime
+
+
+# =========================================================================
+# Phase 1 & Phase 2 Institution Decision-Support Portal Contracts
+# =========================================================================
+
+class DepartmentDetailAnalytics(APIModel):
+    department: str
+    total_students: int
+    verified_skills_average: float
+    assessment_completion_rate: float
+    average_readiness: float
+    internship_participation_rate: float
+    internship_completion_rate: float
+    placement_eligibility_rate: float
+    placement_conversion_rate: float
+    active_applications: int
+    top_verified_skills: list[dict[str, Any]]
+    top_technical_gaps: list[dict[str, Any]]
+    top_soft_skill_gaps: list[dict[str, Any]]
+    curriculum_vs_industry_demand: list[dict[str, Any]]
+    learning_participation: dict[str, Any]
+    faculty_industry_engagement: dict[str, Any]
+    recommended_actions: list[str]
+
+
+class CohortSummaryItem(APIModel):
+    cohort_id: str
+    cohort_name: str
+    department: str
+    graduation_year: str | int
+    readiness_band: str
+    total_students: int
+    average_readiness: float
+    assessment_completion_pct: float
+    verified_skills_average: float
+    internship_participation_pct: float
+    placement_eligibility_pct: float
+    placement_conversion_pct: float
+    active_learning_enrollment: int
+    critical_skill_gaps: list[str]
+
+
+class CohortAnalyticsResponse(APIModel):
+    total_cohorts: int
+    total_students_monitored: int
+    cohorts: list[CohortSummaryItem]
+
+
+class InterventionRecommendation(APIModel):
+    skill: str
+    skill_cluster: str
+    industry_demand_index: float
+    student_supply_index: float
+    gap_severity: str
+    affected_student_count: int
+    affected_departments: list[str]
+    recommended_courses: list[dict[str, Any]]
+    recommended_workshops: list[dict[str, Any]]
+    recommended_mentorship: list[dict[str, Any]]
+
+
+class InterventionPlanCreate(APIModel):
+    title: str = Field(min_length=3, max_length=255)
+    skill_cluster: str = Field(min_length=2, max_length=120)
+    department: str = "All"
+    target_students_count: int = 0
+    baseline_supply_index: float = 0.0
+    target_supply_index: float = 80.0
+    selected_learning_programs: list[str] = Field(default_factory=list)
+    selected_workshops: list[str] = Field(default_factory=list)
+    selected_mentorship: list[str] = Field(default_factory=list)
+    start_date: datetime | None = None
+    target_date: datetime | None = None
+    status: str = "draft"
+    notes: str | None = None
+
+
+class InterventionPlanUpdate(APIModel):
+    title: str | None = None
+    target_students_count: int | None = None
+    target_supply_index: float | None = None
+    selected_learning_programs: list[str] | None = None
+    selected_workshops: list[str] | None = None
+    selected_mentorship: list[str] | None = None
+    start_date: datetime | None = None
+    target_date: datetime | None = None
+    status: str | None = None
+    notes: str | None = None
+
+
+class InterventionPlanResponse(APIModel):
+    id: UUID
+    institution_id: UUID | None = None
+    title: str
+    skill_cluster: str
+    department: str
+    target_students_count: int
+    baseline_supply_index: float
+    target_supply_index: float
+    selected_learning_programs: list[str]
+    selected_workshops: list[str]
+    selected_mentorship: list[str]
+    start_date: datetime | None = None
+    target_date: datetime | None = None
+    status: str
+    notes: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class InternshipMonitoringOverview(APIModel):
+    eligible_students: int
+    applicants: int
+    selected_students: int
+    active_internships: int
+    completed_internships: int
+    completion_rate: float
+    mentor_feedback_completion_rate: float
+    ppo_conversions: int
+    ppo_conversion_rate: float
+    by_department: list[dict[str, Any]]
+    by_graduation_year: list[dict[str, Any]]
+    by_opportunity_type: list[dict[str, Any]]
+    by_industry: list[dict[str, Any]]
+    by_skill_cluster: list[dict[str, Any]]
+
+
+class PlacementMonitoringOverview(APIModel):
+    eligible_students: int
+    applications: int
+    shortlisted: int
+    interviews_scheduled: int
+    offers_extended: int
+    placements_secured: int
+    conversion_rate: float
+    average_readiness: float
+    average_compatibility: float
+    top_placement_skill_gaps: list[dict[str, Any]]
+    top_recruiting_skill_demand: list[dict[str, Any]]
+    by_department: list[dict[str, Any]]
+    by_role: list[dict[str, Any]]
+    by_company: list[dict[str, Any]]
+    by_graduation_year: list[dict[str, Any]]
+
+
+class FacultyEngagementOverview(APIModel):
+    total_participating_faculty: int
+    active_faculty_internships: int
+    active_industrial_training: int
+    active_fdps: int
+    research_collaborations: int
+    consultancy_projects: int
+    workshops_guest_lectures: int
+    total_research_grant_value: float
+    active_industry_partners_count: int
+    by_department: list[dict[str, Any]]
+    by_opportunity_type: list[dict[str, Any]]
+    by_industry_partner: list[dict[str, Any]]
+    by_status: list[dict[str, Any]]
+
+
+class CurriculumRecommendationItem(APIModel):
+    id: str
+    skill_area: str
+    industry_demand_index: float
+    student_supply_index: float
+    gap_size: float
+    gap_severity: str
+    departments_affected: list[str]
+    recommended_modules: list[str]
+    suggested_labs: list[str]
+    bootcamp_tracks: list[str]
+    linked_intervention_id: str | None = None
+
+
+class IndustryPartnerSummary(APIModel):
+    partner_name: str
+    domain: str
+    partner_types: list[str]
+    internships_posted: int
+    students_selected: int
+    placements_offered: int
+    learning_programs_count: int
+    faculty_engagements_count: int
+    research_collaborations_count: int
+    status: str
+
+
+class IndustryPartnershipOverview(APIModel):
+    total_partners: int
+    internship_partners: int
+    placement_partners: int
+    training_partners: int
+    research_partners: int
+    mentorship_partners: int
+    partners: list[IndustryPartnerSummary]
+
+
+class IndustryPartnerDetail(APIModel):
+    partner_name: str
+    domain: str
+    partner_overview: str
+    student_engagements: list[dict[str, Any]]
+    faculty_engagements: list[dict[str, Any]]
+    posted_opportunities: list[dict[str, Any]]
+    placement_drives: list[dict[str, Any]]
+    research_and_consultancy: list[dict[str, Any]]
+    outcome_metrics: dict[str, Any]
+
+
+class CourseEffectivenessMetric(APIModel):
+    course_id: str
+    title: str
+    category: str
+    provider: str
+    enrolled_count: int
+    completed_count: int
+    completion_rate: float
+    targeted_skills: list[str]
+    baseline_readiness_avg: float
+    post_completion_readiness_avg: float
+    readiness_gain: float
+    placement_correlation_rate: float
+    department_participation: list[dict[str, Any]]
+
+
+class LearningEffectivenessOverview(APIModel):
+    total_enrolled: int
+    total_completed: int
+    overall_completion_rate: float
+    average_readiness_gain: float
+    courses: list[CourseEffectivenessMetric]
+
+
+class AtRiskCohortGroup(APIModel):
+    risk_category: str
+    severity: str
+    affected_students_count: int
+    department: str
+    graduation_year: str | int
+    key_signals: list[str]
+    recommended_action: str
+
+
+class AtRiskCohortSummary(APIModel):
+    total_at_risk_students: int
+    risk_groups: list[AtRiskCohortGroup]
+
+
+class ActionPlanCreate(APIModel):
+    title: str = Field(min_length=3, max_length=255)
+    action_type: str = Field(min_length=2, max_length=64)
+    related_department: str = "All"
+    source_insight: str = Field(min_length=5)
+    priority: str = "medium"
+    owner: str = "Dean of Academics"
+    target_date: datetime | None = None
+    status: str = "planned"
+    linked_intervention_id: UUID | None = None
+    outcome_notes: str | None = None
+
+
+class ActionPlanUpdate(APIModel):
+    title: str | None = None
+    priority: str | None = None
+    owner: str | None = None
+    target_date: datetime | None = None
+    status: str | None = None
+    outcome_notes: str | None = None
+
+
+class ActionPlanResponse(APIModel):
+    id: UUID
+    institution_id: UUID | None = None
+    title: str
+    action_type: str
+    related_department: str
+    source_insight: str
+    priority: str
+    owner: str
+    target_date: datetime | None = None
+    status: str
+    linked_intervention_id: UUID | None = None
+    outcome_notes: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class InstitutionAlertItem(APIModel):
+    id: str
+    alert_type: str
+    severity: str
+    title: str
+    message: str
+    department: str | None = None
+    target_tab: str
+    action_label: str
+
+
+class InstitutionAlertsResponse(APIModel):
+    alerts: list[InstitutionAlertItem]
+
+
+class CollaborationRelationshipItem(APIModel):
+    id: str
+    industry_partner: str
+    faculty_lead: str
+    faculty_department: str
+    student_team_or_cohort: str
+    initiative_title: str
+    initiative_type: str
+    status: str
+    outcome_metric: str
+
+
+class CollaborationRelationshipsResponse(APIModel):
+    total_collaborations: int
+    relationships: list[CollaborationRelationshipItem]
+
+
+class InstitutionReportResponse(APIModel):
+    report_type: str
+    report_title: str
+    generated_at: datetime
+    columns: list[str]
+    rows: list[dict[str, Any]]
+    csv_export_url: str | None = None
+
 
 

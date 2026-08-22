@@ -129,15 +129,37 @@ async def seed_demo_data() -> None:
             skill.embedding_fingerprint = embedding_fingerprint("deep learning neural network", _EMBEDDING_SPEC)
             skill.embedding_generated_at = _NOW
         recruiter = Recruiter(email="recruiter@example.demo", password_hash=hash_password(DEMO_PASSWORD), company_name="Skill Passport Demo Labs")
+        faculty = Academician(
+            email="faculty@example.demo",
+            password_hash=hash_password(DEMO_PASSWORD),
+            full_name="Dr. Arvind Rao",
+            institution_name="Harbor Polytechnic University",
+            department="Computer Science & Engineering",
+            designation="Professor & Placement Dean",
+            research_areas=["Distributed Systems", "Explainable AI", "Verification Systems"],
+        )
+        institution = Institution(
+            email="dean@example.demo",
+            password_hash=hash_password(DEMO_PASSWORD),
+            institution_name="Harbor Polytechnic University",
+            institution_code="HPU-DEMO",
+            state="Maharashtra",
+            departments=["Computer Science", "Information Technology", "Electronics"],
+        )
         students = {
             "maya": Student(email=DEMO_STUDENT_EMAIL, password_hash=hash_password(DEMO_PASSWORD), full_name="Maya Rivera", university="Harbor Polytechnic", recruiter_evidence_consent=True),
             "noah": Student(email="noah@example.demo", password_hash=hash_password(DEMO_PASSWORD), full_name="Noah Chen", university="Northwind Institute", recruiter_evidence_consent=True),
             "aria": Student(email="aria@example.demo", password_hash=hash_password(DEMO_PASSWORD), full_name="Aria Patel", university="Eastlake College", recruiter_evidence_consent=True),
             "blake": Student(email="blake@example.demo", password_hash=hash_password(DEMO_PASSWORD), full_name="Blake Morgan", university="Summit University", recruiter_evidence_consent=True),
         }
-        session.add_all([recruiter, *students.values()])
+        session.add_all([recruiter, faculty, institution, *students.values()])
         await session.flush()
-        session.add_all([AccountEmail(email=recruiter.email, account_id=recruiter.id, role=Role.recruiter), *(AccountEmail(email=student.email, account_id=student.id, role=Role.student) for student in students.values())])
+        session.add_all([
+            AccountEmail(email=recruiter.email, account_id=recruiter.id, role=Role.recruiter),
+            AccountEmail(email=faculty.email, account_id=faculty.id, role=Role.academician),
+            AccountEmail(email=institution.email, account_id=institution.id, role=Role.institution),
+            *(AccountEmail(email=student.email, account_id=student.id, role=Role.student) for student in students.values()),
+        ])
         resume_text = "Maya Rivera — Python, FastAPI, PostgreSQL, Keras. Reliable API project."
         resume = ResumeDocument(student_id=students["maya"].id, original_filename="maya-rivera-demo-resume.pdf", storage_key="demo/maya-rivera-resume.pdf", mime_type="application/pdf", size_bytes=len(resume_text.encode()), checksum=hashlib.sha256(resume_text.encode()).hexdigest(), parse_status=ResumeParseStatus.completed, parser_version="demo-parser-v1", parsed_data=_resume_payload(), extracted_text=resume_text, parsed_at=_NOW, is_active=True)
         session.add(resume)

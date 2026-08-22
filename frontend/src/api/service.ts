@@ -64,6 +64,24 @@ import type {
   VerificationResult,
   CopilotResponse,
   ProfessionalProfile,
+  ActionPlanPayload,
+  AtRiskCohortSummary,
+  CohortAnalyticsResponse,
+  CollaborationRelationshipsResponse,
+  CurriculumRecommendationItem,
+  DepartmentDetailAnalytics,
+  FacultyEngagementOverview,
+  IndustryPartnerDetail,
+  IndustryPartnershipOverview,
+  InstitutionActionPlan,
+  InstitutionAlertsResponse,
+  InstitutionReportResponse,
+  InternshipMonitoringOverview,
+  InterventionPlan,
+  InterventionPlanPayload,
+  InterventionRecommendation,
+  LearningEffectivenessOverview,
+  PlacementMonitoringOverview,
 } from "./types";
 
 export const api = {
@@ -226,8 +244,39 @@ export const api = {
   getFacultyOpportunities: (token: string, opportunityType?: string) => request<FacultyOpportunity[]>(`/academician/opportunities${opportunityType ? `?opportunity_type=${encodeURIComponent(opportunityType)}` : ""}`, {}, token),
   applyFacultyOpportunity: (opportunityId: string, proposalText: string, token: string) => request<FacultyApplication>("/academician/apply", { method: "POST", body: JSON.stringify({ opportunity_id: opportunityId, proposal_text: proposalText }) }, token),
 
-  // Institution Analytics
+  // Institution Decision-Support Portal & Analytics
   getInstitutionAnalytics: (token: string) => request<InstitutionAnalyticsOverview>("/institution/analytics", {}, token),
+  getDepartmentDetail: (dept: string, token: string) => request<DepartmentDetailAnalytics>(`/institution/departments/${encodeURIComponent(dept)}`, {}, token),
+  getCohorts: (token: string, filters?: { department?: string; graduation_year?: string; readiness_band?: string; internship_status?: string; placement_status?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.department) params.append("department", filters.department);
+    if (filters?.graduation_year) params.append("graduation_year", filters.graduation_year);
+    if (filters?.readiness_band) params.append("readiness_band", filters.readiness_band);
+    if (filters?.internship_status) params.append("internship_status", filters.internship_status);
+    if (filters?.placement_status) params.append("placement_status", filters.placement_status);
+    const qs = params.toString();
+    return request<CohortAnalyticsResponse>(`/institution/cohorts${qs ? `?${qs}` : ""}`, {}, token);
+  },
+  getInterventionRecommendations: (token: string) => request<InterventionRecommendation[]>("/institution/interventions/recommendations", {}, token),
+  getInterventionPlans: (token: string) => request<InterventionPlan[]>("/institution/interventions", {}, token),
+  createInterventionPlan: (input: InterventionPlanPayload, token: string) => request<InterventionPlan>("/institution/interventions", { method: "POST", body: JSON.stringify(input) }, token),
+  updateInterventionPlan: (id: string, input: Partial<InterventionPlanPayload>, token: string) => request<InterventionPlan>(`/institution/interventions/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) }, token),
+  deleteInterventionPlan: (id: string, token: string) => request<{ ok: boolean }>(`/institution/interventions/${encodeURIComponent(id)}`, { method: "DELETE" }, token),
+  getInternshipMonitoring: (token: string) => request<InternshipMonitoringOverview>("/institution/internships/monitoring", {}, token),
+  getPlacementMonitoring: (token: string) => request<PlacementMonitoringOverview>("/institution/placements/monitoring", {}, token),
+  getFacultyEngagement: (token: string) => request<FacultyEngagementOverview>("/institution/faculty-engagement", {}, token),
+  getCurriculumRecommendations: (token: string) => request<CurriculumRecommendationItem[]>("/institution/curriculum-recommendations", {}, token),
+  getIndustryPartnerships: (token: string) => request<IndustryPartnershipOverview>("/institution/partnerships", {}, token),
+  getIndustryPartnerDetail: (partnerName: string, token: string) => request<IndustryPartnerDetail>(`/institution/partnerships/${encodeURIComponent(partnerName)}`, {}, token),
+  getLearningEffectiveness: (token: string) => request<LearningEffectivenessOverview>("/institution/learning-effectiveness", {}, token),
+  getAtRiskCohorts: (token: string) => request<AtRiskCohortSummary>("/institution/at-risk-cohorts", {}, token),
+  getActionPlans: (token: string) => request<InstitutionActionPlan[]>("/institution/action-plans", {}, token),
+  createActionPlan: (input: ActionPlanPayload, token: string) => request<InstitutionActionPlan>("/institution/action-plans", { method: "POST", body: JSON.stringify(input) }, token),
+  updateActionPlan: (id: string, input: Partial<ActionPlanPayload>, token: string) => request<InstitutionActionPlan>(`/institution/action-plans/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) }, token),
+  deleteActionPlan: (id: string, token: string) => request<{ ok: boolean }>(`/institution/action-plans/${encodeURIComponent(id)}`, { method: "DELETE" }, token),
+  getInstitutionAlerts: (token: string) => request<InstitutionAlertsResponse>("/institution/alerts", {}, token),
+  getCollaborationRelationships: (token: string) => request<CollaborationRelationshipsResponse>("/institution/relationships", {}, token),
+  getInstitutionReport: (reportType: string, token: string) => request<InstitutionReportResponse>(`/institution/reports/${encodeURIComponent(reportType)}`, {}, token),
 
   // Collaborations & Live Industry Projects
   getMentorshipSessions: (token: string) => request<MentorshipSession[]>("/collaborations/mentorship", {}, token),

@@ -528,7 +528,21 @@ async def seed_sih_ecosystem():
             await session.flush()
             session.add(AccountEmail(email=rec.email, account_id=rec.id, role=Role.recruiter))
 
-        # Academician / Faculty
+        # Academician / Faculty (Canonical SIH & Demo)
+        if not await session.scalar(select(Academician.id).where(Academician.email == "faculty@example.demo")):
+            fac_demo = Academician(
+                email="faculty@example.demo",
+                password_hash=hash_password("DemoPassword123"),
+                full_name="Dr. Arvind Rao",
+                institution_name="Harbor Polytechnic University",
+                department="Computer Science & Engineering",
+                designation="Professor & Placement Dean",
+                research_areas=["Distributed Systems", "Explainable AI", "Verification Systems"],
+            )
+            session.add(fac_demo)
+            await session.flush()
+            session.add(AccountEmail(email=fac_demo.email, account_id=fac_demo.id, role=Role.academician))
+
         if not await session.scalar(select(Academician.id).where(Academician.email == "faculty@poly.demo")):
             fac = Academician(
                 email="faculty@poly.demo",
@@ -543,7 +557,20 @@ async def seed_sih_ecosystem():
             await session.flush()
             session.add(AccountEmail(email=fac.email, account_id=fac.id, role=Role.academician))
 
-        # Institution
+        # Institution (Canonical SIH & Demo)
+        if not await session.scalar(select(Institution.id).where(Institution.email == "dean@example.demo")):
+            inst_demo = Institution(
+                email="dean@example.demo",
+                password_hash=hash_password("DemoPassword123"),
+                institution_name="Harbor Polytechnic University",
+                institution_code="HPU-DEMO",
+                state="Maharashtra",
+                departments=["Computer Science", "Information Technology", "Electronics"],
+            )
+            session.add(inst_demo)
+            await session.flush()
+            session.add(AccountEmail(email=inst_demo.email, account_id=inst_demo.id, role=Role.institution))
+
         if not await session.scalar(select(Institution.id).where(Institution.email == "admin@poly.demo")):
             inst = Institution(
                 email="admin@poly.demo",

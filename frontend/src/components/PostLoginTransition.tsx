@@ -44,6 +44,24 @@ const RECRUITER_WORDS: WordItem[] = [
   { id: "r-internships", text: "Internships", depth: "midground", type: "text", origin: { x: 290, y: 210, rotate: 8 }, delay: 0.48 },
 ];
 
+const ACADEMICIAN_WORDS: WordItem[] = [
+  { id: "a-research", text: "Research", depth: "foreground", type: "indigo", origin: { x: -360, y: -80, rotate: -7 }, delay: 0.12 },
+  { id: "a-mentorship", text: "Mentorship", depth: "foreground", type: "cyan", origin: { x: 370, y: -90, rotate: 6 }, delay: 0.16 },
+  { id: "a-sabbatical", text: "Sabbaticals", depth: "foreground", type: "indigo", origin: { x: -330, y: 120, rotate: 5 }, delay: 0.20 },
+  { id: "a-grants", text: "Grants & FDP", depth: "foreground", type: "text", origin: { x: 350, y: 100, rotate: -6 }, delay: 0.24 },
+  { id: "a-skills", text: "Skills", depth: "midground", type: "cyan", origin: { x: 110, y: -250, rotate: 7 }, delay: 0.32 },
+  { id: "a-innovation", text: "Innovation", depth: "midground", type: "indigo", origin: { x: -90, y: 260, rotate: 4 }, delay: 0.36 },
+];
+
+const INSTITUTION_WORDS: WordItem[] = [
+  { id: "i-analytics", text: "Analytics", depth: "foreground", type: "indigo", origin: { x: -360, y: -80, rotate: -7 }, delay: 0.12 },
+  { id: "i-placements", text: "Placements", depth: "foreground", type: "cyan", origin: { x: 370, y: -90, rotate: 6 }, delay: 0.16 },
+  { id: "i-outcomes", text: "Outcomes", depth: "foreground", type: "indigo", origin: { x: -330, y: 120, rotate: 5 }, delay: 0.20 },
+  { id: "i-readiness", text: "Employability", depth: "foreground", type: "text", origin: { x: 350, y: 100, rotate: -6 }, delay: 0.24 },
+  { id: "i-curriculum", text: "Curriculum", depth: "midground", type: "cyan", origin: { x: 110, y: -250, rotate: 7 }, delay: 0.32 },
+  { id: "i-industry", text: "Industry Linkage", depth: "midground", type: "indigo", origin: { x: -90, y: 260, rotate: 4 }, delay: 0.36 },
+];
+
 function extractFirstName(email?: string): string {
   if (!email) return "";
   const namePart = email.split("@")[0] || "";
@@ -94,7 +112,12 @@ export function PostLoginTransition({
   const [phase, setPhase] = useState<"converging" | "resolved" | "exiting">("converging");
 
   const isStudent = role === "student";
-  const words = useMemo(() => (isStudent ? STUDENT_WORDS : RECRUITER_WORDS), [isStudent]);
+  const words = useMemo(() => {
+    if (role === "student") return STUDENT_WORDS;
+    if (role === "academician") return ACADEMICIAN_WORDS;
+    if (role === "institution") return INSTITUTION_WORDS;
+    return RECRUITER_WORDS;
+  }, [role]);
 
   const resolvedName = useMemo(() => {
     if (displayName) return displayName;
@@ -309,9 +332,17 @@ export function PostLoginTransition({
 
             {/* Primary Headline with Restrained Accent Emphasis */}
             <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-[#f1f0e8] leading-snug sm:leading-tight">
-              {isStudent ? (
+              {role === "student" ? (
                 <>
                   Find <span className="text-[#3b71d9] font-black drop-shadow-[0_0_16px_rgba(59,113,217,0.5)]">opportunities</span> that fit you.
+                </>
+              ) : role === "academician" ? (
+                <>
+                  Empower <span className="text-[#3b71d9] font-black drop-shadow-[0_0_16px_rgba(59,113,217,0.5)]">academic excellence</span>.
+                </>
+              ) : role === "institution" ? (
+                <>
+                  Institutional <span className="text-[#3b71d9] font-black drop-shadow-[0_0_16px_rgba(59,113,217,0.5)]">intelligence</span>.
                 </>
               ) : (
                 <>
@@ -322,8 +353,12 @@ export function PostLoginTransition({
 
             {/* Supporting Subtitle with Source Serif 4 italic */}
             <p className="mt-3 text-xs sm:text-sm font-medium text-[#98a4b3] leading-relaxed max-w-md mx-auto">
-              {isStudent
+              {role === "student"
                 ? "Your verified skills are ready to work for you."
+                : role === "academician"
+                ? "Manage research grants, student mentorship, and industry sabbaticals."
+                : role === "institution"
+                ? "Track university placement analytics, skill distributions, and corporate linkages."
                 : "Discover candidates through evidence-backed skills."}
             </p>
 

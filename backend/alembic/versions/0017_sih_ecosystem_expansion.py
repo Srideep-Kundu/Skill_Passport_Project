@@ -144,6 +144,7 @@ def upgrade() -> None:
         op.create_table(
             "placement_drives",
             sa.Column("id", sa.Uuid(), primary_key=True),
+            sa.Column("recruiter_id", sa.Uuid(), sa.ForeignKey("recruiters.id", ondelete="SET NULL"), nullable=True),
             sa.Column("company_name", sa.String(255), nullable=False),
             sa.Column("title", sa.String(255), nullable=False),
             sa.Column("description", sa.Text(), nullable=False),
