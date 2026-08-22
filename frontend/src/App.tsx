@@ -19,6 +19,11 @@ import {
   Compass,
   Users,
   Sparkles,
+  BookOpen,
+  ShieldCheck,
+  Briefcase,
+  Users2,
+  TrendingUp,
 } from "lucide-react";
 import { LandingPage } from "./pages/LandingPage";
 import { useAuth } from "./auth/AuthContext";
@@ -34,8 +39,14 @@ const RecruiterDashboard = lazy(async () => ({
 const StudentDashboard = lazy(async () => ({
   default: (await import("./pages/StudentDashboard")).StudentDashboard,
 }));
+const AcademicianDashboard = lazy(async () => ({
+  default: (await import("./pages/AcademicianDashboard")).AcademicianDashboard,
+}));
+const InstitutionDashboard = lazy(async () => ({
+  default: (await import("./pages/InstitutionDashboard")).InstitutionDashboard,
+}));
 
-export type StudentTab = "overview" | "passport" | "evidence" | "github" | "matches" | "discovery" | "teams";
+export type StudentTab = "overview" | "passport" | "evidence" | "gaps" | "assessments" | "learning" | "placements" | "collaborations" | "github" | "matches" | "discovery" | "teams";
 export type RecruiterTab = "overview" | "internships" | "post_job" | "candidates";
 
 export function App() {
@@ -107,11 +118,18 @@ export function App() {
 
   const isStudent = session.role === "student";
   const isRecruiter = session.role === "recruiter";
+  const isAcademician = session.role === "academician";
+  const isInstitution = session.role === "institution";
 
-  // Exact 7 core student navigation tabs
+  // Core student navigation tabs
   const studentNavItems: { id: StudentTab; label: string; icon: React.ReactNode }[] = [
     { id: "overview", label: "Overview", icon: <LayoutDashboard className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "passport", label: "Skill Passport", icon: <BadgeCheck className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "gaps", label: "Skill Gaps & Goals", icon: <TrendingUp className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "assessments", label: "Skill Assessments", icon: <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "learning", label: "Learning Hub", icon: <BookOpen className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "placements", label: "Campus Placements", icon: <Briefcase className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "collaborations", label: "Mentorship & Events", icon: <Users2 className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "evidence", label: "Evidence & Resumes", icon: <FileText className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "github", label: "GitHub Verification", icon: <Code2 className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "matches", label: "Internship Matches", icon: <Target className="h-4 w-4 shrink-0" aria-hidden="true" /> },
@@ -466,7 +484,7 @@ export function App() {
             <Suspense
               fallback={
                 <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent mb-3"></div>
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b71d9] border-t-transparent mb-3"></div>
                   <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading student passport dashboard...</p>
                 </div>
               }
@@ -477,12 +495,34 @@ export function App() {
             <Suspense
               fallback={
                 <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent mb-3"></div>
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b71d9] border-t-transparent mb-3"></div>
                   <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading recruiter workspace...</p>
                 </div>
               }
             >
               <RecruiterDashboard token={session.access_token} activeTab={recruiterTab} />
+            </Suspense>
+          ) : isAcademician ? (
+            <Suspense
+              fallback={
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b71d9] border-t-transparent mb-3"></div>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading academician portal...</p>
+                </div>
+              }
+            >
+              <AcademicianDashboard token={session.access_token} />
+            </Suspense>
+          ) : isInstitution ? (
+            <Suspense
+              fallback={
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b71d9] border-t-transparent mb-3"></div>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading university intelligence...</p>
+                </div>
+              }
+            >
+              <InstitutionDashboard token={session.access_token} />
             </Suspense>
           ) : (
             <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-sm">

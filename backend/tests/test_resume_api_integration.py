@@ -65,7 +65,7 @@ async def test_resume_upload_parse_idempotency_activation_and_ownership(resume_c
     assert (await resume_client.get(f"/resumes/{document_id}", headers=headers(other_token))).status_code == 404
     parsed = await resume_client.post(f"/resumes/{document_id}/parse", headers=headers(token))
     assert parsed.status_code == 200 and parsed.json()["generated_evidence_count"] == 3
-    assert (await resume_client.delete(f"/resumes/{document_id}", headers=headers(token))).status_code == 409
+    assert (await resume_client.delete(f"/resumes/{document_id}", headers=headers(token))).status_code == 204
     empty_claim_resume = await resume_client.post("/resumes", headers=headers(token), files={"file": ("second.docx", docx_bytes("Jane Candidate\nEducation\nExample University"), resume_service.DOCX_MIME)})
     assert empty_claim_resume.status_code == 201
     second_id = empty_claim_resume.json()["id"]

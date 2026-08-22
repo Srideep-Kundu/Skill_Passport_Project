@@ -1,6 +1,6 @@
 import { motion, useReducedMotion } from "framer-motion";
 import type { MatchExplanation, MatchExplanationLine } from "../api";
-import { AlertCircle, CheckCircle2, ShieldCheck, Sparkles, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, ShieldCheck, Sparkles, XCircle, X } from "lucide-react";
 import { AnimatedNumber } from "./AnimatedNumber";
 import { containerStaggerVariants, cardItemVariants, modalVariants } from "../theme/motion";
 
@@ -52,7 +52,13 @@ function ExplanationRow({ line }: { line: MatchExplanationLine }) {
   );
 }
 
-export function MatchExplanationPanel({ explanation }: { explanation: MatchExplanation }) {
+export function MatchExplanationPanel({
+  explanation,
+  onClose,
+}: {
+  explanation: MatchExplanation;
+  onClose?: () => void;
+}) {
   const prefersReducedMotion = useReducedMotion();
   const exactItems = explanation.items.filter((i) => i.status.startsWith("matched_"));
   const semanticItems = explanation.items.filter((i) => i.status === "semantic_near_match");
@@ -65,7 +71,7 @@ export function MatchExplanationPanel({ explanation }: { explanation: MatchExpla
       initial="hidden"
       animate="visible"
       exit="exit"
-      className="rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#111821]/95 backdrop-blur-md p-5 sm:p-6 shadow-md space-y-5 text-slate-900 dark:text-[#f1f0e8]"
+      className="rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#111821]/95 backdrop-blur-md p-5 sm:p-6 shadow-md space-y-5 text-slate-900 dark:text-[#f1f0e8] relative"
     >
       {/* Header */}
       <div className="flex items-start justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3.5">
@@ -78,9 +84,19 @@ export function MatchExplanationPanel({ explanation }: { explanation: MatchExpla
             Rendered directly from persisted evidence hashes and exact scoring formulas.
           </p>
         </div>
-        <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-[#98a4b3] bg-white dark:bg-[#151e29] border border-slate-200 dark:border-white/10 px-2.5 py-1 rounded-full font-sans">
-          v{explanation.score_version}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-[#98a4b3] bg-white dark:bg-[#151e29] border border-slate-200 dark:border-white/10 px-2.5 py-1 rounded-full font-sans">
+            v{explanation.score_version}
+          </span>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="h-7 w-7 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.08] flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white cursor-pointer transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Metric Breakdown Cards */}

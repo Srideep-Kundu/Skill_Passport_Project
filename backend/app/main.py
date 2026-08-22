@@ -12,19 +12,33 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.api import (
+    academicians,
+    achievements,
     admin,
     applications,
+    assessments,
     auth,
     automation_policies,
+    career_goals,
+    career_guidance,
+    collaborations,
+    copilot,
+    documents,
     evidence,
     external_job_matches,
     external_jobs,
+    institution_analytics,
+    internship_engagements,
     internships,
     job_discoveries,
+    learning,
     linkedin,
     matches,
     passport,
+    placements,
+    recruiter_analytics,
     resumes,
+    skill_gaps,
     skills,
     teams,
 )
@@ -53,6 +67,20 @@ settings = get_settings()
 app = FastAPI(title="Skill Passport API", version="0.1.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_credentials=False, allow_methods=["*"], allow_headers=["Authorization", "Content-Type"])
 app.include_router(auth.router)
+app.include_router(copilot.router)
+app.include_router(career_goals.router)
+app.include_router(career_guidance.router)
+app.include_router(skill_gaps.router)
+app.include_router(assessments.router)
+app.include_router(learning.router)
+app.include_router(placements.router)
+app.include_router(internship_engagements.router)
+app.include_router(academicians.router)
+app.include_router(institution_analytics.router)
+app.include_router(collaborations.router)
+app.include_router(documents.router)
+app.include_router(achievements.router)
+app.include_router(recruiter_analytics.router)
 app.include_router(applications.router)
 app.include_router(automation_policies.router)
 app.include_router(automation_policies.queue_router)

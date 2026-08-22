@@ -172,7 +172,14 @@ async def build_candidate_profile(session: AsyncSession, student: Student) -> Ca
             has_project_evidence=any(support.evidence_type == "project" for support in all_supports),
             has_verified_evidence=any(support.verification_tier == "verified" for support in all_supports),
             has_evidence_backed_skills=bool(skills),
-            has_github_identity=student.github_username is not None,
+            has_github_identity=(
+                student.github_username is not None
+                or any(
+                    support.evidence_type in ("project", "github_repo")
+                    and "github" in (support.title or "").lower()
+                    for support in all_supports
+                )
+            ),
         ),
     )
 

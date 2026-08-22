@@ -35,8 +35,13 @@ export function LinkedInIntelligence({
   onChanged: () => void;
 }) {
   const [imports, setImports] = useState<LinkedInImport[] | null>(null);
-  const [file, setFile] = useState<File | null>(null);
+  const [mode, setMode] = useState<"url" | "archive">("url");
+  const [profileUrl, setProfileUrl] = useState("https://linkedin.com/in/maya-rivera");
+  const [isImportingUrl, setIsImportingUrl] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [previewProfile, setPreviewProfile] = useState<any | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [isParsingId, setIsParsingId] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
 
@@ -51,6 +56,40 @@ export function LinkedInIntelligence({
   useEffect(() => {
     void load();
   }, [load]);
+
+  async function handleImportUrl() {
+    if (!profileUrl.trim()) return;
+    setIsImportingUrl(true);
+    setMessage(null);
+    try {
+      const profile = await api.importLinkedInUrl(profileUrl.trim(), token);
+      setPreviewProfile(profile);
+      toast.success("LinkedIn profile extracted successfully! Review and save to passport.");
+    } catch (caught) {
+      const msg = caught instanceof ApiError ? caught.detail : "LinkedIn profile import failed.";
+      setMessage(msg);
+      toast.error(msg);
+    } finally {
+      setIsImportingUrl(false);
+    }
+  }
+
+  async function handleSaveProfile() {
+    if (!previewProfile) return;
+    setIsSavingProfile(true);
+    try {
+      await api.saveLinkedInProfile(previewProfile, token);
+      toast.success("LinkedIn profile & skills saved to Skill Passport!");
+      setPreviewProfile(null);
+      onChanged();
+    } catch (caught) {
+      const msg = caught instanceof ApiError ? caught.detail : "Could not save profile to passport.";
+      toast.error(msg);
+    } finally {
+      setIsSavingProfile(false);
+    }
+  }
+
 
   async function upload() {
     if (!file) return;
@@ -162,25 +201,144 @@ export function LinkedInIntelligence({
         </div>
       )}
 
+      {/* Mode Switcher */}
+      <div className="mt-4 flex gap-2 bg-slate-100 dark:bg-white/[0.05] p-1 rounded-xl w-fit">
+        <button
+          type="button"
+          onClick={() => setMode("url")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            mode === "url"
+              ? "bg-white dark:bg-[#101319] text-[#3b71d9] dark:text-[#b0c6ff] shadow-xs"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+          }`}
+        >
+          Direct Profile URL Import
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("archive")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            mode === "archive"
+              ? "bg-white dark:bg-[#101319] text-[#3b71d9] dark:text-[#b0c6ff] shadow-xs"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+          }`}
+        >
+          Export Archive (.zip)
+        </button>
+      </div>
+
       <div className="mt-4 space-y-4">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          <input
-            aria-label="LinkedIn export zip archive"
-            type="file"
-            accept=".zip,application/zip,application/x-zip-compressed"
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-            className="flex-1 rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3 py-1.5 text-xs text-slate-900 dark:text-[#f1f0e8] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 dark:file:bg-[#1a2430] file:text-[#3b71d9] dark:file:text-[#b0c6ff] hover:file:bg-blue-100"
-          />
-          <button
-            disabled={!file}
-            type="button"
-            onClick={() => void upload()}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#3b71d9] hover:bg-[#2563eb] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50 transition-colors cursor-pointer shadow-sm shadow-[#3b71d9]/25"
-          >
-            <Upload className="h-3.5 w-3.5" />
-            <span>Upload LinkedIn archive</span>
-          </button>
-        </div>
+        {mode === "url" ? (
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <input
+                aria-label="LinkedIn profile URL"
+                type="url"
+                value={profileUrl}
+                onChange={(e) => setProfileUrl(e.target.value)}
+                placeholder="https://www.linkedin.com/in/your-profile"
+                className="flex-1 rounded-xl border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-xs text-slate-900 dark:text-[#f1f0e8] focus:border-[#3b71d9] focus:outline-none"
+              />
+              <button
+                disabled={isImportingUrl || !profileUrl.trim()}
+                type="button"
+                onClick={() => void handleImportUrl()}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#3b71d9] hover:bg-[#2563eb] px-5 py-2 text-xs font-bold text-white disabled:opacity-50 transition-colors cursor-pointer shadow-sm shadow-[#3b71d9]/25"
+              >
+                {isImportingUrl ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                <span>{isImportingUrl ? "Extracting..." : "Import Profile"}</span>
+              </button>
+            </div>
+
+            {/* Extracted Professional Profile Preview Card */}
+            {previewProfile && (
+              <div className="rounded-2xl border border-blue-200 dark:border-blue-500/30 bg-blue-50/40 dark:bg-[#151e29] p-5 space-y-4 animate-fadeIn">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <span>{previewProfile.full_name}</span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-950/60 text-[#3b71d9] dark:text-[#b0c6ff]">
+                        {previewProfile.source}
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">{previewProfile.headline}</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 italic">{previewProfile.summary}</p>
+                  </div>
+                  <button
+                    disabled={isSavingProfile}
+                    type="button"
+                    onClick={() => void handleSaveProfile()}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
+                  >
+                    {isSavingProfile ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                    <span>{isSavingProfile ? "Saving..." : "Save to Skill Passport"}</span>
+                  </button>
+                </div>
+
+                {/* Skills found */}
+                <div>
+                  <h4 className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                    Extracted Skills ({previewProfile.skills.length})
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {previewProfile.skills.map((s: string, idx: number) => (
+                      <span
+                        key={idx}
+                        className="text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-white dark:bg-[#1b2330] border border-slate-200 dark:border-white/10 text-slate-800 dark:text-slate-200"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Experience & Education breakdown */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 bg-white dark:bg-[#18202c] rounded-xl border border-slate-200/70 dark:border-white/10">
+                    <p className="font-bold text-slate-800 dark:text-white flex items-center gap-1.5 mb-1 text-[11px]">
+                      <Briefcase className="h-3.5 w-3.5 text-[#3b71d9]" /> Experience ({previewProfile.experiences.length})
+                    </p>
+                    {previewProfile.experiences.map((exp: any, i: number) => (
+                      <p key={i} className="text-[11px] text-slate-600 dark:text-slate-300">
+                        • <strong>{exp.title}</strong> at {exp.company}
+                      </p>
+                    ))}
+                  </div>
+                  <div className="p-3 bg-white dark:bg-[#18202c] rounded-xl border border-slate-200/70 dark:border-white/10">
+                    <p className="font-bold text-slate-800 dark:text-white flex items-center gap-1.5 mb-1 text-[11px]">
+                      <GraduationCap className="h-3.5 w-3.5 text-purple-500" /> Education ({previewProfile.education.length})
+                    </p>
+                    {previewProfile.education.map((edu: any, i: number) => (
+                      <p key={i} className="text-[11px] text-slate-600 dark:text-slate-300">
+                        • <strong>{edu.degree}</strong> ({edu.institution})
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <input
+              aria-label="LinkedIn export zip archive"
+              type="file"
+              accept=".zip,application/zip,application/x-zip-compressed"
+              onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+              className="flex-1 rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3 py-1.5 text-xs text-slate-900 dark:text-[#f1f0e8] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 dark:file:bg-[#1a2430] file:text-[#3b71d9] dark:file:text-[#b0c6ff] hover:file:bg-blue-100"
+            />
+            <button
+              disabled={!file}
+              type="button"
+              onClick={() => void upload()}
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#3b71d9] hover:bg-[#2563eb] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50 transition-colors cursor-pointer shadow-sm shadow-[#3b71d9]/25"
+            >
+              <Upload className="h-3.5 w-3.5" />
+              <span>Upload LinkedIn archive</span>
+            </button>
+          </div>
+        )}
+
 
         {message && (
           <p

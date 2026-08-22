@@ -51,6 +51,11 @@ import { CircularReadinessGauge } from "../components/CircularReadinessGauge";
 import { TypewriterText } from "../components/TypewriterText";
 import { TypewriterReveal } from "../components/TypewriterReveal";
 import { diagonalPageVariants, reducedMotionVariants, pageAssemblyItemVariants } from "../theme/motion";
+import { SkillGapAnalyzer } from "../components/SkillGapAnalyzer";
+import { SkillAssessments } from "../components/SkillAssessments";
+import { LearningHub } from "../components/LearningHub";
+import { PlacementDrives } from "../components/PlacementDrives";
+import { CollaborationHub } from "../components/CollaborationHub";
 import type { StudentTab } from "../App";
 
 const headerContentMap: Record<StudentTab, { title: string; subtitle: string }> = {
@@ -61,6 +66,26 @@ const headerContentMap: Record<StudentTab, { title: string; subtitle: string }> 
   passport: {
     title: "Unified Evidence-Backed Profile",
     subtitle: "Consolidated verifiable skill records, evidence graph, and deterministic profile completeness.",
+  },
+  gaps: {
+    title: "Career Goals & Skill Gap Analysis",
+    subtitle: "Compare your verified passport against target roles to identify critical missing competencies.",
+  },
+  assessments: {
+    title: "Diagnostic Skill Assessments",
+    subtitle: "Standardized technical testing with automatic scoring and verified Skill Passport credit.",
+  },
+  learning: {
+    title: "Adaptive Learning Hub",
+    subtitle: "Curated industry coursework directly addressing your career readiness gaps.",
+  },
+  placements: {
+    title: "Campus Placement Drives",
+    subtitle: "Apply directly to verified institutional placement opportunities with full evidence portfolios.",
+  },
+  collaborations: {
+    title: "Mentorship & Collaborative Ecosystem",
+    subtitle: "Book 1-on-1 industry mentorship slots and enter innovation challenges.",
   },
   evidence: {
     title: "Technical Evidence & Verification Engine",
@@ -924,6 +949,49 @@ export function StudentDashboard({
       {(isOverview || activeTab === "teams") && (
         <motion.div variants={prefersReducedMotion ? undefined : pageAssemblyItemVariants}>
           <TeamSuggestions token={token} availableSkillIds={allSkills.map((s) => s.skill_id)} />
+        </motion.div>
+      )}
+      {activeTab === "gaps" && (
+        <motion.div variants={prefersReducedMotion ? undefined : pageAssemblyItemVariants}>
+          <SkillGapAnalyzer
+            token={token}
+            onNavigateToLearning={() => onNavigateTab?.("learning")}
+            onNavigateToAssessment={() => onNavigateTab?.("assessments")}
+          />
+        </motion.div>
+      )}
+
+      {activeTab === "assessments" && (
+        <motion.div variants={prefersReducedMotion ? undefined : pageAssemblyItemVariants}>
+          <SkillAssessments
+            token={token}
+            onAssessmentCompleted={() => {
+              void loadData();
+            }}
+          />
+        </motion.div>
+      )}
+
+      {activeTab === "learning" && (
+        <motion.div variants={prefersReducedMotion ? undefined : pageAssemblyItemVariants}>
+          <LearningHub
+            token={token}
+            onCourseCompleted={() => {
+              void loadData();
+            }}
+          />
+        </motion.div>
+      )}
+
+      {activeTab === "placements" && (
+        <motion.div variants={prefersReducedMotion ? undefined : pageAssemblyItemVariants}>
+          <PlacementDrives token={token} />
+        </motion.div>
+      )}
+
+      {activeTab === "collaborations" && (
+        <motion.div variants={prefersReducedMotion ? undefined : pageAssemblyItemVariants}>
+          <CollaborationHub token={token} />
         </motion.div>
       )}
     </motion.div>

@@ -1,4 +1,4 @@
-export type Role = "student" | "recruiter" | "admin";
+export type Role = "student" | "recruiter" | "admin" | "academician" | "institution";
 
 export interface AuthSession {
   access_token: string;
@@ -28,6 +28,25 @@ export interface GoogleAuthRequest {
   credential: string;
   role?: Role;
   company_name?: string;
+}
+
+export interface AcademicianRegistration {
+  email: string;
+  password: string;
+  full_name: string;
+  institution_name: string;
+  department: string;
+  designation: string;
+  research_areas?: string[];
+}
+
+export interface InstitutionRegistration {
+  email: string;
+  password: string;
+  institution_name: string;
+  institution_code: string;
+  state?: string;
+  departments?: string[];
 }
 
 export type EvidenceType = "coursework" | "project" | "competition" | "certification" | "micro_credential";
@@ -502,4 +521,382 @@ export interface LinkedInImport {
   parsed_summary: LinkedInParsedSummary | null;
   generated_evidence_count: number;
   skills_status: "not_started" | "queued" | "processing" | "completed" | "has_failures";
+}
+
+// =========================================================================
+// SIH 26044 Ecosystem Frontend Types
+// =========================================================================
+
+export interface CareerGoals {
+  target_roles: string[];
+  target_industry?: string | null;
+  target_skills: string[];
+  target_salary_lpa?: number | null;
+  ambition_level: string;
+}
+
+export interface SkillGapItem {
+  skill_name: string;
+  category: string;
+  status: "verified" | "assessed" | "missing" | "in_progress";
+  proficiency_score: number;
+  importance: "critical" | "high" | "medium" | "optional";
+  recommended_action: string;
+}
+
+export interface SkillGapAnalysis {
+  target_role: string;
+  overall_readiness_score: number;
+  matched_skills_count: number;
+  missing_skills_count: number;
+  gap_items: SkillGapItem[];
+  top_recommended_courses: string[];
+}
+
+export interface AssessmentQuestion {
+  id: string;
+  question_text: string;
+  question_type: string;
+  options: string[];
+  points: number;
+}
+
+export interface Assessment {
+  id: string;
+  title: string;
+  canonical_skill_name: string;
+  category: string;
+  difficulty: string;
+  duration_minutes: number;
+  passing_score: number;
+  questions?: AssessmentQuestion[];
+  question_count?: number;
+}
+
+export interface AssessmentAttempt {
+  id: string;
+  assessment_id: string;
+  assessment_title: string;
+  score: number;
+  total_points: number;
+  percentage: number;
+  passed: boolean;
+  completed_at: string;
+}
+
+export interface LearningCourse {
+  id: string;
+  title: string;
+  provider: string;
+  category: string;
+  difficulty: string;
+  duration_hours: number;
+  url: string;
+  rating: number;
+  description: string;
+  skills: string[];
+  is_enrolled: boolean;
+  progress: number;
+  recommendation_reason?: string | null;
+}
+
+export interface CourseEnrollment {
+  id: string;
+  course_id: string;
+  course_title: string;
+  provider: string;
+  status: string;
+  progress: number;
+  enrolled_at: string;
+  completed_at: string | null;
+}
+
+export interface PlacementDrive {
+  id: string;
+  company_name: string;
+  title: string;
+  description: string;
+  role_type: string;
+  ctc_lpa: number;
+  eligible_departments: string[];
+  minimum_cgpa: number;
+  passing_year: number;
+  drive_date: string;
+  status: string;
+  required_skills: string[];
+  is_registered: boolean;
+  registration_status?: string | null;
+}
+
+export interface PlacementCandidateRanking {
+  registration_id: string;
+  student_id: string;
+  student_name: string;
+  student_email: string;
+  stage: string;
+  match_score: number;
+  deterministic_score: number;
+  semantic_score: number;
+  verification_bonus: number;
+  matched_skills: string[];
+  missing_skills: string[];
+  registered_at: string;
+  interview_date?: string | null;
+  offer_details?: Record<string, any> | null;
+}
+
+export interface FacultyOpportunity {
+  id: string;
+  title: string;
+  opportunity_type: "fdp" | "industrial_immersion" | "research_grant" | "consultancy_request" | string;
+  organization_name: string;
+  description: string;
+  domain: string;
+  stipend_or_grant?: number | null;
+  duration_weeks: number;
+  deadline?: string | null;
+  status: string;
+  has_applied: boolean;
+  application_status?: string | null;
+}
+
+export interface FacultyApplication {
+  id: string;
+  opportunity_id: string;
+  opportunity_title: string;
+  organization_name: string;
+  opportunity_type: string;
+  status: string;
+  proposal_text?: string | null;
+  applied_at: string;
+}
+
+export interface MentorshipSession {
+  id: string;
+  mentor_name: string;
+  mentor_company: string;
+  mentor_role: string;
+  domain: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  meeting_link?: string | null;
+  max_participants: number;
+  description: string;
+}
+
+export interface InnovationChallenge {
+  id: string;
+  challenge_type?: string;
+  title: string;
+  host_company: string;
+  problem_statement: string;
+  prize_pool: string;
+  team_size?: number;
+  duration_weeks?: number;
+  mentor_name?: string | null;
+  deliverables?: string[];
+  milestones?: Array<{ id: string; title: string; due_date?: string; status: string }>;
+  deadline: string;
+  tags: string[];
+  status: string;
+}
+
+export interface ProjectApplication {
+  id: string;
+  challenge_id: string;
+  challenge_title: string;
+  student_id: string;
+  team_members: string[];
+  status: string;
+  submission_url?: string | null;
+  submission_notes?: string | null;
+  feedback?: string | null;
+  score_or_grade?: string | null;
+  applied_at: string;
+}
+
+export interface InternshipEngagement {
+  id: string;
+  internship_id: string;
+  student_id: string;
+  recruiter_id: string;
+  internship_title: string;
+  company_name: string;
+  student_name?: string | null;
+  mentor_id?: string | null;
+  mentor_name?: string | null;
+  mentor_email?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  status: string; // applied, shortlisted, selected, active, completed, rejected, withdrawn
+  progress_percentage: number;
+  milestones: Array<{ id: string; title: string; description: string; due_date?: string | null; status: string; submitted_at?: string | null; feedback?: string | null }>;
+  mentor_feedback?: {
+    technical_skills_rating: number;
+    communication_rating: number;
+    teamwork_rating: number;
+    problem_solving_rating: number;
+    overall_rating: number;
+    comments: string;
+    submitted_at: string;
+  } | null;
+  final_rating?: number | null;
+  completion_notes?: string | null;
+  created_at: string;
+}
+
+export interface MentorFeedbackRequest {
+  technical_skills_rating: number;
+  communication_rating: number;
+  teamwork_rating: number;
+  problem_solving_rating: number;
+  overall_rating: number;
+  comments: string;
+}
+
+export interface InstitutionSkillDistribution {
+  skill_name: string;
+  student_count: number;
+  average_proficiency: number;
+  verified_ratio: number;
+}
+
+export interface DepartmentMetric {
+  department: string;
+  total_students: number;
+  verified_skills_average: number;
+  placement_rate: number;
+  internship_rate: number;
+}
+
+export interface InstitutionAnalyticsOverview {
+  institution_name: string;
+  total_students: number;
+  total_verified_skills: number;
+  active_internships: number;
+  placements_secured: number;
+  overall_employability_index: number;
+  department_metrics: DepartmentMetric[];
+  top_skills_distribution: InstitutionSkillDistribution[];
+  market_skill_demand_gaps: { skill: string; industry_demand_index: number; student_supply_index: number; gap_severity: string }[];
+}
+
+export interface RoleGuidance {
+  role_name: string;
+  readiness_percentage: number;
+  status: "ready" | "next_step" | "exploratory" | string;
+  matched_skills: string[];
+  missing_critical_skills: string[];
+  why_explanation: string;
+  recommended_next_step: string;
+  target_industries: string[];
+}
+
+export interface CareerGuidanceOverview {
+  target_role: string;
+  target_role_readiness: number;
+  ready_roles: RoleGuidance[];
+  next_step_roles: RoleGuidance[];
+  top_skill_priorities: string[];
+  aligning_industry_sectors: string[];
+  learning_action_plan: Array<{ priority: string; action: string; impact: string }>;
+}
+
+export interface UserDocument {
+  id: string;
+  user_id: string;
+  user_role: string;
+  document_type: string;
+  title: string;
+  file_name: string;
+  file_size_bytes: number;
+  mime_type: string;
+  file_url?: string | null;
+  verification_status: string;
+  related_entity_id?: string | null;
+  metadata_payload?: Record<string, any>;
+  created_at: string;
+}
+
+export interface UserDocumentCreate {
+  document_type: string;
+  title: string;
+  file_name: string;
+  file_size_bytes?: number;
+  mime_type?: string;
+  file_url?: string;
+  related_entity_id?: string;
+  metadata_payload?: Record<string, any>;
+}
+
+export interface StudentAchievement {
+  id: string;
+  student_id: string;
+  title: string;
+  achievement_type: string;
+  issuer_organization: string;
+  issue_date: string;
+  description: string;
+  proof_url?: string | null;
+  verification_status: string;
+  evidence_id?: string | null;
+  created_at: string;
+}
+
+export interface StudentAchievementCreate {
+  title: string;
+  achievement_type: string;
+  issuer_organization: string;
+  issue_date: string;
+  description: string;
+  proof_url?: string;
+}
+
+export interface RecruiterSkillMetric {
+  skill_name: string;
+  required_in_postings_count: number;
+  applicant_pool_count: number;
+  supply_demand_ratio: number;
+  market_status: "high_demand_shortage" | "balanced" | "abundant_supply" | string;
+}
+
+export interface RecruiterAnalyticsOverview {
+  company_name: string;
+  active_postings: number;
+  total_applicants: number;
+  shortlisted_candidates: number;
+  interviews_scheduled: number;
+  offers_extended: number;
+  offers_accepted: number;
+  top_demanded_skills: RecruiterSkillMetric[];
+  most_common_applicant_gaps: Array<{ skill: string; gap_percentage: string; impact: string }>;
+  recruitment_funnel: Array<{ stage: string; count: number }>;
+}
+
+export interface CopilotAction {
+  label: string;
+  target_tab: string;
+  action_type: string;
+  payload?: Record<string, any>;
+}
+
+export interface CopilotResponse {
+  message: string;
+  sources: string[];
+  actions: CopilotAction[];
+  grounding_data: Record<string, any>;
+}
+
+export interface ProfessionalProfile {
+  full_name: string;
+  headline: string;
+  summary: string;
+  current_position: string;
+  experiences: Array<{ title: string; company: string; duration: string; description: string }>;
+  education: Array<{ institution: string; degree: string; years: string }>;
+  skills: string[];
+  certifications: Array<{ name: string; issuer: string; year: string }>;
+  projects: Array<{ title: string; description: string }>;
+  source: string;
+  source_confidence: number;
 }

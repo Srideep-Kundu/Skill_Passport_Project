@@ -12,7 +12,7 @@ class APIModel(BaseModel):
 class TokenResponse(APIModel):
     access_token: str
     token_type: str = "bearer"
-    role: Literal["student", "recruiter", "admin"]
+    role: Literal["student", "recruiter", "admin", "academician", "institution"]
 
 
 class StudentRegistration(APIModel):
@@ -36,8 +36,27 @@ class LoginRequest(APIModel):
 
 class GoogleAuthRequest(APIModel):
     credential: str = Field(min_length=10)
-    role: Literal["student", "recruiter"] = "student"
+    role: Literal["student", "recruiter", "academician", "institution"] = "student"
     company_name: str | None = Field(default=None, max_length=255)
+
+
+class AcademicianRegistration(APIModel):
+    email: str = Field(min_length=3, max_length=320)
+    password: str = Field(min_length=10, max_length=128)
+    full_name: str = Field(min_length=1, max_length=200)
+    institution_name: str = Field(min_length=1, max_length=255)
+    department: str = Field(min_length=1, max_length=120)
+    designation: str = Field(min_length=1, max_length=120)
+    research_areas: list[str] = Field(default_factory=list)
+
+
+class InstitutionRegistration(APIModel):
+    email: str = Field(min_length=3, max_length=320)
+    password: str = Field(min_length=10, max_length=128)
+    institution_name: str = Field(min_length=1, max_length=255)
+    institution_code: str = Field(min_length=1, max_length=64)
+    state: str | None = Field(default=None, max_length=100)
+    departments: list[str] = Field(default_factory=list)
 
 
 class EvidenceCreate(APIModel):
@@ -805,3 +824,358 @@ class MatchingProfileResponse(APIModel):
 
     student_id: UUID
     skills: list[MatchingProfileSkill]
+
+
+# =========================================================================
+# SIH 26044 Ecosystem Contracts: Career Goals, Assessments, Learning, Placement, Faculty, Collaboration, Analytics
+# =========================================================================
+
+class CareerGoalsUpdate(APIModel):
+    target_roles: list[str] = Field(default_factory=list)
+    target_industry: str | None = None
+    target_skills: list[str] = Field(default_factory=list)
+    target_salary_lpa: float | None = None
+    ambition_level: str = "entry_level"
+
+
+class CareerGoalsResponse(APIModel):
+    target_roles: list[str] = Field(default_factory=list)
+    target_industry: str | None = None
+    target_skills: list[str] = Field(default_factory=list)
+    target_salary_lpa: float | None = None
+    ambition_level: str = "entry_level"
+
+
+class SkillGapItem(APIModel):
+    skill_name: str
+    category: str
+    status: Literal["verified", "assessed", "missing", "in_progress"]
+    proficiency_score: float  # 0.0 to 1.0
+    importance: Literal["critical", "high", "medium", "optional"]
+    recommended_action: str
+
+
+class SkillGapAnalysisResponse(APIModel):
+    target_role: str
+    overall_readiness_score: float  # 0.0 to 100.0
+    matched_skills_count: int
+    missing_skills_count: int
+    gap_items: list[SkillGapItem]
+    top_recommended_courses: list[str]
+
+
+class AssessmentQuestionResponse(APIModel):
+    id: UUID
+    question_text: str
+    question_type: str
+    options: list[str]
+    points: int
+
+
+class AssessmentResponse(APIModel):
+    id: UUID
+    title: str
+    canonical_skill_name: str
+    category: str
+    difficulty: str
+    duration_minutes: int
+    passing_score: int
+    questions: list[AssessmentQuestionResponse] = Field(default_factory=list)
+
+
+class AssessmentSummaryResponse(APIModel):
+    id: UUID
+    title: str
+    canonical_skill_name: str
+    category: str
+    difficulty: str
+    duration_minutes: int
+    passing_score: int
+    question_count: int
+
+
+class AssessmentSubmitRequest(APIModel):
+    answers: dict[str, str]  # question_id -> selected option or answer string
+
+
+class AssessmentAttemptResponse(APIModel):
+    id: UUID
+    assessment_id: UUID
+    assessment_title: str
+    score: float
+    total_points: int
+    percentage: float
+    passed: bool
+    breakdown: dict[str, Any] = Field(default_factory=dict)
+    completed_at: datetime
+
+
+
+class LearningCourseResponse(APIModel):
+    id: UUID
+    title: str
+    provider: str
+    category: str
+    difficulty: str
+    duration_hours: int
+    url: str
+    rating: float
+    description: str
+    skills: list[str]
+    is_enrolled: bool = False
+    progress: int = 0
+    recommendation_reason: str | None = None
+
+
+class CourseEnrollmentResponse(APIModel):
+    id: UUID
+    course_id: UUID
+    course_title: str
+    provider: str
+    status: str
+    progress: int
+    enrolled_at: datetime
+    completed_at: datetime | None = None
+
+
+class CourseProgressUpdate(APIModel):
+    progress: int = Field(ge=0, le=100)
+
+
+class PlacementDriveResponse(APIModel):
+    id: UUID
+    company_name: str
+    title: str
+    description: str
+    role_type: str
+    ctc_lpa: float
+    eligible_departments: list[str]
+    minimum_cgpa: float
+    passing_year: int
+    drive_date: datetime
+    status: str
+    required_skills: list[str]
+    is_registered: bool = False
+    registration_status: str | None = None
+
+
+class PlacementRegistrationRequest(APIModel):
+    placement_drive_id: UUID
+    notes: str | None = None
+
+
+class FacultyOpportunityResponse(APIModel):
+    id: UUID
+    title: str
+    opportunity_type: str
+    organization_name: str
+    description: str
+    domain: str
+    stipend_or_grant: float | None
+    duration_weeks: int
+    deadline: datetime | None
+    status: str
+    has_applied: bool = False
+    application_status: str | None = None
+
+
+class FacultyApplicationRequest(APIModel):
+    opportunity_id: UUID
+    proposal_text: str = Field(min_length=10)
+
+
+class FacultyApplicationResponse(APIModel):
+    id: UUID
+    opportunity_id: UUID
+    opportunity_title: str
+    organization_name: str
+    opportunity_type: str
+    status: str
+    proposal_text: str | None
+    applied_at: datetime
+
+
+class MentorshipSessionResponse(APIModel):
+    id: UUID
+    mentor_name: str
+    mentor_company: str
+    mentor_role: str
+    domain: str
+    scheduled_at: datetime
+    duration_minutes: int
+    meeting_link: str | None
+    max_participants: int
+    description: str
+
+
+class InnovationChallengeResponse(APIModel):
+    id: UUID
+    challenge_type: str = "hackathon"
+    title: str
+    host_company: str
+    problem_statement: str
+    prize_pool: str
+    team_size: int = 1
+    duration_weeks: int = 4
+    mentor_name: str | None = None
+    deliverables: list[str] = Field(default_factory=list)
+    milestones: list[dict[str, Any]] = Field(default_factory=list)
+    deadline: datetime
+    tags: list[str]
+    status: str
+
+
+
+class InstitutionSkillDistribution(APIModel):
+    skill_name: str
+    student_count: int
+    average_proficiency: float
+    verified_ratio: float
+
+
+class DepartmentMetric(APIModel):
+    department: str
+    total_students: int
+    verified_skills_average: float
+    placement_rate: float
+    internship_rate: float
+
+
+class InstitutionAnalyticsOverview(APIModel):
+    institution_name: str
+    total_students: int
+    total_verified_skills: int
+    active_internships: int
+    placements_secured: int
+    overall_employability_index: float
+    department_metrics: list[DepartmentMetric]
+    top_skills_distribution: list[InstitutionSkillDistribution]
+    market_skill_demand_gaps: list[dict[str, Any]]
+
+
+# =========================================================================
+# Internship Engagement & Mentor Feedback Contracts
+# =========================================================================
+
+class InternshipEngagementCreate(APIModel):
+    internship_id: UUID
+    student_id: UUID
+    mentor_name: str | None = None
+    mentor_email: str | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    milestones: list[dict[str, Any]] | None = None
+
+
+class InternshipEngagementUpdate(APIModel):
+    status: str | None = None  # applied, shortlisted, selected, active, completed, rejected, withdrawn
+    progress_percentage: int | None = Field(default=None, ge=0, le=100)
+    mentor_name: str | None = None
+    mentor_email: str | None = None
+    completion_notes: str | None = None
+    final_rating: float | None = Field(default=None, ge=1.0, le=5.0)
+
+
+class MilestoneUpdateRequest(APIModel):
+    milestone_id: str
+    status: str  # pending, submitted, completed, rejected
+    submission_text: str | None = None
+    feedback: str | None = None
+
+
+class MentorFeedbackRequest(APIModel):
+    technical_skills_rating: float = Field(ge=1.0, le=5.0)
+    communication_rating: float = Field(ge=1.0, le=5.0)
+    teamwork_rating: float = Field(ge=1.0, le=5.0)
+    problem_solving_rating: float = Field(ge=1.0, le=5.0)
+    overall_rating: float = Field(ge=1.0, le=5.0)
+    comments: str = Field(min_length=5)
+
+
+class InternshipEngagementResponse(APIModel):
+    id: UUID
+    internship_id: UUID
+    student_id: UUID
+    recruiter_id: UUID
+    internship_title: str
+    company_name: str
+    student_name: str | None = None
+    mentor_id: UUID | None = None
+    mentor_name: str | None = None
+    mentor_email: str | None = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    status: str
+    progress_percentage: int
+    milestones: list[dict[str, Any]]
+    mentor_feedback: dict[str, Any] | None = None
+    final_rating: float | None = None
+    completion_notes: str | None = None
+    created_at: datetime
+
+
+# =========================================================================
+# Placement Drive Recruiter Management Contracts
+# =========================================================================
+
+class PlacementDriveCreate(APIModel):
+    company_name: str = Field(min_length=2, max_length=255)
+    title: str = Field(min_length=2, max_length=255)
+    description: str = Field(min_length=10)
+    role_type: str = Field(default="Software Engineer", max_length=80)
+    ctc_lpa: float = Field(default=12.0, ge=1.0, le=200.0)
+    eligible_departments: list[str] = Field(default_factory=list)
+    minimum_cgpa: float = Field(default=7.0, ge=0.0, le=10.0)
+    passing_year: int = Field(default=2025, ge=2020, le=2030)
+    drive_date: datetime
+    required_skills: list[str] = Field(min_length=1)
+
+
+class PlacementRegistrationStageUpdate(APIModel):
+    stage: str  # registered, shortlisted, interview_scheduled, interviewed, offered, accepted, rejected, withdrawn
+    interview_date: datetime | None = None
+    interview_notes: str | None = None
+    offer_details: dict[str, Any] | None = None
+
+
+class PlacementCandidateRanking(APIModel):
+    registration_id: UUID
+    student_id: UUID
+    student_name: str
+    student_email: str
+    stage: str
+    match_score: float
+    deterministic_score: float
+    semantic_score: float
+    verification_bonus: float
+    matched_skills: list[str]
+    missing_skills: list[str]
+    registered_at: datetime
+    interview_date: datetime | None = None
+    offer_details: dict[str, Any] | None = None
+
+
+# =========================================================================
+# Live Industry Projects & Extended Challenges Contracts
+# =========================================================================
+
+class ProjectApplicationCreate(APIModel):
+    challenge_id: UUID
+    team_members: list[str] = Field(default_factory=list)
+    submission_notes: str | None = None
+
+
+class ProjectApplicationResponse(APIModel):
+    id: UUID
+    challenge_id: UUID
+    challenge_title: str
+    student_id: UUID
+    team_members: list[str]
+    status: str
+    submission_url: str | None = None
+    submission_notes: str | None = None
+    feedback: str | None = None
+    score_or_grade: str | None = None
+    applied_at: datetime
+
+
