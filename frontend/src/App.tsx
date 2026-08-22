@@ -317,49 +317,8 @@ export function App() {
           </div>
         </div>
 
-        {/* ALWAYS VISIBLE FOOTER (Skill Copilot + Account Card + Dark Theme Toggle + Sign Out with Frosted Glass) */}
+        {/* ALWAYS VISIBLE FOOTER (Account Card + Dark Theme Toggle + Sign Out with Frosted Glass) */}
         <div className={`shrink-0 border-t border-slate-200/60 dark:border-white/[0.06] bg-white/40 dark:bg-[#0b0e13]/40 backdrop-blur-2xl space-y-2.5 sticky bottom-0 z-20 shadow-md transition-all duration-300 ${isCollapsed ? "p-2" : "p-3.5"}`}>
-          {/* AI Skill Copilot in Bottom Section */}
-          <button
-            type="button"
-            onClick={() => {
-              setCopilotOpen((prev) => !prev);
-              setMobileMenuOpen(false);
-            }}
-            title={isCollapsed ? "Skill Copilot (AI Assistant) • Ctrl+J" : undefined}
-            className={`relative w-full flex items-center rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer border ${
-              copilotOpen
-                ? "bg-gradient-to-r from-[#4338ca] to-[#6366f1] text-white border-indigo-500/80 shadow-md shadow-indigo-500/25 dark:shadow-[0_0_16px_rgba(99,102,241,0.25)]"
-                : "bg-indigo-50/70 dark:bg-[#131a27]/90 border-indigo-200/70 dark:border-[#38bdf8]/20 text-indigo-700 dark:text-[#93c5fd] hover:bg-indigo-100/80 dark:hover:bg-[#1a253a] hover:border-indigo-300 dark:hover:border-[#38bdf8]/40"
-            } ${isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-2.5"}`}
-          >
-            <span
-              className={`relative z-10 text-base shrink-0 flex items-center justify-center w-5 h-5 ${
-                copilotOpen ? "text-white" : "text-indigo-600 dark:text-[#38bdf8]"
-              }`}
-            >
-              <Sparkles className="h-4 w-4 animate-pulse" />
-            </span>
-            <span
-              className={`relative z-10 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out font-sans flex-1 text-left ${
-                isCollapsed ? "max-w-0 opacity-0" : "max-w-xs opacity-100"
-              }`}
-            >
-              Skill Copilot
-            </span>
-            {!isCollapsed && (
-              <span
-                className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded tracking-wider ${
-                  copilotOpen
-                    ? "bg-white/20 text-white"
-                    : "bg-indigo-200/70 text-indigo-800 dark:bg-indigo-950/80 dark:text-[#38bdf8] border border-indigo-300/40 dark:border-[#38bdf8]/30"
-                }`}
-              >
-                AI
-              </span>
-            )}
-          </button>
-
           {/* User Profile Card */}
           {isCollapsed ? (
             <div
@@ -534,6 +493,25 @@ export function App() {
           )}
         </main>
       </div>
+
+      {/* Floating Copilot AI Button in Bottom-Right Corner */}
+      {!copilotOpen && (
+        <motion.button
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          whileHover={{ scale: 1.1, rotate: 5 }}
+          whileTap={{ scale: 0.92 }}
+          type="button"
+          onClick={() => setCopilotOpen(true)}
+          title="Skill Copilot (AI Assistant) • Ctrl+J"
+          aria-label="Open Skill Copilot AI Assistant"
+          className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-tr from-[#4338ca] via-[#6366f1] to-[#a855f7] text-white shadow-xl shadow-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/60 border border-white/25 cursor-pointer backdrop-blur-md transition-all duration-300 group"
+        >
+          <Sparkles className="h-6 w-6 text-white group-hover:scale-110 transition-transform duration-200 animate-pulse" />
+          <span className="sr-only">Open Skill Copilot</span>
+        </motion.button>
+      )}
 
       {/* Right Slide-in Copilot Sidebar */}
       <CopilotSidebar
