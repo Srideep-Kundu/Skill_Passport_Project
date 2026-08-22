@@ -12,6 +12,8 @@ describe("ResumeIntelligence", () => {
   it("uploads a PDF/DOCX resume and exposes parse progress", async () => {
     vi.spyOn(api, "resumes").mockResolvedValue({ page: 1, page_size: 20, total: 1, items: [resume] });
     vi.spyOn(api, "uploadResume").mockResolvedValue(resume);
+    vi.spyOn(api, "parseResume").mockResolvedValue(resume);
+    vi.spyOn(api, "activateResume").mockResolvedValue(resume);
     render(<ResumeIntelligence token="token" onChanged={vi.fn()} />);
     await act(async () => { await Promise.resolve(); });
     const file = new File(["resume"], "resume.docx", { type: resume.mime_type });

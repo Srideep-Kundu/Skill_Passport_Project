@@ -28,11 +28,9 @@ import {
 import { LuminaWaves } from "../components/LuminaWaves";
 import { ApiError, api } from "../api";
 import type {
-  MatchExplanation,
   Passport,
   StudentMatch,
   CandidateProfile,
-  ExternalJobMatch,
   Application,
   JobDiscovery,
   AutomationQueueItem,
@@ -45,7 +43,6 @@ import { ResumeIntelligence } from "../components/ResumeIntelligence";
 import { LinkedInIntelligence } from "../components/LinkedInIntelligence";
 import { UnifiedCandidateProfile } from "../components/UnifiedCandidateProfile";
 import { GitHubVerification } from "./GitHubVerification";
-import { MatchExplanationPanel } from "../components/MatchExplanationPanel";
 import { SkillBadge } from "../components/SkillBadge";
 import { TeamSuggestions } from "./TeamSuggestions";
 import { AnimatedNumber } from "../components/AnimatedNumber";
@@ -109,9 +106,6 @@ export function StudentDashboard({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Explanation Modal state
-  const [selectedExplanation, setSelectedExplanation] = useState<MatchExplanation | null>(null);
-  const [loadingExplanationId, setLoadingExplanationId] = useState<string | null>(null);
   const [evidenceRefresh, setEvidenceRefresh] = useState(0);
 
   const loadData = useCallback(async () => {
@@ -152,21 +146,6 @@ export function StudentDashboard({
   useEffect(() => {
     void loadData();
   }, [loadData]);
-
-  async function showExplanation(match: StudentMatch | ExternalJobMatch) {
-    if (match.explanation) {
-      setSelectedExplanation(match.explanation);
-      return;
-    }
-    setLoadingExplanationId(match.id);
-    try {
-      setSelectedExplanation(await api.explanation(match.id, token));
-    } catch (caught) {
-      setError(caught instanceof ApiError ? caught.detail : "The explanation could not be loaded.");
-    } finally {
-      setLoadingExplanationId(null);
-    }
-  }
 
   const [recomputingInternshipMatches, setRecomputingInternshipMatches] = useState(false);
 
@@ -702,13 +681,6 @@ export function StudentDashboard({
                       <span className="text-lg font-black text-[#3b71d9] dark:text-[#b0c6ff] font-sans">
                         {Math.round(m.final_score * 100)}%
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => void showExplanation(m)}
-                        className="rounded-lg border border-[#3b71d9] dark:border-[#b0c6ff]/40 px-2.5 py-1 text-xs font-semibold text-[#3b71d9] dark:text-[#b0c6ff] hover:bg-blue-50 dark:hover:bg-[#1a2430] transition-colors cursor-pointer font-sans"
-                      >
-                        {loadingExplanationId === m.id ? "Loading..." : "Why this match"}
-                      </button>
                     </div>
                   </li>
                 ))}
@@ -862,13 +834,6 @@ export function StudentDashboard({
                           Match Score
                         </span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => void showExplanation(m)}
-                        className="rounded-lg border border-[#3b71d9] dark:border-[#b0c6ff]/40 px-3 py-1.5 text-xs font-semibold text-[#3b71d9] dark:text-[#b0c6ff] hover:bg-blue-50 dark:hover:bg-[#1a2430] transition-colors cursor-pointer font-sans"
-                      >
-                        {loadingExplanationId === m.id ? "Loading..." : "Why this match?"}
-                      </button>
                     </div>
                   </div>
                 ))}
@@ -961,9 +926,6 @@ export function StudentDashboard({
           <TeamSuggestions token={token} availableSkillIds={allSkills.map((s) => s.skill_id)} />
         </motion.div>
       )}
-
-      {/* Match Explanation Modal / Drawer */}
-      {selectedExplanation && <MatchExplanationPanel explanation={selectedExplanation} />}
     </motion.div>
   </AnimatePresence>
   </div>

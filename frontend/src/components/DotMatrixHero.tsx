@@ -85,8 +85,8 @@ export function DotMatrixWord({
                     key={`${rowIdx}-${bit}`}
                     className={`rounded-[1px] transition-all duration-300 ${
                       isActive
-                        ? "bg-slate-900 dark:bg-white shadow-[0_0_6px_rgba(59,130,246,0.3)] dark:shadow-[0_0_8px_rgba(255,255,255,0.7)]"
-                        : "opacity-0"
+                        ? "bg-white shadow-[0_0_8px_rgba(56,189,248,0.9),0_0_16px_rgba(99,102,241,0.5)]"
+                        : "bg-white/[0.06]"
                     }`}
                     style={{ width: `${dotSize}px`, height: `${dotSize}px` }}
                   />
@@ -110,13 +110,13 @@ export function DotMatrixHeroHeader({
   return (
     <div className="flex flex-col items-center justify-center space-y-3 sm:space-y-4 my-2">
       {/* Line 1 */}
-      <div className="flex justify-center transform scale-75 sm:scale-90 md:scale-110 lg:scale-125 transition-transform">
-        <DotMatrixWord text={line1} dotSize={3.8} dotGap={2} charGap={8} />
+      <div className="flex justify-center transform scale-75 sm:scale-95 md:scale-110 lg:scale-125 transition-transform">
+        <DotMatrixWord text={line1} dotSize={4.5} dotGap={2.5} charGap={10} />
       </div>
 
       {/* Line 2 */}
-      <div className="flex justify-center transform scale-75 sm:scale-90 md:scale-110 lg:scale-125 transition-transform">
-        <DotMatrixWord text={line2} dotSize={3.8} dotGap={2} charGap={8} />
+      <div className="flex justify-center transform scale-75 sm:scale-95 md:scale-110 lg:scale-125 transition-transform">
+        <DotMatrixWord text={line2} dotSize={4.5} dotGap={2.5} charGap={10} />
       </div>
 
       {/* Accessible H1 */}
