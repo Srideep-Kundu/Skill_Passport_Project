@@ -4,10 +4,10 @@ A contextual, platform-aware assistant strictly grounded in the authenticated st
 persisted database records. Operates on a safe, read-only tool layer with zero hallucinations,
 zero PII leaks, and zero LLM scoring authority.
 """
-import httpx
 from typing import Any
 from uuid import UUID
 
+import httpx
 from pydantic import Field
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
@@ -66,35 +66,35 @@ Guidelines:
 
 Student Query: {query}"""
 
-    try:
-        async with httpx.AsyncClient(timeout=6.0) as client:
-            for model_name in ["gemini-3.5-flash", "gemini-3.7-flash", "gemini-3.6-flash"]:
-                try:
-                    resp = await client.post(
-                        f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent",
-                        params={"key": settings.gemini_api_key},
-                        json={"contents": [{"parts": [{"text": prompt}]}]},
-                    )
-                    if resp.status_code == 200:
-                        body = resp.json()
-                        candidates = body.get("candidates", [])
-                        if candidates:
-                            text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                            if text and text.strip():
-                                return CopilotResponse(
-                                    message=text.strip(),
-                                    sources=["Gemini AI Career Engine", "Skill Passport Grounding Context"],
-                                    actions=[
-                                        CopilotAction(label="View Skill Passport", target_tab="passport"),
-                                        CopilotAction(label="Analyze Skill Gaps", target_tab="gaps"),
-                                        CopilotAction(label="Browse Internships", target_tab="internships"),
-                                    ],
-                                    grounding_data={"ai_model": model_name},
-                                )
-                except Exception:
-                    continue
-    except Exception:
-        pass
+    async with httpx.AsyncClient(timeout=6.0) as client:
+        for model_name in ["gemini-3.5-flash", "gemini-3.7-flash", "gemini-3.6-flash"]:
+            try:
+                resp = await client.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent",
+                    params={"key": settings.gemini_api_key},
+                    json={"contents": [{"parts": [{"text": prompt}]}]},
+                )
+            except httpx.HTTPError:
+                resp = None
+            if resp is None or resp.status_code != 200:
+                continue
+            try:
+                body = resp.json()
+                candidates = body.get("candidates", [])
+                text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+            except (AttributeError, IndexError, TypeError, ValueError):
+                text = ""
+            if isinstance(text, str) and text.strip():
+                return CopilotResponse(
+                    message=text.strip(),
+                    sources=["Gemini AI Career Engine", "Skill Passport Grounding Context"],
+                    actions=[
+                        CopilotAction(label="View Skill Passport", target_tab="passport"),
+                        CopilotAction(label="Analyze Skill Gaps", target_tab="gaps"),
+                        CopilotAction(label="Browse Internships", target_tab="internships"),
+                    ],
+                    grounding_data={"ai_model": model_name},
+                )
     return None
 
 

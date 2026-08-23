@@ -1,5 +1,6 @@
 import hashlib
 import json
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from itertools import combinations
@@ -7,6 +8,7 @@ from typing import Any
 from uuid import UUID
 
 from sqlalchemy import select, text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -387,8 +389,8 @@ PEER_CANDIDATE_SKILLS: dict[str, set[str]] = {
 
 async def suggest_teams(
     session: AsyncSession,
-    target_skill_set: list[str | UUID],
-    pool: list[str | UUID],
+    target_skill_set: Sequence[str | UUID],
+    pool: Sequence[str | UUID],
     principal_id: UUID | None = None,
 ) -> list[tuple[tuple[str, str], float]]:
     await activate_matching_role(session)
@@ -423,7 +425,7 @@ async def suggest_teams(
                     if sk:
                         skills.add(sk.canonical_name.casefold())
                     skills.add(str(entry.skill_id).casefold())
-            except Exception:
+            except SQLAlchemyError:
                 pass
 
         if not skills and cand_str in PEER_CANDIDATE_SKILLS:

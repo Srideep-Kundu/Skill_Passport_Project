@@ -9,7 +9,6 @@ interface CircularReadinessGaugeProps {
 
 export function CircularReadinessGauge({
   readinessScore = 87,
-  verificationScore = 84,
   label = "READINESS",
   size = 180,
 }: CircularReadinessGaugeProps) {
@@ -21,19 +20,25 @@ export function CircularReadinessGauge({
   const outerCircumference = 2 * Math.PI * outerRadius;
   const clampedReadiness = Math.max(0, Math.min(100, readinessScore));
   const outerOffset = outerCircumference - (clampedReadiness / 100) * outerCircumference;
-
-  // Inner ring calculations
-  const innerRadius = outerRadius - 12;
-  const innerCircumference = 2 * Math.PI * innerRadius;
-  const clampedVerification = Math.max(0, Math.min(100, verificationScore));
-  const innerOffset = innerCircumference - (clampedVerification / 100) * innerCircumference;
+  const scoreText = `${clampedReadiness}%`;
+  const metricFontSize = scoreText.length >= 5
+    ? "clamp(0.9375rem, 19cqi, 1.625rem)"
+    : "clamp(1rem, 22cqi, 1.875rem)";
 
   return (
-    <div className="relative flex flex-col items-center justify-center select-none">
+    <div
+      className="relative aspect-square shrink-0 select-none"
+      style={{
+        width: size,
+        height: size,
+        flexBasis: size,
+        containerType: "inline-size",
+      }}
+    >
       <svg
         width={size}
         height={size}
-        className="transform -rotate-90 drop-shadow-[0_0_12px_rgba(59,130,246,0.25)]"
+        className="absolute inset-0 h-full w-full transform -rotate-90 drop-shadow-[0_0_12px_rgba(59,130,246,0.25)]"
       >
         {/* Outer Background Track */}
         <circle
@@ -61,64 +66,32 @@ export function CircularReadinessGauge({
           strokeLinecap="round"
         />
 
-        {/* Inner Background Track */}
-        <circle
-          cx={center}
-          cy={center}
-          r={innerRadius}
-          fill="transparent"
-          stroke="currentColor"
-          strokeWidth={strokeWidth - 1}
-          className="text-slate-200/60 dark:text-[#151e29]"
-        />
-
-        {/* Inner Dynamic Ring (Lumina Editorial Cream) */}
-        <motion.circle
-          cx={center}
-          cy={center}
-          r={innerRadius}
-          fill="transparent"
-          stroke="url(#innerCreamGradient)"
-          strokeWidth={strokeWidth - 1}
-          strokeDasharray={innerCircumference}
-          initial={{ strokeDashoffset: innerCircumference }}
-          animate={{ strokeDashoffset: innerOffset }}
-          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.25 }}
-          strokeLinecap="round"
-        />
-
-        {/* Gradients */}
+        {/* Gradient */}
         <defs>
           <linearGradient id="outerCobaltGradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#b0c6ff" />
             <stop offset="100%" stopColor="#3b71d9" />
           </linearGradient>
-          <linearGradient id="innerCreamGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#dedbc8" />
-            <stop offset="100%" stopColor="#cac7b5" />
-          </linearGradient>
         </defs>
       </svg>
 
       {/* Central Metric Readout */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-2">
+      <div className="pointer-events-none absolute inset-[18%] grid place-items-center text-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="text-center flex flex-col items-center justify-center"
+          className="flex min-w-0 flex-col items-center justify-center gap-[clamp(0.125rem,2cqi,0.25rem)] text-center"
         >
           <span
-            className={`${
-              size <= 120 ? "text-2xl" : "text-3xl"
-            } font-black tracking-tight text-slate-900 dark:text-[#f1f0e8] block font-sans leading-none`}
+            className="block whitespace-nowrap font-sans font-black leading-none tracking-tight text-slate-900 dark:text-[#f1f0e8]"
+            style={{ fontSize: metricFontSize }}
           >
-            {clampedReadiness}%
+            {scoreText}
           </span>
           <span
-            className={`${
-              size <= 120 ? "text-[8px] tracking-wider max-w-[60px]" : "text-[10px] tracking-[0.2em] max-w-[110px]"
-            } font-bold text-slate-500 dark:text-[#98a4b3] uppercase mt-1 block truncate`}
+            className="block max-w-full truncate whitespace-nowrap text-center font-bold uppercase leading-none tracking-[0.18em] text-slate-500 dark:text-[#98a4b3]"
+            style={{ fontSize: "clamp(0.5rem, 7cqi, 0.625rem)" }}
             title={label}
           >
             {label}

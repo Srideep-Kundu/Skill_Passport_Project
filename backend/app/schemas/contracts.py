@@ -39,7 +39,7 @@ TYPO_DOMAINS = {
 
 def _validate_email_field(value: str) -> str:
     if not isinstance(value, str):
-        raise ValueError("Not a valid email ID. Email must be a string.")
+        raise TypeError("Not a valid email ID. Email must be a string.")
     normalized = value.strip().casefold()
     if not EMAIL_REGEX.match(normalized):
         raise ValueError("Not a valid email ID. Please check the email format (e.g. name@domain.com).")
@@ -319,7 +319,7 @@ class GitHubIdentityUpdate(APIModel):
         import re
 
         if not isinstance(value, str):
-            raise ValueError("GitHub username is invalid")
+            raise TypeError("GitHub username is invalid")
         normalized = value.strip().rstrip("/")
         if "github.com/" in normalized:
             normalized = normalized.split("github.com/")[-1].split("/")[0].strip()

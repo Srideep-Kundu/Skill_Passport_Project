@@ -5,10 +5,12 @@ curriculum-to-market alignment, cohort monitoring, intervention planning,
 and faculty-industry engagement without exposing individual PII.
 """
 from datetime import UTC, datetime
+from typing import cast
 from uuid import UUID
 
 from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.elements import ColumnElement
 
 from app.models import (
     Application,
@@ -55,24 +57,30 @@ from app.schemas.contracts import (
 )
 
 
+async def _institution_student_scope(
+    session: AsyncSession, institution_id: UUID
+) -> tuple[Institution, ColumnElement[bool]]:
+    institution = await session.get(Institution, institution_id)
+    if institution is None:
+        raise ValueError("Institution not found")
+    normalized_name = " ".join(institution.institution_name.split()).casefold()
+    scope = (
+        Student.university.is_not(None)
+        & (func.lower(func.trim(Student.university)) == normalized_name)
+    )
+    return institution, scope
+
+
 async def get_institution_analytics(
     session: AsyncSession,
     institution_id: UUID | None = None,
 ) -> InstitutionAnalyticsOverview:
+    inst: Institution | None = None
     inst_name = "Harbor Polytechnic University"
-    student_scope = None
+    student_scope: ColumnElement[bool] | None = None
     if institution_id:
-        inst = await session.get(Institution, institution_id)
-        if not inst:
-            raise ValueError("Institution not found")
+        inst, student_scope = await _institution_student_scope(session, institution_id)
         inst_name = inst.institution_name
-        clean_name = inst_name.strip().casefold()
-        prefix = clean_name.replace("university", "").replace("institute", "").replace("college", "").strip()
-        student_scope = (
-            (func.lower(func.trim(Student.university)) == clean_name)
-            | (func.lower(func.trim(Student.university)) == prefix)
-            | (func.lower(Student.university).contains(prefix))
-        )
 
     student_count_stmt = select(func.count(Student.id))
     if student_scope is not None:
@@ -146,7 +154,11 @@ async def get_institution_analytics(
     top_skills: list[InstitutionSkillDistribution] = [
         InstitutionSkillDistribution(
             skill_name=row[0],
-            student_count=int(row[1]) if int(row[1]) > 5 else int(round((float(row[2] or 0.8) * 45) + (index * 3))),
+            student_count=(
+                int(row[1])
+                if institution_id is not None or int(row[1]) > 5
+                else round((float(row[2] or 0.8) * 45) + (index * 3))
+            ),
             average_proficiency=round(float(row[2] or 0.8), 2),
             verified_ratio=round(float(row[3] or 0) / max(int(row[4] or 0), 1), 2),
         )
@@ -154,7 +166,7 @@ async def get_institution_analytics(
     ]
 
     # Benchmark default distributions if live DB has sparse records
-    if len(top_skills) < 4:
+    if institution_id is None and len(top_skills) < 4:
         default_top = [
             InstitutionSkillDistribution(skill_name="Python", student_count=48, average_proficiency=0.90, verified_ratio=0.88),
             InstitutionSkillDistribution(skill_name="FastAPI", student_count=42, average_proficiency=0.85, verified_ratio=0.82),
@@ -207,6 +219,29 @@ async def get_institution_analytics(
             internship_rate=78.0,
         ),
     ]
+    if institution_id is not None:
+        department_name = (
+            inst.departments[0]
+            if inst is not None and inst.departments
+            else "All Departments"
+        )
+        dept_metrics = []
+        if total_students:
+            dept_metrics.append(
+                DepartmentMetric(
+                    department=department_name,
+                    total_students=int(total_students),
+                    verified_skills_average=round(
+                        float(total_verified) / max(int(total_students), 1), 1
+                    ),
+                    placement_rate=round(
+                        100 * float(placements_count) / max(int(total_students), 1), 1
+                    ),
+                    internship_rate=round(
+                        100 * float(active_internships) / max(int(total_students), 1), 1
+                    ),
+                )
+            )
 
     market_gaps = [
         {"skill": "Cloud / Kubernetes", "industry_demand_index": 92, "student_supply_index": 48, "gap_severity": "High"},
@@ -216,15 +251,24 @@ async def get_institution_analytics(
         {"skill": "FastAPI & AsyncIO", "industry_demand_index": 88, "student_supply_index": 78, "gap_severity": "Low"},
     ]
 
-    eff_total_students = total_students if total_students > 10 else 172
-    eff_verified_skills = total_verified if total_verified > 20 else 480
-    eff_active_internships = active_internships if active_internships > 5 else 46
-    eff_placements = placements_count if placements_count > 5 else 62
-    eff_employability = (
-        round(100 * verified_students / max(total_students, 1), 1)
-        if total_students > 10
-        else 84.5
-    )
+    if institution_id is not None:
+        eff_total_students = int(total_students)
+        eff_verified_skills = int(total_verified)
+        eff_active_internships = int(active_internships)
+        eff_placements = int(placements_count)
+        eff_employability = round(
+            100 * float(verified_students) / max(int(total_students), 1), 1
+        )
+    else:
+        eff_total_students = total_students if total_students > 10 else 172
+        eff_verified_skills = total_verified if total_verified > 20 else 480
+        eff_active_internships = active_internships if active_internships > 5 else 46
+        eff_placements = placements_count if placements_count > 5 else 62
+        eff_employability = (
+            round(100 * verified_students / max(total_students, 1), 1)
+            if total_students > 10
+            else 84.5
+        )
 
     return InstitutionAnalyticsOverview(
         institution_name=inst_name,
@@ -375,6 +419,20 @@ async def get_department_detail(
         {"skill": "Collaborative Team Projects", "curriculum_coverage": 70, "industry_demand": 85},
     ]
 
+    if institution_id is not None:
+        scoped = await get_institution_analytics(session, institution_id)
+        total = scoped.total_students
+        active_apps = min(active_apps, total)
+        top_skills = [
+            {**item, "students": min(cast(int, item["students"]), total)}
+            for item in top_skills
+        ]
+        learning = {
+            **learning,
+            "enrolled_students": min(int(learning["enrolled_students"]), total),
+            "completed_students": min(int(learning["completed_students"]), total),
+        }
+
     return DepartmentDetailAnalytics(
         department=dept_clean,
         total_students=total,
@@ -405,7 +463,90 @@ async def get_cohort_analytics(
     placement_status: str | None = None,
     institution_id: UUID | None = None,
 ) -> CohortAnalyticsResponse:
-    base_cohorts = [
+    scoped_cohorts: list[CohortSummaryItem] | None = None
+    if institution_id is not None:
+        institution, student_scope = await _institution_student_scope(
+            session, institution_id
+        )
+        students = list(
+            (await session.scalars(select(Student).where(student_scope))).all()
+        )
+        student_ids = [student.id for student in students]
+        students_with_skills: set[UUID] = set()
+        verified_counts: dict[UUID, int] = {}
+        if student_ids:
+            students_with_skills = set(
+                (
+                    await session.scalars(
+                        select(StudentSkill.student_id)
+                        .where(StudentSkill.student_id.in_(student_ids))
+                        .distinct()
+                    )
+                ).all()
+            )
+            verified_rows = (
+                await session.execute(
+                    select(StudentSkill.student_id, func.count(StudentSkill.id))
+                    .where(
+                        StudentSkill.student_id.in_(student_ids),
+                        StudentSkill.verification_tier == VerificationTier.verified,
+                    )
+                    .group_by(StudentSkill.student_id)
+                )
+            ).all()
+            verified_counts = {
+                student_id: int(count) for student_id, count in verified_rows
+            }
+        grouped: dict[int, list[Student]] = {}
+        for student in students:
+            year = student.graduation_year or datetime.now(UTC).year
+            grouped.setdefault(year, []).append(student)
+        department_name = (
+            institution.departments[0]
+            if institution.departments
+            else "All Departments"
+        )
+        scoped_cohorts = []
+        for year, cohort_students in sorted(grouped.items()):
+            cohort_ids = {student.id for student in cohort_students}
+            total = len(cohort_students)
+            verified_average = round(
+                sum(verified_counts.get(student_id, 0) for student_id in cohort_ids)
+                / max(total, 1),
+                1,
+            )
+            readiness = round(min(100.0, verified_average * 20.0), 1)
+            if readiness >= 80:
+                band = "High Readiness (>=80%)"
+            elif readiness >= 50:
+                band = "Moderate Readiness (50-79%)"
+            else:
+                band = "Low Readiness (<50%)"
+            scoped_cohorts.append(
+                CohortSummaryItem(
+                    cohort_id=f"{institution_id}-{year}",
+                    cohort_name=f"{department_name} ({year})",
+                    department=department_name,
+                    graduation_year=year,
+                    readiness_band=band,
+                    total_students=total,
+                    average_readiness=readiness,
+                    assessment_completion_pct=round(
+                        100
+                        * len(cohort_ids & students_with_skills)
+                        / max(total, 1),
+                        1,
+                    ),
+                    verified_skills_average=verified_average,
+                    internship_participation_pct=0.0,
+                    placement_eligibility_pct=0.0,
+                    placement_conversion_pct=0.0,
+                    active_learning_enrollment=0,
+                    critical_skill_gaps=[],
+                )
+            )
+
+    fixture_cohorts = [
         CohortSummaryItem(
             cohort_id="cse-2025-final",
             cohort_name="CSE Final Year (2025)",
@@ -504,7 +645,7 @@ async def get_cohort_analytics(
         ),
     ]
 
-    filtered = base_cohorts
+    filtered = scoped_cohorts if scoped_cohorts is not None else fixture_cohorts
     if department and department.lower() != "all":
         d_lower = department.lower()
         filtered = [
@@ -601,16 +742,14 @@ async def list_intervention_plans(
 ) -> list[InterventionPlanResponse]:
     stmt = select(InstitutionInterventionPlan).order_by(InstitutionInterventionPlan.created_at.desc())
     if institution_id:
-        stmt = stmt.where(
-            (InstitutionInterventionPlan.institution_id == institution_id)
-            | (InstitutionInterventionPlan.institution_id.is_(None))
-        )
+        stmt = stmt.where(InstitutionInterventionPlan.institution_id == institution_id)
     plans = (await session.scalars(stmt)).all()
 
     if not plans:
         # Seed default realistic plans for immediate demo actionability
         default_plans = [
             InstitutionInterventionPlan(
+                institution_id=institution_id,
                 title="Spring Cloud Native & Kubernetes Bootcamp",
                 skill_cluster="DevOps & Cloud Native",
                 department="Computer Science & Engineering",
@@ -624,6 +763,7 @@ async def list_intervention_plans(
                 notes="Initiated with AWS / GCP student cloud credit vouchers.",
             ),
             InstitutionInterventionPlan(
+                institution_id=institution_id,
                 title="Institutional API Security & OAuth 2.0 Lab Series",
                 skill_cluster="Security & IAM",
                 department="All",
@@ -719,7 +859,9 @@ async def update_intervention_plan(
     institution_id: UUID | None = None,
 ) -> InterventionPlanResponse | None:
     plan = await session.get(InstitutionInterventionPlan, plan_id)
-    if not plan:
+    if not plan or (
+        institution_id is not None and plan.institution_id != institution_id
+    ):
         return None
 
     if payload.title is not None:
@@ -773,7 +915,9 @@ async def delete_intervention_plan(
     institution_id: UUID | None = None,
 ) -> bool:
     plan = await session.get(InstitutionInterventionPlan, plan_id)
-    if not plan:
+    if not plan or (
+        institution_id is not None and plan.institution_id != institution_id
+    ):
         return False
     await session.delete(plan)
     await session.commit()
@@ -784,6 +928,43 @@ async def get_internship_monitoring(
     session: AsyncSession,
     institution_id: UUID | None = None,
 ) -> InternshipMonitoringOverview:
+    if institution_id is not None:
+        institution, _ = await _institution_student_scope(session, institution_id)
+        overview = await get_institution_analytics(session, institution_id)
+        eligible = overview.total_students
+        active = min(overview.active_internships, eligible)
+        selected = min(overview.placements_secured, eligible)
+        department = (
+            institution.departments[0]
+            if institution.departments
+            else "All Departments"
+        )
+        return InternshipMonitoringOverview(
+            eligible_students=eligible,
+            applicants=active,
+            selected_students=selected,
+            active_internships=active,
+            completed_internships=0,
+            completion_rate=0.0,
+            mentor_feedback_completion_rate=0.0,
+            ppo_conversions=0,
+            ppo_conversion_rate=0.0,
+            by_department=[
+                {
+                    "department": department,
+                    "eligible": eligible,
+                    "active": active,
+                    "completed": 0,
+                    "rate": round(100 * active / max(eligible, 1), 1),
+                }
+            ]
+            if eligible
+            else [],
+            by_graduation_year=[],
+            by_opportunity_type=[],
+            by_industry=[],
+            by_skill_cluster=[],
+        )
     return InternshipMonitoringOverview(
         eligible_students=128,
         applicants=112,
@@ -827,6 +1008,53 @@ async def get_placement_monitoring(
     session: AsyncSession,
     institution_id: UUID | None = None,
 ) -> PlacementMonitoringOverview:
+    if institution_id is not None:
+        institution, _ = await _institution_student_scope(session, institution_id)
+        overview = await get_institution_analytics(session, institution_id)
+        eligible = overview.total_students
+        placed = min(overview.placements_secured, eligible)
+        department = (
+            institution.departments[0]
+            if institution.departments
+            else "All Departments"
+        )
+        conversion = round(100 * placed / max(eligible, 1), 1)
+        return PlacementMonitoringOverview(
+            eligible_students=eligible,
+            applications=0,
+            shortlisted=0,
+            interviews_scheduled=0,
+            offers_extended=placed,
+            placements_secured=placed,
+            conversion_rate=conversion,
+            average_readiness=overview.overall_employability_index,
+            average_compatibility=0.0,
+            top_placement_skill_gaps=[],
+            top_recruiting_skill_demand=[],
+            by_department=[
+                {
+                    "department": department,
+                    "eligible": eligible,
+                    "offers": placed,
+                    "placed_pct": conversion,
+                    "avg_ctc": "Not available",
+                }
+            ]
+            if eligible
+            else [],
+            by_role=[],
+            by_company=[
+                {
+                    "company": "Institution-scoped total",
+                    "drives": 0,
+                    "offers": placed,
+                    "highest_ctc": "Not available",
+                }
+            ]
+            if eligible
+            else [],
+            by_graduation_year=[],
+        )
     return PlacementMonitoringOverview(
         eligible_students=72,
         applications=184,
@@ -1234,16 +1462,14 @@ async def list_action_plans(
 ) -> list[ActionPlanResponse]:
     stmt = select(InstitutionActionPlan).order_by(InstitutionActionPlan.created_at.desc())
     if institution_id:
-        stmt = stmt.where(
-            (InstitutionActionPlan.institution_id == institution_id)
-            | (InstitutionActionPlan.institution_id.is_(None))
-        )
+        stmt = stmt.where(InstitutionActionPlan.institution_id == institution_id)
     plans = (await session.scalars(stmt)).all()
 
     if not plans:
         # Seed default action plans for immediate demo actionability
         default_actions = [
             InstitutionActionPlan(
+                institution_id=institution_id,
                 title="CSE Cloud & DevOps Curriculum Integration",
                 action_type="curriculum",
                 related_department="Computer Science & Engineering",
@@ -1254,6 +1480,7 @@ async def list_action_plans(
                 outcome_notes="Lab syllabus updated and cloud credits provisioned.",
             ),
             InstitutionActionPlan(
+                institution_id=institution_id,
                 title="Zero-Trust API Security Masterclass & Hackathon",
                 action_type="workshop",
                 related_department="All Departments",
@@ -1264,6 +1491,7 @@ async def list_action_plans(
                 outcome_notes="Scheduled for Month 3 with industry partner SecureLayer.",
             ),
             InstitutionActionPlan(
+                institution_id=institution_id,
                 title="Pre-Placement Intensive Readiness Drive",
                 action_type="placement_prep",
                 related_department="Cross-Departmental",
@@ -1347,7 +1575,9 @@ async def update_action_plan(
     institution_id: UUID | None = None,
 ) -> ActionPlanResponse | None:
     plan = await session.get(InstitutionActionPlan, plan_id)
-    if not plan:
+    if not plan or (
+        institution_id is not None and plan.institution_id != institution_id
+    ):
         return None
 
     if payload.title is not None:
@@ -1390,7 +1620,9 @@ async def delete_action_plan(
     institution_id: UUID | None = None,
 ) -> bool:
     plan = await session.get(InstitutionActionPlan, plan_id)
-    if not plan:
+    if not plan or (
+        institution_id is not None and plan.institution_id != institution_id
+    ):
         return False
     await session.delete(plan)
     await session.commit()

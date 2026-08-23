@@ -293,3 +293,108 @@ async def test_institution_rbac_isolation(
     assert (await client.get("/institution/interventions", headers=fac_headers)).status_code == 403
     assert (await client.get("/institution/action-plans", headers=fac_headers)).status_code == 403
     assert (await client.get("/institution/reports/skill_gap", headers=fac_headers)).status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_institution_tenants_cannot_read_or_mutate_each_others_aggregates_and_plans(
+    api_client: tuple[httpx.AsyncClient, async_sessionmaker[AsyncSession]],
+) -> None:
+    client, factory = api_client
+    async with factory() as session:
+        first = Institution(
+            email="first.institution@example.edu",
+            password_hash="hashed",
+            institution_name="First Technical University",
+            institution_code="FIRST-001",
+            state="Karnataka",
+            departments=["Computer Science & Engineering"],
+        )
+        second = Institution(
+            email="second.institution@example.edu",
+            password_hash="hashed",
+            institution_name="Second Technical University",
+            institution_code="SECOND-002",
+            state="Maharashtra",
+            departments=["Information Technology"],
+        )
+        session.add_all([first, second])
+        await session.flush()
+        session.add_all(
+            [
+                Student(
+                    email="first.student@example.edu",
+                    password_hash="hashed",
+                    full_name="First Student",
+                    university="First Technical University",
+                ),
+                Student(
+                    email="second.student@example.edu",
+                    password_hash="hashed",
+                    full_name="Second Student",
+                    university="Second Technical University",
+                ),
+                Student(
+                    email="unrelated.student@example.edu",
+                    password_hash="hashed",
+                    full_name="Unrelated Student",
+                    university="Unrelated University",
+                ),
+            ]
+        )
+        await session.commit()
+        first_id = first.id
+        second_id = second.id
+
+    first_headers = {
+        "Authorization": f"Bearer {create_access_token(first_id, Role.institution)}"
+    }
+    second_headers = {
+        "Authorization": f"Bearer {create_access_token(second_id, Role.institution)}"
+    }
+
+    first_analytics = (
+        await client.get("/institution/analytics", headers=first_headers)
+    ).json()
+    second_analytics = (
+        await client.get("/institution/analytics", headers=second_headers)
+    ).json()
+    assert first_analytics["institution_name"] == "First Technical University"
+    assert second_analytics["institution_name"] == "Second Technical University"
+    assert first_analytics["total_students"] == 1
+    assert second_analytics["total_students"] == 1
+
+    plan = await client.post(
+        "/institution/interventions",
+        headers=first_headers,
+        json={
+            "title": "First Tenant Plan",
+            "skill_cluster": "Backend Engineering",
+            "department": "Computer Science & Engineering",
+            "target_students_count": 1,
+            "baseline_supply_index": 20,
+            "target_supply_index": 80,
+            "selected_learning_programs": [],
+            "selected_workshops": [],
+            "selected_mentorship": [],
+            "status": "planned",
+        },
+    )
+    assert plan.status_code == 201
+    plan_id = plan.json()["id"]
+    second_plans = await client.get(
+        "/institution/interventions", headers=second_headers
+    )
+    assert second_plans.status_code == 200
+    assert all(item["id"] != plan_id for item in second_plans.json())
+    assert (
+        await client.patch(
+            f"/institution/interventions/{plan_id}",
+            headers=second_headers,
+            json={"status": "in_progress"},
+        )
+    ).status_code == 404
+    assert (
+        await client.delete(
+            f"/institution/interventions/{plan_id}", headers=second_headers
+        )
+    ).status_code == 404
