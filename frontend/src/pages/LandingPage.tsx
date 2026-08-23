@@ -30,7 +30,7 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
   }, [authModalOpen]);
 
   return (
-    <div className="relative flex min-h-screen w-full select-none flex-col overflow-hidden bg-[#070a10] font-sans text-white">
+    <div className="relative flex min-h-dvh w-full min-w-0 select-none flex-col overflow-x-clip bg-[#070a10] font-sans text-white">
       {/* Lumina Horizon Animated Wave Canvas */}
       <LuminaAmbientHorizon className="opacity-90" />
 
@@ -39,20 +39,20 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
       <div className="pointer-events-none absolute -top-36 left-1/2 z-0 h-[350px] w-[700px] -translate-x-1/2 rounded-full bg-gradient-to-b from-indigo-500/20 via-cyan-500/10 to-transparent blur-3xl" />
 
       {/* Header Bar */}
-      <header className="relative z-20 mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6 sm:px-8">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-[#3b71d9] to-[#6366f1] text-white shadow-md shadow-indigo-500/30">
+      <header className="relative z-20 mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#3b71d9] to-[#6366f1] text-white shadow-md shadow-indigo-500/30">
             <span className="text-sm font-black tracking-wider">SP</span>
           </div>
-          <div>
-            <span className="text-sm font-bold tracking-tight text-white">Skill Passport</span>
-            <span className="ml-2 hidden rounded-full bg-cyan-950/80 border border-cyan-800/50 px-2 py-0.5 text-[10px] font-bold text-cyan-300 sm:inline-block">
+          <div className="flex min-w-0 items-center">
+            <span className="whitespace-nowrap text-xs font-bold tracking-tight text-white sm:text-sm">Skill Passport</span>
+            <span className="ml-2 hidden whitespace-nowrap rounded-full border border-cyan-800/50 bg-cyan-950/80 px-2 py-0.5 text-[10px] font-bold text-cyan-300 md:inline-block">
               Verifiable Engine
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <button
             type="button"
             onClick={onToggleTheme}
@@ -66,7 +66,7 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
           <button
             type="button"
             onClick={() => setAuthModalOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-cyan-400/30 bg-cyan-950/40 px-4 py-2 text-xs font-bold text-cyan-200 hover:bg-cyan-900/60 transition-all cursor-pointer backdrop-blur-md shadow-xs"
+            className="inline-flex min-h-9 items-center gap-1 rounded-xl border border-cyan-400/30 bg-cyan-950/40 px-3 py-2 text-[11px] font-bold text-cyan-200 shadow-xs backdrop-blur-md transition-all hover:bg-cyan-900/60 sm:gap-1.5 sm:px-4 sm:text-xs cursor-pointer"
           >
             <span>Sign In</span>
             <ArrowRight className="h-3.5 w-3.5" />
@@ -75,11 +75,11 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
       </header>
 
       {/* Main Hero Section */}
-      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center px-4 py-8 text-center sm:px-6 lg:px-8">
+      <main className="relative z-10 mx-auto flex w-full min-w-0 max-w-6xl flex-1 flex-col items-center justify-start px-3 py-5 text-center sm:px-6 sm:py-8 lg:justify-center lg:px-8 lg:py-10">
         <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-slate-950/70 px-4 py-1.5 text-xs font-semibold text-cyan-100 backdrop-blur-xl shadow-sm"
+          className="mb-4 inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-cyan-300/25 bg-slate-950/70 px-3 py-1.5 text-[10px] font-semibold leading-4 text-cyan-100 shadow-sm backdrop-blur-xl sm:px-4 sm:text-xs"
         >
           <Sparkles className="h-3.5 w-3.5 text-cyan-300 animate-pulse" aria-hidden="true" />
           <span>Verifiable Skill Passport & Multi-Persona Ecosystem</span>
@@ -90,16 +90,16 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.05 }}
-          className="my-3"
+          className="my-3 w-full max-w-full overflow-hidden px-1 sm:px-2"
         >
-          <DotMatrixHeroHeader line1="INTELLIGENCE" line2="DESIGNED TO EVOLVE" />
+          <DotMatrixHeroHeader line1="LUMINA INTEL" />
         </motion.div>
 
         <motion.p
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.18 }}
-          className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base"
+          className="mt-3 max-w-2xl px-1 text-xs leading-5 text-slate-300 sm:px-0 sm:text-sm sm:leading-6 lg:text-base"
         >
           Students construct evidence-backed skill graphs. Recruiters, academicians, and institutions receive auditable, deterministic matching without black-box bias.
         </motion.p>
@@ -109,15 +109,15 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.24 }}
-          className="mt-6 flex flex-wrap items-center justify-center gap-3"
+          className="mt-6 flex w-full flex-wrap items-center justify-center gap-3"
         >
           <button
             type="button"
             onClick={() => setAuthModalOpen(true)}
-            className="group inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 via-sky-500 to-indigo-600 px-7 py-3.5 text-sm font-bold text-slate-950 shadow-[0_0_25px_rgba(56,189,248,0.35)] transition-all hover:scale-105 hover:shadow-[0_0_35px_rgba(56,189,248,0.5)] cursor-pointer"
+            className="group relative isolate inline-flex min-h-12 w-full max-w-xs cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl border border-cyan-100/25 bg-slate-950/20 bg-gradient-to-r from-cyan-300/15 via-sky-400/20 to-indigo-400/25 px-6 py-3 text-sm font-bold text-cyan-50 shadow-[0_8px_28px_rgba(14,165,233,0.14),inset_0_1px_0_rgba(255,255,255,0.18)] ring-1 ring-inset ring-white/15 backdrop-blur-2xl backdrop-saturate-150 transition-all duration-200 before:pointer-events-none before:absolute before:inset-x-3 before:top-px before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent hover:-translate-y-0.5 hover:border-cyan-100/45 hover:from-cyan-300/25 hover:via-sky-400/30 hover:to-indigo-400/35 hover:shadow-[0_10px_32px_rgba(34,211,238,0.22),0_0_20px_rgba(99,102,241,0.14),inset_0_1px_0_rgba(255,255,255,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/70 active:translate-y-0 active:scale-[0.985] active:border-cyan-200/35 active:brightness-95 sm:w-auto sm:px-7 sm:py-3.5"
           >
-            <span>Get Started</span>
-            <ArrowRight className="h-4 w-4 text-slate-950 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+            <span className="relative z-10 drop-shadow-[0_1px_4px_rgba(8,47,73,0.8)]">Get Started</span>
+            <ArrowRight className="relative z-10 h-4 w-4 text-cyan-50 drop-shadow-[0_1px_4px_rgba(8,47,73,0.8)] transition-transform group-hover:translate-x-1" aria-hidden="true" />
           </button>
         </motion.div>
 
@@ -128,10 +128,10 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.34 }}
-          className="mt-8 grid w-full gap-4 text-left md:grid-cols-3"
+          className="mt-8 grid w-full min-w-0 grid-cols-1 gap-4 text-left lg:grid-cols-3"
         >
           {capabilities.map(({ icon: Icon, title, text }) => (
-            <article key={title} className="rounded-2xl border border-white/10 bg-slate-950/50 p-5 backdrop-blur-xl transition-transform hover:-translate-y-1">
+            <article key={title} className="min-w-0 rounded-2xl border border-white/10 bg-slate-950/50 p-4 backdrop-blur-xl transition-transform hover:-translate-y-1 sm:p-5">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-950/60 border border-cyan-800/50 text-cyan-300 mb-3 shadow-xs">
                 <Icon className="h-5 w-5" aria-hidden="true" />
               </div>

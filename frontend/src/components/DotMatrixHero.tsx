@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 
 // Standard 5x7 dot matrix bitmap for uppercase A-Z, numbers, and space
 const FONT_MAP: Record<string, number[]> = {
@@ -35,21 +35,29 @@ const FONT_MAP: Record<string, number[]> = {
 
 interface DotMatrixWordProps {
   text: string;
-  dotSize?: number;
-  dotGap?: number;
-  charGap?: number;
+  dotSize?: string;
+  dotGap?: string;
+  charGap?: string;
 }
 
 export function DotMatrixWord({
   text,
-  dotSize = 4,
-  dotGap = 2,
-  charGap = 8,
+  dotSize = "clamp(3px, 0.7vw, 7px)",
+  dotGap = "clamp(1px, 0.28vw, 3px)",
+  charGap = "clamp(4px, 0.7vw, 10px)",
 }: DotMatrixWordProps) {
   const chars = useMemo(() => text.toUpperCase().split(""), [text]);
+  const responsiveMetrics = {
+    "--dot-size": dotSize,
+    "--dot-gap": dotGap,
+    "--char-gap": charGap,
+  } as CSSProperties;
 
   return (
-    <div className="inline-flex items-center justify-center flex-wrap gap-y-2 select-none">
+    <div
+      className="inline-flex max-w-full flex-nowrap items-center justify-center select-none"
+      style={responsiveMetrics}
+    >
       {chars.map((char, charIdx) => {
         const matrix = FONT_MAP[char] || FONT_MAP[" "];
         const isSpace = char === " ";
@@ -58,7 +66,7 @@ export function DotMatrixWord({
           return (
             <div
               key={charIdx}
-              style={{ width: `${dotSize * 3 + dotGap * 2}px` }}
+              style={{ width: "calc(var(--dot-size) * 3 + var(--dot-gap) * 2)" }}
               className="shrink-0"
               aria-hidden="true"
             />
@@ -70,10 +78,10 @@ export function DotMatrixWord({
             key={charIdx}
             className="inline-grid shrink-0"
             style={{
-              gridTemplateColumns: `repeat(5, ${dotSize}px)`,
-              gridTemplateRows: `repeat(7, ${dotSize}px)`,
-              gap: `${dotGap}px`,
-              marginRight: charIdx < chars.length - 1 ? `${charGap}px` : "0px",
+              gridTemplateColumns: "repeat(5, var(--dot-size))",
+              gridTemplateRows: "repeat(7, var(--dot-size))",
+              gap: "var(--dot-gap)",
+              marginRight: charIdx < chars.length - 1 ? "var(--char-gap)" : "0px",
             }}
             aria-hidden="true"
           >
@@ -88,7 +96,7 @@ export function DotMatrixWord({
                         ? "bg-white shadow-[0_0_8px_rgba(56,189,248,0.9),0_0_16px_rgba(99,102,241,0.5)]"
                         : "bg-white/[0.06]"
                     }`}
-                    style={{ width: `${dotSize}px`, height: `${dotSize}px` }}
+                    style={{ width: "var(--dot-size)", height: "var(--dot-size)" }}
                   />
                 );
               })
@@ -101,23 +109,25 @@ export function DotMatrixWord({
 }
 
 export function DotMatrixHeroHeader({
-  line1 = "INTELLIGENCE",
-  line2 = "DESIGNED TO EVOLVE",
+  line1 = "LUMINA INTEL",
+  line2,
 }: {
   line1?: string;
   line2?: string;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center space-y-3 sm:space-y-4 my-2">
+    <div className="my-2 flex w-full max-w-full flex-col items-center justify-center gap-3 sm:gap-4">
       {/* Line 1 */}
-      <div className="flex justify-center transform scale-75 sm:scale-95 md:scale-110 lg:scale-125 transition-transform">
-        <DotMatrixWord text={line1} dotSize={4.5} dotGap={2.5} charGap={10} />
+      <div className="flex w-full max-w-full justify-center">
+        <DotMatrixWord text={line1} />
       </div>
 
       {/* Line 2 */}
-      <div className="flex justify-center transform scale-75 sm:scale-95 md:scale-110 lg:scale-125 transition-transform">
-        <DotMatrixWord text={line2} dotSize={4.5} dotGap={2.5} charGap={10} />
-      </div>
+      {line2 ? (
+        <div className="flex w-full max-w-full justify-center">
+          <DotMatrixWord text={line2} />
+        </div>
+      ) : null}
 
       {/* Accessible H1 */}
       <h1 className="sr-only">

@@ -44,7 +44,7 @@ from app.api import (
     teams,
 )
 from app.core.config import get_settings
-from app.core.db import SessionLocal, create_schema_for_local_use
+from app.core.db import SessionLocal
 from app.core.observability import (
     configure_logging,
     request_id_context,
@@ -61,21 +61,22 @@ async def lifespan(app: FastAPI):
     settings.validate_for_runtime()
     try:
         from app import models  # noqa: F401 - registers all tables
-        from app.core.db import Base, engine, create_matching_view
-        from sqlalchemy import text
+        from app.core.db import Base, create_matching_view, engine
+
         async with engine.begin() as conn:
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
             await conn.run_sync(Base.metadata.create_all)
             await create_matching_view(conn)
         try:
-            from seed.seed_skills import seed_skills
             from seed.seed_demo_data import seed_demo_data
+            from seed.seed_skills import seed_skills
+
             await seed_skills()
             await seed_demo_data()
-        except Exception as seed_exc:
-            logger.info(f"Seed notice: {seed_exc}")
-    except Exception as exc:
-        logger.warning(f"Database schema auto-creation notice: {exc}")
+        except Exception:  # noqa: BLE001 - optional startup seeding must not block the API
+            logger.info("seed_notice")
+    except Exception:  # noqa: BLE001 - preserve teammate fail-soft startup behavior
+        logger.warning("database_schema_auto_creation_notice")
     yield
 
 
