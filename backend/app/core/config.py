@@ -52,7 +52,21 @@ class Settings(BaseSettings):
             "SKILL_PASSPORT_GROQ_API_KEY", "GROQ_API_KEY"
         ),
     )
-    extraction_provider: Literal["local", "gemini", "groq"] = Field(
+    cohere_api_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_COHERE_API_KEY", "COHERE_API_KEY"
+        ),
+    )
+    openrouter_api_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_OPENROUTER_API_KEY", "OPENROUTER_API_KEY"
+        ),
+    )
+    extraction_provider: Literal[
+        "local", "gemini", "groq", "cohere", "openrouter"
+    ] = Field(
         default="local",
         validation_alias=AliasChoices(
             "SKILL_PASSPORT_EXTRACTION_PROVIDER", "EXTRACTION_PROVIDER"
@@ -76,13 +90,125 @@ class Settings(BaseSettings):
             "SKILL_PASSPORT_GROQ_EXTRACTION_MODEL", "GROQ_EXTRACTION_MODEL"
         ),
     )
+    cohere_extraction_model: str = Field(
+        default="command-a-03-2025",
+        min_length=1,
+        max_length=100,
+        pattern=r"^[A-Za-z0-9._/-]+$",
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_COHERE_EXTRACTION_MODEL", "COHERE_EXTRACTION_MODEL"
+        ),
+    )
+    openrouter_extraction_model: str = Field(
+        default="openai/gpt-oss-120b",
+        min_length=1,
+        max_length=120,
+        pattern=r"^[A-Za-z0-9._:/-]+$",
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_OPENROUTER_EXTRACTION_MODEL",
+            "OPENROUTER_EXTRACTION_MODEL",
+        ),
+    )
+    hf_extraction_enabled: bool = Field(
+        default=False,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_HF_EXTRACTION_ENABLED", "HF_EXTRACTION_ENABLED"
+        ),
+    )
+    hf_extraction_endpoint: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_HF_EXTRACTION_ENDPOINT", "HF_EXTRACTION_ENDPOINT"
+        ),
+    )
+    hf_extraction_model: str = Field(
+        default="microsoft/Phi-4-mini-instruct",
+        min_length=1,
+        max_length=120,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_HF_EXTRACTION_MODEL", "HF_EXTRACTION_MODEL"
+        ),
+    )
+    hf_extraction_api_key: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_HF_EXTRACTION_API_KEY", "HF_EXTRACTION_API_KEY"
+        ),
+    )
+    hf_extraction_timeout_seconds: int = Field(
+        default=30,
+        ge=1,
+        le=300,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_HF_EXTRACTION_TIMEOUT_SECONDS",
+            "HF_EXTRACTION_TIMEOUT_SECONDS",
+        ),
+    )
     extraction_fallback_providers: Annotated[
-        list[Literal["local", "gemini", "groq"]], NoDecode
+        list[Literal["local", "gemini", "groq", "cohere", "openrouter"]],
+        NoDecode,
     ] = Field(
         default_factory=list,
         validation_alias=AliasChoices(
             "SKILL_PASSPORT_EXTRACTION_FALLBACK_PROVIDERS",
             "EXTRACTION_FALLBACK_PROVIDERS",
+        ),
+    )
+    extraction_rag_enabled: bool = Field(
+        default=True,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_EXTRACTION_RAG_ENABLED", "EXTRACTION_RAG_ENABLED"
+        ),
+    )
+    extraction_rag_top_k: int = Field(
+        default=8,
+        ge=1,
+        le=30,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_EXTRACTION_RAG_TOP_K", "EXTRACTION_RAG_TOP_K"
+        ),
+    )
+    extraction_rag_min_similarity: float = Field(
+        default=0.72,
+        ge=0.0,
+        le=1.0,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_EXTRACTION_RAG_MIN_SIMILARITY",
+            "EXTRACTION_RAG_MIN_SIMILARITY",
+        ),
+    )
+    extraction_cache_enabled: bool = Field(
+        default=True,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_EXTRACTION_CACHE_ENABLED",
+            "EXTRACTION_CACHE_ENABLED",
+        ),
+    )
+    extraction_batch_max_units: int = Field(
+        default=12,
+        ge=1,
+        le=30,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_EXTRACTION_BATCH_MAX_UNITS",
+            "EXTRACTION_BATCH_MAX_UNITS",
+        ),
+    )
+    extraction_batch_max_characters: int = Field(
+        default=12_000,
+        ge=1_500,
+        le=50_000,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_EXTRACTION_BATCH_MAX_CHARACTERS",
+            "EXTRACTION_BATCH_MAX_CHARACTERS",
+        ),
+    )
+    extraction_schema_version: str = Field(
+        default="v2-hybrid-batch",
+        min_length=1,
+        max_length=40,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_EXTRACTION_SCHEMA_VERSION",
+            "EXTRACTION_SCHEMA_VERSION",
         ),
     )
     github_token: str | None = Field(
@@ -472,6 +598,29 @@ class Settings(BaseSettings):
         if self.extraction_provider == "groq" and not self.groq_api_key:
             raise RuntimeError(
                 "GROQ_API_KEY is required when EXTRACTION_PROVIDER=groq"
+            )
+        configured_chain = {
+            self.extraction_provider,
+            *self.extraction_fallback_providers,
+        }
+        required_keys = {
+            "gemini": self.gemini_api_key,
+            "groq": self.groq_api_key,
+            "cohere": self.cohere_api_key,
+            "openrouter": self.openrouter_api_key,
+        }
+        missing = sorted(
+            provider
+            for provider, key in required_keys.items()
+            if provider in configured_chain and not key
+        )
+        if missing:
+            raise RuntimeError(
+                "Missing extraction provider configuration: " + ", ".join(missing)
+            )
+        if self.hf_extraction_enabled and not self.hf_extraction_endpoint:
+            raise RuntimeError(
+                "HF_EXTRACTION_ENDPOINT is required when HF extraction is enabled"
             )
         if self.semantic_matching_enabled:
             if self.embedding_provider != "gemini" or not self.gemini_api_key:

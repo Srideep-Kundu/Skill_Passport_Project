@@ -55,14 +55,44 @@ services:
         sync: false
       - key: GROQ_API_KEY
         sync: false
+      - key: COHERE_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
       - key: EXTRACTION_PROVIDER
         value: groq
       - key: EXTRACTION_MODEL
         value: gemini-3.6-flash
       - key: GROQ_EXTRACTION_MODEL
         value: openai/gpt-oss-20b
+      - key: COHERE_EXTRACTION_MODEL
+        value: command-a-03-2025
+      - key: OPENROUTER_EXTRACTION_MODEL
+        value: openai/gpt-oss-120b
       - key: EXTRACTION_FALLBACK_PROVIDERS
         value: gemini,local
+      - key: HF_EXTRACTION_ENABLED
+        value: "false"
+      - key: HF_EXTRACTION_ENDPOINT
+        sync: false
+      - key: HF_EXTRACTION_API_KEY
+        sync: false
+      - key: HF_EXTRACTION_MODEL
+        value: microsoft/Phi-4-mini-instruct
+      - key: EXTRACTION_RAG_ENABLED
+        value: "true"
+      - key: EXTRACTION_RAG_TOP_K
+        value: "8"
+      - key: EXTRACTION_RAG_MIN_SIMILARITY
+        value: "0.72"
+      - key: EXTRACTION_CACHE_ENABLED
+        value: "true"
+      - key: EXTRACTION_BATCH_MAX_UNITS
+        value: "12"
+      - key: EXTRACTION_BATCH_MAX_CHARACTERS
+        value: "12000"
+      - key: EXTRACTION_SCHEMA_VERSION
+        value: v2-hybrid-batch
       - key: EXTRACTION_SYNC_FALLBACK
         value: "false"
       - key: EMBEDDING_PROVIDER
@@ -134,14 +164,44 @@ services:
         sync: false
       - key: GROQ_API_KEY
         sync: false
+      - key: COHERE_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
       - key: EXTRACTION_PROVIDER
         value: groq
       - key: EXTRACTION_MODEL
         value: gemini-3.6-flash
       - key: GROQ_EXTRACTION_MODEL
         value: openai/gpt-oss-20b
+      - key: COHERE_EXTRACTION_MODEL
+        value: command-a-03-2025
+      - key: OPENROUTER_EXTRACTION_MODEL
+        value: openai/gpt-oss-120b
       - key: EXTRACTION_FALLBACK_PROVIDERS
         value: gemini,local
+      - key: HF_EXTRACTION_ENABLED
+        value: "false"
+      - key: HF_EXTRACTION_ENDPOINT
+        sync: false
+      - key: HF_EXTRACTION_API_KEY
+        sync: false
+      - key: HF_EXTRACTION_MODEL
+        value: microsoft/Phi-4-mini-instruct
+      - key: EXTRACTION_RAG_ENABLED
+        value: "true"
+      - key: EXTRACTION_RAG_TOP_K
+        value: "8"
+      - key: EXTRACTION_RAG_MIN_SIMILARITY
+        value: "0.72"
+      - key: EXTRACTION_CACHE_ENABLED
+        value: "true"
+      - key: EXTRACTION_BATCH_MAX_UNITS
+        value: "12"
+      - key: EXTRACTION_BATCH_MAX_CHARACTERS
+        value: "12000"
+      - key: EXTRACTION_SCHEMA_VERSION
+        value: v2-hybrid-batch
       - key: EXTRACTION_MAX_ATTEMPTS
         value: "3"
       - key: EXTRACTION_RETRY_BASE_SECONDS

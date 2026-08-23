@@ -26,6 +26,16 @@ def production_settings(**overrides: object) -> Settings:
         ({"google_client_id": None}, "GOOGLE_CLIENT_ID"),
         ({"extraction_provider": "gemini", "gemini_api_key": None}, "GEMINI_API_KEY"),
         ({"extraction_provider": "groq", "groq_api_key": None}, "GROQ_API_KEY"),
+        ({"extraction_provider": "cohere", "cohere_api_key": None}, "cohere"),
+        (
+            {
+                "extraction_provider": "local",
+                "extraction_fallback_providers": ["openrouter"],
+                "openrouter_api_key": None,
+            },
+            "openrouter",
+        ),
+        ({"hf_extraction_enabled": True}, "HF_EXTRACTION_ENDPOINT"),
         ({"semantic_matching_enabled": True}, "Semantic matching"),
     ],
 )
@@ -63,5 +73,28 @@ def test_groq_extraction_configuration_keeps_gemini_embeddings_independent() -> 
     assert settings.extraction_fallback_providers == ["gemini", "local"]
     assert settings.groq_extraction_model == "openai/gpt-oss-20b"
     assert settings.embedding_provider == "gemini"
+    assert settings.embedding_model == "gemini-embedding-001"
+    assert settings.embedding_dimension == 768
+
+
+def test_complete_external_chain_parses_without_changing_embedding_configuration() -> None:
+    settings = Settings(
+        EXTRACTION_PROVIDER="cohere",
+        EXTRACTION_FALLBACK_PROVIDERS="groq,openrouter,gemini,local",
+        COHERE_API_KEY="cohere-test",
+        GROQ_API_KEY="groq-test",
+        OPENROUTER_API_KEY="openrouter-test",
+        GEMINI_API_KEY="gemini-test",
+        EMBEDDING_PROVIDER="gemini",
+        EMBEDDING_MODEL="gemini-embedding-001",
+        EMBEDDING_DIMENSION="768",
+    )
+
+    assert settings.extraction_fallback_providers == [
+        "groq",
+        "openrouter",
+        "gemini",
+        "local",
+    ]
     assert settings.embedding_model == "gemini-embedding-001"
     assert settings.embedding_dimension == 768

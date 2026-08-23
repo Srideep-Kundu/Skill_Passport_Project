@@ -349,6 +349,61 @@ class ExtractionJob(Base):
     evidence: Mapped[Evidence] = relationship(back_populates="extraction_job")
 
 
+class ExtractionCacheEntry(Base):
+    """Student-scoped validated extraction output; never stores raw evidence text."""
+
+    __tablename__ = "extraction_cache_entries"
+    __table_args__ = (
+        UniqueConstraint(
+            "student_id",
+            "evidence_type",
+            "content_fingerprint",
+            "config_fingerprint",
+            name="uq_extraction_cache_scope",
+        ),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    student_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    evidence_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    content_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    config_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    payload: Mapped[dict[str, Any]] = mapped_column(Json, nullable=False)
+    source_provider: Mapped[str] = mapped_column(String(32), nullable=False)
+    source_model: Mapped[str] = mapped_column(String(120), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ExtractionAttempt(Base):
+    """Safe per-stage accounting for extraction work and provider calls."""
+
+    __tablename__ = "extraction_attempts"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    extraction_job_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("extraction_jobs.id", ondelete="CASCADE"), index=True
+    )
+    resume_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("resume_documents.id", ondelete="SET NULL"), index=True
+    )
+    batch_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, index=True)
+    stage: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    outcome: Mapped[str] = mapped_column(String(32), nullable=False)
+    provider: Mapped[str | None] = mapped_column(String(32))
+    model: Mapped[str | None] = mapped_column(String(120))
+    cache_hit: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    request_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    input_tokens: Mapped[int | None] = mapped_column(Integer)
+    output_tokens: Mapped[int | None] = mapped_column(Integer)
+    latency_ms: Mapped[int | None] = mapped_column(Integer)
+    error_code: Mapped[str | None] = mapped_column(String(80))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
+    )
+
+
 class StudentSkill(Timestamped, Base):
     __tablename__ = "student_skills"
     __table_args__ = (UniqueConstraint("student_id", "skill_id", "source_evidence_id", name="uq_student_skill_evidence"),)

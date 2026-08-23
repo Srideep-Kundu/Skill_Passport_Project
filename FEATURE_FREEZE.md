@@ -3,7 +3,7 @@
 ## Frozen
 
 - Architecture: React/Vite → FastAPI → PostgreSQL/pgvector, with Redis-backed worker processing.
-- Database schema and Alembic history through `0021_faculty_portal_lifecycle`.
+- Database schema and Alembic history through `0022_hybrid_extraction_pipeline`.
 - Matching formula and weights: `0.65 × exact + 0.25 × semantic + 0.10 × verification`.
 - REST API contracts, provider boundaries, RBAC, and the deterministic demo fixture.
 

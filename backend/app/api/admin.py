@@ -1,6 +1,7 @@
 from typing import Annotated
+from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
 from sqlalchemy import text
@@ -9,13 +10,26 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import get_settings
 from app.core.db import get_session
 from app.core.security import require_role
-from app.models import Admin
+from app.models import Admin, ResumeDocument
+from app.services.extraction_service import extraction_metrics_for_resume
 from app.services.worker_observability import (
     WORKER_HEARTBEAT_KEY,
     parse_worker_heartbeat,
 )
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+@router.get("/extraction-metrics/{resume_document_id}")
+async def extraction_metrics(
+    resume_document_id: UUID,
+    principal: Annotated[Admin, Depends(require_role("admin"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> dict[str, object]:
+    """Summarize quota use without exposing evidence or provider request bodies."""
+    if await session.get(ResumeDocument, resume_document_id) is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Resume not found")
+    return await extraction_metrics_for_resume(session, resume_document_id)
 
 
 @router.get("/worker-status")

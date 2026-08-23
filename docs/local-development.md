@@ -27,7 +27,7 @@ This guide uses Docker Compose for PostgreSQL, Redis, migrations, the API, worke
    docker compose run --rm --no-deps backend alembic current
    ```
 
-   This uses the exact database credentials and service hostname from `.env`; no credentials need to be guessed. The expected current revision is `0021_faculty_portal_lifecycle`.
+   This uses the exact database credentials and service hostname from `.env`; no credentials need to be guessed. The expected current revision is `0022_hybrid_extraction_pipeline`.
 
 4. Seed the canonical taxonomy (and, optionally, the demo data) after services are healthy:
 
@@ -59,9 +59,13 @@ This guide uses Docker Compose for PostgreSQL, Redis, migrations, the API, worke
 | `JWT_SECRET` | JWT signing secret. `JWT_SECRET_KEY` remains accepted for compatibility with existing deployments. |
 | `GEMINI_API_KEY` | Optional; required when Gemini extraction, a Gemini extraction fallback, or Gemini embeddings are enabled. |
 | `GROQ_API_KEY` | Optional; required only when Groq extraction is selected. Never expose it to the frontend. |
-| `EXTRACTION_PROVIDER` | `local`, `gemini`, or `groq`; extraction remains independent of embeddings. |
+| `COHERE_API_KEY` / `OPENROUTER_API_KEY` | Optional server-only credentials for the transient fallback chain. |
+| `EXTRACTION_PROVIDER` | `local`, `gemini`, `groq`, `cohere`, or `openrouter`; extraction remains independent of matching scores. |
 | `GROQ_EXTRACTION_MODEL` | Pinned Groq model ID; defaults to `openai/gpt-oss-20b` for strict JSON-Schema output. |
 | `EXTRACTION_FALLBACK_PROVIDERS` | Optional comma-separated transient-only fallback chain, for example `gemini,local`. |
+| `HF_EXTRACTION_*` | Optional OpenAI-compatible local model endpoint; disabled by default and does not add ML libraries to the worker image. |
+| `EXTRACTION_RAG_*` | Extraction-only taxonomy retrieval controls; independent from the matching similarity threshold. |
+| `EXTRACTION_CACHE_ENABLED` | Enables student-scoped validated result reuse without storing raw evidence in the cache. |
 | `EMBEDDING_PROVIDER` | `disabled` by default; set to `gemini` only with a configured Gemini key. |
 | `SEMANTIC_MATCHING_ENABLED` | `false` by default; enable only with a compatible embedding provider. |
 | `GREENHOUSE_BOARD_TOKENS` | Optional comma-separated allowlist of public Greenhouse board tokens. |

@@ -65,6 +65,65 @@ async def test_gemini_embedding_normalizes_valid_mocked_provider_vector(monkeypa
 
 
 @pytest.mark.asyncio
+async def test_gemini_embedding_batches_multiple_retrieval_units_in_one_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        embeddings, "get_settings", lambda: SimpleNamespace(gemini_api_key="test")
+    )
+    FakeClient.response = FakeResponse(
+        200,
+        {
+            "embeddings": [
+                {"values": [1.0, 0.0]},
+                {"values": [0.0, 1.0]},
+            ]
+        },
+    )
+    monkeypatch.setattr(
+        embeddings.httpx, "AsyncClient", lambda **_kwargs: FakeClient()
+    )
+    service = embeddings.GeminiEmbeddingService(
+        embeddings.EmbeddingSpec("gemini", "test-model", 2)
+    )
+
+    assert await service.embed_many(["Python", "PostgreSQL"]) == [
+        [1.0, 0.0],
+        [0.0, 1.0],
+    ]
+
+
+@pytest.mark.asyncio
+async def test_gemini_api_key_is_sent_in_header_and_never_logged(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    fake_key = "fake-gemini-key-that-must-not-appear"
+    monkeypatch.setattr(
+        embeddings, "get_settings", lambda: SimpleNamespace(gemini_api_key=fake_key)
+    )
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        assert request.headers["x-goog-api-key"] == fake_key
+        assert "key=" not in str(request.url)
+        return httpx.Response(200, json={"embedding": {"values": [1.0, 0.0]}})
+
+    transport = httpx.MockTransport(handler)
+    real_client = httpx.AsyncClient
+    monkeypatch.setattr(
+        embeddings.httpx,
+        "AsyncClient",
+        lambda **kwargs: real_client(transport=transport, **kwargs),
+    )
+    caplog.set_level("INFO", logger="httpx")
+
+    service = embeddings.GeminiEmbeddingService(
+        embeddings.EmbeddingSpec("gemini", "test-model", 2)
+    )
+    assert await service.embed("Python") == [1.0, 0.0]
+    assert fake_key not in caplog.text
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("payload", [{"embedding": {"values": [1.0]}}, {"embedding": {"values": [float("nan"), 0.0]}}, {"embedding": {"values": [0.0, 0.0]}}])
 async def test_gemini_embedding_rejects_wrong_dimension_nan_and_empty(monkeypatch: pytest.MonkeyPatch, payload: object) -> None:
     monkeypatch.setattr(embeddings, "get_settings", lambda: SimpleNamespace(gemini_api_key="test"))

@@ -71,6 +71,9 @@ class EmbeddingService:
     async def embed(self, text: str) -> list[float]:
         raise NotImplementedError
 
+    async def embed_many(self, texts: list[str]) -> list[list[float]]:
+        return [await self.embed(text) for text in texts]
+
 
 class GeminiEmbeddingService(EmbeddingService):
     async def embed(self, text: str) -> list[float]:
@@ -81,7 +84,7 @@ class GeminiEmbeddingService(EmbeddingService):
             async with httpx.AsyncClient(timeout=12) as client:
                 response = await client.post(
                     f"https://generativelanguage.googleapis.com/v1beta/models/{self.spec.model}:embedContent",
-                    params={"key": settings.gemini_api_key},
+                    headers={"x-goog-api-key": settings.gemini_api_key},
                     json={"model": f"models/{self.spec.model}", "content": {"parts": [{"text": text}]}, "outputDimensionality": self.spec.dimension},
                 )
         except (httpx.TimeoutException, httpx.TransportError) as error:
@@ -97,6 +100,49 @@ class GeminiEmbeddingService(EmbeddingService):
         if not isinstance(values, list) or not all(isinstance(value, int | float) for value in values):
             raise InvalidEmbedding("Embedding provider returned an invalid vector")
         return normalize_vector([float(value) for value in values], self.spec.dimension)
+
+    async def embed_many(self, texts: list[str]) -> list[list[float]]:
+        if not texts:
+            return []
+        settings = get_settings()
+        if not settings.gemini_api_key:
+            raise EmbeddingUnavailable("Gemini embeddings are not configured")
+        requests = [
+            {
+                "model": f"models/{self.spec.model}",
+                "content": {"parts": [{"text": text}]},
+                "outputDimensionality": self.spec.dimension,
+            }
+            for text in texts
+        ]
+        try:
+            async with httpx.AsyncClient(timeout=20) as client:
+                response = await client.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{self.spec.model}:batchEmbedContents",
+                    headers={"x-goog-api-key": settings.gemini_api_key},
+                    json={"requests": requests},
+                )
+        except (httpx.TimeoutException, httpx.TransportError) as error:
+            raise EmbeddingUnavailable(
+                "Embedding provider is temporarily unavailable"
+            ) from error
+        if response.status_code == 429 or response.status_code >= 500:
+            raise EmbeddingUnavailable("Embedding provider is temporarily unavailable")
+        if not response.is_success:
+            raise EmbeddingError("Embedding provider rejected the request")
+        try:
+            embeddings = response.json()["embeddings"]
+            vectors = [embedding["values"] for embedding in embeddings]
+        except (KeyError, TypeError, ValueError) as error:
+            raise InvalidEmbedding(
+                "Embedding provider returned an invalid response"
+            ) from error
+        if len(vectors) != len(texts):
+            raise InvalidEmbedding("Embedding provider returned an incomplete batch")
+        return [
+            normalize_vector([float(value) for value in values], self.spec.dimension)
+            for values in vectors
+        ]
 
 
 def configured_embedding_spec() -> EmbeddingSpec:

@@ -71,7 +71,7 @@ Student Query: {query}"""
             try:
                 resp = await client.post(
                     f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent",
-                    params={"key": settings.gemini_api_key},
+                    headers={"x-goog-api-key": settings.gemini_api_key},
                     json={"contents": [{"parts": [{"text": prompt}]}]},
                 )
             except httpx.HTTPError:
