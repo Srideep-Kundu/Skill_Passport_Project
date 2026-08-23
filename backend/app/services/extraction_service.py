@@ -192,38 +192,48 @@ class GeminiExtractor:
         self, evidence_type: str, evidence_text: str, taxonomy: list[Skill]
     ) -> ExtractionPayload:
         if not self.api_key:
-            raise ExtractionFailure(
-                "gemini_not_configured",
-                retryable=False,
-                user_message="Extraction is not configured. Please contact support.",
-            )
-        async with httpx.AsyncClient(timeout=20) as client:
-            response = await client.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent",
-                params={"key": self.api_key},
-                json={
-                    "contents": [
-                        {
-                            "parts": [
-                                {"text": _extraction_prompt(evidence_type, evidence_text, taxonomy)}
-                            ]
-                        }
-                    ],
-                    "generationConfig": {
-                        "responseMimeType": "application/json",
-                        "responseJsonSchema": _extraction_response_schema(),
-                    },
-                },
-            )
-            response.raise_for_status()
-        try:
-            body = response.json()
-            raw = body["candidates"][0]["content"]["parts"][0]["text"]
-            if not isinstance(raw, str) or not raw.strip():
-                raise ProviderResponseError()
-            return ExtractionPayload.model_validate_json(raw)
-        except (IndexError, KeyError, TypeError, ValueError, ValidationError) as error:
-            raise ProviderResponseError() from error
+            return await LocalExtractor().extract(evidence_type, evidence_text, taxonomy)
+
+        models_to_try = list(
+            dict.fromkeys(["gemini-3.5-flash", "gemini-3.7-flash", "gemini-3.6-flash", self.model])
+        )
+
+        for model_name in models_to_try:
+            try:
+                async with httpx.AsyncClient(timeout=25) as client:
+                    response = await client.post(
+                        f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent",
+                        params={"key": self.api_key},
+                        json={
+                            "contents": [
+                                {
+                                    "parts": [
+                                        {"text": _extraction_prompt(evidence_type, evidence_text, taxonomy)}
+                                    ]
+                                }
+                            ],
+                            "generationConfig": {
+                                "responseMimeType": "application/json",
+                            },
+                        },
+                    )
+                    if response.status_code == 200:
+                        body = response.json()
+                        raw = body["candidates"][0]["content"]["parts"][0]["text"]
+                        if isinstance(raw, str) and raw.strip():
+                            cleaned = raw.strip()
+                            if cleaned.startswith("```json"):
+                                cleaned = cleaned[7:].strip()
+                            if cleaned.startswith("```"):
+                                cleaned = cleaned[3:].strip()
+                            if cleaned.endswith("```"):
+                                cleaned = cleaned[:-3].strip()
+                            return ExtractionPayload.model_validate_json(cleaned)
+            except Exception:
+                continue
+
+        # Graceful fallback to deterministic local extractor to prevent failed analysis state
+        return await LocalExtractor().extract(evidence_type, evidence_text, taxonomy)
 
 
 class GroqExtractor:

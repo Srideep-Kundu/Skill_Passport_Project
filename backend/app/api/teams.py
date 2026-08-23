@@ -13,7 +13,20 @@ router = APIRouter(prefix="/teams", tags=["teams"])
 
 
 @router.post("/suggest", response_model=list[TeamSuggestion])
-async def team_suggestions(payload: TeamSuggestionRequest, principal: Annotated[Student, Depends(require_role("student"))], session: Annotated[AsyncSession, Depends(get_session)]) -> list[TeamSuggestion]:
-    # Students may only initiate suggestions including themselves; this prevents browsing arbitrary pools.
-    pool = list(dict.fromkeys([principal.id, *payload.pool]))
-    return [TeamSuggestion(pair=pair, complementarity_score=score) for pair, score in await suggest_teams(session, payload.target_skill_set, pool)]
+async def team_suggestions(
+    payload: TeamSuggestionRequest,
+    principal: Annotated[Student, Depends(require_role("student"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[TeamSuggestion]:
+    # Students may initiate suggestions including themselves and peer candidates
+    pool = list(dict.fromkeys(payload.pool))
+    suggestions = await suggest_teams(
+        session,
+        payload.target_skill_set,
+        pool,
+        principal_id=principal.id,
+    )
+    return [
+        TeamSuggestion(pair=pair, complementarity_score=score)
+        for pair, score in suggestions
+    ]

@@ -174,15 +174,18 @@ export function ResumeIntelligence({
             "Your file is safe. Retry when the extraction service is available.",
           );
         } else if (
-          (active.parse_status === "completed" || active.parse_status === "parsed") &&
-          active.skills_status === "ready"
+          (active.parse_status === "completed" || active.parse_status === "parsed" || active.parse_status === "processing_skills") &&
+          (active.skills_status === "ready" || (active.completed_jobs > 0 && active.pending_jobs === 0 && active.failed_jobs === 0))
         ) {
+          stopPolling();
           setPhase("complete");
         } else if (active.parse_status === "failed") {
+          stopPolling();
           setPhase("error");
           setErrorMessage(active.safe_error_message || "Resume analysis encountered an error.");
           setErrorType("parse");
         } else if (active.parse_status === "unsupported") {
+          stopPolling();
           setPhase("error");
           setErrorMessage(active.safe_error_message || "This resume format is unsupported or contains non-extractable text.");
           setErrorType("parse");
@@ -192,17 +195,48 @@ export function ResumeIntelligence({
           active.parse_status === "processing_skills"
         ) {
           setPhase("discovering");
+          if (!pollingRef.current) {
+            pollingRef.current = setInterval(async () => {
+              try {
+                const res = await api.resumes(token);
+                const latest = (res.items || []).find((r) => r.id === active.id);
+                if (latest) {
+                  setActiveResume(latest);
+                  if (
+                    latest.skills_status === "ready" ||
+                    (latest.completed_jobs > 0 && latest.pending_jobs === 0 && latest.failed_jobs === 0)
+                  ) {
+                    stopPolling();
+                    setPhase("complete");
+                    onChanged();
+                  } else if (latest.skills_status === "partial_failure") {
+                    stopPolling();
+                    setPhase("partial_failure");
+                    onChanged();
+                  } else if (latest.skills_status === "failed" || latest.parse_status === "failed") {
+                    stopPolling();
+                    setPhase("error");
+                    setErrorType("extraction");
+                    setErrorMessage("Your file is safe. Retry when the extraction service is available.");
+                  }
+                }
+              } catch {
+                stopPolling();
+              }
+            }, 1200);
+          }
         } else if (active.parse_status === "uploaded") {
           setPhase("reading");
         }
       } else {
+        stopPolling();
         setPhase("idle");
       }
     } catch (caught) {
       setResumes([]);
       setErrorMessage(caught instanceof ApiError ? caught.detail : "Resumes could not be loaded.");
     }
-  }, [token]);
+  }, [token, stopPolling, onChanged]);
 
   useEffect(() => {
     void load();

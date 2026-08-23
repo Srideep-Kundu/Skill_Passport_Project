@@ -53,8 +53,13 @@ export function GitHubVerification({
 
   async function saveIdentity() {
     setMessage(null);
+    const cleanHandle = username
+      .trim()
+      .replace(/^https?:\/\/(www\.)?github\.com\//i, "")
+      .replace(/^@/, "")
+      .replace(/\/.*$/, "");
     try {
-      const identity = await api.setGithubIdentity(username, token);
+      const identity = await api.setGithubIdentity(cleanHandle, token);
       setUsername(identity.github_username ?? "");
       setIdentityStatus(`Linked GitHub handle: @${identity.github_username}`);
       toast.success("GitHub handle saved successfully!");

@@ -313,14 +313,21 @@ class VerificationResponse(APIModel):
 class GitHubIdentityUpdate(APIModel):
     github_username: str = Field(min_length=1, max_length=39)
 
-    @field_validator("github_username")
+    @field_validator("github_username", mode="before")
     @classmethod
     def github_username_is_plain_handle(cls, value: str) -> str:
         import re
 
-        normalized = value.strip()
-        if not re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})", normalized):
+        if not isinstance(value, str):
             raise ValueError("GitHub username is invalid")
+        normalized = value.strip().rstrip("/")
+        if "github.com/" in normalized:
+            normalized = normalized.split("github.com/")[-1].split("/")[0].strip()
+        elif normalized.startswith("@"):
+            normalized = normalized.lstrip("@").strip()
+
+        if not re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})", normalized):
+            raise ValueError("GitHub username is invalid. Please provide a valid username like 'itisnik' or 'octocat'.")
         return normalized
 
 
@@ -833,12 +840,12 @@ class ApplicationSubmissionAttemptResponse(APIModel):
 
 
 class TeamSuggestionRequest(APIModel):
-    target_skill_set: list[UUID] = Field(min_length=1, max_length=30)
-    pool: list[UUID] = Field(min_length=1, max_length=100)
+    target_skill_set: list[str] = Field(min_length=1, max_length=50)
+    pool: list[str] = Field(min_length=2, max_length=100)
 
 
 class TeamSuggestion(APIModel):
-    pair: tuple[UUID, UUID]
+    pair: tuple[str, str]
     complementarity_score: float
 
 
