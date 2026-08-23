@@ -59,14 +59,35 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     configure_logging(settings.log_level)
     settings.validate_for_runtime()
-    if settings.database_url.startswith("sqlite"):
-        await create_schema_for_local_use()
+    try:
+        from app import models  # noqa: F401 - registers all tables
+        from app.core.db import Base, engine, create_matching_view
+        from sqlalchemy import text
+        async with engine.begin() as conn:
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+            await conn.run_sync(Base.metadata.create_all)
+            await create_matching_view(conn)
+        try:
+            from seed.seed_skills import seed_skills
+            from seed.seed_demo_data import seed_demo_data
+            await seed_skills()
+            await seed_demo_data()
+        except Exception as seed_exc:
+            logger.info(f"Seed notice: {seed_exc}")
+    except Exception as exc:
+        logger.warning(f"Database schema auto-creation notice: {exc}")
     yield
 
 
 settings = get_settings()
 app = FastAPI(title="Skill Passport API", version="0.1.0", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_credentials=False, allow_methods=["*"], allow_headers=["Authorization", "Content-Type"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(auth.router)
 app.include_router(copilot.router)
 app.include_router(career_goals.router)
