@@ -60,12 +60,20 @@ async def lifespan(app: FastAPI):
     configure_logging(settings.log_level)
     settings.validate_for_runtime()
     try:
-        from app.models.base import Base
-        from app.core.database import engine
+        from app import models  # noqa: F401 - registers all tables
+        from app.core.db import Base, engine, create_matching_view
         from sqlalchemy import text
         async with engine.begin() as conn:
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
             await conn.run_sync(Base.metadata.create_all)
+            await create_matching_view(conn)
+        try:
+            from seed.seed_skills import seed_skills
+            from seed.seed_demo_data import seed_demo_data
+            await seed_skills()
+            await seed_demo_data()
+        except Exception as seed_exc:
+            logger.info(f"Seed notice: {seed_exc}")
     except Exception as exc:
         logger.warning(f"Database schema auto-creation notice: {exc}")
     yield
