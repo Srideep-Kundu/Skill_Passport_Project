@@ -178,6 +178,10 @@ class ResumeDocumentResponse(APIModel):
     parsed_summary: ResumeParsedData | None = None
     generated_evidence_count: int = 0
     skills_status: str = "not_started"
+    completed_jobs: int = 0
+    failed_jobs: int = 0
+    pending_jobs: int = 0
+    total_jobs: int = 0
 
 
 class LinkedInCounts(APIModel):
@@ -378,7 +382,7 @@ class ExternalJobSyncResponse(APIModel):
 class ProviderStatusItem(APIModel):
     provider: str
     name: str
-    status: str  # "live" | "api_required" | "integration_status" | "not_configured"
+    status: str  # "disabled" | "configured" | "fixture" | "degraded" | "live" | "unavailable"
     badge_label: str
     search_supported: bool
     status_tracking_supported: bool

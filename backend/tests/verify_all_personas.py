@@ -1,4 +1,5 @@
 import os
+
 import httpx
 
 BASE_URL = os.environ.get("BASE_URL", "http://backend:8000")

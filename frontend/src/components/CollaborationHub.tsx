@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Users2,
   Trophy,
@@ -9,6 +9,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { api } from "../api/service";
+import { errorMessage } from "../api/client";
 import type { InnovationChallenge, MentorshipSession } from "../api/types";
 import { toast } from "sonner";
 
@@ -25,11 +26,7 @@ export function CollaborationHub({ token }: Props) {
   const [activeTab, setActiveTab] = useState<"mentorship" | "challenges">("mentorship");
   const [bookedSessions, setBookedSessions] = useState<Record<string, boolean>>({});
 
-  useEffect(() => {
-    loadData();
-  }, [token]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [sessionsData, challengesData, myApps] = await Promise.all([
@@ -44,12 +41,16 @@ export function CollaborationHub({ token }: Props) {
         appMap[app.challenge_id] = true;
       });
       setRegisteredChallengeIds(appMap);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to load collaboration data");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to load collaboration data"));
     } finally {
       setLoading(false);
     }
-  }
+  }, [token]);
+
+  useEffect(() => {
+    void loadData();
+  }, [loadData]);
 
   function handleBookSession(session: MentorshipSession) {
     setBookedSessions((prev) => ({ ...prev, [session.id]: true }));
@@ -62,7 +63,7 @@ export function CollaborationHub({ token }: Props) {
       await api.applyProjectApplication(ch.id, ["Maya Rivera", "Alex Patel"], token, "Registered for industry innovation challenge pilot.");
       setRegisteredChallengeIds((prev) => ({ ...prev, [ch.id]: true }));
       toast.success(`Team successfully registered for ${ch.title}!`);
-    } catch (err: any) {
+    } catch {
       // If already registered or error, mark as registered locally
       setRegisteredChallengeIds((prev) => ({ ...prev, [ch.id]: true }));
       toast.success(`Team registered for ${ch.title}!`);

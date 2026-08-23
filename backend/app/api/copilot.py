@@ -10,7 +10,6 @@ from app.models import Student
 from app.schemas.contracts import APIModel
 from app.services.copilot_service import CopilotResponse, answer_copilot_query
 
-
 router = APIRouter(prefix="/copilot", tags=["copilot"])
 
 

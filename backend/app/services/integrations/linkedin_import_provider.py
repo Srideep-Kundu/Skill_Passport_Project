@@ -3,10 +3,12 @@
 Provides structured, compliant professional profile extraction from LinkedIn URLs
 without fragile web scraping or security bypasses.
 """
-from abc import ABC, abstractmethod
 import re
+from abc import ABC, abstractmethod
 from typing import Any
 from urllib.parse import urlparse
+
+from pydantic import Field
 
 from app.schemas.contracts import APIModel
 
@@ -16,13 +18,16 @@ class ProfessionalProfile(APIModel):
     headline: str
     summary: str
     current_position: str
-    experiences: list[dict[str, Any]] = []
-    education: list[dict[str, Any]] = []
-    skills: list[str] = []
-    certifications: list[dict[str, Any]] = []
-    projects: list[dict[str, Any]] = []
-    source: str = "linkedin"
-    source_confidence: float = 0.85
+    experiences: list[dict[str, Any]] = Field(default_factory=list)
+    education: list[dict[str, Any]] = Field(default_factory=list)
+    skills: list[str] = Field(default_factory=list)
+    certifications: list[dict[str, Any]] = Field(default_factory=list)
+    projects: list[dict[str, Any]] = Field(default_factory=list)
+    source: str = "demo_fixture"
+    source_confidence: float = 0.0
+    persistable: bool = False
+    is_demo_fixture: bool = True
+    disclaimer: str = "Simulated preview only. Upload your LinkedIn data export to add sourced evidence."
 
 
 class LinkedInImportProvider(ABC):
@@ -77,8 +82,7 @@ class MockDemoProvider(LinkedInImportProvider):
                     {"title": "Distributed Task Queue", "description": "Built asynchronous Redis worker in Python."},
                     {"title": "Verifiable Skill Passport", "description": "Deterministic explainable matching platform."},
                 ],
-                source="linkedin_verified_import",
-                source_confidence=0.88,
+                source="demo_fixture",
             )
 
         return ProfessionalProfile(
@@ -108,8 +112,7 @@ class MockDemoProvider(LinkedInImportProvider):
             projects=[
                 {"title": "High-Concurrency API Proxy", "description": "FastAPI reverse proxy with Redis caching."}
             ],
-            source="linkedin_direct_import",
-            source_confidence=0.85,
+            source="demo_fixture",
         )
 
 
@@ -117,15 +120,14 @@ class OfficialLinkedInOAuthProvider(LinkedInImportProvider):
     """Compliant OAuth provider for production LinkedIn member-authorized data imports."""
 
     async def fetch_profile(self, profile_url: str) -> ProfessionalProfile:
-        # Falls back to demo provider when external credentials are not configured
-        return await MockDemoProvider().fetch_profile(profile_url)
+        raise RuntimeError("LinkedIn OAuth import is not configured")
 
 
 class EnrichmentProvider(LinkedInImportProvider):
     """Third-party data enrichment adapter with strict privacy compliance."""
 
     async def fetch_profile(self, profile_url: str) -> ProfessionalProfile:
-        return await MockDemoProvider().fetch_profile(profile_url)
+        raise RuntimeError("LinkedIn enrichment import is not configured")
 
 
 def get_linkedin_import_provider() -> LinkedInImportProvider:

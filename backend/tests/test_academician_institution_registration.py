@@ -1,12 +1,13 @@
 """Targeted tests for Academician (Faculty) and Institution (University) Self-Registration."""
-from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
+
 import httpx
 import pytest
 import pytest_asyncio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.core.config import get_settings
+from app.api import auth as auth_api
 from app.core.db import Base, create_matching_view, get_session
 from app.core.security import verify_password
 from app.main import app
@@ -169,3 +170,33 @@ async def test_invalid_payload_validation(
     # Institution missing required fields
     bad_inst = await client.post("/auth/register/institution", json={"email": "incomplete@test.com", "password": "short"})
     assert bad_inst.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_production_institution_registration_requires_invited_email(
+    api_client: tuple[httpx.AsyncClient, async_sessionmaker[AsyncSession]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, _ = api_client
+    settings = SimpleNamespace(
+        environment="production",
+        institution_registration_allowlist=["invited@polytech.edu"],
+        registration_rate_limit_per_minute=5,
+    )
+    monkeypatch.setattr(auth_api, "get_settings", lambda: settings)
+    payload = {
+        "email": "not-invited@polytech.edu",
+        "password": "InstitutionPassword123!",
+        "institution_name": "Polytechnic State University",
+        "institution_code": "PSU-INVITE-1",
+        "departments": ["Computer Science"],
+    }
+
+    rejected = await client.post("/auth/register/institution", json=payload)
+    assert rejected.status_code == 403
+
+    accepted = await client.post(
+        "/auth/register/institution",
+        json={**payload, "email": "Invited@Polytech.edu"},
+    )
+    assert accepted.status_code == 201

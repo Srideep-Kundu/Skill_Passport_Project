@@ -3,7 +3,6 @@
 Manages Industry Mentorship Sessions, Innovation Challenges, Hackathons,
 Live Industry Projects, Workshops, and Research Collaborations.
 """
-from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select
@@ -11,13 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import (
-    Evidence,
-    EvidenceType,
-    ExtractionStatus,
     InnovationChallenge,
     MentorshipSession,
     ProjectApplication,
-    Student,
 )
 from app.schemas.contracts import (
     InnovationChallengeResponse,

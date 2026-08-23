@@ -50,7 +50,7 @@ def verify_google_credential(credential: str, client_id: str | None = None) -> d
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Google authentication token validation failed: {exc}",
+            detail="Google authentication token validation failed",
         ) from exc
 
 
@@ -128,7 +128,16 @@ async def register_academician(payload: AcademicianRegistration, request: Reques
 
 @router.post("/register/institution", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register_institution(payload: InstitutionRegistration, request: Request, session: Annotated[AsyncSession, Depends(get_session)]) -> TokenResponse:
-    await enforce_rate_limit("registration", _request_subject(request), get_settings().registration_rate_limit_per_minute)
+    settings = get_settings()
+    await enforce_rate_limit("registration", _request_subject(request), settings.registration_rate_limit_per_minute)
+    if (
+        settings.environment == "production"
+        and payload.email.casefold() not in settings.institution_registration_allowlist
+    ):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Institution registration requires an invitation.",
+        )
     if await _email_taken(session, payload.email):
         raise HTTPException(status.HTTP_409_CONFLICT, "An account with this email already exists.")
     existing_code = (await session.scalars(select(Institution).where(Institution.institution_code == payload.institution_code.strip()))).first()
@@ -178,6 +187,11 @@ async def login_with_google(
     await enforce_rate_limit("login", _request_subject(request), get_settings().login_rate_limit_per_minute)
     
     settings = get_settings()
+    if settings.environment == "production" and not settings.google_client_id:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Google authentication is not configured.",
+        )
     id_info = verify_google_credential(payload.credential, settings.google_client_id)
     
     email_raw = id_info.get("email")

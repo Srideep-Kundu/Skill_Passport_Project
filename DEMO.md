@@ -24,6 +24,10 @@ All demo accounts use the non-production password `DemoPassword123`.
 | Aria Patel | `aria@example.demo` | Fairness pair A. |
 | Blake Morgan | `blake@example.demo` | Fairness pair B; identical allowed inputs and score to Aria. |
 | Demo recruiter | `recruiter@example.demo` | Internal internship and candidate-match view. |
+| Demo academician | `faculty@example.demo` | Faculty passport, opportunities, applications, and collaboration workspaces. |
+| Demo institution | `dean@example.demo` | Institution-scoped analytics for Harbor Polytechnic University. |
+
+The one-click account launcher is compiled only when `VITE_DEMO_MODE=true`. Production Vercel builds must set it to `false`.
 
 ## Click path
 

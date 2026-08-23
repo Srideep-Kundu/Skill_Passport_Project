@@ -18,7 +18,6 @@ import {
   Code2,
   Compass,
   Users,
-  Sparkles,
   BookOpen,
   ShieldCheck,
   Briefcase,
@@ -28,7 +27,7 @@ import {
 import { LandingPage } from "./pages/LandingPage";
 import { useAuth } from "./auth/AuthContext";
 import { CommandPalette } from "./components/CommandPalette";
-import { CopilotSidebar } from "./components/CopilotSidebar";
+import { SkillPassportCopilot } from "./components/SkillPassportCopilot";
 import { PostLoginTransition } from "./components/PostLoginTransition";
 import { LuminaAmbientHorizon } from "./components/LuminaAmbientHorizon";
 import { sidebarIndicatorTransition } from "./theme/motion";
@@ -411,15 +410,6 @@ export function App() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setCopilotOpen(true)}
-              className="p-1.5 rounded-lg border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-600 dark:text-[#38bdf8] text-xs cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/60"
-              aria-label="Open Skill Copilot"
-              title="Skill Copilot"
-            >
-              <Sparkles className="h-4 w-4" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
               onClick={() => setCmdOpen(true)}
               className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800"
               aria-label="Open quick navigation search"
@@ -494,33 +484,15 @@ export function App() {
         </main>
       </div>
 
-      {/* Floating Copilot AI Button in Bottom-Right Corner */}
-      {!copilotOpen && (
-        <motion.button
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0, opacity: 0 }}
-          whileHover={{ scale: 1.1, rotate: 5 }}
-          whileTap={{ scale: 0.92 }}
-          type="button"
-          onClick={() => setCopilotOpen(true)}
-          title="Skill Copilot (AI Assistant) • Ctrl+J"
-          aria-label="Open Skill Copilot AI Assistant"
-          className="fixed bottom-6 right-6 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-tr from-[#4338ca] via-[#6366f1] to-[#a855f7] text-white shadow-xl shadow-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/60 border border-white/25 cursor-pointer backdrop-blur-md transition-all duration-300 group"
-        >
-          <Sparkles className="h-6 w-6 text-white group-hover:scale-110 transition-transform duration-200 animate-pulse" />
-          <span className="sr-only">Open Skill Copilot</span>
-        </motion.button>
+      {isStudent && (
+        <SkillPassportCopilot
+          token={session.access_token}
+          isOpen={copilotOpen}
+          onOpen={() => setCopilotOpen(true)}
+          onClose={() => setCopilotOpen(false)}
+          onNavigate={(tab) => setStudentTab(tab as StudentTab)}
+        />
       )}
-
-      {/* Right Slide-in Copilot Sidebar */}
-      <CopilotSidebar
-        open={copilotOpen}
-        onClose={() => setCopilotOpen(false)}
-        role={session.role as "student" | "recruiter"}
-        onNavigateStudentTab={setStudentTab}
-        onNavigateRecruiterTab={setRecruiterTab}
-      />
     </div>
   );
 }

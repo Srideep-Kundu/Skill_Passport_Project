@@ -12,6 +12,7 @@ Tests:
 9. Stretch integration adapters (LMS, Cert, CSV student roster import)
 """
 from datetime import datetime, timezone
+
 import httpx
 import pytest
 import pytest_asyncio
@@ -23,22 +24,20 @@ from app.main import app
 from app.models import (
     Assessment,
     AssessmentQuestion,
+    Evidence,
+    EvidenceType,
+    ExtractionStatus,
     Internship,
     LearningCourse,
     Recruiter,
     Skill,
     Student,
     StudentSkill,
-    UserDocument,
-    StudentAchievement,
     VerificationTier,
-    Evidence,
-    EvidenceType,
-    ExtractionStatus,
 )
-from app.services.integrations.lms_adapter import MockLMSAdapter
 from app.services.integrations.cert_adapter import MockCertificationAdapter
 from app.services.integrations.institution_import_adapter import import_students_csv
+from app.services.integrations.lms_adapter import MockLMSAdapter
 
 
 @pytest_asyncio.fixture

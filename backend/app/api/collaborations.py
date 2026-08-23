@@ -1,6 +1,5 @@
 """API Router for Mentorship Sessions, Innovation Challenges, and Live Industry Projects."""
 from typing import Annotated
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession

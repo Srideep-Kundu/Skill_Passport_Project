@@ -1,6 +1,6 @@
+import httpx
 import pytest
 import pytest_asyncio
-import httpx
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.api import auth as auth_api
@@ -132,3 +132,15 @@ async def test_google_auth_invalid_token(auth_client):
     )
     assert response.status_code == 401
     assert "detail" in response.json()
+
+
+def test_google_verification_sanitizes_provider_exception(monkeypatch: pytest.MonkeyPatch) -> None:
+    def _provider_failure(*_args: object, **_kwargs: object) -> None:
+        raise ValueError("provider response containing sensitive diagnostics")
+
+    monkeypatch.setattr(auth_api.id_token, "verify_oauth2_token", _provider_failure)
+    with pytest.raises(auth_api.HTTPException) as caught:
+        auth_api.verify_google_credential("bad-token", "expected-client-id")
+    assert caught.value.status_code == 401
+    assert caught.value.detail == "Google authentication token validation failed"
+    assert "sensitive" not in str(caught.value.detail)

@@ -4,7 +4,7 @@
 
 Use PostgreSQL 16 with the `vector` extension enabled and a Redis instance reachable only by the API/worker network. Run Alembic migrations before serving traffic, seed the canonical taxonomy and demo data only in a demo environment, and configure `/ready` as the service health check. `/health` is liveness-only; `/ready` checks the database and Redis without leaking dependency details.
 
-Set the following as platform secrets or environment variables, never in Git: `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, optional `GEMINI_API_KEY`, optional `GITHUB_TOKEN`, and production `CORS_ORIGINS`. `JWT_SECRET_KEY` is accepted only for compatibility. Set `APP_ENV=production`; strong unique JWT keys, PostgreSQL, Redis, and exact HTTPS CORS origins are mandatory. Set `EXTRACTION_PROVIDER=gemini` only when `GEMINI_API_KEY` is configured; otherwise use `local`. Do not use the local values from `.env.example`.
+Set the following through platform-managed configuration, never in Git: `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `GITHUB_TOKEN`, `GOOGLE_CLIENT_ID`, the approved provider source identifiers, `INSTITUTION_REGISTRATION_ALLOWLIST`, and production `CORS_ORIGINS`. `JWT_SECRET_KEY` is accepted only for compatibility. Set `APP_ENV=production`; strong unique JWT keys, PostgreSQL, Key Value, an exact HTTPS CORS origin, and a non-empty Google audience when Google sign-in is exposed are mandatory. This pilot may select Groq extraction with a transient-only Gemini/local fallback, while embeddings remain Gemini `gemini-embedding-001` at 768 dimensions. Semantic scoring must remain disabled until that compatible backfill succeeds.
 
 The `0002_matching_role_privileges` migration creates `skill_passport_matcher`, a `NOLOGIN` role restricted to `matching_view`, taxonomy/requirements, and match persistence. Matching service transactions activate that role before matching reads and writes; the role cannot select profile or raw-evidence tables. The current monolithic API still uses one primary connection identity outside those transactions, so a separate matching-process database identity remains a future hardening step. Run this migration with a database principal permitted to create roles and validate the grants as part of deployment.
 
@@ -18,11 +18,11 @@ The `0002_matching_role_privileges` migration creates `skill_passport_matcher`, 
 
 ## Render
 
-`infra/render.yaml` declares the API, PostgreSQL, and worker process. Supply `REDIS_URL`, `CORS_ORIGINS`, and provider tokens in the Render dashboard; attach a private Redis service or managed equivalent. Confirm the managed PostgreSQL plan supports `CREATE EXTENSION vector` before deployment. The API uses `alembic upgrade head` as its pre-deploy command. Run taxonomy seeding and `python -m app.core.release_check` as a one-off controlled release step; run demo fixtures only in a designated demo database.
+`infra/render.yaml` declares a same-region API, worker, PostgreSQL 16 database, and private Render Key Value instance. Key Value is injected into both application services through its internal `connectionString`. The paid single-instance API has a disk mounted at `/app/uploads`; resume and LinkedIn archives use `/app/uploads/resumes` and `/app/uploads/linkedin`. A Render disk belongs to one service and prevents horizontal API scaling, so moving uploads to object storage is required before multi-instance scaling. Confirm the database supports `CREATE EXTENSION vector`. The API uses `alembic upgrade head` as its pre-deploy command. Seed taxonomy and run `python -m app.core.release_check` as controlled one-off steps; never run the demo reset in production.
 
 ## Vercel frontend
 
-Import the repository and set `frontend` as the Vercel root directory. Build with `npm run build` and publish `dist`. Set `VITE_API_BASE_URL` to the public API HTTPS URL for each environment. Redeploy after changing that value because Vite embeds it at build time. Do not put server secrets in `VITE_*` variables.
+Import the repository and set `frontend` as the Vercel root directory. Build with `npm run build` and publish `dist`. Set `VITE_API_BASE_URL` to the Render API HTTPS URL, `VITE_GOOGLE_CLIENT_ID` to the public OAuth client ID, and `VITE_DEMO_MODE=false`. Redeploy after changing any Vite variable because it is embedded at build time. Add the final Vercel HTTPS origin to Render `CORS_ORIGINS`. Do not put server secrets in `VITE_*` variables.
 
 ## Release checks
 

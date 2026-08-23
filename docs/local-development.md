@@ -27,7 +27,7 @@ This guide uses Docker Compose for PostgreSQL, Redis, migrations, the API, worke
    docker compose run --rm --no-deps backend alembic current
    ```
 
-   This uses the exact database credentials and service hostname from `.env`; no credentials need to be guessed. The expected current revision is `0015_automation_policy`.
+   This uses the exact database credentials and service hostname from `.env`; no credentials need to be guessed. The expected current revision is `0021_faculty_portal_lifecycle`.
 
 4. Seed the canonical taxonomy (and, optionally, the demo data) after services are healthy:
 
@@ -57,10 +57,18 @@ This guide uses Docker Compose for PostgreSQL, Redis, migrations, the API, worke
 | `DATABASE_URL` | API/worker/migration connection URL; use the Compose hostname `postgres`. |
 | `REDIS_URL` | Redis connection URL for rate limits and extraction work. |
 | `JWT_SECRET` | JWT signing secret. `JWT_SECRET_KEY` remains accepted for compatibility with existing deployments. |
-| `GEMINI_API_KEY` | Optional; required only when Gemini extraction or embeddings are enabled. Leave blank for the local extractor. |
+| `GEMINI_API_KEY` | Optional; required when Gemini extraction, a Gemini extraction fallback, or Gemini embeddings are enabled. |
+| `GROQ_API_KEY` | Optional; required only when Groq extraction is selected. Never expose it to the frontend. |
+| `EXTRACTION_PROVIDER` | `local`, `gemini`, or `groq`; extraction remains independent of embeddings. |
+| `GROQ_EXTRACTION_MODEL` | Pinned Groq model ID; defaults to `openai/gpt-oss-20b` for strict JSON-Schema output. |
+| `EXTRACTION_FALLBACK_PROVIDERS` | Optional comma-separated transient-only fallback chain, for example `gemini,local`. |
 | `EMBEDDING_PROVIDER` | `disabled` by default; set to `gemini` only with a configured Gemini key. |
 | `SEMANTIC_MATCHING_ENABLED` | `false` by default; enable only with a compatible embedding provider. |
 | `GREENHOUSE_BOARD_TOKENS` | Optional comma-separated allowlist of public Greenhouse board tokens. |
+| `LEVER_SITE_TOKENS` / `ASHBY_JOB_BOARD_NAMES` / `YC_SOURCE_KEYS` | Explicit public source identifiers; empty sources are reported as disabled. |
+| `INSTITUTION_REGISTRATION_ALLOWLIST` | Comma-separated invited institution emails; enforced when `APP_ENV=production`. |
+| `LINKEDIN_STORAGE_DIR` | Managed directory for user-provided LinkedIn export archives. |
+| `VITE_DEMO_MODE` | Shows demo account shortcuts only when exactly `true`; keep false for public builds. |
 | `LEVER_SITE_TOKENS` | Optional comma-separated allowlist of public Lever site tokens. |
 | `ASHBY_JOB_BOARD_NAMES` | Optional comma-separated allowlist of public Ashby job-board names. |
 | `DISCOVERY_RUN_RATE_LIMIT_PER_MINUTE` | Per-student limit for manual discovery runs. |

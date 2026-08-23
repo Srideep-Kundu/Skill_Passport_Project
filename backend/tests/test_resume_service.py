@@ -11,7 +11,15 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.db import Base
-from app.models import Evidence, ResumeDocument, ResumeParseStatus, Student
+from app.models import (
+    Evidence,
+    EvidenceType,
+    ExtractionJob,
+    ExtractionJobStatus,
+    ResumeDocument,
+    ResumeParseStatus,
+    Student,
+)
 from app.services import resume_service
 
 
@@ -108,3 +116,128 @@ async def test_storage_provenance_conversion_is_idempotent_and_non_destructive(
         response = await resume_service.resume_response(session, document)
         assert response.generated_evidence_count == 3 and response.parsed_summary is not None
         assert storage._path(key).exists()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("statuses", "expected_status", "expected_counts"),
+    [
+        ([ExtractionJobStatus.completed, ExtractionJobStatus.completed], "ready", (2, 0, 0)),
+        ([ExtractionJobStatus.completed, ExtractionJobStatus.dead_lettered], "partial_failure", (1, 1, 0)),
+        ([ExtractionJobStatus.failed, ExtractionJobStatus.dead_lettered], "failed", (0, 2, 0)),
+        ([ExtractionJobStatus.completed, ExtractionJobStatus.retry_scheduled], "processing", (1, 0, 1)),
+    ],
+)
+async def test_resume_response_reports_truthful_extraction_aggregate(
+    session_factory: async_sessionmaker[AsyncSession],
+    statuses: list[ExtractionJobStatus],
+    expected_status: str,
+    expected_counts: tuple[int, int, int],
+) -> None:
+    async with session_factory() as session:
+        student = Student(
+            email=f"aggregate-{expected_status}@example.test",
+            password_hash="hash",
+            full_name="Aggregate Student",
+        )
+        session.add(student)
+        await session.flush()
+        document = ResumeDocument(
+            student_id=student.id,
+            original_filename="resume.docx",
+            storage_key=f"{student.id}.docx",
+            mime_type=resume_service.DOCX_MIME,
+            size_bytes=100,
+            checksum=str(student.id).replace("-", "") * 2,
+            parse_status=ResumeParseStatus.processing_skills,
+            parser_version=resume_service.PARSER_VERSION,
+            is_active=True,
+        )
+        session.add(document)
+        await session.flush()
+        for index, job_status in enumerate(statuses):
+            evidence = Evidence(
+                student_id=student.id,
+                evidence_type=EvidenceType.project,
+                title=f"Evidence {index}",
+                description="Python API",
+                resume_document_id=document.id,
+            )
+            session.add(evidence)
+            await session.flush()
+            session.add(
+                ExtractionJob(
+                    evidence_id=evidence.id,
+                    status=job_status,
+                    attempt_count=3 if job_status in {ExtractionJobStatus.failed, ExtractionJobStatus.dead_lettered} else 1,
+                    max_attempts=3,
+                    idempotency_key=f"aggregate-{document.id}-{index}",
+                )
+            )
+        await session.commit()
+
+        response = await resume_service.resume_response(session, document)
+
+    assert response.skills_status == expected_status
+    assert (response.completed_jobs, response.failed_jobs, response.pending_jobs) == expected_counts
+    assert response.total_jobs == len(statuses)
+
+
+@pytest.mark.asyncio
+async def test_retry_failed_resume_selects_only_terminal_jobs(
+    monkeypatch: pytest.MonkeyPatch,
+    session_factory: async_sessionmaker[AsyncSession],
+) -> None:
+    requeued_ids: list[object] = []
+
+    async def record_requeue(_session: AsyncSession, evidence_ids: list[object]) -> int:
+        requeued_ids.extend(evidence_ids)
+        return len(evidence_ids)
+
+    monkeypatch.setattr(resume_service, "requeue_terminal_extractions", record_requeue)
+    async with session_factory() as session:
+        student = Student(email="retry-resume@example.test", password_hash="hash", full_name="Retry Student")
+        session.add(student)
+        await session.flush()
+        document = ResumeDocument(
+            student_id=student.id,
+            original_filename="resume.docx",
+            storage_key=f"{student.id}.docx",
+            mime_type=resume_service.DOCX_MIME,
+            size_bytes=100,
+            checksum="f" * 64,
+            parse_status=ResumeParseStatus.processing_skills,
+            parser_version=resume_service.PARSER_VERSION,
+            is_active=True,
+        )
+        session.add(document)
+        await session.flush()
+        evidence_ids = []
+        for index, job_status in enumerate(
+            [ExtractionJobStatus.completed, ExtractionJobStatus.failed, ExtractionJobStatus.dead_lettered]
+        ):
+            evidence = Evidence(
+                student_id=student.id,
+                evidence_type=EvidenceType.project,
+                title=f"Evidence {index}",
+                description="Python API",
+                resume_document_id=document.id,
+            )
+            session.add(evidence)
+            await session.flush()
+            evidence_ids.append(evidence.id)
+            session.add(
+                ExtractionJob(
+                    evidence_id=evidence.id,
+                    status=job_status,
+                    attempt_count=3,
+                    max_attempts=3,
+                    idempotency_key=f"retry-{index}",
+                )
+            )
+        await session.commit()
+
+        assert await resume_service.retry_failed_resume_extractions(session, document) == 2
+
+    assert set(requeued_ids) == set(evidence_ids[1:])
+    assert evidence_ids[0] not in requeued_ids

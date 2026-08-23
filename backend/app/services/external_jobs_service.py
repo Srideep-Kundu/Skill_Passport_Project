@@ -380,7 +380,7 @@ async def sync_all_configured_sources(
                 provider_synced += res.synced
                 provider_created += res.created
                 provider_updated += res.updated
-            except Exception:
+            except ProviderError:
                 provider_errors += 1
                 continue
 

@@ -10,6 +10,12 @@ export class ApiError extends Error {
   }
 }
 
+export function errorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) return error.detail;
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
+}
+
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000").replace(/\/$/, "");
 
 function getErrorDetail(payload: unknown): string {

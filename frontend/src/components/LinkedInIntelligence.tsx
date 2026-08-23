@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Award, Briefcase, CheckCircle2, FileArchive, FolderGit2, GraduationCap, Info, Loader2, Sparkles, Trash2, Upload } from "lucide-react";
-import { ApiError, api, type LinkedInImport } from "../api";
+import { ApiError, api, type LinkedInImport, type ProfessionalProfile } from "../api";
 import { EmptyState, LoadingState } from "./AsyncState";
 
 function getWorkflowStep(parseStatus: string): number {
@@ -39,7 +39,7 @@ export function LinkedInIntelligence({
   const [profileUrl, setProfileUrl] = useState("https://linkedin.com/in/maya-rivera");
   const [isImportingUrl, setIsImportingUrl] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [previewProfile, setPreviewProfile] = useState<any | null>(null);
+  const [previewProfile, setPreviewProfile] = useState<ProfessionalProfile | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [isParsingId, setIsParsingId] = useState<string | null>(null);
@@ -65,7 +65,7 @@ export function LinkedInIntelligence({
     try {
       const profile = await api.importLinkedInUrl(profileUrl.trim(), token);
       setPreviewProfile(profile);
-      toast.success("LinkedIn profile extracted successfully! Review and save to passport.");
+      toast.success("Simulated preview generated. It will not be saved to your passport.");
     } catch (caught) {
       const msg = caught instanceof ApiError ? caught.detail : "LinkedIn profile import failed.";
       setMessage(msg);
@@ -76,7 +76,7 @@ export function LinkedInIntelligence({
   }
 
   async function handleSaveProfile() {
-    if (!previewProfile) return;
+    if (!previewProfile?.persistable) return;
     setIsSavingProfile(true);
     try {
       await api.saveLinkedInProfile(previewProfile, token);
@@ -213,7 +213,7 @@ export function LinkedInIntelligence({
               : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
           }`}
         >
-          Direct Profile URL Import
+          Simulated URL Preview
         </button>
         <button
           type="button"
@@ -247,9 +247,14 @@ export function LinkedInIntelligence({
                 className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#3b71d9] hover:bg-[#2563eb] px-5 py-2 text-xs font-bold text-white disabled:opacity-50 transition-colors cursor-pointer shadow-sm shadow-[#3b71d9]/25"
               >
                 {isImportingUrl ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                <span>{isImportingUrl ? "Extracting..." : "Import Profile"}</span>
+                <span>{isImportingUrl ? "Generating..." : "Generate Demo Preview"}</span>
               </button>
             </div>
+
+            <p className="text-[11px] text-amber-700 dark:text-amber-300">
+              LinkedIn URL access is not connected. This produces a clearly labeled simulated preview only;
+              upload your LinkedIn data export to create evidence-backed passport records.
+            </p>
 
             {/* Extracted Professional Profile Preview Card */}
             {previewProfile && (
@@ -259,22 +264,26 @@ export function LinkedInIntelligence({
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                       <span>{previewProfile.full_name}</span>
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-950/60 text-[#3b71d9] dark:text-[#b0c6ff]">
-                        {previewProfile.source}
+                        Demo fixture — not verified
                       </span>
                     </h3>
                     <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">{previewProfile.headline}</p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 italic">{previewProfile.summary}</p>
                   </div>
                   <button
-                    disabled={isSavingProfile}
+                    disabled={isSavingProfile || !previewProfile.persistable}
                     type="button"
                     onClick={() => void handleSaveProfile()}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer"
                   >
                     {isSavingProfile ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                    <span>{isSavingProfile ? "Saving..." : "Save to Skill Passport"}</span>
+                    <span>{previewProfile.persistable ? "Save to Skill Passport" : "Preview only"}</span>
                   </button>
                 </div>
+
+                <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 dark:border-amber-500/30 dark:bg-amber-950/20 dark:text-amber-200">
+                  {previewProfile.disclaimer}
+                </p>
 
                 {/* Skills found */}
                 <div>
@@ -299,7 +308,7 @@ export function LinkedInIntelligence({
                     <p className="font-bold text-slate-800 dark:text-white flex items-center gap-1.5 mb-1 text-[11px]">
                       <Briefcase className="h-3.5 w-3.5 text-[#3b71d9]" /> Experience ({previewProfile.experiences.length})
                     </p>
-                    {previewProfile.experiences.map((exp: any, i: number) => (
+                    {previewProfile.experiences.map((exp, i) => (
                       <p key={i} className="text-[11px] text-slate-600 dark:text-slate-300">
                         • <strong>{exp.title}</strong> at {exp.company}
                       </p>
@@ -309,7 +318,7 @@ export function LinkedInIntelligence({
                     <p className="font-bold text-slate-800 dark:text-white flex items-center gap-1.5 mb-1 text-[11px]">
                       <GraduationCap className="h-3.5 w-3.5 text-purple-500" /> Education ({previewProfile.education.length})
                     </p>
-                    {previewProfile.education.map((edu: any, i: number) => (
+                    {previewProfile.education.map((edu, i) => (
                       <p key={i} className="text-[11px] text-slate-600 dark:text-slate-300">
                         • <strong>{edu.degree}</strong> ({edu.institution})
                       </p>

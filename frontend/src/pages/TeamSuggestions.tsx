@@ -116,30 +116,9 @@ export function TeamSuggestions({
       );
       setSuggestions(result);
       toast.success("Team complementarity suggestions computed!");
-    } catch (caught) {
-      // If backend requires DB student IDs or falls back, simulate the deterministic pairing
-      const simulatedSuggestions: TeamSuggestion[] = [
-        {
-          pair: ["Maya Rivera", "Alex Patel"],
-          complementarity_score: 0.92,
-          coverage_score: 0.95,
-          redundancy_penalty: 0.03,
-        },
-        {
-          pair: ["Maya Rivera", "Rohan Gupta"],
-          complementarity_score: 0.88,
-          coverage_score: 0.90,
-          redundancy_penalty: 0.02,
-        },
-        {
-          pair: ["Alex Patel", "Priya Sharma"],
-          complementarity_score: 0.84,
-          coverage_score: 0.87,
-          redundancy_penalty: 0.03,
-        },
-      ];
-      setSuggestions(simulatedSuggestions);
-      toast.success("Team complementarity suggestions computed!");
+    } catch {
+      setSuggestions([]);
+      toast.error("Team suggestions could not be computed. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

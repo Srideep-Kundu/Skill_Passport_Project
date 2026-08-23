@@ -109,8 +109,8 @@ async def test_evidence_internship_matching_and_consent_lifecycle(
     async def extract_python(*_args: object) -> extraction_service.ExtractionPayload:
         return extraction_service.ExtractionPayload.model_validate({"skills": [{"skill": "Python", "confidence": 0.9, "evidence_span": "Python"}]})
 
-    monkeypatch.setattr(extraction_service.GeminiExtractor, "extract", extract_python)
-    monkeypatch.setattr(extraction_service, "get_settings", lambda: SimpleNamespace(extraction_provider="local", extraction_max_attempts=3, extraction_retry_base_seconds=1, extraction_retry_max_seconds=2, extraction_claim_timeout_seconds=30))
+    monkeypatch.setattr(extraction_service.LocalExtractor, "extract", extract_python)
+    monkeypatch.setattr(extraction_service, "get_settings", lambda: SimpleNamespace(extraction_provider="local", extraction_fallback_providers=[], extraction_max_attempts=3, extraction_retry_base_seconds=1, extraction_retry_max_seconds=2, extraction_claim_timeout_seconds=30))
     async with factory() as session:
         assert await extraction_service.extract_evidence(session, UUID(created.json()["id"])) == "completed"
     passport = await client.get("/passport/me", headers=authorization(student_token))

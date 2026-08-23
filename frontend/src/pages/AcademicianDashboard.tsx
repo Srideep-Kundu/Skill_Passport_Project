@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   GraduationCap,
   Building2,
@@ -23,6 +23,7 @@ import {
   X,
 } from "lucide-react";
 import { api } from "../api/service";
+import { errorMessage } from "../api/client";
 import type {
   FacultyOpportunity,
   FacultyApplication,
@@ -112,11 +113,7 @@ export function AcademicianDashboard({ token }: Props) {
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
 
-  useEffect(() => {
-    loadInitialData();
-  }, [token]);
-
-  async function loadInitialData() {
+  const loadInitialData = useCallback(async () => {
     try {
       setLoading(true);
       const [
@@ -153,19 +150,23 @@ export function AcademicianDashboard({ token }: Props) {
       if (histRes.status === "fulfilled") setHistoryItems(histRes.value);
       if (advRes.status === "fulfilled") setAdvisedProjects(advRes.value);
       if (docsRes.status === "fulfilled") setDocuments(docsRes.value);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to load faculty portal data");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to load faculty portal data"));
     } finally {
       setLoading(false);
     }
-  }
+  }, [token]);
+
+  useEffect(() => {
+    void loadInitialData();
+  }, [loadInitialData]);
 
   async function refreshOpportunities() {
     try {
       const data = await api.getFacultyOpportunities(token, oppTypeFilter === "all" ? undefined : oppTypeFilter);
       setOpportunities(data);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to refresh opportunities");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to refresh opportunities"));
     }
   }
 
@@ -173,8 +174,8 @@ export function AcademicianDashboard({ token }: Props) {
     try {
       const data = await api.getFacultyApplications(token);
       setApplications(data);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to refresh applications");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to refresh applications"));
     }
   }
 
@@ -186,8 +187,8 @@ export function AcademicianDashboard({ token }: Props) {
         const updated = data.find((w) => w.id === selectedWorkspace.id);
         if (updated) setSelectedWorkspace(updated);
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to refresh workspaces");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to refresh workspaces"));
     }
   }
 
@@ -225,8 +226,8 @@ export function AcademicianDashboard({ token }: Props) {
       setApplyingOpportunity(null);
       await refreshOpportunities();
       await refreshApplications();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to submit proposal");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to submit proposal"));
     } finally {
       setSubmittingProposal(false);
     }
@@ -241,8 +242,8 @@ export function AcademicianDashboard({ token }: Props) {
       if (selectedAppDetail?.id === appId) {
         setSelectedAppDetail(null);
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to withdraw application");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to withdraw application"));
     }
   }
 
@@ -254,8 +255,8 @@ export function AcademicianDashboard({ token }: Props) {
       setPassport(updated);
       setIsEditingPassport(false);
       toast.success("Faculty Academic Passport updated successfully!");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to update passport");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to update passport"));
     } finally {
       setSavingPassport(false);
     }
@@ -273,8 +274,8 @@ export function AcademicianDashboard({ token }: Props) {
       setSelectedWorkspace(updated);
       await refreshWorkspaces();
       toast.success(`Milestone status updated to ${nextStatus.replace("_", " ")}`);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to update milestone");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to update milestone"));
     }
   }
 
@@ -291,8 +292,8 @@ export function AcademicianDashboard({ token }: Props) {
       setNewTaskTitle("");
       await refreshWorkspaces();
       toast.success("Action item added to workspace");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to add task");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to add task"));
     }
   }
 
@@ -313,8 +314,8 @@ export function AcademicianDashboard({ token }: Props) {
       setNewDiscussionText("");
       await refreshWorkspaces();
       toast.success("Update posted to workspace");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to post message");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to post message"));
     }
   }
 
@@ -325,30 +326,8 @@ export function AcademicianDashboard({ token }: Props) {
       setSelectedWorkspace(updated);
       await refreshWorkspaces();
       toast.success("Collaboration workspace completed and recorded in history!");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to complete workspace");
-    }
-  }
-
-  // Handle Event / Workshop Registration
-  async function handleRegisterEvent(event: { id: string; title: string; host: string; type: string; date?: string }) {
-    try {
-      await api.registerFacultyEvent(
-        {
-          event_id: event.id,
-          event_type: event.type,
-          event_title: event.title,
-          host_organization: event.host,
-          role: "attendee",
-          scheduled_at: event.date,
-        },
-        token
-      );
-      toast.success(`Successfully registered for ${event.title}`);
-      const updatedEvents = await api.getMyFacultyEvents(token);
-      setEvents(updatedEvents);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to register for event");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to complete workspace"));
     }
   }
 
@@ -365,8 +344,8 @@ export function AcademicianDashboard({ token }: Props) {
       const updatedAdv = await api.getFacultyAdvisedProjects(token);
       setAdvisedProjects(updatedAdv);
       setAdvisingFeedbackMap((prev) => ({ ...prev, [projectAppId]: "" }));
-    } catch (err: any) {
-      toast.error(err.message || "Failed to submit feedback");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to submit feedback"));
     }
   }
 
@@ -394,8 +373,8 @@ export function AcademicianDashboard({ token }: Props) {
       setDocTitle("");
       setDocUrl("");
       toast.success("Document stored securely in vault");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to upload document");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to upload document"));
     } finally {
       setUploadingDoc(false);
     }
@@ -1282,56 +1261,33 @@ export function AcademicianDashboard({ token }: Props) {
                 Industry Mentorship, Masterclasses & Faculty Workshops
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                Register for corporate tech talks, 1-on-1 industry immersion mentorship, and AICTE masterclasses.
+                Registrations loaded from your persisted faculty event records.
               </p>
             </div>
 
             {/* Event Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[
-                {
-                  id: "e1",
-                  title: "Cloud-Native Microservices Architecture Masterclass",
-                  host: "Google Cloud Labs",
-                  type: "workshop",
-                  date: "2026-09-10",
-                  description: "Deep dive for faculty on container orchestration, service meshes, and enterprise deployment best practices.",
-                },
-                {
-                  id: "e2",
-                  title: "Applied Generative AI & Embeddings Workshop",
-                  host: "Intel AI Research",
-                  type: "fdp",
-                  date: "2026-09-18",
-                  description: "Practical curriculum integration for vector search, LLM orchestration, and RAG architectures.",
-                },
-              ].map((ev) => {
-                const isRegistered = events.some((e) => e.event_id === ev.id);
+              {events.length === 0 ? (
+                <div className="md:col-span-2 p-8 text-center text-xs text-slate-400">
+                  No faculty event registrations are available.
+                </div>
+              ) : events.map((ev) => {
                 return (
                   <div key={ev.id} className="p-6 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] space-y-4">
                     <div className="flex justify-between items-start">
                       <div>
                         <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-purple-50 dark:bg-purple-900/30 text-purple-600">
-                          {ev.type.toUpperCase()}
+                          {ev.event_type.toUpperCase()}
                         </span>
-                        <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-1.5">{ev.title}</h3>
-                        <p className="text-xs text-slate-500">Host: <strong>{ev.host}</strong> • {ev.date}</p>
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-1.5">{ev.event_title}</h3>
+                        <p className="text-xs text-slate-500">Host: <strong>{ev.host_organization}</strong> • {ev.scheduled_at ? new Date(ev.scheduled_at).toLocaleDateString() : "Date pending"}</p>
                       </div>
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300">{ev.description}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-300">Role: {ev.role} • Status: {ev.status}</p>
                     <div className="pt-2 flex justify-end">
-                      {isRegistered ? (
-                        <span className="text-xs text-emerald-600 font-bold flex items-center gap-1">
-                          <CheckCircle2 className="h-4 w-4" /> Registered
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => handleRegisterEvent(ev)}
-                          className="px-4 py-2 bg-[#3b71d9] hover:bg-[#2f5db3] text-white text-xs font-bold rounded-xl cursor-pointer"
-                        >
-                          Register for Event
-                        </button>
-                      )}
+                      <span className="text-xs text-emerald-600 font-bold flex items-center gap-1">
+                        <CheckCircle2 className="h-4 w-4" /> {ev.status}
+                      </span>
                     </div>
                   </div>
                 );

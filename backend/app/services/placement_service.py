@@ -4,7 +4,6 @@ Handles placement drive scheduling, deterministic candidate ranking using the
 shared scoring formula (0.65D + 0.25S + 0.10V), recruiter candidate management,
 and student interview/offer lifecycle.
 """
-from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select
@@ -15,9 +14,7 @@ from app.models import (
     PlacementDrive,
     PlacementRegistration,
     Skill,
-    Student,
     StudentSkill,
-    VerificationTier,
 )
 from app.schemas.contracts import (
     PlacementCandidateRanking,
@@ -27,9 +24,9 @@ from app.schemas.contracts import (
     PlacementRegistrationStageUpdate,
 )
 from app.services.matching_service import (
+    TIER_MULTIPLIER,
     PossessedSkill,
     RequirementInput,
-    TIER_MULTIPLIER,
     calculate_score,
 )
 
@@ -227,8 +224,6 @@ async def rank_placement_candidates(
             .order_by(PlacementRegistration.match_score.desc())
         )
     ).all()
-
-    req_skill_names_lower = {s.casefold() for s in drive.required_skills}
 
     results = []
     for reg in registrations:

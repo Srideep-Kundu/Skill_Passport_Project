@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import logging
 import re
 from abc import ABC, abstractmethod
 from collections.abc import Set as AbstractSet
@@ -16,6 +17,8 @@ import httpx
 
 from app.core.config import get_settings
 from app.models import ApplicationTrackingStatus
+
+logger = logging.getLogger(__name__)
 
 
 class ProviderError(Exception):
@@ -1586,7 +1589,7 @@ class YCJobProvider(JobProvider):
         elif item.get("time"):
             try:
                 posted_time = datetime.fromtimestamp(int(item["time"]), tz=UTC)
-            except Exception:
+            except (OverflowError, TypeError, ValueError):
                 posted_time = None
 
         metadata = _safe_metadata(
@@ -1639,7 +1642,8 @@ class YCJobProvider(JobProvider):
                     data = response.json()
                     if isinstance(data, dict) and isinstance(data.get("hits"), list):
                         hits = [h for h in data["hits"] if isinstance(h, dict)]
-        except Exception:
+        except (httpx.HTTPError, ValueError):
+            logger.warning("YC Algolia job lookup failed", extra={"source_key": source_key})
             hits = []
 
         # 2. Fallback to Firebase HN job stories if needed
@@ -1658,8 +1662,8 @@ class YCJobProvider(JobProvider):
                                 item_resp = await client.get(f"{self._firebase_base}/item/{story_id}.json")
                                 if item_resp.status_code == 200 and isinstance(item_resp.json(), dict):
                                     hits.append(item_resp.json())
-            except Exception:
-                pass
+            except (httpx.HTTPError, ValueError):
+                logger.warning("YC Firebase job lookup failed", extra={"source_key": source_key})
 
         if not hits:
             return ProviderSearchPage(jobs=(), next_cursor=None)
@@ -1668,7 +1672,11 @@ class YCJobProvider(JobProvider):
         for hit in hits:
             try:
                 jobs.append(self._normalize_item(hit, source_key=source_key))
-            except Exception:
+            except (KeyError, ProviderError, TypeError, ValueError):
+                logger.warning(
+                    "Skipping malformed YC job record",
+                    extra={"source_key": source_key},
+                )
                 continue
 
         filtered = [job for job in jobs if self._matches(job, filters)]

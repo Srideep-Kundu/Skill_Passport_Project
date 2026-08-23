@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ShieldCheck,
   Clock,
@@ -10,6 +10,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { api } from "../api/service";
+import { errorMessage } from "../api/client";
 import type { Assessment, AssessmentAttempt } from "../api/types";
 import { toast } from "sonner";
 
@@ -27,21 +28,21 @@ export function SkillAssessments({ token, onAssessmentCompleted }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [attemptResult, setAttemptResult] = useState<AssessmentAttempt | null>(null);
 
-  useEffect(() => {
-    loadAssessments();
-  }, [token]);
-
-  async function loadAssessments() {
+  const loadAssessments = useCallback(async () => {
     try {
       setLoading(true);
       const data = await api.getAssessments(token);
       setAssessments(data);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to load skill assessments");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to load skill assessments"));
     } finally {
       setLoading(false);
     }
-  }
+  }, [token]);
+
+  useEffect(() => {
+    void loadAssessments();
+  }, [loadAssessments]);
 
   async function handleStartAssessment(assessmentId: string) {
     try {
@@ -51,8 +52,8 @@ export function SkillAssessments({ token, onAssessmentCompleted }: Props) {
       setAnswers({});
       setCurrentQuestionIdx(0);
       setAttemptResult(null);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to load assessment questions");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to load assessment questions"));
     } finally {
       setLoading(false);
     }
@@ -74,8 +75,8 @@ export function SkillAssessments({ token, onAssessmentCompleted }: Props) {
       } else {
         toast.error(`Score: ${result.percentage}%. Passing score is ${activeAssessment.passing_score}%. Review courses and retry!`);
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to submit assessment");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to submit assessment"));
     } finally {
       setSubmitting(false);
     }

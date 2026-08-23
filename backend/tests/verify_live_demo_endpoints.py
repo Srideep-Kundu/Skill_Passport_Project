@@ -1,5 +1,4 @@
 """Live demo verification script calling real FastAPI endpoints on port 8000."""
-import sys
 import httpx
 
 BASE_URL = "http://127.0.0.1:8000"
@@ -54,7 +53,7 @@ def test_live_demo():
 
     # Collaboration & Challenges
     challenges = client.get("/collaborations/challenges", headers=student_headers).json()
-    print(f"✓ Innovation Challenges: {len(challenges)} live challenges")
+    print(f"✓ Innovation Challenges: {len(challenges)} seeded demo challenges")
 
     # Copilot Query
     copilot_res = client.post("/copilot/query", json={"query": "What are my verified skills?"}, headers=student_headers)
@@ -66,7 +65,8 @@ def test_live_demo():
     # LinkedIn Import URL
     li = client.post("/linkedin/imports/import-url", json={"profile_url": "https://linkedin.com/in/maya-rivera"}, headers=student_headers).json()
     assert li["full_name"] == "Maya Rivera"
-    print(f"✓ LinkedIn URL Extraction Provider: Extracted {len(li['skills'])} skills, {len(li['experiences'])} experiences")
+    assert li["is_demo_fixture"] is True and li["persistable"] is False
+    print(f"✓ LinkedIn simulated URL preview: {len(li['skills'])} skills, non-persistable fixture")
 
     # 3. Recruiter Persona Flow
     print("\n--- Testing Recruiter Persona (recruiter@example.demo) ---")
@@ -103,7 +103,7 @@ def test_live_demo():
 
     inst_overview = client.get("/institution/analytics", headers=inst_headers).json()
     print(f"✓ Institution Analytics: {inst_overview['total_students']} students across {len(inst_overview['department_metrics'])} departments")
-    print(f"  Employability Index: {inst_overview['overall_employability_index']:.1f}%, Active Internships: {inst_overview['active_internships']}")
+    print(f"  Verified student coverage: {inst_overview['overall_employability_index']:.1f}%, Active Internships: {inst_overview['active_internships']}")
 
     print("\n🎉 ALL LIVE DEMO ENDPOINTS VERIFIED SUCCESSFULLY (100% PASS RATE)!")
 

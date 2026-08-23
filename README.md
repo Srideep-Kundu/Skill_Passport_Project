@@ -6,8 +6,8 @@ An evidence-backed skill passport with deterministic, explainable internship and
 
 - React, Vite, TypeScript, Tailwind, and Recharts frontend
 - FastAPI, Pydantic v2, async SQLAlchemy, PostgreSQL 16 + pgvector, and Redis
-- JWT authentication with student, recruiter, and admin RBAC
-- Gemini is limited to structured skill extraction. Extraction output is validated, normalized against the canonical taxonomy, and tied to evidence.
+- JWT authentication with student, recruiter, institution, academician, and admin RBAC. Production institution registration is invite-only.
+- Gemini or Groq may perform structured skill extraction. Extraction output is validated through one shared contract, normalized against the canonical taxonomy, and tied to evidence. Gemini embeddings remain independently configured.
 - Matching is reproducible: exact overlap, thresholded semantic similarity, and verification adjustment are persisted alongside the final score. Explanations use deterministic templates over those records.
 - Names, universities, GPA, and all protected attributes/proxies are excluded from matching.
 
@@ -76,7 +76,7 @@ The GitHub Actions workflow runs migrations, backend tests/lint/type checks, fro
 
 ## Deploy
 
-Deploy the API, PostgreSQL + pgvector, and Redis with Railway or Render; deploy the Vite frontend on Vercel. Use [the deployment guide](docs/deployment.md) for required secrets, service topology, migration steps, least-privilege matching access, and release checks. The repeatable end-to-end acceptance steps are in the [manual demo matrix](docs/manual-demo-matrix.md).
+The public-pilot target is Render for the API, worker, PostgreSQL + pgvector, Key Value, and persistent uploads, with the Vite frontend on Vercel. Use [the deployment guide](docs/deployment.md) for required secrets, service topology, migration steps, least-privilege matching access, and release checks. The repeatable end-to-end acceptance steps are in the [manual demo matrix](docs/manual-demo-matrix.md).
 
 Production requirements:
 

@@ -10,6 +10,7 @@ def production_settings(**overrides: object) -> Settings:
         "database_url": "postgresql+asyncpg://user:password@db:5432/skill_passport",
         "redis_url": "redis://redis:6379/0",
         "cors_origins": ["https://app.example.test"],
+        "google_client_id": "public-web-client-id.apps.googleusercontent.com",
     }
     values.update(overrides)
     return Settings(**values)
@@ -22,7 +23,9 @@ def production_settings(**overrides: object) -> Settings:
         ({"database_url": "sqlite+aiosqlite:///./skill_passport.db"}, "PostgreSQL"),
         ({"redis_url": None}, "REDIS_URL"),
         ({"cors_origins": ["*"]}, "CORS_ORIGINS"),
+        ({"google_client_id": None}, "GOOGLE_CLIENT_ID"),
         ({"extraction_provider": "gemini", "gemini_api_key": None}, "GEMINI_API_KEY"),
+        ({"extraction_provider": "groq", "groq_api_key": None}, "GROQ_API_KEY"),
         ({"semantic_matching_enabled": True}, "Semantic matching"),
     ],
 )
@@ -43,3 +46,22 @@ def test_costly_operation_rate_limits_accept_documented_environment_aliases() ->
 
     assert settings.discovery_run_rate_limit_per_minute == 7
     assert settings.application_execution_rate_limit_per_minute == 8
+
+
+def test_groq_extraction_configuration_keeps_gemini_embeddings_independent() -> None:
+    settings = Settings(
+        EXTRACTION_PROVIDER="groq",
+        EXTRACTION_FALLBACK_PROVIDERS="gemini,local",
+        GROQ_API_KEY="test-groq-key",
+        GROQ_EXTRACTION_MODEL="openai/gpt-oss-20b",
+        EMBEDDING_PROVIDER="gemini",
+        EMBEDDING_MODEL="gemini-embedding-001",
+        EMBEDDING_DIMENSION="768",
+    )
+
+    assert settings.extraction_provider == "groq"
+    assert settings.extraction_fallback_providers == ["gemini", "local"]
+    assert settings.groq_extraction_model == "openai/gpt-oss-20b"
+    assert settings.embedding_provider == "gemini"
+    assert settings.embedding_model == "gemini-embedding-001"
+    assert settings.embedding_dimension == 768

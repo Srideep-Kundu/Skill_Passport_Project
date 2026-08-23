@@ -36,6 +36,10 @@ const completedResume: ResumeDocument = {
   parsed_summary: mockParsedSummary,
   generated_evidence_count: 3,
   skills_status: "ready",
+  completed_jobs: 3,
+  failed_jobs: 0,
+  pending_jobs: 0,
+  total_jobs: 3,
 };
 
 describe("ResumeIntelligence", () => {
@@ -219,5 +223,57 @@ describe("ResumeIntelligence", () => {
     });
 
     expect(api.parseResume).toHaveBeenCalledWith(failedResume.id, "token");
+  });
+
+  it("renders a truthful partial failure with actual counts", async () => {
+    const partialResume: ResumeDocument = {
+      ...completedResume,
+      parse_status: "processing_skills",
+      skills_status: "partial_failure",
+      completed_jobs: 11,
+      failed_jobs: 20,
+      pending_jobs: 0,
+      total_jobs: 31,
+    };
+    vi.spyOn(api, "resumes").mockResolvedValue({ page: 1, page_size: 20, total: 1, items: [partialResume] });
+
+    render(<ResumeIntelligence token="token" onChanged={vi.fn()} />);
+
+    expect(await screen.findByText("Resume partially analyzed")).toBeInTheDocument();
+    expect(screen.getByText("11 of 31 evidence items processed successfully.")).toBeInTheDocument();
+    expect(screen.getByText(/20 items could not be processed/i)).toBeInTheDocument();
+    expect(screen.queryByText("Analyzing")).not.toBeInTheDocument();
+  });
+
+  it("requeues failed items and reaches ready without rerunning completed jobs", async () => {
+    const partialResume: ResumeDocument = {
+      ...completedResume,
+      parse_status: "processing_skills",
+      skills_status: "partial_failure",
+      completed_jobs: 11,
+      failed_jobs: 20,
+      pending_jobs: 0,
+      total_jobs: 31,
+    };
+    const processingResume: ResumeDocument = {
+      ...partialResume,
+      skills_status: "processing",
+      failed_jobs: 0,
+      pending_jobs: 20,
+    };
+    const resumes = vi.spyOn(api, "resumes");
+    resumes.mockResolvedValueOnce({ page: 1, page_size: 20, total: 1, items: [partialResume] });
+    resumes.mockResolvedValue({ page: 1, page_size: 20, total: 1, items: [completedResume] });
+    vi.spyOn(api, "retryFailedResume").mockResolvedValue(processingResume);
+    vi.spyOn(api, "activateResume").mockResolvedValue(completedResume);
+    const onChanged = vi.fn();
+    render(<ResumeIntelligence token="token" onChanged={onChanged} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /Retry failed items/i }));
+
+    await waitFor(() => expect(api.retryFailedResume).toHaveBeenCalledWith(partialResume.id, "token"));
+    await waitFor(() => expect(screen.getByText("Active Resume")).toBeInTheDocument(), { timeout: 3000 });
+    expect(api.activateResume).toHaveBeenCalledWith(partialResume.id, "token");
+    expect(onChanged).toHaveBeenCalled();
   });
 });

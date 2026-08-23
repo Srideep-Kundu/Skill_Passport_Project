@@ -1,7 +1,7 @@
 """Seed data for SIH Ecosystem: Assessments, Learning Courses, Placement Drives, Faculty Opportunities, Mentorship, Challenges."""
 import asyncio
-from datetime import UTC, datetime, timedelta
 import uuid
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 
@@ -22,10 +22,8 @@ from app.models import (
     LearningCourse,
     MentorshipSession,
     PlacementDrive,
-    ProjectApplication,
     Recruiter,
     Role,
-    Skill,
     Student,
 )
 
