@@ -59,14 +59,27 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     configure_logging(settings.log_level)
     settings.validate_for_runtime()
-    if settings.database_url.startswith("sqlite"):
-        await create_schema_for_local_use()
+    try:
+        from app.models.base import Base
+        from app.core.database import engine
+        from sqlalchemy import text
+        async with engine.begin() as conn:
+            await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as exc:
+        logger.warning(f"Database schema auto-creation notice: {exc}")
     yield
 
 
 settings = get_settings()
 app = FastAPI(title="Skill Passport API", version="0.1.0", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_credentials=False, allow_methods=["*"], allow_headers=["Authorization", "Content-Type"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(auth.router)
 app.include_router(copilot.router)
 app.include_router(career_goals.router)
