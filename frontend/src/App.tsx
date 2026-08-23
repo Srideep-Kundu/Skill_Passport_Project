@@ -484,13 +484,16 @@ export function App() {
         </main>
       </div>
 
-      {isStudent && (
+      {(isStudent || isRecruiter) && (
         <SkillPassportCopilot
           token={session.access_token}
           isOpen={copilotOpen}
           onOpen={() => setCopilotOpen(true)}
           onClose={() => setCopilotOpen(false)}
-          onNavigate={(tab) => setStudentTab(tab as StudentTab)}
+          onNavigate={(tab) => {
+            if (isStudent) setStudentTab(tab as StudentTab);
+            else if (isRecruiter) setRecruiterTab(tab as RecruiterTab);
+          }}
         />
       )}
     </div>
