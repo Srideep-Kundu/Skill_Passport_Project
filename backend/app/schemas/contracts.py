@@ -15,6 +15,51 @@ class TokenResponse(APIModel):
     role: Literal["student", "recruiter", "admin", "academician", "institution"]
 
 
+import re
+
+EMAIL_REGEX = re.compile(r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
+
+TYPO_DOMAINS = {
+    "gamil.com": "gmail.com",
+    "gmial.com": "gmail.com",
+    "gmaill.com": "gmail.com",
+    "gmai.com": "gmail.com",
+    "gmaul.com": "gmail.com",
+    "gamil.co": "gmail.com",
+    "yaho.com": "yahoo.com",
+    "yahooo.com": "yahoo.com",
+    "yhaoo.com": "yahoo.com",
+    "hotmial.com": "hotmail.com",
+    "hotmai.com": "hotmail.com",
+    "outlok.com": "outlook.com",
+    "outloo.com": "outlook.com",
+    "icoud.com": "icloud.com",
+}
+
+
+def _validate_email_field(value: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError("Not a valid email ID. Email must be a string.")
+    normalized = value.strip().casefold()
+    if not EMAIL_REGEX.match(normalized):
+        raise ValueError("Not a valid email ID. Please check the email format (e.g. name@domain.com).")
+    parts = normalized.split("@")
+    if len(parts) != 2:
+        raise ValueError("Not a valid email ID. Must contain username and domain.")
+    user, domain = parts
+    if domain in TYPO_DOMAINS:
+        raise ValueError(f"Not a valid email ID. Did you mean @{TYPO_DOMAINS[domain]}?")
+    if ".." in user or ".." in domain or domain.startswith(".") or domain.endswith("."):
+        raise ValueError("Not a valid email ID.")
+    domain_parts = domain.split(".")
+    if len(domain_parts) < 2 or any(len(p) == 0 for p in domain_parts):
+        raise ValueError("Not a valid email ID. Domain must contain a valid extension (e.g., .com, .edu).")
+    tld = domain_parts[-1]
+    if len(tld) < 2 or not tld.isalpha():
+        raise ValueError("Not a valid email ID. Top-level domain must be valid.")
+    return normalized
+
+
 class StudentRegistration(APIModel):
     email: str = Field(min_length=3, max_length=320)
     password: str = Field(min_length=8, max_length=128)
@@ -22,16 +67,31 @@ class StudentRegistration(APIModel):
     university: str | None = Field(default=None, max_length=255)
     graduation_year: int | None = Field(default=None, ge=2020, le=2100)
 
+    @field_validator("email", mode="before")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        return _validate_email_field(v)
+
 
 class RecruiterRegistration(APIModel):
     email: str = Field(min_length=3, max_length=320)
     password: str = Field(min_length=8, max_length=128)
     company_name: str = Field(min_length=1, max_length=255)
 
+    @field_validator("email", mode="before")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        return _validate_email_field(v)
+
 
 class LoginRequest(APIModel):
     email: str = Field(min_length=3, max_length=320)
     password: str = Field(min_length=1, max_length=128)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        return _validate_email_field(v)
 
 
 class GoogleAuthRequest(APIModel):
@@ -49,6 +109,11 @@ class AcademicianRegistration(APIModel):
     designation: str = Field(min_length=1, max_length=120)
     research_areas: list[str] = Field(default_factory=list)
 
+    @field_validator("email", mode="before")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        return _validate_email_field(v)
+
 
 class InstitutionRegistration(APIModel):
     email: str = Field(min_length=3, max_length=320)
@@ -57,6 +122,11 @@ class InstitutionRegistration(APIModel):
     institution_code: str = Field(min_length=1, max_length=64)
     state: str | None = Field(default=None, max_length=100)
     departments: list[str] = Field(default_factory=list)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        return _validate_email_field(v)
 
 
 class EvidenceCreate(APIModel):

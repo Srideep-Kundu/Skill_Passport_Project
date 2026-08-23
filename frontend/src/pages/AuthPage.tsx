@@ -16,26 +16,98 @@ export interface AuthPageProps {
   onClose?: () => void;
 }
 
+const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+const TYPO_DOMAINS: Record<string, string> = {
+  "gamil.com": "gmail.com",
+  "gmial.com": "gmail.com",
+  "gmaill.com": "gmail.com",
+  "gmai.com": "gmail.com",
+  "gmaul.com": "gmail.com",
+  "gamil.co": "gmail.com",
+  "yaho.com": "yahoo.com",
+  "yahooo.com": "yahoo.com",
+  "yhaoo.com": "yahoo.com",
+  "hotmial.com": "hotmail.com",
+  "hotmai.com": "hotmail.com",
+  "outlok.com": "outlook.com",
+  "outloo.com": "outlook.com",
+  "icoud.com": "icloud.com",
+};
+
+const emailSchema = z
+  .string()
+  .min(1, "Email address is required")
+  .superRefine((val, ctx) => {
+    const trimmed = val.trim().toLowerCase();
+    if (!emailRegex.test(trimmed)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Not a valid email ID. Please enter a valid email address (e.g., student@university.edu or name@gmail.com)",
+      });
+      return;
+    }
+    if (trimmed.includes("..") || trimmed.includes(".@") || trimmed.includes("@.")) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Not a valid email ID.",
+      });
+      return;
+    }
+    const parts = trimmed.split("@");
+    if (parts.length !== 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Not a valid email ID.",
+      });
+      return;
+    }
+    const domain = parts[1];
+    if (TYPO_DOMAINS[domain]) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Not a valid email ID. Did you mean @${TYPO_DOMAINS[domain]}?`,
+      });
+      return;
+    }
+    const domainParts = domain.split(".");
+    if (domainParts.length < 2 || domainParts.some((p) => p.length === 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Not a valid email ID. Domain must have a valid extension.",
+      });
+      return;
+    }
+    const tld = domainParts[domainParts.length - 1];
+    if (tld.length < 2 || !/^[a-zA-Z]+$/.test(tld)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Not a valid email ID. Top-level domain must be valid.",
+      });
+      return;
+    }
+  });
+
 const loginSchema = z.object({
-  email: z.string().email("Enter a valid email address"),
+  email: emailSchema,
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 const registerStudentSchema = z.object({
-  email: z.string().email("Enter a valid email address"),
+  email: emailSchema,
   password: z.string().min(8, "Password must be at least 8 characters"),
   fullName: z.string().min(2, "Full name is required"),
   university: z.string().optional(),
 });
 
 const registerRecruiterSchema = z.object({
-  email: z.string().email("Enter a valid email address"),
+  email: emailSchema,
   password: z.string().min(8, "Password must be at least 8 characters"),
   companyName: z.string().min(2, "Company name is required"),
 });
 
 const registerAcademicianSchema = z.object({
-  email: z.string().email("Enter a valid email address"),
+  email: emailSchema,
   password: z.string().min(8, "Password must be at least 8 characters"),
   fullName: z.string().min(2, "Full name is required"),
   institutionName: z.string().min(2, "Institution name is required"),
@@ -44,7 +116,7 @@ const registerAcademicianSchema = z.object({
 });
 
 const registerInstitutionSchema = z.object({
-  email: z.string().email("Enter a valid email address"),
+  email: emailSchema,
   password: z.string().min(8, "Password must be at least 8 characters"),
   institutionName: z.string().min(2, "Institution name is required"),
   institutionCode: z.string().min(2, "Institution code is required"),
