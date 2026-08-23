@@ -506,7 +506,11 @@ export interface ResumeDocument {
   safe_error_message: string | null;
   parsed_summary: ResumeParsedData | null;
   generated_evidence_count: number;
-  skills_status: "not_started" | "extracting" | "ready";
+  skills_status: "not_started" | "processing" | "ready" | "partial_failure" | "failed";
+  completed_jobs: number;
+  failed_jobs: number;
+  pending_jobs: number;
+  total_jobs: number;
 }
 
 export interface LinkedInCounts {

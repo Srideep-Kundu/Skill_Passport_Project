@@ -53,8 +53,16 @@ services:
         value: "true"
       - key: GEMINI_API_KEY
         sync: false
+      - key: GROQ_API_KEY
+        sync: false
       - key: EXTRACTION_PROVIDER
-        value: gemini
+        value: groq
+      - key: EXTRACTION_MODEL
+        value: gemini-3.6-flash
+      - key: GROQ_EXTRACTION_MODEL
+        value: openai/gpt-oss-20b
+      - key: EXTRACTION_FALLBACK_PROVIDERS
+        value: gemini,local
       - key: EXTRACTION_SYNC_FALLBACK
         value: "false"
       - key: EMBEDDING_PROVIDER
@@ -124,8 +132,16 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: GROQ_API_KEY
+        sync: false
       - key: EXTRACTION_PROVIDER
-        value: gemini
+        value: groq
+      - key: EXTRACTION_MODEL
+        value: gemini-3.6-flash
+      - key: GROQ_EXTRACTION_MODEL
+        value: openai/gpt-oss-20b
+      - key: EXTRACTION_FALLBACK_PROVIDERS
+        value: gemini,local
       - key: EXTRACTION_MAX_ATTEMPTS
         value: "3"
       - key: EXTRACTION_RETRY_BASE_SECONDS

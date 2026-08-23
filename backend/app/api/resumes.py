@@ -32,6 +32,7 @@ from app.services.resume_service import (
     extract_document_text,
     parse_resume_document,
     resume_response,
+    retry_failed_resume_extractions,
     validate_upload,
 )
 
@@ -130,6 +131,25 @@ async def parse_resume(document_id: UUID, principal: Annotated[Student, Depends(
     document = await _owned_resume(session, document_id, principal.id)
     if document.parse_status != ResumeParseStatus.unsupported:
         await parse_resume_document(session, document, LocalResumeStorage())
+    return await resume_response(session, document)
+
+
+@router.post("/{document_id}/retry-failed", response_model=ResumeDocumentResponse)
+async def retry_failed_resume(
+    document_id: UUID,
+    principal: Annotated[Student, Depends(require_role("student"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ResumeDocumentResponse:
+    await enforce_rate_limit(
+        "resume_retry_failed",
+        str(principal.id),
+        get_settings().extraction_rate_limit_per_minute,
+    )
+    document = await _owned_resume(session, document_id, principal.id)
+    try:
+        await retry_failed_resume_extractions(session, document)
+    except ResumeError as error:
+        raise HTTPException(status.HTTP_409_CONFLICT, error.message) from error
     return await resume_response(session, document)
 
 

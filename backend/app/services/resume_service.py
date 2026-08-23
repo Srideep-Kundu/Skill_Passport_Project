@@ -37,7 +37,11 @@ from app.schemas.contracts import (
 from app.services.application_service import (
     invalidate_approved_applications_for_student,
 )
-from app.services.extraction_service import create_extraction_job, enqueue_extraction
+from app.services.extraction_service import (
+    create_extraction_job,
+    enqueue_extraction,
+    requeue_terminal_extractions,
+)
 
 PARSER_VERSION = "v1-deterministic"
 PDF_MIME = "application/pdf"
@@ -273,12 +277,59 @@ async def resume_response(session: AsyncSession, document: ResumeDocument) -> Re
     evidence_ids = select(Evidence.id).where(Evidence.resume_document_id == document.id)
     generated_count = int((await session.scalar(select(func.count()).select_from(Evidence).where(Evidence.resume_document_id == document.id))) or 0)
     job_statuses = list((await session.scalars(select(ExtractionJob.status).where(ExtractionJob.evidence_id.in_(evidence_ids)))).all())
-    skills_status = "not_started" if not job_statuses else "ready" if all(status == ExtractionJobStatus.completed for status in job_statuses) else "extracting"
+    completed_jobs = sum(status == ExtractionJobStatus.completed for status in job_statuses)
+    failed_jobs = sum(
+        status in {ExtractionJobStatus.failed, ExtractionJobStatus.dead_lettered}
+        for status in job_statuses
+    )
+    pending_jobs = len(job_statuses) - completed_jobs - failed_jobs
+    if not job_statuses:
+        skills_status = "not_started"
+    elif pending_jobs:
+        skills_status = "processing"
+    elif failed_jobs and completed_jobs:
+        skills_status = "partial_failure"
+    elif failed_jobs:
+        skills_status = "failed"
+    else:
+        skills_status = "ready"
     if document.parse_status == ResumeParseStatus.processing_skills and skills_status == "ready":
         document.parse_status = ResumeParseStatus.completed
         await session.commit()
     parsed = ResumeParsedData.model_validate(document.parsed_data) if document.parsed_data else None
-    return ResumeDocumentResponse(id=document.id, original_filename=document.original_filename, mime_type=document.mime_type, size_bytes=document.size_bytes, checksum=document.checksum, parse_status=document.parse_status.value, parser_version=document.parser_version, uploaded_at=document.uploaded_at, parsed_at=document.parsed_at, is_active=document.is_active, safe_error_message=document.safe_error_message, parsed_summary=parsed, generated_evidence_count=generated_count, skills_status=skills_status)
+    return ResumeDocumentResponse(id=document.id, original_filename=document.original_filename, mime_type=document.mime_type, size_bytes=document.size_bytes, checksum=document.checksum, parse_status=document.parse_status.value, parser_version=document.parser_version, uploaded_at=document.uploaded_at, parsed_at=document.parsed_at, is_active=document.is_active, safe_error_message=document.safe_error_message, parsed_summary=parsed, generated_evidence_count=generated_count, skills_status=skills_status, completed_jobs=completed_jobs, failed_jobs=failed_jobs, pending_jobs=pending_jobs, total_jobs=len(job_statuses))
+
+
+async def retry_failed_resume_extractions(
+    session: AsyncSession, document: ResumeDocument
+) -> int:
+    rows = (
+        await session.execute(
+            select(Evidence.id, ExtractionJob.status)
+            .join(ExtractionJob, ExtractionJob.evidence_id == Evidence.id)
+            .where(Evidence.resume_document_id == document.id)
+        )
+    ).all()
+    active_statuses = {
+        ExtractionJobStatus.pending,
+        ExtractionJobStatus.queued,
+        ExtractionJobStatus.processing,
+        ExtractionJobStatus.retry_scheduled,
+    }
+    if any(job_status in active_statuses for _, job_status in rows):
+        raise ResumeError("Resume extraction is already in progress")
+    failed_ids = [
+        evidence_id
+        for evidence_id, job_status in rows
+        if job_status
+        in {ExtractionJobStatus.failed, ExtractionJobStatus.dead_lettered}
+    ]
+    if not failed_ids:
+        raise ResumeError("This resume has no failed evidence to retry")
+    requeued = await requeue_terminal_extractions(session, failed_ids)
+    if not requeued:
+        raise ResumeError("Resume extraction is already in progress")
+    return requeued
 
 
 async def activate_resume(session: AsyncSession, document: ResumeDocument) -> None:

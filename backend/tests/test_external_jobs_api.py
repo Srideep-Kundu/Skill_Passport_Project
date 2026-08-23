@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -104,4 +105,76 @@ async def test_external_job_api_filters_provenance_and_role_boundaries(
     assert greenhouse_entry["active_jobs_count"] == 1
     indeed_entry = next(p for p in provider_data if p["provider"] == "indeed")
     assert indeed_entry["status"] == "unavailable"
+
+
+@pytest.mark.asyncio
+async def test_provider_health_uses_non_fixture_sync_evidence_in_demo(
+    client_and_factory: tuple[
+        httpx.AsyncClient, async_sessionmaker[AsyncSession]
+    ],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, factory = client_and_factory
+    now = datetime.now(UTC)
+    async with factory() as session:
+        student = Student(
+            email="health@example.test",
+            password_hash="hash",
+            full_name="Health Student",
+        )
+        session.add(student)
+        session.add_all(
+            [
+                ExternalJob(
+                    provider="greenhouse",
+                    provider_source="fixture",
+                    external_id="fixture-1",
+                    title="Fixture",
+                    company_name="Fixture",
+                    description="Fixture",
+                    source_url="https://fixtures.example.demo/greenhouse/1",
+                    raw_metadata={"fixture": "offline_demo"},
+                    last_seen_at=now,
+                    last_synced_at=now,
+                    is_active=True,
+                ),
+                ExternalJob(
+                    provider="greenhouse",
+                    provider_source="live-board",
+                    external_id="live-1",
+                    title="Live",
+                    company_name="Live",
+                    description="Live",
+                    source_url="https://job-boards.greenhouse.io/live/jobs/1",
+                    raw_metadata={"provider_metadata": []},
+                    last_seen_at=now,
+                    last_synced_at=now,
+                    is_active=True,
+                ),
+            ]
+        )
+        await session.commit()
+        token = create_access_token(student.id, "student")
+
+    monkeypatch.setattr(
+        external_jobs_api,
+        "get_settings",
+        lambda: SimpleNamespace(
+            environment="demo",
+            yc_source_keys=[],
+            greenhouse_board_tokens=["live-board"],
+            lever_site_tokens=[],
+            ashby_job_board_names=[],
+        ),
+    )
+    response = await client.get(
+        "/external-jobs/providers",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert response.status_code == 200
+    greenhouse = next(
+        item for item in response.json() if item["provider"] == "greenhouse"
+    )
+    assert greenhouse["status"] == "live"
+    assert greenhouse["active_jobs_count"] == 2
 

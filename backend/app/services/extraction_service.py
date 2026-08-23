@@ -1,8 +1,10 @@
 import asyncio
+import json
 import logging
 import re
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from typing import ClassVar, Protocol
 from uuid import UUID
 
 import httpx
@@ -67,10 +69,6 @@ class NormalizedCandidate:
     proficiency_hint: str | None
 
 
-def extraction_provider_name() -> str:
-    return "gemini" if get_settings().extraction_provider == "gemini" else "local_fallback"
-
-
 def normalize_candidates(payload: ExtractionPayload, evidence_text: str, taxonomy: list[Skill]) -> list[NormalizedCandidate]:
     """Accept taxonomy-backed claims only when their claimed span occurs in the evidence."""
     lookup = {
@@ -94,25 +92,128 @@ def normalize_candidates(payload: ExtractionPayload, evidence_text: str, taxonom
     return normalized
 
 
-class GeminiExtractor:
-    """Strict provider adapter. The local fallback is used only when explicitly configured."""
+def _extraction_prompt(
+    evidence_type: str, evidence_text: str, taxonomy: list[Skill]
+) -> str:
+    taxonomy_names = [skill.canonical_name for skill in taxonomy]
+    return (
+        "Extract only explicit technical skills from the evidence. Return JSON object "
+        "{skills:[{skill,confidence,evidence_span,proficiency_hint}]}; do not infer "
+        "identity, demographics, background, or any non-skill. Use only an exact skill "
+        "name from the supplied canonical taxonomy, copy evidence_span verbatim from "
+        "the evidence, and use an empty list if uncertain. Canonical taxonomy: "
+        + json.dumps(taxonomy_names)
+        + "\nEvidence type: "
+        + evidence_type
+        + "\nEvidence:\n"
+        + evidence_text
+    )
 
-    async def extract(self, evidence_type: str, evidence_text: str, taxonomy: list[Skill]) -> ExtractionPayload:
+
+def _extraction_response_schema() -> dict[str, object]:
+    return {
+        "type": "object",
+        "properties": {
+            "skills": {
+                "type": "array",
+                "maxItems": 30,
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "skill": {"type": "string"},
+                        "confidence": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 1,
+                        },
+                        "evidence_span": {"type": "string"},
+                        "proficiency_hint": {
+                            "type": "string",
+                            "enum": ["beginner", "intermediate", "advanced"],
+                        },
+                    },
+                    "required": [
+                        "skill",
+                        "confidence",
+                        "evidence_span",
+                        "proficiency_hint",
+                    ],
+                    "additionalProperties": False,
+                },
+            }
+        },
+        "required": ["skills"],
+        "additionalProperties": False,
+    }
+
+
+@dataclass(frozen=True)
+class ProviderExtraction:
+    payload: ExtractionPayload
+    provider: str
+    model: str
+
+
+class ExtractionAdapter(Protocol):
+    provider: str
+    model: str
+
+    async def extract(
+        self, evidence_type: str, evidence_text: str, taxonomy: list[Skill]
+    ) -> ExtractionPayload: ...
+
+
+class LocalExtractor:
+    provider = "local_fallback"
+    model = "deterministic_taxonomy_v1"
+
+    async def extract(
+        self, _evidence_type: str, evidence_text: str, taxonomy: list[Skill]
+    ) -> ExtractionPayload:
+        candidates: list[dict[str, object]] = []
+        for skill in taxonomy:
+            for label in [skill.canonical_name, *(skill.aliases or [])]:
+                match = re.search(r"\b" + re.escape(label) + r"\b", evidence_text, flags=re.IGNORECASE)
+                if match:
+                    candidates.append({"skill": skill.canonical_name, "confidence": 0.8, "evidence_span": match.group(0)})
+                    break
+        return ExtractionPayload.model_validate({"skills": candidates})
+
+
+class GeminiExtractor:
+    provider = "gemini"
+
+    def __init__(self) -> None:
         settings = get_settings()
-        if settings.extraction_provider != "gemini":
-            return self._local_fallback(evidence_text, taxonomy)
-        if not settings.gemini_api_key:
-            raise ExtractionFailure("gemini_not_configured", retryable=False, user_message="Extraction is not configured. Please contact support.")
-        prompt = (
-            "Extract only explicit technical skills from the evidence. Return JSON object {skills:[{skill,confidence,"
-            "evidence_span,proficiency_hint}]}; do not infer identity, demographics, background, or any non-skill. "
-            "Use an empty list if uncertain. Evidence type: " + evidence_type + "\nEvidence:\n" + evidence_text
-        )
+        self.model = settings.extraction_model
+        self.api_key = settings.gemini_api_key
+
+    async def extract(
+        self, evidence_type: str, evidence_text: str, taxonomy: list[Skill]
+    ) -> ExtractionPayload:
+        if not self.api_key:
+            raise ExtractionFailure(
+                "gemini_not_configured",
+                retryable=False,
+                user_message="Extraction is not configured. Please contact support.",
+            )
         async with httpx.AsyncClient(timeout=20) as client:
             response = await client.post(
-                "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
-                params={"key": settings.gemini_api_key},
-                json={"contents": [{"parts": [{"text": prompt}]}], "generationConfig": {"responseMimeType": "application/json"}},
+                f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent",
+                params={"key": self.api_key},
+                json={
+                    "contents": [
+                        {
+                            "parts": [
+                                {"text": _extraction_prompt(evidence_type, evidence_text, taxonomy)}
+                            ]
+                        }
+                    ],
+                    "generationConfig": {
+                        "responseMimeType": "application/json",
+                        "responseJsonSchema": _extraction_response_schema(),
+                    },
+                },
             )
             response.raise_for_status()
         try:
@@ -124,16 +225,110 @@ class GeminiExtractor:
         except (IndexError, KeyError, TypeError, ValueError, ValidationError) as error:
             raise ProviderResponseError() from error
 
-    @staticmethod
-    def _local_fallback(evidence_text: str, taxonomy: list[Skill]) -> ExtractionPayload:
-        candidates: list[dict[str, object]] = []
-        for skill in taxonomy:
-            for label in [skill.canonical_name, *(skill.aliases or [])]:
-                match = re.search(r"\b" + re.escape(label) + r"\b", evidence_text, flags=re.IGNORECASE)
-                if match:
-                    candidates.append({"skill": skill.canonical_name, "confidence": 0.8, "evidence_span": match.group(0)})
-                    break
-        return ExtractionPayload.model_validate({"skills": candidates})
+
+class GroqExtractor:
+    provider = "groq"
+    _strict_models: ClassVar[set[str]] = {
+        "openai/gpt-oss-20b",
+        "openai/gpt-oss-120b",
+    }
+
+    def __init__(self) -> None:
+        settings = get_settings()
+        self.model = settings.groq_extraction_model
+        self.api_key = settings.groq_api_key
+
+    async def extract(
+        self, evidence_type: str, evidence_text: str, taxonomy: list[Skill]
+    ) -> ExtractionPayload:
+        if not self.api_key:
+            raise ExtractionFailure(
+                "groq_not_configured",
+                retryable=False,
+                user_message="Extraction is not configured. Please contact support.",
+            )
+        response_format: dict[str, object]
+        if self.model in self._strict_models:
+            response_format = {
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "skill_extraction",
+                    "strict": True,
+                    "schema": _extraction_response_schema(),
+                },
+            }
+        else:
+            response_format = {"type": "json_object"}
+        async with httpx.AsyncClient(timeout=20) as client:
+            response = await client.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": self.model,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": _extraction_prompt(
+                                evidence_type, evidence_text, taxonomy
+                            ),
+                        }
+                    ],
+                    "response_format": response_format,
+                    "temperature": 0,
+                },
+            )
+            response.raise_for_status()
+        try:
+            body = response.json()
+            raw = body["choices"][0]["message"]["content"]
+            if not isinstance(raw, str) or not raw.strip():
+                raise ProviderResponseError()
+            return ExtractionPayload.model_validate_json(raw)
+        except (IndexError, KeyError, TypeError, ValueError, ValidationError) as error:
+            raise ProviderResponseError() from error
+
+
+def _provider_chain() -> list[str]:
+    settings = get_settings()
+    chain: list[str] = []
+    for provider in [
+        settings.extraction_provider,
+        *settings.extraction_fallback_providers,
+    ]:
+        if provider not in chain:
+            chain.append(provider)
+    return chain
+
+
+def _adapter(provider: str) -> ExtractionAdapter:
+    if provider == "gemini":
+        return GeminiExtractor()
+    if provider == "groq":
+        return GroqExtractor()
+    return LocalExtractor()
+
+
+async def extract_with_fallback(
+    evidence_type: str, evidence_text: str, taxonomy: list[Skill]
+) -> ProviderExtraction:
+    chain = _provider_chain()
+    for index, provider_name in enumerate(chain):
+        adapter = _adapter(provider_name)
+        try:
+            payload = await adapter.extract(evidence_type, evidence_text, taxonomy)
+            return ProviderExtraction(payload, adapter.provider, adapter.model)
+        except Exception as error:
+            failure = _classify_failure(error)
+            if not failure.retryable or index == len(chain) - 1:
+                raise failure from error
+    raise ExtractionFailure(
+        "provider_unavailable",
+        retryable=True,
+        user_message="Extraction is temporarily unavailable and will retry automatically.",
+    )
 
 
 def _now() -> datetime:
@@ -238,6 +433,61 @@ async def manually_requeue_extraction(session: AsyncSession, evidence_id: UUID) 
     return await enqueue_extraction(session, evidence_id)
 
 
+async def requeue_terminal_extractions(session: AsyncSession, evidence_ids: list[UUID]) -> int:
+    """Atomically reset only terminal jobs, then enqueue each once."""
+    if not evidence_ids:
+        return 0
+    terminal_statuses = {
+        ExtractionJobStatus.failed,
+        ExtractionJobStatus.dead_lettered,
+    }
+    jobs = list(
+        (
+            await session.scalars(
+                select(ExtractionJob)
+                .where(
+                    ExtractionJob.evidence_id.in_(evidence_ids),
+                    ExtractionJob.status.in_(terminal_statuses),
+                )
+                .with_for_update()
+            )
+        ).all()
+    )
+    if not jobs:
+        return 0
+    evidence_by_id = {
+        evidence.id: evidence
+        for evidence in (
+            await session.scalars(
+                select(Evidence).where(
+                    Evidence.id.in_([job.evidence_id for job in jobs])
+                )
+            )
+        ).all()
+    }
+    requeued_ids: list[UUID] = []
+    for job in jobs:
+        evidence = evidence_by_id.get(job.evidence_id)
+        if evidence is None:
+            continue
+        job.status = ExtractionJobStatus.pending
+        job.attempt_count = 0
+        job.queued_at = None
+        job.started_at = None
+        job.next_retry_at = None
+        job.completed_at = None
+        job.last_error = None
+        job.user_message = None
+        job.provider = None
+        evidence.extraction_status = ExtractionStatus.pending_extraction
+        session.add(_audit(evidence, "extraction_job_manually_requeued"))
+        requeued_ids.append(evidence.id)
+    await session.commit()
+    for evidence_id in requeued_ids:
+        await enqueue_extraction(session, evidence_id)
+    return len(requeued_ids)
+
+
 async def reset_extraction_for_evidence(session: AsyncSession, evidence: Evidence) -> None:
     """Invalidate derived skills before an edited evidence record is extracted again."""
     job = await _locked_job(session, evidence.id)
@@ -285,12 +535,16 @@ def _classify_failure(error: Exception) -> ExtractionFailure:
     if isinstance(error, ExtractionFailure):
         return error
     if isinstance(error, httpx.HTTPStatusError):
-        if error.response.status_code == 429 or error.response.status_code >= 500:
+        if error.response.status_code in {429, 498} or error.response.status_code >= 500:
             return ExtractionFailure("provider_transient", retryable=True, user_message="Extraction is temporarily unavailable and will retry automatically.")
+        if error.response.status_code in {401, 403, 404}:
+            return ExtractionFailure("provider_configuration_error", retryable=False, user_message="Extraction provider configuration is unavailable. Please contact support.")
         return ExtractionFailure("provider_rejected_request", retryable=False, user_message="Extraction could not process this evidence. You can retry later.")
-    if isinstance(error, (httpx.TimeoutException, httpx.TransportError, RedisError, IntegrityError)):
+    if isinstance(error, (httpx.TimeoutException, httpx.TransportError)):
+        return ExtractionFailure("provider_transient", retryable=True, user_message="Extraction is temporarily unavailable and will retry automatically.")
+    if isinstance(error, (RedisError, IntegrityError)):
         return ExtractionFailure("transient_processing_error", retryable=True, user_message="Extraction is temporarily unavailable and will retry automatically.")
-    return ExtractionFailure("unexpected_processing_error", retryable=True, user_message="Extraction encountered a temporary issue and will retry automatically.")
+    return ExtractionFailure("unexpected_processing_error", retryable=False, user_message="Extraction could not be completed. Please retry later.")
 
 
 async def _record_failure(session: AsyncSession, evidence_id: UUID, error: Exception) -> None:
@@ -327,8 +581,12 @@ async def extract_evidence(session: AsyncSession, evidence_id: UUID) -> str:
         return "ignored"
     try:
         taxonomy = list((await session.scalars(select(Skill).order_by(Skill.canonical_name))).all())
-        payload = await GeminiExtractor().extract(evidence.evidence_type.value, evidence.description, taxonomy)
-        candidates = normalize_candidates(payload, evidence.description, taxonomy)
+        extraction = await extract_with_fallback(
+            evidence.evidence_type.value, evidence.description, taxonomy
+        )
+        candidates = normalize_candidates(
+            extraction.payload, evidence.description, taxonomy
+        )
         job = await _locked_job(session, evidence_id)
         if job is None:
             raise ExtractionFailure("job_missing", retryable=False, user_message="Extraction could not be completed. Please retry later.")
@@ -336,13 +594,13 @@ async def extract_evidence(session: AsyncSession, evidence_id: UUID) -> str:
         for candidate in candidates:
             session.add(StudentSkill(student_id=evidence.student_id, skill_id=candidate.skill.id, source_evidence_id=evidence.id, extraction_confidence=candidate.confidence, verification_tier=VerificationTier.unverified, proficiency_hint=candidate.proficiency_hint, evidence_span=candidate.evidence_span))
         job.status = ExtractionJobStatus.completed
-        job.provider = extraction_provider_name()
+        job.provider = extraction.provider
         job.completed_at = _now()
         job.next_retry_at = None
         job.last_error = None
         job.user_message = None
         evidence.extraction_status = ExtractionStatus.extracted
-        session.add(_audit(evidence, "extraction_job_completed", {"attempt": job.attempt_count, "provider": job.provider, "skill_count": len(candidates)}))
+        session.add(_audit(evidence, "extraction_job_completed", {"attempt": job.attempt_count, "provider": job.provider, "model": extraction.model, "skill_count": len(candidates)}))
         await session.commit()
         return "completed"
     except Exception as error:  # noqa: BLE001 - job failures must not escape the worker boundary.

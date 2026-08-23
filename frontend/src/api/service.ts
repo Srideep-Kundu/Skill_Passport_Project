@@ -109,6 +109,7 @@ export const api = {
   resumes: (token: string) => request<PaginatedResponse<ResumeDocument>>("/resumes", {}, token),
   uploadResume: (file: File, token: string) => { const body = new FormData(); body.append("file", file); return request<ResumeDocument>("/resumes", { method: "POST", body }, token); },
   parseResume: (id: string, token: string) => request<ResumeDocument>(`/resumes/${encodeURIComponent(id)}/parse`, { method: "POST" }, token),
+  retryFailedResume: (id: string, token: string) => request<ResumeDocument>(`/resumes/${encodeURIComponent(id)}/retry-failed`, { method: "POST" }, token),
   activateResume: (id: string, token: string) => request<ResumeDocument>(`/resumes/${encodeURIComponent(id)}/activate`, { method: "PUT" }, token),
   deleteResume: (id: string, token: string) => request<void>(`/resumes/${encodeURIComponent(id)}`, { method: "DELETE" }, token),
   linkedinImports: (token: string) => request<PaginatedResponse<LinkedInImport>>("/linkedin/imports", {}, token),

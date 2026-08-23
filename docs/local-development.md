@@ -57,7 +57,11 @@ This guide uses Docker Compose for PostgreSQL, Redis, migrations, the API, worke
 | `DATABASE_URL` | API/worker/migration connection URL; use the Compose hostname `postgres`. |
 | `REDIS_URL` | Redis connection URL for rate limits and extraction work. |
 | `JWT_SECRET` | JWT signing secret. `JWT_SECRET_KEY` remains accepted for compatibility with existing deployments. |
-| `GEMINI_API_KEY` | Optional; required only when Gemini extraction or embeddings are enabled. Leave blank for the local extractor. |
+| `GEMINI_API_KEY` | Optional; required when Gemini extraction, a Gemini extraction fallback, or Gemini embeddings are enabled. |
+| `GROQ_API_KEY` | Optional; required only when Groq extraction is selected. Never expose it to the frontend. |
+| `EXTRACTION_PROVIDER` | `local`, `gemini`, or `groq`; extraction remains independent of embeddings. |
+| `GROQ_EXTRACTION_MODEL` | Pinned Groq model ID; defaults to `openai/gpt-oss-20b` for strict JSON-Schema output. |
+| `EXTRACTION_FALLBACK_PROVIDERS` | Optional comma-separated transient-only fallback chain, for example `gemini,local`. |
 | `EMBEDDING_PROVIDER` | `disabled` by default; set to `gemini` only with a configured Gemini key. |
 | `SEMANTIC_MATCHING_ENABLED` | `false` by default; enable only with a compatible embedding provider. |
 | `GREENHOUSE_BOARD_TOKENS` | Optional comma-separated allowlist of public Greenhouse board tokens. |

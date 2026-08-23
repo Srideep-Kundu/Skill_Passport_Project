@@ -4,7 +4,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import ColumnElement, func, or_, select
+from sqlalchemy import ColumnElement, case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -87,20 +87,30 @@ async def list_providers(
     del principal
     settings = get_settings()
 
-    # Query counts and last sync times per provider
+    non_fixture = (
+        func.coalesce(ExternalJob.raw_metadata["fixture"].as_string(), "")
+        != "offline_demo"
+    )
+    # Stored demo rows alone never prove provider health. Track successful
+    # non-fixture records independently from aggregate display counts.
     rows = (
         await session.execute(
             select(
                 ExternalJob.provider,
                 func.count(ExternalJob.id).label("count"),
                 func.max(ExternalJob.last_synced_at).label("last_synced"),
+                func.sum(case((non_fixture, 1), else_=0)).label("live_count"),
+                func.max(
+                    case((non_fixture, ExternalJob.last_synced_at), else_=None)
+                ).label("last_live_synced"),
             )
             .where(ExternalJob.is_active.is_(True))
             .group_by(ExternalJob.provider)
         )
     ).all()
-    stats: dict[str, tuple[int, datetime | None]] = {
-        str(row[0]): (int(row[1]), row[2]) for row in rows
+    stats: dict[str, tuple[int, datetime | None, int, datetime | None]] = {
+        str(row[0]): (int(row[1]), row[2], int(row[3] or 0), row[4])
+        for row in rows
     }
 
     provider_defs = [
@@ -112,19 +122,25 @@ async def list_providers(
 
     items: list[ProviderStatusItem] = []
     for key, name, badge_label, configured_sources, reason in provider_defs:
-        count, last_synced = stats.get(key, (0, None))
-        if settings.environment.casefold() == "demo" and count:
-            provider_status = "fixture"
-            status_reason = "Offline demo fixture data; no live provider health is implied"
-        elif not configured_sources:
+        count, last_synced, live_count, last_live_synced = stats.get(
+            key, (0, None, 0, None)
+        )
+        if not configured_sources:
             provider_status = "disabled"
             status_reason = "No approved provider source identifiers are configured"
+        elif live_count and last_live_synced is not None:
+            provider_status = "live"
+            status_reason = None
+            last_synced = last_live_synced
+        elif settings.environment.casefold() == "demo" and count:
+            provider_status = "fixture"
+            status_reason = "Offline demo fixture data; no live provider health is implied"
         elif last_synced is None:
             provider_status = "configured"
             status_reason = "Configured, but no successful sync is recorded"
         else:
-            provider_status = "live"
-            status_reason = None
+            provider_status = "degraded"
+            status_reason = "No successful non-fixture sync is recorded"
         items.append(
             ProviderStatusItem(
                 provider=key,

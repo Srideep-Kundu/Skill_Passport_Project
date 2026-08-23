@@ -30,6 +30,7 @@ export type ProcessingPhase =
   | "discovering"
   | "categorizing"
   | "building_passport"
+  | "partial_failure"
   | "complete"
   | "error";
 
@@ -135,11 +136,12 @@ export function ResumeIntelligence({
   const [isDragOver, setIsDragOver] = useState(false);
   const [currentFileName, setCurrentFileName] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [errorType, setErrorType] = useState<"upload" | "parse" | "activate" | null>(null);
+  const [errorType, setErrorType] = useState<"upload" | "parse" | "extraction" | "activate" | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showAllSkills, setShowAllSkills] = useState(false);
   const [showExtractedDetails, setShowExtractedDetails] = useState(false);
   const [isReanalyzing, setIsReanalyzing] = useState(false);
+  const [isRetryingFailed, setIsRetryingFailed] = useState(false);
   const [isReplacing, setIsReplacing] = useState(false);
 
   // Polling tracker
@@ -161,7 +163,17 @@ export function ResumeIntelligence({
       setActiveResume(active);
 
       if (active) {
-        if (
+        if (active.skills_status === "partial_failure") {
+          setPhase("partial_failure");
+          setErrorMessage(null);
+          setErrorType(null);
+        } else if (active.skills_status === "failed") {
+          setPhase("error");
+          setErrorType("extraction");
+          setErrorMessage(
+            "Your file is safe. Retry when the extraction service is available.",
+          );
+        } else if (
           (active.parse_status === "completed" || active.parse_status === "parsed") &&
           active.skills_status === "ready"
         ) {
@@ -174,7 +186,11 @@ export function ResumeIntelligence({
           setPhase("error");
           setErrorMessage(active.safe_error_message || "This resume format is unsupported or contains non-extractable text.");
           setErrorType("parse");
-        } else if (active.parse_status === "parsing" || active.parse_status === "processing_skills") {
+        } else if (
+          active.skills_status === "processing" ||
+          active.parse_status === "parsing" ||
+          active.parse_status === "processing_skills"
+        ) {
           setPhase("discovering");
         } else if (active.parse_status === "uploaded") {
           setPhase("reading");
@@ -247,9 +263,9 @@ export function ResumeIntelligence({
       setPhase("discovering");
 
       // Check if background worker is still processing skills
-      if (parsedDoc.parse_status === "processing_skills" || parsedDoc.skills_status === "extracting") {
+      if (parsedDoc.parse_status === "processing_skills" || parsedDoc.skills_status === "processing") {
         // Poll status until completed or terminal
-        const outcome = await new Promise<"ready" | "failed" | "timeout" | "unavailable">((resolve) => {
+        const outcome = await new Promise<"ready" | "partial_failure" | "failed" | "timeout" | "unavailable">((resolve) => {
           let attempts = 0;
           pollingRef.current = setInterval(async () => {
             attempts++;
@@ -261,7 +277,10 @@ export function ResumeIntelligence({
                 if (latest.skills_status === "ready") {
                   stopPolling();
                   resolve("ready");
-                } else if (latest.parse_status === "failed") {
+                } else if (latest.skills_status === "partial_failure") {
+                  stopPolling();
+                  resolve("partial_failure");
+                } else if (latest.skills_status === "failed" || latest.parse_status === "failed") {
                   stopPolling();
                   resolve("failed");
                 } else if (attempts > 15) {
@@ -277,11 +296,11 @@ export function ResumeIntelligence({
         });
 
         if (outcome !== "ready") {
-          setPhase(outcome === "failed" ? "error" : "discovering");
-          setErrorType(outcome === "failed" ? "parse" : null);
+          setPhase(outcome === "partial_failure" ? "partial_failure" : outcome === "failed" ? "error" : "discovering");
+          setErrorType(outcome === "failed" ? "extraction" : null);
           setErrorMessage(
             outcome === "failed"
-              ? "Resume skill extraction failed. You can retry the analysis."
+              ? "Your file is safe. Retry when the extraction service is available."
               : "Your resume is still processing. Check back shortly; it has not yet updated your passport.",
           );
           if (outcome === "failed") {
@@ -321,6 +340,70 @@ export function ResumeIntelligence({
       const msg = caught instanceof ApiError ? caught.detail : "Resume upload failed.";
       setErrorMessage(msg);
       toast.error(msg);
+    }
+  }
+
+  async function retryFailedItems() {
+    if (!activeResume) return;
+    setIsRetryingFailed(true);
+    setErrorMessage(null);
+    setErrorType(null);
+    try {
+      const retried = await api.retryFailedResume(activeResume.id, token);
+      setActiveResume(retried);
+      setPhase("discovering");
+      const outcome = await new Promise<"ready" | "partial_failure" | "failed" | "timeout" | "unavailable">((resolve) => {
+        let attempts = 0;
+        pollingRef.current = setInterval(async () => {
+          attempts++;
+          try {
+            const response = await api.resumes(token);
+            const latest = response.items.find((item) => item.id === activeResume.id);
+            if (!latest) return;
+            setActiveResume(latest);
+            if (latest.skills_status === "ready") {
+              stopPolling();
+              resolve("ready");
+            } else if (latest.skills_status === "partial_failure") {
+              stopPolling();
+              resolve("partial_failure");
+            } else if (latest.skills_status === "failed") {
+              stopPolling();
+              resolve("failed");
+            } else if (attempts > 15) {
+              stopPolling();
+              resolve("timeout");
+            }
+          } catch {
+            stopPolling();
+            resolve("unavailable");
+          }
+        }, 1200);
+      });
+      if (outcome === "ready") {
+        await api.activateResume(activeResume.id, token);
+        setPhase("complete");
+        toast.success("Remaining resume evidence processed successfully!");
+        await load();
+        onChanged();
+      } else if (outcome === "partial_failure") {
+        setPhase("partial_failure");
+        toast.info("Some resume evidence still could not be processed.");
+      } else if (outcome === "failed") {
+        setPhase("error");
+        setErrorType("extraction");
+        setErrorMessage("Your file is safe. Retry when the extraction service is available.");
+      } else {
+        setPhase("discovering");
+        setErrorMessage("Your resume is still processing. Check back shortly.");
+      }
+    } catch (caught) {
+      setPhase(activeResume.completed_jobs > 0 ? "partial_failure" : "error");
+      setErrorType(activeResume.completed_jobs > 0 ? null : "extraction");
+      setErrorMessage(caught instanceof ApiError ? caught.detail : "Failed evidence could not be requeued.");
+      toast.error("Failed evidence could not be requeued.");
+    } finally {
+      setIsRetryingFailed(false);
     }
   }
 
@@ -661,6 +744,45 @@ export function ResumeIntelligence({
                   transition={{ duration: 0.5 }}
                 />
               </div>
+              {errorMessage && phase === "discovering" && (
+                <p className="text-xs text-amber-700 dark:text-amber-300">{errorMessage}</p>
+              )}
+            </motion.div>
+          )}
+
+          {phase === "partial_failure" && activeResume && (
+            <motion.div
+              key="partial-failure-state"
+              initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
+              className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/60 dark:bg-amber-950/20 p-5 space-y-4"
+            >
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-amber-900 dark:text-amber-200">Resume partially analyzed</p>
+                  <p className="text-xs text-amber-800 dark:text-amber-300">
+                    {activeResume.completed_jobs} of {activeResume.total_jobs} evidence items processed successfully.
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    {activeResume.failed_jobs} items could not be processed because the extraction service was temporarily unavailable.
+                  </p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 pt-1">
+                    Your current Skill Passport reflects the successfully processed evidence. Readiness may increase after the remaining resume evidence is processed.
+                  </p>
+                  {errorMessage && <p className="text-xs text-rose-700 dark:text-rose-300">{errorMessage}</p>}
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={isRetryingFailed}
+                onClick={() => void retryFailedItems()}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${isRetryingFailed ? "animate-spin" : ""}`} />
+                <span>{isRetryingFailed ? "Retrying..." : "Retry failed items"}</span>
+              </button>
             </motion.div>
           )}
 
@@ -871,6 +993,7 @@ export function ResumeIntelligence({
                 <p className="text-sm font-bold text-rose-900 dark:text-rose-200">
                   {errorType === "upload" && "Resume upload failed"}
                   {errorType === "parse" && "We couldn't fully analyze this resume"}
+                  {errorType === "extraction" && "We couldn't finish analyzing your resume"}
                   {errorType === "activate" && "Skill Passport update pending"}
                   {!errorType && "Resume analysis notice"}
                 </p>
@@ -910,6 +1033,18 @@ export function ResumeIntelligence({
                       <span>Upload different file</span>
                     </button>
                   </>
+                )}
+
+                {errorType === "extraction" && (
+                  <button
+                    type="button"
+                    disabled={isRetryingFailed}
+                    onClick={() => void retryFailedItems()}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#3b71d9] hover:bg-[#2563eb] text-white text-xs font-semibold transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+                  >
+                    <RefreshCw className={`h-3.5 w-3.5 ${isRetryingFailed ? "animate-spin" : ""}`} />
+                    <span>{isRetryingFailed ? "Retrying..." : "Retry analysis"}</span>
+                  </button>
                 )}
 
                 {errorType === "activate" && (

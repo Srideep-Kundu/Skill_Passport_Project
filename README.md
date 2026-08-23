@@ -7,7 +7,7 @@ An evidence-backed skill passport with deterministic, explainable internship and
 - React, Vite, TypeScript, Tailwind, and Recharts frontend
 - FastAPI, Pydantic v2, async SQLAlchemy, PostgreSQL 16 + pgvector, and Redis
 - JWT authentication with student, recruiter, institution, academician, and admin RBAC. Production institution registration is invite-only.
-- Gemini is limited to structured skill extraction. Extraction output is validated, normalized against the canonical taxonomy, and tied to evidence.
+- Gemini or Groq may perform structured skill extraction. Extraction output is validated through one shared contract, normalized against the canonical taxonomy, and tied to evidence. Gemini embeddings remain independently configured.
 - Matching is reproducible: exact overlap, thresholded semantic similarity, and verification adjustment are persisted alongside the final score. Explanations use deterministic templates over those records.
 - Names, universities, GPA, and all protected attributes/proxies are excluded from matching.
 
