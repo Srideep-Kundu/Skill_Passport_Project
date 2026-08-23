@@ -574,6 +574,9 @@ export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
                     placeholder="e.g. Dr. Arvind Rao"
                     className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
                   />
+                  {academicianForm.formState.errors.fullName && (
+                    <span className="text-xs text-rose-600 dark:text-rose-400 mt-1 block">{academicianForm.formState.errors.fullName.message}</span>
+                  )}
                 </label>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -584,6 +587,9 @@ export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
                       placeholder="e.g. IIT Bombay"
                       className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
                     />
+                    {academicianForm.formState.errors.institutionName && (
+                      <span className="text-xs text-rose-600 dark:text-rose-400 mt-1 block">{academicianForm.formState.errors.institutionName.message}</span>
+                    )}
                   </label>
                   <label className="block text-sm font-medium text-slate-700 dark:text-[#f1f0e8]">
                     Department
@@ -592,6 +598,9 @@ export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
                       placeholder="e.g. Computer Science"
                       className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
                     />
+                    {academicianForm.formState.errors.department && (
+                      <span className="text-xs text-rose-600 dark:text-rose-400 mt-1 block">{academicianForm.formState.errors.department.message}</span>
+                    )}
                   </label>
                 </div>
 
@@ -602,6 +611,9 @@ export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
                     placeholder="e.g. Professor & Head of AI"
                     className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
                   />
+                  {academicianForm.formState.errors.designation && (
+                    <span className="text-xs text-rose-600 dark:text-rose-400 mt-1 block">{academicianForm.formState.errors.designation.message}</span>
+                  )}
                 </label>
 
                 <label className="block text-sm font-medium text-slate-700 dark:text-[#f1f0e8]">
@@ -612,6 +624,9 @@ export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
                     placeholder="faculty@example.edu"
                     className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
                   />
+                  {academicianForm.formState.errors.email && (
+                    <span className="text-xs text-rose-600 dark:text-rose-400 mt-1 block">{academicianForm.formState.errors.email.message}</span>
+                  )}
                 </label>
 
                 <label className="block text-sm font-medium text-slate-700 dark:text-[#f1f0e8]">
@@ -622,7 +637,16 @@ export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
                     placeholder="••••••••"
                     className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
                   />
+                  {academicianForm.formState.errors.password && (
+                    <span className="text-xs text-rose-600 dark:text-rose-400 mt-1 block">{academicianForm.formState.errors.password.message}</span>
+                  )}
                 </label>
+
+                {error && (
+                  <div role="alert" className="rounded-lg border border-red-200 dark:border-red-900/80 bg-red-50 dark:bg-red-950/40 p-3 text-xs font-medium text-red-700 dark:text-red-300">
+                    {error}
+                  </div>
+                )}
 
                 <button
                   type="submit"
@@ -643,6 +667,9 @@ export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
                     placeholder="e.g. National Institute of Technology"
                     className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
                   />
+                  {institutionForm.formState.errors.institutionName && (
+                    <span className="text-xs text-rose-600 dark:text-rose-400 mt-1 block">{institutionForm.formState.errors.institutionName.message}</span>
+                  )}
                 </label>
 
                 <div className="grid grid-cols-2 gap-2">
@@ -653,6 +680,9 @@ export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
                       placeholder="e.g. C-12345"
                       className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
                     />
+                    {institutionForm.formState.errors.institutionCode && (
+                      <span className="text-xs text-rose-600 dark:text-rose-400 mt-1 block">{institutionForm.formState.errors.institutionCode.message}</span>
+                    )}
                   </label>
                   <label className="block text-sm font-medium text-slate-700 dark:text-[#f1f0e8]">
                     State / Region
@@ -661,6 +691,9 @@ export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
                       placeholder="e.g. Karnataka"
                       className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
                     />
+                    {institutionForm.formState.errors.state && (
+                      <span className="text-xs text-rose-600 dark:text-rose-400 mt-1 block">{institutionForm.formState.errors.state.message}</span>
+                    )}
                   </label>
                 </div>
 
@@ -672,6 +705,9 @@ export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
                     placeholder="dean@university.edu"
                     className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
                   />
+                  {institutionForm.formState.errors.email && (
+                    <span className="text-xs text-rose-600 dark:text-rose-400 mt-1 block">{institutionForm.formState.errors.email.message}</span>
+                  )}
                 </label>
 
                 <label className="block text-sm font-medium text-slate-700 dark:text-[#f1f0e8]">
@@ -682,7 +718,16 @@ export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
                     placeholder="••••••••"
                     className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3.5 py-2 text-sm focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
                   />
+                  {institutionForm.formState.errors.password && (
+                    <span className="text-xs text-rose-600 dark:text-rose-400 mt-1 block">{institutionForm.formState.errors.password.message}</span>
+                  )}
                 </label>
+
+                {error && (
+                  <div role="alert" className="rounded-lg border border-red-200 dark:border-red-900/80 bg-red-50 dark:bg-red-950/40 p-3 text-xs font-medium text-red-700 dark:text-red-300">
+                    {error}
+                  </div>
+                )}
 
                 <button
                   type="submit"

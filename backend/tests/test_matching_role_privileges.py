@@ -38,10 +38,12 @@ async def test_matching_operation_works_when_activated_as_matching_role() -> Non
     if engine.dialect.name != "postgresql":
         pytest.skip("PostgreSQL privilege test requires the migrated CI or deployment database")
 
+    from uuid import uuid4
+    suffix = uuid4().hex[:8]
     async with SessionLocal() as session:
-        recruiter = Recruiter(email="role-recruiter@example.test", password_hash="hash", company_name="Company")
-        student = Student(email="role-student@example.test", password_hash="hash", full_name="Student")
-        skill = Skill(canonical_name="Role Test Python", category="Language", embedding=deterministic_embedding("Role Test Python"), aliases=[])
+        recruiter = Recruiter(email=f"role-recruiter-{suffix}@example.test", password_hash="hash", company_name="Company")
+        student = Student(email=f"role-student-{suffix}@example.test", password_hash="hash", full_name="Student")
+        skill = Skill(canonical_name=f"Role Test Python {suffix}", category="Language", embedding=deterministic_embedding("Role Test Python"), aliases=[])
         session.add_all([recruiter, student, skill])
         await session.flush()
         evidence = Evidence(student_id=student.id, evidence_type=EvidenceType.project, title="Project", description="Role Test Python")

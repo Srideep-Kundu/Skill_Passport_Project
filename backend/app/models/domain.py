@@ -207,6 +207,19 @@ class Academician(Timestamped, Base):
     department: Mapped[str] = mapped_column(String(120))
     designation: Mapped[str] = mapped_column(String(120))
     research_areas: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    bio: Mapped[str | None] = mapped_column(Text)
+    years_experience: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    technical_skills: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    certifications: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    publications: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    patents: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    past_industry_experience: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    completed_fdps: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    completed_trainings: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    collaboration_availability: Mapped[str] = mapped_column(String(64), default="available", nullable=False)
+    phone: Mapped[str | None] = mapped_column(String(32))
+    linkedin_url: Mapped[str | None] = mapped_column(String(512))
+    google_scholar_url: Mapped[str | None] = mapped_column(String(512))
     role = Role.academician.value
 
 
@@ -804,7 +817,7 @@ class FacultyOpportunity(Timestamped, Base):
     __tablename__ = "faculty_opportunities"
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    opportunity_type: Mapped[str] = mapped_column(String(64), nullable=False)  # fdp, industrial_immersion, research_grant, consultancy_request
+    opportunity_type: Mapped[str] = mapped_column(String(64), nullable=False)  # fdp, industrial_immersion, industrial_training, faculty_internship, research_grant, consultancy_request
     organization_name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     domain: Mapped[str] = mapped_column(String(120), nullable=False)
@@ -812,6 +825,16 @@ class FacultyOpportunity(Timestamped, Base):
     duration_weeks: Mapped[int] = mapped_column(Integer, default=4, nullable=False)
     deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     status: Mapped[str] = mapped_column(String(32), default="open", nullable=False)
+    objectives: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    mode: Mapped[str] = mapped_column(String(32), default="hybrid", nullable=False)  # remote, on_site, hybrid
+    location: Mapped[str | None] = mapped_column(String(255))
+    eligibility: Mapped[str | None] = mapped_column(Text)
+    required_expertise: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    deliverables: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    required_documents: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    contact_email: Mapped[str | None] = mapped_column(String(320))
+    contact_person: Mapped[str | None] = mapped_column(String(200))
+    created_by_recruiter_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("recruiters.id", ondelete="SET NULL"), index=True)
 
 
 class FacultyApplication(Base):
@@ -820,10 +843,101 @@ class FacultyApplication(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     faculty_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("academicians.id", ondelete="CASCADE"), nullable=False, index=True)
     opportunity_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("faculty_opportunities.id", ondelete="CASCADE"), nullable=False, index=True)
-    status: Mapped[str] = mapped_column(String(32), default="applied", nullable=False)
+    status: Mapped[str] = mapped_column(String(32), default="submitted", nullable=False)  # draft, submitted, under_review, shortlisted, discussion, accepted, rejected, withdrawn, active, completed
+    application_type: Mapped[str] = mapped_column(String(64), default="general", nullable=False)
+    proposal_title: Mapped[str | None] = mapped_column(String(255))
     proposal_text: Mapped[str | None] = mapped_column(Text)
+    problem_statement: Mapped[str | None] = mapped_column(Text)
+    objectives: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    methodology: Mapped[str | None] = mapped_column(Text)
+    team_members: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    student_researchers: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    deliverables: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    milestones: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    timeline_weeks: Mapped[int | None] = mapped_column(Integer)
+    budget_requested: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    industry_support_required: Mapped[str | None] = mapped_column(Text)
+    attachments: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    reviewer_notes: Mapped[str | None] = mapped_column(Text)
+    feedback: Mapped[str | None] = mapped_column(Text)
+    industry_mentor_name: Mapped[str | None] = mapped_column(String(200))
+    industry_mentor_email: Mapped[str | None] = mapped_column(String(320))
+    engagement_status: Mapped[str] = mapped_column(String(32), default="not_started", nullable=False)  # not_started, active, completed, cancelled
+    start_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    end_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    completion_report: Mapped[str | None] = mapped_column(Text)
+    completion_certificate_url: Mapped[str | None] = mapped_column(String(2048))
+    rating_or_grade: Mapped[str | None] = mapped_column(String(32))
+    outcome_type: Mapped[str | None] = mapped_column(String(64))  # publication, patent, prototype, report, curriculum_update, certificate
+    outcome_details: Mapped[dict[str, Any]] = mapped_column(Json, default=dict, nullable=False)
     applied_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
     opportunity: Mapped[FacultyOpportunity] = relationship()
+    faculty: Mapped[Academician] = relationship()
+
+
+class CollaborationWorkspace(Base):
+    __tablename__ = "collaboration_workspaces"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    application_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("faculty_applications.id", ondelete="SET NULL"), index=True)
+    challenge_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("innovation_challenges.id", ondelete="SET NULL"), index=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    collaboration_type: Mapped[str] = mapped_column(String(64), nullable=False)  # research_collaboration, consultancy, faculty_internship, industrial_training, live_project, fdp
+    organization_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    faculty_lead_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("academicians.id", ondelete="CASCADE"), nullable=False, index=True)
+    industry_lead_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    industry_lead_email: Mapped[str | None] = mapped_column(String(320))
+    status: Mapped[str] = mapped_column(String(32), default="active", nullable=False)  # active, completed, paused, cancelled
+    progress_percentage: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    objectives: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    participants: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    milestones: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    tasks: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    meetings: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    discussion_posts: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    deliverables: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    feedback: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    outcome_summary: Mapped[str | None] = mapped_column(Text)
+    start_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    end_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    faculty_lead: Mapped[Academician] = relationship()
+    application: Mapped[FacultyApplication | None] = relationship()
+
+
+class FacultyEventRegistration(Base):
+    __tablename__ = "faculty_event_registrations"
+    __table_args__ = (UniqueConstraint("faculty_id", "event_id", "event_type", name="uq_faculty_event_reg"),)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    faculty_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("academicians.id", ondelete="CASCADE"), nullable=False, index=True)
+    event_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, index=True)
+    event_type: Mapped[str] = mapped_column(String(64), default="workshop", nullable=False)  # workshop, guest_lecture, mentorship, fdp, challenge
+    event_title: Mapped[str] = mapped_column(String(255), nullable=False)
+    host_organization: Mapped[str] = mapped_column(String(255), nullable=False)
+    role: Mapped[str] = mapped_column(String(32), default="attendee", nullable=False)  # attendee, speaker, coordinator
+    status: Mapped[str] = mapped_column(String(32), default="registered", nullable=False)  # registered, attended, completed, cancelled
+    feedback: Mapped[str | None] = mapped_column(Text)
+    certificate_url: Mapped[str | None] = mapped_column(String(2048))
+    scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    registered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    faculty: Mapped[Academician] = relationship()
+
+
+class FacultyNotification(Base):
+    __tablename__ = "faculty_notifications"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    faculty_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("academicians.id", ondelete="CASCADE"), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    category: Mapped[str] = mapped_column(String(64), default="application", nullable=False)  # application, workspace, milestone, mentorship, event
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    link_url: Mapped[str | None] = mapped_column(String(1024))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
     faculty: Mapped[Academician] = relationship()
 
 
@@ -909,5 +1023,41 @@ class StudentAchievement(Timestamped, Base):
 
     student: Mapped[Student] = relationship()
     evidence: Mapped[Evidence | None] = relationship()
+
+
+class InstitutionInterventionPlan(Timestamped, Base):
+    __tablename__ = "institution_intervention_plans"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    institution_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("institutions.id", ondelete="CASCADE"), index=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    skill_cluster: Mapped[str] = mapped_column(String(120), nullable=False)
+    department: Mapped[str] = mapped_column(String(120), default="All", nullable=False)
+    target_students_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    baseline_supply_index: Mapped[float] = mapped_column(Numeric(5, 2), default=0.0, nullable=False)
+    target_supply_index: Mapped[float] = mapped_column(Numeric(5, 2), default=80.0, nullable=False)
+    selected_learning_programs: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    selected_workshops: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    selected_mentorship: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    start_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    target_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)  # draft, planned, in_progress, completed, measured
+    notes: Mapped[str | None] = mapped_column(Text)
+
+
+class InstitutionActionPlan(Timestamped, Base):
+    __tablename__ = "institution_action_plans"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    institution_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("institutions.id", ondelete="CASCADE"), index=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    action_type: Mapped[str] = mapped_column(String(64), nullable=False)  # curriculum, workshop, placement_prep, faculty_immersion, mentorship_drive, skill_intervention
+    related_department: Mapped[str] = mapped_column(String(120), default="All", nullable=False)
+    source_insight: Mapped[str] = mapped_column(Text, nullable=False)
+    priority: Mapped[str] = mapped_column(String(32), default="medium", nullable=False)  # critical, high, medium, low
+    owner: Mapped[str] = mapped_column(String(120), default="Dean of Academics", nullable=False)
+    target_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(32), default="planned", nullable=False)  # planned, in_progress, completed, measured
+    linked_intervention_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("institution_intervention_plans.id", ondelete="SET NULL"))
+    outcome_notes: Mapped[str | None] = mapped_column(Text)
+
 
 

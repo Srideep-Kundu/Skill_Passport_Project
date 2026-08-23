@@ -666,10 +666,57 @@ export interface PlacementCandidateRanking {
   offer_details?: Record<string, any> | null;
 }
 
+export interface FacultyPassport {
+  id: string;
+  email: string;
+  full_name: string;
+  institution_name: string;
+  department: string;
+  designation: string;
+  research_areas: string[];
+  bio?: string | null;
+  years_experience: number;
+  technical_skills: string[];
+  certifications: Array<{ name: string; issuer?: string; year?: string | number; credential_url?: string }>;
+  publications: Array<{ title: string; journal_or_conf?: string; year?: string | number; doi_or_url?: string }>;
+  patents: Array<{ title: string; patent_number?: string; status?: string; year?: string | number }>;
+  past_industry_experience: Array<{ company: string; role: string; duration_years?: number; description?: string }>;
+  completed_fdps: Array<{ title: string; organizer?: string; year?: string | number; certificate_url?: string }>;
+  completed_trainings: Array<{ title: string; company?: string; duration_weeks?: number; year?: string | number }>;
+  collaboration_availability: "available" | "busy" | "sabbatical_only" | "not_available" | string;
+  phone?: string | null;
+  linkedin_url?: string | null;
+  google_scholar_url?: string | null;
+  active_collaborations_count: number;
+  completed_collaborations_count: number;
+  total_grants_secured: number;
+}
+
+export interface FacultyPassportUpdate {
+  full_name?: string;
+  institution_name?: string;
+  department?: string;
+  designation?: string;
+  research_areas?: string[];
+  bio?: string | null;
+  years_experience?: number;
+  technical_skills?: string[];
+  certifications?: Array<Record<string, any>>;
+  publications?: Array<Record<string, any>>;
+  patents?: Array<Record<string, any>>;
+  past_industry_experience?: Array<Record<string, any>>;
+  completed_fdps?: Array<Record<string, any>>;
+  completed_trainings?: Array<Record<string, any>>;
+  collaboration_availability?: string;
+  phone?: string | null;
+  linkedin_url?: string | null;
+  google_scholar_url?: string | null;
+}
+
 export interface FacultyOpportunity {
   id: string;
   title: string;
-  opportunity_type: "fdp" | "industrial_immersion" | "research_grant" | "consultancy_request" | string;
+  opportunity_type: "fdp" | "industrial_immersion" | "industrial_training" | "faculty_internship" | "research_grant" | "consultancy_request" | string;
   organization_name: string;
   description: string;
   domain: string;
@@ -677,8 +724,18 @@ export interface FacultyOpportunity {
   duration_weeks: number;
   deadline?: string | null;
   status: string;
+  objectives?: string[];
+  mode?: "remote" | "on_site" | "hybrid" | string;
+  location?: string | null;
+  eligibility?: string | null;
+  required_expertise?: string[];
+  deliverables?: string[];
+  required_documents?: string[];
+  contact_email?: string | null;
+  contact_person?: string | null;
   has_applied: boolean;
   application_status?: string | null;
+  application_id?: string | null;
 }
 
 export interface FacultyApplication {
@@ -687,9 +744,149 @@ export interface FacultyApplication {
   opportunity_title: string;
   organization_name: string;
   opportunity_type: string;
-  status: string;
+  status: "draft" | "submitted" | "under_review" | "shortlisted" | "discussion" | "accepted" | "rejected" | "withdrawn" | "active" | "completed" | string;
+  application_type: string;
+  proposal_title?: string | null;
   proposal_text?: string | null;
+  problem_statement?: string | null;
+  objectives?: string[];
+  methodology?: string | null;
+  team_members?: Array<{ name: string; role: string; department?: string; email?: string }>;
+  student_researchers?: Array<{ name: string; roll_no?: string; skill?: string }>;
+  deliverables?: string[];
+  milestones?: Array<{ id: string; title: string; due_week?: number; due_date?: string; status: string; notes?: string }>;
+  timeline_weeks?: number | null;
+  budget_requested?: number | null;
+  industry_support_required?: string | null;
+  attachments?: Array<{ name: string; url: string; type?: string }>;
+  reviewer_notes?: string | null;
+  feedback?: string | null;
+  industry_mentor_name?: string | null;
+  industry_mentor_email?: string | null;
+  engagement_status?: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  completion_report?: string | null;
+  completion_certificate_url?: string | null;
+  rating_or_grade?: string | null;
+  outcome_type?: string | null;
+  outcome_details?: Record<string, any>;
   applied_at: string;
+  updated_at?: string | null;
+  workspace_id?: string | null;
+  faculty_name?: string | null;
+  faculty_department?: string | null;
+  faculty_institution?: string | null;
+}
+
+export interface FacultyApplicationCreate {
+  opportunity_id: string;
+  proposal_text?: string;
+  proposal_title?: string;
+  application_type?: string;
+  problem_statement?: string;
+  objectives?: string[];
+  methodology?: string;
+  team_members?: Array<Record<string, any>>;
+  student_researchers?: Array<Record<string, any>>;
+  deliverables?: string[];
+  milestones?: Array<Record<string, any>>;
+  timeline_weeks?: number;
+  budget_requested?: number;
+  industry_support_required?: string;
+  attachments?: Array<Record<string, any>>;
+  is_draft?: boolean;
+}
+
+export interface CollaborationWorkspace {
+  id: string;
+  application_id?: string | null;
+  challenge_id?: string | null;
+  title: string;
+  collaboration_type: string;
+  organization_name: string;
+  faculty_lead_id: string;
+  faculty_lead_name?: string | null;
+  faculty_lead_department?: string | null;
+  industry_lead_name: string;
+  industry_lead_email?: string | null;
+  status: "active" | "completed" | "paused" | "cancelled" | string;
+  progress_percentage: number;
+  objectives: string[];
+  participants: Array<{ id?: string; name: string; role: string; company?: string; department?: string }>;
+  milestones: Array<{ id: string; title: string; due_date?: string; status: "pending" | "in_progress" | "completed" | string; notes?: string }>;
+  tasks: Array<{ id: string; title: string; assigned_to: string; due_date?: string; priority: "high" | "medium" | "low" | string; status: "todo" | "in_progress" | "done" | string }>;
+  meetings: Array<{ id: string; title: string; date: string; link?: string }>;
+  discussion_posts: Array<{ id: string; author_name: string; author_role: string; content: string; created_at: string }>;
+  deliverables: Array<{ id: string; title: string; deliverable_type: string; url_or_key: string; notes?: string; submitted_at: string }>;
+  feedback: Array<{ author_name: string; author_role: string; rating: number; comments: string; created_at: string }>;
+  outcome_summary?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FacultyEventRegistration {
+  id: string;
+  faculty_id: string;
+  event_id: string;
+  event_type: "workshop" | "guest_lecture" | "mentorship" | "fdp" | "challenge" | string;
+  event_title: string;
+  host_organization: string;
+  role: "attendee" | "speaker" | "coordinator" | string;
+  status: "registered" | "attended" | "completed" | "cancelled" | string;
+  feedback?: string | null;
+  certificate_url?: string | null;
+  scheduled_at?: string | null;
+  registered_at: string;
+}
+
+export interface FacultyNotification {
+  id: string;
+  faculty_id: string;
+  title: string;
+  message: string;
+  category: "application" | "workspace" | "milestone" | "mentorship" | "event" | string;
+  is_read: boolean;
+  link_url?: string | null;
+  created_at: string;
+}
+
+export interface FacultyCollaborationHistoryItem {
+  id: string;
+  title: string;
+  collaboration_type: string;
+  organization_name: string;
+  role: string;
+  duration_weeks?: number | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  status: string;
+  outcome_summary?: string | null;
+  outcome_type?: string | null;
+  certificate_url?: string | null;
+  stipend_or_grant?: number | null;
+}
+
+export interface FacultyAdvisedProject {
+  challenge_id: string;
+  title: string;
+  host_company: string;
+  problem_statement: string;
+  duration_weeks: number;
+  milestones: Array<Record<string, any>>;
+  student_teams: Array<{
+    id: string;
+    student_id: string;
+    team_members: string[];
+    status: string;
+    submission_url?: string | null;
+    feedback?: string | null;
+    score_or_grade?: string | null;
+  }>;
+  advisor_feedback: Array<Record<string, any>>;
+  status: string;
 }
 
 export interface MentorshipSession {
@@ -921,3 +1118,310 @@ export interface ProfessionalProfile {
   source: string;
   source_confidence: number;
 }
+
+// =========================================================================
+// Phase 1 & Phase 2 Institution Decision-Support Portal Interfaces
+// =========================================================================
+
+export interface DepartmentDetailAnalytics {
+  department: string;
+  total_students: number;
+  verified_skills_average: number;
+  assessment_completion_rate: number;
+  average_readiness: number;
+  internship_participation_rate: number;
+  internship_completion_rate: number;
+  placement_eligibility_rate: number;
+  placement_conversion_rate: number;
+  active_applications: number;
+  top_verified_skills: Array<{ skill: string; students: number; avg_proficiency: number }>;
+  top_technical_gaps: Array<{ skill: string; industry_demand: number; student_supply: number; gap_severity: string; affected_students: number }>;
+  top_soft_skill_gaps: Array<{ skill: string; cohort_avg: number; industry_benchmark: number; gap: number }>;
+  curriculum_vs_industry_demand: Array<{ skill: string; curriculum_coverage: number; industry_demand: number }>;
+  learning_participation: { enrolled_students: number; completed_students: number; completion_rate: number; active_programs: number };
+  faculty_industry_engagement: { active_faculty: number; research_grants_count: number; total_grant_value: number; industry_fdps: number };
+  recommended_actions: string[];
+}
+
+export interface CohortSummaryItem {
+  cohort_id: string;
+  cohort_name: string;
+  department: string;
+  graduation_year: string | number;
+  readiness_band: string;
+  total_students: number;
+  average_readiness: number;
+  assessment_completion_pct: number;
+  verified_skills_average: number;
+  internship_participation_pct: number;
+  placement_eligibility_pct: number;
+  placement_conversion_pct: number;
+  active_learning_enrollment: number;
+  critical_skill_gaps: string[];
+}
+
+export interface CohortAnalyticsResponse {
+  total_cohorts: number;
+  total_students_monitored: number;
+  cohorts: CohortSummaryItem[];
+}
+
+export interface InterventionRecommendation {
+  skill: string;
+  skill_cluster: string;
+  industry_demand_index: number;
+  student_supply_index: number;
+  gap_severity: string;
+  affected_student_count: number;
+  affected_departments: string[];
+  recommended_courses: Array<{ title: string; provider: string; duration_weeks: number; format: string }>;
+  recommended_workshops: Array<{ title: string; duration_hours: number; mentor_company: string }>;
+  recommended_mentorship: Array<{ mentor_name: string; role: string; company: string }>;
+}
+
+export interface InterventionPlan {
+  id: string;
+  institution_id?: string | null;
+  title: string;
+  skill_cluster: string;
+  department: string;
+  target_students_count: number;
+  baseline_supply_index: number;
+  target_supply_index: number;
+  selected_learning_programs: string[];
+  selected_workshops: string[];
+  selected_mentorship: string[];
+  start_date?: string | null;
+  target_date?: string | null;
+  status: "draft" | "planned" | "in_progress" | "completed" | "measured" | string;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InterventionPlanPayload {
+  title: string;
+  skill_cluster: string;
+  department?: string;
+  target_students_count?: number;
+  baseline_supply_index?: number;
+  target_supply_index?: number;
+  selected_learning_programs?: string[];
+  selected_workshops?: string[];
+  selected_mentorship?: string[];
+  start_date?: string | null;
+  target_date?: string | null;
+  status?: string;
+  notes?: string | null;
+}
+
+export interface InternshipMonitoringOverview {
+  eligible_students: number;
+  applicants: number;
+  selected_students: number;
+  active_internships: number;
+  completed_internships: number;
+  completion_rate: number;
+  mentor_feedback_completion_rate: number;
+  ppo_conversions: number;
+  ppo_conversion_rate: number;
+  by_department: Array<{ department: string; eligible: number; active: number; completed: number; rate: number }>;
+  by_graduation_year: Array<{ year: string; eligible: number; active: number; completed: number; rate: number }>;
+  by_opportunity_type: Array<{ type: string; count: number; avg_stipend: number }>;
+  by_industry: Array<{ industry: string; selected: number; companies: string[] }>;
+  by_skill_cluster: Array<{ cluster: string; demand_share: number }>;
+}
+
+export interface PlacementMonitoringOverview {
+  eligible_students: number;
+  applications: number;
+  shortlisted: number;
+  interviews_scheduled: number;
+  offers_extended: number;
+  placements_secured: number;
+  conversion_rate: number;
+  average_readiness: number;
+  average_compatibility: number;
+  top_placement_skill_gaps: Array<{ skill: string; frequency_flagged: number }>;
+  top_recruiting_skill_demand: Array<{ skill: string; openings_count: number }>;
+  by_department: Array<{ department: string; eligible: number; offers: number; placed_pct: number; avg_ctc: string }>;
+  by_role: Array<{ role: string; count: number; max_ctc: string }>;
+  by_company: Array<{ company: string; drives: number; offers: number; highest_ctc: string }>;
+  by_graduation_year: Array<{ year: number; placed_count: number; target_count: number; completion_pct: number }>;
+}
+
+export interface FacultyEngagementOverview {
+  total_participating_faculty: number;
+  active_faculty_internships: number;
+  active_industrial_training: number;
+  active_fdps: number;
+  research_collaborations: number;
+  consultancy_projects: number;
+  workshops_guest_lectures: number;
+  total_research_grant_value: number;
+  active_industry_partners_count: number;
+  by_department: Array<{ department: string; faculty_count: number; grants_value: number; fdps: number }>;
+  by_opportunity_type: Array<{ type: string; count: number; partner_funded: number }>;
+  by_industry_partner: Array<{ partner: string; engagements: number; focus: string }>;
+  by_status: Array<{ status: string; count: number }>;
+}
+
+export interface CurriculumRecommendationItem {
+  id: string;
+  skill_area: string;
+  industry_demand_index: number;
+  student_supply_index: number;
+  gap_size: number;
+  gap_severity: string;
+  departments_affected: string[];
+  recommended_modules: string[];
+  suggested_labs: string[];
+  bootcamp_tracks: string[];
+  linked_intervention_id?: string | null;
+}
+
+export interface IndustryPartnerSummary {
+  partner_name: string;
+  domain: string;
+  partner_types: string[];
+  internships_posted: number;
+  students_selected: number;
+  placements_offered: number;
+  learning_programs_count: number;
+  faculty_engagements_count: number;
+  research_collaborations_count: number;
+  status: string;
+}
+
+export interface IndustryPartnershipOverview {
+  total_partners: number;
+  internship_partners: number;
+  placement_partners: number;
+  training_partners: number;
+  research_partners: number;
+  mentorship_partners: number;
+  partners: IndustryPartnerSummary[];
+}
+
+export interface IndustryPartnerDetail {
+  partner_name: string;
+  domain: string;
+  partner_overview: string;
+  student_engagements: Array<Record<string, any>>;
+  faculty_engagements: Array<Record<string, any>>;
+  posted_opportunities: Array<Record<string, any>>;
+  placement_drives: Array<Record<string, any>>;
+  research_and_consultancy: Array<Record<string, any>>;
+  outcome_metrics: Record<string, any>;
+}
+
+export interface CourseEffectivenessMetric {
+  course_id: string;
+  title: string;
+  category: string;
+  provider: string;
+  enrolled_count: number;
+  completed_count: number;
+  completion_rate: number;
+  targeted_skills: string[];
+  baseline_readiness_avg: number;
+  post_completion_readiness_avg: number;
+  readiness_gain: number;
+  placement_correlation_rate: number;
+  department_participation: Array<{ department: string; students: number }>;
+}
+
+export interface LearningEffectivenessOverview {
+  total_enrolled: number;
+  total_completed: number;
+  overall_completion_rate: number;
+  average_readiness_gain: number;
+  courses: CourseEffectivenessMetric[];
+}
+
+export interface AtRiskCohortGroup {
+  risk_category: string;
+  severity: string;
+  affected_students_count: number;
+  department: string;
+  graduation_year: string | number;
+  key_signals: string[];
+  recommended_action: string;
+}
+
+export interface AtRiskCohortSummary {
+  total_at_risk_students: number;
+  risk_groups: AtRiskCohortGroup[];
+}
+
+export interface InstitutionActionPlan {
+  id: string;
+  institution_id?: string | null;
+  title: string;
+  action_type: string;
+  related_department: string;
+  source_insight: string;
+  priority: "critical" | "high" | "medium" | "low" | string;
+  owner: string;
+  target_date?: string | null;
+  status: "planned" | "in_progress" | "completed" | "measured" | string;
+  linked_intervention_id?: string | null;
+  outcome_notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ActionPlanPayload {
+  title: string;
+  action_type: string;
+  related_department?: string;
+  source_insight: string;
+  priority?: string;
+  owner?: string;
+  target_date?: string | null;
+  status?: string;
+  linked_intervention_id?: string | null;
+  outcome_notes?: string | null;
+}
+
+export interface InstitutionAlertItem {
+  id: string;
+  alert_type: string;
+  severity: "critical" | "warning" | "info" | string;
+  title: string;
+  message: string;
+  department?: string | null;
+  target_tab: string;
+  action_label: string;
+}
+
+export interface InstitutionAlertsResponse {
+  alerts: InstitutionAlertItem[];
+}
+
+export interface CollaborationRelationshipItem {
+  id: string;
+  industry_partner: string;
+  faculty_lead: string;
+  faculty_department: string;
+  student_team_or_cohort: string;
+  initiative_title: string;
+  initiative_type: string;
+  status: string;
+  outcome_metric: string;
+}
+
+export interface CollaborationRelationshipsResponse {
+  total_collaborations: number;
+  relationships: CollaborationRelationshipItem[];
+}
+
+export interface InstitutionReportResponse {
+  report_type: string;
+  report_title: string;
+  generated_at: string;
+  columns: string[];
+  rows: Array<Record<string, any>>;
+  csv_export_url?: string | null;
+}
+

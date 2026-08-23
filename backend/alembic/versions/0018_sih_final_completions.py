@@ -63,6 +63,28 @@ def upgrade() -> None:
     if "assessment_attempts" in tables and "breakdown" not in _columns(bind, "assessment_attempts"):
         op.add_column("assessment_attempts", sa.Column("breakdown", json_type, nullable=False, server_default=sa.text("'{}'")))
 
+    # 3b. Extend placement_drives for recruiter_id
+    if "placement_drives" in tables and "recruiter_id" not in _columns(bind, "placement_drives"):
+        op.add_column("placement_drives", sa.Column("recruiter_id", sa.Uuid(), sa.ForeignKey("recruiters.id", ondelete="SET NULL"), nullable=True))
+
+    # 3c. Extend placement_registrations for match and interview tracking
+    if "placement_registrations" in tables:
+        reg_cols = _columns(bind, "placement_registrations")
+        if "match_score" not in reg_cols:
+            op.add_column("placement_registrations", sa.Column("match_score", sa.Numeric(5, 4), nullable=False, server_default="0.0"))
+        if "deterministic_score" not in reg_cols:
+            op.add_column("placement_registrations", sa.Column("deterministic_score", sa.Numeric(5, 4), nullable=False, server_default="0.0"))
+        if "semantic_score" not in reg_cols:
+            op.add_column("placement_registrations", sa.Column("semantic_score", sa.Numeric(5, 4), nullable=False, server_default="0.0"))
+        if "verification_bonus" not in reg_cols:
+            op.add_column("placement_registrations", sa.Column("verification_bonus", sa.Numeric(5, 4), nullable=False, server_default="0.0"))
+        if "interview_date" not in reg_cols:
+            op.add_column("placement_registrations", sa.Column("interview_date", sa.DateTime(timezone=True), nullable=True))
+        if "interview_notes" not in reg_cols:
+            op.add_column("placement_registrations", sa.Column("interview_notes", sa.Text(), nullable=True))
+        if "offer_details" not in reg_cols:
+            op.add_column("placement_registrations", sa.Column("offer_details", json_type, nullable=True))
+
     # 4. Create user_documents table
     if "user_documents" not in tables:
         op.create_table(

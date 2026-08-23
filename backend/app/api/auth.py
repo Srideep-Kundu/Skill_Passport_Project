@@ -71,7 +71,7 @@ async def _email_taken(session: AsyncSession, email: str) -> bool:
 async def register_student(payload: StudentRegistration, request: Request, session: Annotated[AsyncSession, Depends(get_session)]) -> TokenResponse:
     await enforce_rate_limit("registration", _request_subject(request), get_settings().registration_rate_limit_per_minute)
     if await _email_taken(session, payload.email):
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
+        raise HTTPException(status.HTTP_409_CONFLICT, "An account with this email already exists.")
     student = Student(email=payload.email.casefold(), password_hash=hash_password(payload.password), full_name=payload.full_name, university=payload.university, graduation_year=payload.graduation_year)
     session.add(student)
     await session.flush()
@@ -80,7 +80,7 @@ async def register_student(payload: StudentRegistration, request: Request, sessi
         await session.commit()
     except IntegrityError as error:
         await session.rollback()
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered") from error
+        raise HTTPException(status.HTTP_409_CONFLICT, "An account with this email already exists.") from error
     return TokenResponse(access_token=create_access_token(student.id, student.role), role="student")
 
 
@@ -88,7 +88,7 @@ async def register_student(payload: StudentRegistration, request: Request, sessi
 async def register_recruiter(payload: RecruiterRegistration, request: Request, session: Annotated[AsyncSession, Depends(get_session)]) -> TokenResponse:
     await enforce_rate_limit("registration", _request_subject(request), get_settings().registration_rate_limit_per_minute)
     if await _email_taken(session, payload.email):
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
+        raise HTTPException(status.HTTP_409_CONFLICT, "An account with this email already exists.")
     recruiter = Recruiter(email=payload.email.casefold(), password_hash=hash_password(payload.password), company_name=payload.company_name)
     session.add(recruiter)
     await session.flush()
@@ -97,7 +97,7 @@ async def register_recruiter(payload: RecruiterRegistration, request: Request, s
         await session.commit()
     except IntegrityError as error:
         await session.rollback()
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered") from error
+        raise HTTPException(status.HTTP_409_CONFLICT, "An account with this email already exists.") from error
     return TokenResponse(access_token=create_access_token(recruiter.id, recruiter.role), role="recruiter")
 
 
@@ -105,7 +105,7 @@ async def register_recruiter(payload: RecruiterRegistration, request: Request, s
 async def register_academician(payload: AcademicianRegistration, request: Request, session: Annotated[AsyncSession, Depends(get_session)]) -> TokenResponse:
     await enforce_rate_limit("registration", _request_subject(request), get_settings().registration_rate_limit_per_minute)
     if await _email_taken(session, payload.email):
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
+        raise HTTPException(status.HTTP_409_CONFLICT, "An account with this email already exists.")
     academician = Academician(
         email=payload.email.casefold(),
         password_hash=hash_password(payload.password),
@@ -122,7 +122,7 @@ async def register_academician(payload: AcademicianRegistration, request: Reques
         await session.commit()
     except IntegrityError as error:
         await session.rollback()
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered") from error
+        raise HTTPException(status.HTTP_409_CONFLICT, "An account with this email already exists.") from error
     return TokenResponse(access_token=create_access_token(academician.id, academician.role), role="academician")
 
 
@@ -130,12 +130,15 @@ async def register_academician(payload: AcademicianRegistration, request: Reques
 async def register_institution(payload: InstitutionRegistration, request: Request, session: Annotated[AsyncSession, Depends(get_session)]) -> TokenResponse:
     await enforce_rate_limit("registration", _request_subject(request), get_settings().registration_rate_limit_per_minute)
     if await _email_taken(session, payload.email):
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
+        raise HTTPException(status.HTTP_409_CONFLICT, "An account with this email already exists.")
+    existing_code = (await session.scalars(select(Institution).where(Institution.institution_code == payload.institution_code.strip()))).first()
+    if existing_code:
+        raise HTTPException(status.HTTP_409_CONFLICT, "An institution with this code already exists.")
     institution = Institution(
         email=payload.email.casefold(),
         password_hash=hash_password(payload.password),
         institution_name=payload.institution_name,
-        institution_code=payload.institution_code,
+        institution_code=payload.institution_code.strip(),
         state=payload.state,
         departments=payload.departments,
     )
@@ -146,7 +149,7 @@ async def register_institution(payload: InstitutionRegistration, request: Reques
         await session.commit()
     except IntegrityError as error:
         await session.rollback()
-        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered") from error
+        raise HTTPException(status.HTTP_409_CONFLICT, "An account with this email or institution code already exists.") from error
     return TokenResponse(access_token=create_access_token(institution.id, institution.role), role="institution")
 
 

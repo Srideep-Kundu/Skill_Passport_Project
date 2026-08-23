@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-skill_passport}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-local-only}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -52,6 +52,7 @@ services:
       dockerfile: Dockerfile
     environment:
       APP_ENV: ${APP_ENV:-development}
+      DEMO_RESET_ENABLED: ${DEMO_RESET_ENABLED:-false}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://skill_passport:change-me-local-only@postgres:5432/skill_passport}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
