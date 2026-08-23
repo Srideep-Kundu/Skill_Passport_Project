@@ -71,7 +71,7 @@ export function MatchExplanationPanel({
       initial="hidden"
       animate="visible"
       exit="exit"
-      className="rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#111821]/95 backdrop-blur-md p-5 sm:p-6 shadow-md space-y-5 text-slate-900 dark:text-[#f1f0e8] relative"
+      className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/75 backdrop-blur-2xl p-5 sm:p-6 shadow-2xl space-y-5 text-slate-900 dark:text-[#f1f0e8] relative"
     >
       {/* Header */}
       <div className="flex items-start justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3.5">
@@ -85,7 +85,7 @@ export function MatchExplanationPanel({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-[#98a4b3] bg-white dark:bg-[#151e29] border border-slate-200 dark:border-white/10 px-2.5 py-1 rounded-full font-sans">
+          <span className="text-[10px] uppercase font-bold text-slate-500 dark:text-[#98a4b3] bg-white/80 dark:bg-white/[0.04] backdrop-blur-md border border-slate-200 dark:border-white/10 px-2.5 py-1 rounded-full font-sans">
             v{explanation.score_version}
           </span>
           {onClose && (
@@ -101,13 +101,13 @@ export function MatchExplanationPanel({
 
       {/* Metric Breakdown Cards */}
       <dl className="grid grid-cols-3 gap-3 text-center">
-        <div className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/70 dark:bg-[#151e29] p-3.5 shadow-xs">
+        <div className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-3.5 shadow-xs">
           <dt className="text-[10px] font-bold text-slate-400 dark:text-[#98a4b3] uppercase tracking-wider font-sans">Exact Overlap</dt>
           <dd className="text-xl font-black text-slate-900 dark:text-[#f1f0e8] mt-0.5 font-sans">
             <AnimatedNumber value={Math.round(explanation.deterministic_score * 100)} formatter={(v) => `${v}%`} />
           </dd>
         </div>
-        <div className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/70 dark:bg-[#151e29] p-3.5 shadow-xs">
+        <div className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-3.5 shadow-xs">
           <dt className="text-[10px] font-bold text-slate-400 dark:text-[#98a4b3] uppercase tracking-wider font-sans">Semantic Match</dt>
           <dd className="text-xl font-black text-[#3b71d9] dark:text-[#b0c6ff] mt-0.5 font-sans">
             <AnimatedNumber value={Math.round(explanation.semantic_score * 100)} formatter={(v) => `${v}%`} />

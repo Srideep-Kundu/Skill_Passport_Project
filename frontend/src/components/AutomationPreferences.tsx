@@ -372,7 +372,7 @@ export function AutomationPreferences({ token }: { token: string }) {
   return (
     <section
       aria-label="Automation preferences"
-      className="space-y-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#111821]/90 backdrop-blur-md p-5 sm:p-6 shadow-sm text-slate-900 dark:text-[#f1f0e8]"
+      className="space-y-4 rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-5 sm:p-6 shadow-lg text-slate-900 dark:text-[#f1f0e8]"
     >
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 dark:border-white/[0.08] pb-3.5">
         <div>
@@ -388,7 +388,7 @@ export function AutomationPreferences({ token }: { token: string }) {
           type="button"
           disabled={busy}
           onClick={() => void addPolicy()}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-[#3b71d9] dark:border-blue-500 bg-white dark:bg-[#151e29] px-3 py-1.5 text-xs font-semibold text-[#3b71d9] dark:text-[#b0c6ff] hover:bg-blue-50 dark:hover:bg-[#1a2430] disabled:opacity-50 transition-colors cursor-pointer font-sans"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-[#3b71d9] dark:border-blue-500 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-3 py-1.5 text-xs font-semibold text-[#3b71d9] dark:text-[#b0c6ff] hover:bg-blue-50 dark:hover:bg-white/[0.08] disabled:opacity-50 transition-colors cursor-pointer font-sans"
         >
           <Plus className="h-3.5 w-3.5" />
           <span>Add review policy</span>
@@ -404,7 +404,7 @@ export function AutomationPreferences({ token }: { token: string }) {
             {policies.map((policy) => (
               <li
                 key={policy.id}
-                className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/50 dark:bg-[#151e29] p-4 text-slate-900 dark:text-[#f1f0e8]"
+                className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-4 text-slate-900 dark:text-[#f1f0e8]"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -417,7 +417,7 @@ export function AutomationPreferences({ token }: { token: string }) {
                     type="button"
                     disabled={busy}
                     onClick={() => void setEnabled(policy, !policy.enabled)}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer font-sans ${
+                    className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer font-sans backdrop-blur-xs ${
                       policy.enabled
                         ? "border border-amber-600/70 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40"
                         : "border border-emerald-600/70 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"

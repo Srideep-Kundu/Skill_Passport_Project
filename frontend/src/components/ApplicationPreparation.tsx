@@ -194,8 +194,8 @@ export function ApplicationPreparation({
 
   if (application.status === "approved" && !form)
     return (
-      <div className="mt-4 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-[#151e29] p-4 text-slate-900 dark:text-[#f1f0e8] space-y-2 font-sans">
-        <h4 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-[#f1f0e8] flex items-center gap-1.5 font-sans">
+      <div className="mt-4 rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-4 sm:p-5 shadow-lg space-y-2">
+        <h4 className="font-bold text-sm text-slate-900 dark:text-[#f1f0e8] flex items-center gap-1.5 font-sans">
           <FileText className="h-4 w-4 text-[#3b71d9] dark:text-[#b0c6ff]" />
           <span>Application preparation</span>
         </h4>
@@ -206,7 +206,7 @@ export function ApplicationPreparation({
           type="button"
           disabled={busy}
           onClick={() => void prepare()}
-          className="mt-2 rounded-lg bg-[#3b71d9] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-[#3b71d9]/25 hover:bg-[#2563eb] disabled:opacity-50 transition-colors cursor-pointer font-sans"
+          className="mt-2 rounded-xl bg-[#3b71d9] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-[#3b71d9]/25 hover:bg-[#2563eb] disabled:opacity-50 transition-colors cursor-pointer font-sans"
         >
           {busy ? "Preparing…" : "Prepare application"}
         </button>
@@ -224,7 +224,7 @@ export function ApplicationPreparation({
     <>
       <section
         aria-label="Application preparation"
-        className="mt-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-[#111821] p-4 sm:p-5 text-slate-900 dark:text-[#f1f0e8] space-y-3"
+        className="mt-4 rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-4 sm:p-5 text-slate-900 dark:text-[#f1f0e8] space-y-3 shadow-lg"
       >
         <div className="border-b border-slate-100 dark:border-white/[0.08] pb-3">
           <h4 className="font-bold text-sm text-slate-900 dark:text-[#f1f0e8] flex items-center gap-1.5 font-sans">
@@ -246,7 +246,7 @@ export function ApplicationPreparation({
         </div>
 
         {form.unresolved_field_ids.length ? (
-          <p className="rounded-lg bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900/60 p-2.5 text-xs text-amber-900 dark:text-amber-300 font-medium font-sans">
+          <p className="rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 backdrop-blur-md border border-amber-200 dark:border-amber-900/60 p-2.5 text-xs text-amber-900 dark:text-amber-300 font-medium font-sans">
             {form.unresolved_field_ids.length} required field{form.unresolved_field_ids.length === 1 ? "" : "s"} need direct input.
           </p>
         ) : (
@@ -260,7 +260,7 @@ export function ApplicationPreparation({
           {form.fields.map((field) => (
             <div
               key={field.field_id}
-              className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/50 dark:bg-[#151e29] p-3.5"
+              className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-3.5"
             >
               <label htmlFor={field.field_id} className="text-xs font-bold text-slate-900 dark:text-[#f1f0e8] flex items-center gap-1.5 font-sans">
                 {field.sensitive ? (

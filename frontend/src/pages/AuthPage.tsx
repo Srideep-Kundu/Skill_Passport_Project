@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Check, GraduationCap, Briefcase, BookOpen, Building2, X, Sparkles } from "lucide-react";
+import { Check, GraduationCap, Briefcase, BookOpen, Building2, X } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import { ApiError, api } from "../api";
 import { useAuth } from "../auth/AuthContext";
@@ -57,15 +57,6 @@ type RegisterRecruiterFormData = z.infer<typeof registerRecruiterSchema>;
 type RegisterAcademicianFormData = z.infer<typeof registerAcademicianSchema>;
 type RegisterInstitutionFormData = z.infer<typeof registerInstitutionSchema>;
 
-const DEMO_PERSONAS = [
-  { name: "Maya Rivera", role: "Student (Full Evidence)", email: "maya@example.demo", pass: "DemoPassword123" },
-  { name: "Noah Chen", role: "Student (Mid-Match)", email: "noah@example.demo", pass: "DemoPassword123" },
-  { name: "Demo Recruiter", role: "Recruiter View", email: "recruiter@example.demo", pass: "DemoPassword123" },
-  { name: "Dr. Arvind Rao", role: "Faculty / Academician", email: "faculty@example.demo", pass: "DemoPassword123" },
-  { name: "Dean Analytics", role: "Institution / University", email: "dean@example.demo", pass: "DemoPassword123" },
-];
-
-const demoMode = import.meta.env.VITE_DEMO_MODE === "true";
 
 export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
   const { setSession } = useAuth();
@@ -185,18 +176,6 @@ export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
     }
   }
 
-  async function handlePersonaClick(personaEmail: string, personaPass: string) {
-    setError(null);
-    try {
-      const session = await api.login({ email: personaEmail, password: personaPass });
-      setSession(session, personaEmail);
-      toast.success(`Logged in as demo account: ${personaEmail}`);
-    } catch (caught) {
-      const msg = caught instanceof ApiError ? caught.detail : "Unable to authenticate persona.";
-      setError(msg);
-      toast.error(msg);
-    }
-  }
 
   const [pendingGoogleCredential, setPendingGoogleCredential] = useState<string | null>(null);
   const [googleModalRole, setGoogleModalRole] = useState<RegistrationRole>("student");
@@ -299,39 +278,6 @@ export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
           </ul>
         </div>
 
-        {/* Quick Demo Access (1-Click Login) */}
-        <div className="rounded-2xl border border-indigo-200/60 dark:border-indigo-800/40 bg-gradient-to-b from-indigo-50/50 to-slate-50/40 dark:from-[#131b28]/80 dark:to-[#10141d]/80 p-4 sm:p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-[#93c5fd] flex items-center gap-1.5 font-sans">
-              <Sparkles className="h-3.5 w-3.5 animate-pulse text-indigo-500" />
-              <span>Instant Demo Personas</span>
-            </span>
-            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
-              1-Click Login
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-            {DEMO_PERSONAS.map((p) => (
-              <button
-                key={p.email}
-                type="button"
-                onClick={() => void handlePersonaClick(p.email, p.pass)}
-                className="group relative text-left p-2.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/90 dark:bg-[#151e29]/90 hover:border-[#3b71d9] dark:hover:border-[#3b71d9] hover:bg-slate-50 dark:hover:bg-[#1a2536] transition-all cursor-pointer shadow-xs flex flex-col justify-between"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-[#3b71d9] dark:group-hover:text-[#93c5fd] transition-colors">
-                    {p.name}
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-mono">→</span>
-                </div>
-                <span className="text-[10px] font-medium text-slate-500 dark:text-[#8ea2c6] mt-0.5">
-                  {p.role}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
       </section>
 
       {/* Auth Card */}
@@ -809,130 +755,186 @@ export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
           />
         </div>
 
-        {/* Demo credentials are excluded from public builds. */}
-        {demoMode && <div className="mt-6 border-t border-slate-100 dark:border-white/[0.08] pt-5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-[#98a4b3] mb-2.5">
-            Quick 1-Click Demo Accounts
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {DEMO_PERSONAS.map((p) => (
-              <button
-                key={p.email}
-                type="button"
-                onClick={() => void handlePersonaClick(p.email, p.pass)}
-                disabled={isSubmitting}
-                className="flex flex-col items-start rounded-lg border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/70 dark:bg-[#151e29] p-2.5 text-left hover:border-blue-300 dark:hover:border-blue-500 hover:bg-blue-50/40 dark:hover:bg-[#1a2430] transition-all disabled:opacity-50 cursor-pointer"
-              >
-                <span className="text-xs font-bold text-slate-900 dark:text-[#f1f0e8]">{p.name}</span>
-                <span className="text-[11px] text-slate-500 dark:text-[#98a4b3]">{p.role}</span>
-              </button>
-            ))}
-          </div>
-        </div>}
       </section>
 
       {/* Google Role Selection Modal */}
       {pendingGoogleCredential && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 backdrop-blur-md p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-lg rounded-3xl border border-slate-200/80 dark:border-white/[0.12] bg-white/90 dark:bg-[#0c121e]/90 backdrop-blur-2xl p-6 sm:p-7 shadow-2xl space-y-5 text-slate-900 dark:text-[#f1f0e8] max-h-[90vh] overflow-y-auto">
             <div>
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-2">
+              <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50/80 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/60 px-3 py-1 text-xs font-semibold text-indigo-700 dark:text-indigo-300 mb-2 backdrop-blur-xs font-sans">
                 <GraduationCap className="h-3.5 w-3.5" />
                 Google Account Verified
               </div>
-              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+              <h3 className="text-xl font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">
                 Select Your Account Type
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-1 font-sans">
                 Choose how you would like to participate in Skill Passport.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-1 gap-2.5">
+              {/* Student */}
               <button
                 type="button"
                 onClick={() => setGoogleModalRole("student")}
-                className={`flex items-start gap-3.5 rounded-xl border p-4 text-left transition-all cursor-pointer ${
+                className={`flex items-start gap-3.5 rounded-2xl border p-3.5 text-left transition-all cursor-pointer ${
                   googleModalRole === "student"
-                    ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 ring-2 ring-indigo-600/30 text-slate-900 dark:text-slate-100"
-                    : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-850/50"
+                    ? "border-indigo-600 dark:border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 ring-2 ring-indigo-600/30 text-slate-900 dark:text-white"
+                    : "border-slate-200/70 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.16] bg-slate-50/50 dark:bg-white/[0.02]"
                 }`}
               >
-                <div className={`p-2.5 rounded-lg ${
+                <div className={`p-2 rounded-xl shrink-0 ${
                   googleModalRole === "student"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
+                    : "bg-slate-200/70 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"
                 }`}>
                   <GraduationCap className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-slate-900 dark:text-slate-100">Student / Candidate</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">Student / Candidate</span>
                     {googleModalRole === "student" && (
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-white text-[10px]">
                         ✓
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                  <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-0.5 leading-relaxed font-sans">
                     Build a proof-backed portfolio, verify coursework & GitHub projects, and explore deterministic matches.
                   </p>
                 </div>
               </button>
 
+              {/* Recruiter */}
               <button
                 type="button"
                 onClick={() => setGoogleModalRole("recruiter")}
-                className={`flex items-start gap-3.5 rounded-xl border p-4 text-left transition-all cursor-pointer ${
+                className={`flex items-start gap-3.5 rounded-2xl border p-3.5 text-left transition-all cursor-pointer ${
                   googleModalRole === "recruiter"
-                    ? "border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 ring-2 ring-indigo-600/30 text-slate-900 dark:text-slate-100"
-                    : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-850/50"
+                    ? "border-indigo-600 dark:border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 ring-2 ring-indigo-600/30 text-slate-900 dark:text-white"
+                    : "border-slate-200/70 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.16] bg-slate-50/50 dark:bg-white/[0.02]"
                 }`}
               >
-                <div className={`p-2.5 rounded-lg ${
+                <div className={`p-2 rounded-xl shrink-0 ${
                   googleModalRole === "recruiter"
-                    ? "bg-indigo-600 text-white"
-                    : "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
+                    : "bg-slate-200/70 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"
                 }`}>
                   <Briefcase className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-slate-900 dark:text-slate-100">Recruiter / Employer</span>
+                    <span className="text-sm font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">Recruiter / Employer</span>
                     {googleModalRole === "recruiter" && (
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-white text-[10px]">
                         ✓
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
+                  <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-0.5 leading-relaxed font-sans">
                     Source verified candidate profiles with auditable match calculations and skill telemetry.
+                  </p>
+                </div>
+              </button>
+
+              {/* Faculty / Academician */}
+              <button
+                type="button"
+                onClick={() => setGoogleModalRole("academician")}
+                className={`flex items-start gap-3.5 rounded-2xl border p-3.5 text-left transition-all cursor-pointer ${
+                  googleModalRole === "academician"
+                    ? "border-indigo-600 dark:border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 ring-2 ring-indigo-600/30 text-slate-900 dark:text-white"
+                    : "border-slate-200/70 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.16] bg-slate-50/50 dark:bg-white/[0.02]"
+                }`}
+              >
+                <div className={`p-2 rounded-xl shrink-0 ${
+                  googleModalRole === "academician"
+                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
+                    : "bg-slate-200/70 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"
+                }`}>
+                  <BookOpen className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">Faculty / Academician</span>
+                    {googleModalRole === "academician" && (
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-white text-[10px]">
+                        ✓
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-0.5 leading-relaxed font-sans">
+                    Curate department curriculum benchmarks, verify coursework evidence, and mentor students.
+                  </p>
+                </div>
+              </button>
+
+              {/* Institution / University */}
+              <button
+                type="button"
+                onClick={() => setGoogleModalRole("institution")}
+                className={`flex items-start gap-3.5 rounded-2xl border p-3.5 text-left transition-all cursor-pointer ${
+                  googleModalRole === "institution"
+                    ? "border-indigo-600 dark:border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 ring-2 ring-indigo-600/30 text-slate-900 dark:text-white"
+                    : "border-slate-200/70 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.16] bg-slate-50/50 dark:bg-white/[0.02]"
+                }`}
+              >
+                <div className={`p-2 rounded-xl shrink-0 ${
+                  googleModalRole === "institution"
+                    ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30"
+                    : "bg-slate-200/70 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300"
+                }`}>
+                  <Building2 className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">Institution / College</span>
+                    {googleModalRole === "institution" && (
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-white text-[10px]">
+                        ✓
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-0.5 leading-relaxed font-sans">
+                    Manage campus placement drives, track department skill readiness, and view institutional analytics.
                   </p>
                 </div>
               </button>
             </div>
 
-            {googleModalRole === "recruiter" && (
-              <div className="space-y-1.5 pt-1 animate-in fade-in duration-150">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                  Company / Organization Name
+            {googleModalRole !== "student" && (
+              <div className="space-y-1.5 pt-1 animate-in fade-in duration-150 font-sans">
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-[#98a4b3]">
+                  {googleModalRole === "recruiter"
+                    ? "Company / Organization Name"
+                    : googleModalRole === "academician"
+                    ? "University / Institution Name"
+                    : "Institution / College Name"}
                 </label>
                 <input
                   type="text"
                   value={googleCompanyName}
                   onChange={(e) => setGoogleCompanyName(e.target.value)}
-                  placeholder="e.g. Acme Tech Labs"
-                  className="w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3.5 py-2 text-sm focus:border-indigo-600 focus:outline-none text-slate-900 dark:text-slate-100"
+                  placeholder={
+                    googleModalRole === "recruiter"
+                      ? "e.g. Acme Tech Labs"
+                      : googleModalRole === "academician"
+                      ? "e.g. Stanford University"
+                      : "e.g. National Institute of Technology"
+                  }
+                  className="w-full rounded-xl border border-slate-300 dark:border-white/10 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-3.5 py-2 text-sm focus:border-indigo-600 focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
                 />
               </div>
             )}
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3 pt-2 font-sans">
               <button
                 type="button"
                 onClick={() => setPendingGoogleCredential(null)}
                 disabled={isGoogleSubmitting}
-                className="flex-1 rounded-lg border border-slate-200 dark:border-slate-700 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all cursor-pointer disabled:opacity-50"
+                className="flex-1 rounded-xl border border-slate-200 dark:border-white/10 py-2.5 text-sm font-semibold text-slate-700 dark:text-[#dedbc8] hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-all cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -940,9 +942,19 @@ export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
                 type="button"
                 onClick={handleConfirmGoogleRole}
                 disabled={isGoogleSubmitting}
-                className="flex-1 rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 transition-all shadow-md shadow-indigo-500/20 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                className="flex-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 py-2.5 text-sm font-semibold text-white transition-all shadow-md shadow-indigo-500/20 cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                {isGoogleSubmitting ? "Connecting..." : `Continue as ${googleModalRole === "student" ? "Student" : "Recruiter"}`}
+                {isGoogleSubmitting
+                  ? "Connecting..."
+                  : `Continue as ${
+                      googleModalRole === "student"
+                        ? "Student"
+                        : googleModalRole === "recruiter"
+                        ? "Recruiter"
+                        : googleModalRole === "academician"
+                        ? "Faculty"
+                        : "Institution"
+                    }`}
               </button>
             </div>
           </div>

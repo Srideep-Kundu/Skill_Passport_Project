@@ -223,7 +223,7 @@ export function ExternalJobs({ token }: { token: string }) {
   return (
     <div className="space-y-6">
       {/* HEADER */}
-      <div className="rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-[#111821]/80 backdrop-blur-md p-6 sm:p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-6 sm:p-8 shadow-lg">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
@@ -431,29 +431,21 @@ export function ExternalJobs({ token }: { token: string }) {
       ) : error ? (
         <ErrorState message={error} onRetry={() => void loadData()} />
       ) : jobs.length === 0 ? (
-        <div className="rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-[#111821]/80 backdrop-blur-md p-10 sm:p-14 text-center space-y-4 shadow-sm">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-[#151e29] text-[#4f46e5] dark:text-[#38bdf8] border border-indigo-200/60 dark:border-white/10">
-            <Compass className="h-7 w-7" />
+        <div className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-10 sm:p-14 text-center space-y-4 shadow-lg">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-500/10 text-[#4f46e5] dark:text-[#38bdf8]">
+            <Compass className="h-7 w-7 animate-pulse" />
           </div>
           <div className="max-w-md mx-auto space-y-1.5">
             <h3 className="text-lg font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">
-              No opportunities match these filters
+              No live jobs discovered yet
             </h3>
-            <p className="text-xs text-slate-500 dark:text-[#98a4b3] font-sans">
-              Try adjusting your keyword, provider, or location filters. Refresh only queries sources that are configured and available.
+            <p className="text-xs text-slate-500 dark:text-[#98a4b3] font-sans leading-relaxed">
+              Configure job board discovery filters or click discover to fetch fresh tech roles directly from Greenhouse, Lever, and Ashby APIs.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={handleSyncAllSources}
-            disabled={refreshing}
-            className="rounded-xl bg-[#4f46e5] dark:bg-[#38bdf8] px-5 py-2.5 text-xs font-bold text-white dark:text-slate-950 shadow-md shadow-indigo-500/20 hover:opacity-90 transition-all cursor-pointer font-sans"
-          >
-            Refresh Connected Boards
-          </button>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2">
           {jobs.map((job) => {
             const providerBadge = getProviderBadge(job.provider);
             const match = matchesByJobId[job.id];
@@ -464,7 +456,7 @@ export function ExternalJobs({ token }: { token: string }) {
                 key={job.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white/90 dark:bg-[#111821]/90 backdrop-blur-md p-5 sm:p-6 flex flex-col justify-between shadow-sm hover:border-[#4f46e5]/40 dark:hover:border-[#38bdf8]/40 transition-all group"
+                className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-5 sm:p-6 flex flex-col justify-between shadow-lg hover:border-[#4f46e5]/40 dark:hover:border-white/[0.18] transition-all group"
               >
                 <div className="space-y-3">
                   {/* Top Bar: Provider & Match Score */}

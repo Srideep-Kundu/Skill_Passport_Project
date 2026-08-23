@@ -543,7 +543,7 @@ export function ResumeIntelligence({
     phase === "building_passport";
 
   return (
-    <section className="rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white/90 dark:bg-[#111821]/90 backdrop-blur-md p-5 sm:p-6 shadow-sm text-slate-900 dark:text-[#f1f0e8] flex flex-col justify-between transition-all duration-300 relative overflow-hidden">
+    <section className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-5 sm:p-6 shadow-lg text-slate-900 dark:text-[#f1f0e8] flex flex-col justify-between transition-all duration-300 relative overflow-hidden">
       {/* Ambient background glow for active/complete states */}
       <div className="absolute -top-24 -right-24 w-48 h-48 bg-gradient-to-br from-indigo-500/10 to-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -597,10 +597,10 @@ export function ResumeIntelligence({
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`group relative rounded-xl border-2 border-dashed transition-all duration-300 p-6 sm:p-8 flex flex-col items-center justify-center text-center cursor-pointer ${
+              className={`group relative rounded-2xl border-2 border-dashed transition-all duration-300 p-6 sm:p-8 flex flex-col items-center justify-center text-center cursor-pointer ${
                 isDragOver
                   ? "border-[#4f46e5] bg-indigo-50/50 dark:bg-indigo-950/30 scale-[0.99]"
-                  : "border-slate-300/80 dark:border-white/10 bg-slate-50/40 dark:bg-[#151e29]/40 hover:border-[#4f46e5]/60 hover:bg-slate-50/80 dark:hover:bg-[#182337]/60"
+                  : "border-slate-300/70 dark:border-white/[0.08] bg-slate-50/40 dark:bg-white/[0.02] hover:border-[#4f46e5]/60 hover:bg-slate-50/70 dark:hover:bg-white/[0.04]"
               }`}
             >
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100/80 dark:bg-indigo-950/80 text-[#4f46e5] dark:text-[#93c5fd] shadow-sm mb-3 group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all duration-300">
@@ -797,7 +797,7 @@ export function ResumeIntelligence({
               className="space-y-4"
             >
               {/* Document Banner Card */}
-              <div className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/60 dark:bg-[#151e29]/70 p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100/80 dark:bg-indigo-950/80 text-[#4f46e5] dark:text-[#93c5fd] shadow-xs">
                     <FileCheck className="h-5 w-5" />
@@ -816,7 +816,7 @@ export function ResumeIntelligence({
                   <button
                     type="button"
                     onClick={() => setIsReplacing(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#111821] text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#1a2432] transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.08] transition-colors cursor-pointer"
                   >
                     <Upload className="h-3 w-3" />
                     <span>Replace</span>
@@ -825,7 +825,7 @@ export function ResumeIntelligence({
                     type="button"
                     disabled={isDeleting}
                     onClick={() => void handleDeleteResume()}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rose-200 dark:border-rose-900/40 bg-rose-50/50 dark:bg-rose-950/20 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/60 transition-colors cursor-pointer disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rose-200/80 dark:border-rose-900/40 bg-rose-50/50 dark:bg-rose-950/20 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/60 transition-colors cursor-pointer disabled:opacity-50"
                     title="Remove resume"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -835,7 +835,7 @@ export function ResumeIntelligence({
 
               {/* Discovered Real Metrics Row */}
               <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                <div className="rounded-xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-[#151e29]/40 p-3 text-center">
+                <div className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-3 text-center">
                   <p className="text-lg sm:text-xl font-extrabold text-[#4f46e5] dark:text-[#93c5fd]">
                     {allExtractedSkills.length}
                   </p>
@@ -844,7 +844,7 @@ export function ResumeIntelligence({
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-[#151e29]/40 p-3 text-center">
+                <div className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-3 text-center">
                   <p className="text-lg sm:text-xl font-extrabold text-emerald-600 dark:text-emerald-400">
                     {activeResume.generated_evidence_count}
                   </p>
@@ -853,7 +853,7 @@ export function ResumeIntelligence({
                   </p>
                 </div>
 
-                <div className="rounded-xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-[#151e29]/40 p-3 text-center">
+                <div className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-3 text-center">
                   <p className="text-lg sm:text-xl font-extrabold text-sky-600 dark:text-sky-400">
                     {Object.keys(categorizedSkills).length}
                   </p>

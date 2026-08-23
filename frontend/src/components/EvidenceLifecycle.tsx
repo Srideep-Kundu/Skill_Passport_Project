@@ -73,7 +73,7 @@ export function EvidenceLifecycle({
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#111821]/90 backdrop-blur-md p-5 sm:p-6 shadow-sm text-slate-900 dark:text-[#f1f0e8] flex flex-col justify-between">
+    <section className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-5 sm:p-6 shadow-lg text-slate-900 dark:text-[#f1f0e8] flex flex-col justify-between">
       <div className="border-b border-slate-100 dark:border-white/[0.08] pb-3.5">
         <h2 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] flex items-center gap-2 font-sans">
           <Layers className="h-4 w-4 text-[#3b71d9] dark:text-[#b0c6ff]" />
@@ -86,7 +86,7 @@ export function EvidenceLifecycle({
 
       <div className="mt-4 space-y-3">
         {message && (
-          <p role="status" className="text-xs font-medium text-slate-600 dark:text-[#dedbc8] bg-slate-50 dark:bg-[#151e29] p-2.5 rounded-lg border border-slate-200 dark:border-white/10 font-sans">
+          <p role="status" className="text-xs font-medium text-slate-600 dark:text-[#dedbc8] bg-slate-50/60 dark:bg-white/[0.03] backdrop-blur-md p-2.5 rounded-xl border border-slate-200/60 dark:border-white/10 font-sans">
             {message}
           </p>
         )}
@@ -105,7 +105,7 @@ export function EvidenceLifecycle({
                 <motion.li
                   key={evidence.id}
                   variants={prefersReducedMotion ? undefined : cardItemVariants}
-                  className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/50 dark:bg-[#151e29] p-3.5 space-y-2"
+                  className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-4 space-y-2 hover:border-[#3b71d9]/50 dark:hover:border-blue-500/50 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
@@ -150,13 +150,13 @@ export function EvidenceLifecycle({
                           aria-label="Edit evidence title"
                           value={title}
                           onChange={(event) => setTitle(event.target.value)}
-                          className="rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#111821] px-3 py-1.5 text-xs text-slate-900 dark:text-[#f1f0e8] focus:border-[#3b71d9] focus:outline-none"
+                          className="rounded-xl border border-slate-300 dark:border-white/10 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-3 py-1.5 text-xs text-slate-900 dark:text-[#f1f0e8] focus:border-[#3b71d9] focus:outline-none"
                         />
                         <textarea
                           aria-label="Edit evidence description"
                           value={description}
                           onChange={(event) => setDescription(event.target.value)}
-                          className="min-h-20 rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#111821] px-3 py-1.5 text-xs text-slate-900 dark:text-[#f1f0e8] focus:border-[#3b71d9] focus:outline-none"
+                          className="min-h-20 rounded-xl border border-slate-300 dark:border-white/10 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-3 py-1.5 text-xs text-slate-900 dark:text-[#f1f0e8] focus:border-[#3b71d9] focus:outline-none"
                         />
                         <div className="flex justify-end gap-2">
                           <button

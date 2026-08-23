@@ -6,17 +6,13 @@ import {
   FileSpreadsheet,
   Download,
   AlertTriangle,
-  Users,
   GraduationCap,
-  Briefcase,
-  Layers,
   Sparkles,
   ArrowUpRight,
   Filter,
   CheckCircle2,
   Plus,
   Trash2,
-  Award,
   ChevronRight,
   BookOpen,
   X,
@@ -64,11 +60,13 @@ function displayReportValue(value: unknown): string {
   return JSON.stringify(value);
 }
 
-interface Props {
+export interface InstitutionDashboardProps {
   token: string;
+  activeTab?: TabType;
+  onTabChange?: (tab: TabType) => void;
 }
 
-type TabType =
+export type InstitutionTabType =
   | "overview"
   | "departments"
   | "cohorts"
@@ -80,10 +78,20 @@ type TabType =
   | "interventions"
   | "reports";
 
+type TabType = InstitutionTabType;
+
 const BAR_COLORS = ["#3b71d9", "#22c55e", "#f59e0b", "#8b5cf6", "#06b6d4", "#ec4899", "#14b8a6", "#f97316"];
 
-export function InstitutionDashboard({ token }: Props) {
-  const [activeTab, setActiveTab] = useState<TabType>("overview");
+export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }: InstitutionDashboardProps) {
+  const [internalTab, setInternalTab] = useState<TabType>("overview");
+  const activeTab = propTab ?? internalTab;
+  const setActiveTab = useCallback(
+    (tab: TabType) => {
+      if (onTabChange) onTabChange(tab);
+      else setInternalTab(tab);
+    },
+    [onTabChange]
+  );
   const [loading, setLoading] = useState(true);
 
   // Core Data States
@@ -480,37 +488,26 @@ export function InstitutionDashboard({ token }: Props) {
         </div>
       )}
 
-      {/* Navigation Sub-Tabs Bar */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-slate-200 dark:border-white/[0.08] scrollbar-none">
-        {[
-          { id: "overview", label: "Executive Overview", icon: Building2 },
-          { id: "departments", label: "Department Drill-Down", icon: FileSpreadsheet },
-          { id: "cohorts", label: "Cohorts & At-Risk", icon: Users },
-          { id: "skills", label: "Skill Intelligence & Curriculum", icon: TrendingUp },
-          { id: "internships", label: "Internship Funnel", icon: Briefcase },
-          { id: "placements", label: "Placement Outcomes", icon: Award },
-          { id: "faculty", label: "Faculty-Industry Immersion", icon: GraduationCap },
-          { id: "partnerships", label: "Corporate Partnerships", icon: Layers },
-          { id: "interventions", label: "Interventions & Action Plans", icon: Sparkles },
-          { id: "reports", label: "Institutional Reports", icon: Download },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as TabType)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap flex items-center gap-2 transition-all cursor-pointer ${
-                isActive
-                  ? "bg-[#3b71d9] text-white shadow-xs"
-                  : "bg-white dark:bg-[#151921] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08]"
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" />
-              {tab.label}
-            </button>
-          );
-        })}
+      {/* Active Section Header Badge */}
+      <div className="flex items-center justify-between pb-2 border-b border-slate-200/80 dark:border-white/[0.08]">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">Active View:</span>
+          <span className="px-3 py-1 rounded-xl text-xs font-bold bg-[#3b71d9]/10 text-[#3b71d9] dark:text-[#b0c6ff] border border-[#3b71d9]/20 flex items-center gap-1.5">
+            {[
+              { id: "overview", label: "Executive Overview" },
+              { id: "departments", label: "Department Drill-Down" },
+              { id: "cohorts", label: "Cohorts & At-Risk" },
+              { id: "skills", label: "Skill Intelligence & Curriculum" },
+              { id: "internships", label: "Internship Funnel" },
+              { id: "placements", label: "Placement Outcomes" },
+              { id: "faculty", label: "Faculty-Industry Immersion" },
+              { id: "partnerships", label: "Corporate Partnerships" },
+              { id: "interventions", label: "Interventions & Action Plans" },
+              { id: "reports", label: "Institutional Reports" },
+            ].find((t) => t.id === activeTab)?.label || "Institution Intelligence"}
+          </span>
+        </div>
+        <span className="text-[11px] text-slate-400 dark:text-slate-500">Navigate anytime via the left sidebar</span>
       </div>
 
       {/* ======================================================== */}
@@ -528,20 +525,26 @@ export function InstitutionDashboard({ token }: Props) {
                 </div>
                 <span className="text-xs text-slate-400">Verified Evidence</span>
               </div>
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={analytics.top_skills_distribution} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                    <XAxis dataKey="skill_name" tick={{ fontSize: 11 }} interval={0} angle={-25} textAnchor="end" />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip contentStyle={{ backgroundColor: "#151921", borderColor: "#333", borderRadius: 12, fontSize: 12, color: "#fff" }} />
-                    <Bar dataKey="student_count" radius={[6, 6, 0, 0]}>
-                      {analytics.top_skills_distribution.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={BAR_COLORS[index % BAR_COLORS.length]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="h-64 w-full min-h-[260px]">
+                {analytics.top_skills_distribution && analytics.top_skills_distribution.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%" minHeight={250}>
+                    <BarChart data={analytics.top_skills_distribution} margin={{ top: 10, right: 10, left: -20, bottom: 25 }}>
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                      <XAxis dataKey="skill_name" tick={{ fontSize: 11 }} interval={0} angle={-25} textAnchor="end" />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip contentStyle={{ backgroundColor: "#151921", borderColor: "#333", borderRadius: 12, fontSize: 12, color: "#fff" }} />
+                      <Bar dataKey="student_count" radius={[6, 6, 0, 0]}>
+                        {analytics.top_skills_distribution.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={BAR_COLORS[index % BAR_COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex h-full items-center justify-center text-xs text-slate-400">
+                    No competency distribution records available.
+                  </div>
+                )}
               </div>
             </div>
 

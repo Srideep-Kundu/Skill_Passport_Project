@@ -162,7 +162,7 @@ export function LinkedInIntelligence({
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#111821]/90 backdrop-blur-xs p-5 sm:p-6 shadow-sm text-slate-900 dark:text-[#f1f0e8] flex flex-col justify-between">
+    <section className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-5 sm:p-6 shadow-lg text-slate-900 dark:text-[#f1f0e8] flex flex-col justify-between">
       <div className="border-b border-slate-100 dark:border-white/[0.08] pb-3.5 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] flex items-center gap-2">

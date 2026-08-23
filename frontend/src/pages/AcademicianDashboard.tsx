@@ -38,11 +38,13 @@ import type {
 } from "../api/types";
 import { toast } from "sonner";
 
-interface Props {
+export interface AcademicianDashboardProps {
   token: string;
+  activeTab?: TabType;
+  onTabChange?: (tab: TabType) => void;
 }
 
-type TabType =
+export type AcademicianTabType =
   | "opportunities"
   | "applications"
   | "workspaces"
@@ -54,8 +56,18 @@ type TabType =
   | "documents"
   | "history";
 
-export function AcademicianDashboard({ token }: Props) {
-  const [activeTab, setActiveTab] = useState<TabType>("opportunities");
+type TabType = AcademicianTabType;
+
+export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }: AcademicianDashboardProps) {
+  const [internalTab, setInternalTab] = useState<TabType>("opportunities");
+  const activeTab = propTab ?? internalTab;
+  const setActiveTab = useCallback(
+    (tab: TabType) => {
+      if (onTabChange) onTabChange(tab);
+      else setInternalTab(tab);
+    },
+    [onTabChange]
+  );
   const [loading, setLoading] = useState(true);
 
   // Core Data
@@ -508,35 +520,15 @@ export function AcademicianDashboard({ token }: Props) {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-slate-200 dark:border-white/[0.08]">
-        {navTabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as TabType)}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer ${
-                isActive
-                  ? "bg-[#3b71d9] text-white shadow-xs"
-                  : "bg-white dark:bg-[#151921] border border-slate-200 dark:border-white/[0.08] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {tab.label}
-              {typeof tab.count === "number" && tab.count > 0 && (
-                <span
-                  className={`px-1.5 py-0.5 text-[10px] rounded-full font-extrabold ${
-                    isActive ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-white/[0.1] text-slate-600 dark:text-slate-300"
-                  }`}
-                >
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
+      {/* Active Section Header Badge */}
+      <div className="flex items-center justify-between pb-2 border-b border-slate-200/80 dark:border-white/[0.08]">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">Active View:</span>
+          <span className="px-3 py-1 rounded-xl text-xs font-bold bg-[#3b71d9]/10 text-[#3b71d9] dark:text-[#b0c6ff] border border-[#3b71d9]/20 flex items-center gap-1.5">
+            {navTabs.find((t) => t.id === activeTab)?.label || "Faculty Hub"}
+          </span>
+        </div>
+        <span className="text-[11px] text-slate-400 dark:text-slate-500">Navigate anytime via the left sidebar</span>
       </div>
 
       {/* TAB 1: OPPORTUNITIES & DISCOVERY */}

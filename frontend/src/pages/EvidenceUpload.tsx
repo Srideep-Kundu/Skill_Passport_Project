@@ -124,7 +124,7 @@ export function EvidenceUpload({
     trackedEvidence?.extraction_status === "dead_lettered";
 
   return (
-    <section className="rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#111821]/90 backdrop-blur-md p-5 sm:p-6 shadow-sm text-slate-900 dark:text-[#f1f0e8] space-y-4">
+    <section className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-5 sm:p-6 shadow-lg text-slate-900 dark:text-[#f1f0e8] space-y-4">
       <div className="border-b border-slate-100 dark:border-white/[0.08] pb-3.5">
         <h2 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">Add Technical Evidence</h2>
         <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-0.5 font-sans">
@@ -138,10 +138,10 @@ export function EvidenceUpload({
             Evidence Type
             <select
               {...register("type")}
-              className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 px-3 py-1.5 text-xs focus:border-[#3b71d9] focus:outline-none bg-white dark:bg-[#151e29] text-slate-900 dark:text-[#f1f0e8] cursor-pointer"
+              className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 px-3 py-1.5 text-xs focus:border-[#3b71d9] focus:outline-none bg-white/80 dark:bg-white/[0.04] backdrop-blur-md text-slate-900 dark:text-[#f1f0e8] cursor-pointer"
             >
-              <option value="project">Project Evidence</option>
-              <option value="certification">Certification</option>
+              <option value="project" className="dark:bg-[#0c121e]">Project Evidence</option>
+              <option value="certification" className="dark:bg-[#0c121e]">Certification</option>
             </select>
           </label>
 
@@ -150,7 +150,7 @@ export function EvidenceUpload({
             <input
               {...register("title")}
               placeholder="e.g. Distributed Task Queue"
-              className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3 py-1.5 text-xs focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
+              className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-3 py-1.5 text-xs focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
             />
             {errors.title && <span className="text-[11px] text-rose-600 dark:text-rose-400 mt-0.5 block">{errors.title.message}</span>}
           </label>
@@ -162,7 +162,7 @@ export function EvidenceUpload({
             {...register("description")}
             maxLength={10000}
             placeholder="Explain architecture, tools used, key algorithms, tests, or achievements..."
-            className="mt-1 min-h-20 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3 py-1.5 text-xs focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
+            className="mt-1 min-h-20 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-3 py-1.5 text-xs focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
           />
           {errors.description && <span className="text-[11px] text-rose-600 dark:text-rose-400 mt-0.5 block">{errors.description.message}</span>}
         </label>
@@ -173,7 +173,7 @@ export function EvidenceUpload({
             {...register("externalUrl")}
             type="url"
             placeholder="https://github.com/username/repo"
-            className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#151e29] px-3 py-1.5 text-xs focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
+            className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-3 py-1.5 text-xs focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
           />
           {errors.externalUrl && <span className="text-[11px] text-rose-600 dark:text-rose-400 mt-0.5 block">{errors.externalUrl.message}</span>}
         </label>
@@ -185,13 +185,13 @@ export function EvidenceUpload({
         )}
 
         {status && (
-          <div role="status" className="rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-100 dark:border-emerald-900/60 p-2.5 text-xs font-medium text-emerald-800 dark:text-emerald-300 font-sans">
+          <div role="status" className="rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 backdrop-blur-md border border-emerald-100 dark:border-emerald-900/60 p-2.5 text-xs font-medium text-emerald-800 dark:text-emerald-300 font-sans">
             {status}
           </div>
         )}
 
         {trackedEvidence?.extraction_status === "extracted" && trackedEvidence.extracted_skills.length > 0 && (
-          <div className="rounded-lg bg-blue-50/60 dark:bg-[#182337] border border-blue-100 dark:border-blue-900/60 p-2 text-xs text-[#3b71d9] dark:text-[#b0c6ff] font-sans">
+          <div className="rounded-xl bg-blue-50/60 dark:bg-[#3b71d9]/15 backdrop-blur-md border border-blue-100 dark:border-blue-900/60 p-2 text-xs text-[#3b71d9] dark:text-[#b0c6ff] font-sans">
             <span className="font-bold">Extracted skills: </span>
             {trackedEvidence.extracted_skills.map((skill) => skill.canonical_name).join(", ")}
           </div>
@@ -202,7 +202,7 @@ export function EvidenceUpload({
             <button
               type="button"
               onClick={() => void retry()}
-              className="rounded-lg border border-[#3b71d9] dark:border-blue-500 bg-white dark:bg-[#151e29] px-3 py-2 text-xs font-semibold text-[#3b71d9] dark:text-[#b0c6ff] hover:bg-blue-50 dark:hover:bg-[#1a2430] transition-colors cursor-pointer"
+              className="rounded-lg border border-[#3b71d9] dark:border-blue-500 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-3 py-2 text-xs font-semibold text-[#3b71d9] dark:text-[#b0c6ff] hover:bg-blue-50 dark:hover:bg-white/[0.08] transition-colors cursor-pointer"
             >
               Retry Extraction
             </button>

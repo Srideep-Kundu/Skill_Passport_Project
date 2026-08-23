@@ -98,7 +98,7 @@ export function UnifiedCandidateProfile({
   const totalSources = Array.from(new Set(profile.skills.flatMap((s) => s.source_types))).length;
 
   return (
-    <section className="rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#111821]/90 backdrop-blur-md p-5 sm:p-6 shadow-sm space-y-6 text-slate-900 dark:text-[#f1f0e8]">
+    <section className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-5 sm:p-6 shadow-lg space-y-6 text-slate-900 dark:text-[#f1f0e8]">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-white/[0.08] pb-4">
         <div>
@@ -129,22 +129,22 @@ export function UnifiedCandidateProfile({
 
       {/* SUMMARY METRICS TOP GRID */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/60 dark:bg-[#151e29] p-3.5 space-y-1 hover:scale-[1.03] hover:-translate-y-1 hover:shadow-md transition-all duration-200 cursor-default">
+        <div className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-3.5 space-y-1 hover:border-slate-300 dark:hover:border-white/[0.16] transition-all duration-200 cursor-default">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#98a4b3] font-sans">Total Skills</span>
           <p className="text-xl font-black text-slate-900 dark:text-[#f1f0e8] font-sans">{totalSkills}</p>
         </div>
 
-        <div className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/60 dark:bg-[#151e29] p-3.5 space-y-1 hover:scale-[1.03] hover:-translate-y-1 hover:shadow-md transition-all duration-200 cursor-default">
+        <div className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-3.5 space-y-1 hover:border-slate-300 dark:hover:border-white/[0.16] transition-all duration-200 cursor-default">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#98a4b3] font-sans">Verified Skills</span>
           <p className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-sans">{verifiedSkills}</p>
         </div>
 
-        <div className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/60 dark:bg-[#151e29] p-3.5 space-y-1 hover:scale-[1.03] hover:-translate-y-1 hover:shadow-md transition-all duration-200 cursor-default">
+        <div className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-3.5 space-y-1 hover:border-slate-300 dark:hover:border-white/[0.16] transition-all duration-200 cursor-default">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#98a4b3] font-sans">Evidence Sources</span>
           <p className="text-xl font-black text-[#3b71d9] dark:text-[#b0c6ff] font-sans">{totalSources} Types</p>
         </div>
 
-        <div className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/60 dark:bg-[#151e29] p-3.5 space-y-1 hover:scale-[1.03] hover:-translate-y-1 hover:shadow-md transition-all duration-200 cursor-default">
+        <div className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-3.5 space-y-1 hover:border-slate-300 dark:hover:border-white/[0.16] transition-all duration-200 cursor-default">
           <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#98a4b3] font-sans">Completeness</span>
           <p className="text-xl font-black text-slate-900 dark:text-[#f1f0e8] font-sans">{completenessPercent}%</p>
         </div>
@@ -158,7 +158,7 @@ export function UnifiedCandidateProfile({
           ))}
         </div>
       ) : (
-        <div className="rounded-xl border border-dashed border-slate-300 dark:border-white/10 p-8 text-center">
+        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-white/10 p-8 text-center bg-slate-50/20 dark:bg-white/[0.02]">
           <Info className="h-8 w-8 text-slate-400 mx-auto mb-2" />
           <h3 className="font-bold text-sm text-slate-900 dark:text-[#f1f0e8] font-sans">No evidence-backed skills found</h3>
           <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-1 font-sans">
@@ -175,13 +175,13 @@ function PolishedSkillCard({ skill }: { skill: ProfileSkill }) {
   const confidencePercent = Math.round(skill.summary_confidence * 100);
 
   return (
-    <div className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/40 dark:bg-[#151e29] p-4 transition-all hover:border-[#3b71d9]/40 dark:hover:border-blue-500/40">
+    <div className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-4 transition-all hover:border-[#3b71d9]/50 dark:hover:border-blue-500/50">
       {/* Skill Primary Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <h3 className="font-bold text-sm text-slate-900 dark:text-[#f1f0e8] font-sans">{skill.canonical_name}</h3>
-            <span className="text-xs text-slate-400 dark:text-[#98a4b3]">&middot; {skill.category}</span>
+            <span className="text-xs text-slate-400 dark:text-[#98a4b3] font-sans">&middot; {skill.category}</span>
             <SkillBadge name="" tier={skill.highest_verification_tier} />
           </div>
 
@@ -196,7 +196,7 @@ function PolishedSkillCard({ skill }: { skill: ProfileSkill }) {
               {skill.source_types.map((st) => (
                 <span
                   key={st}
-                  className="inline-flex items-center gap-1 rounded bg-white dark:bg-[#111821] border border-slate-200/80 dark:border-white/10 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:text-[#f1f0e8]"
+                  className="inline-flex items-center gap-1 rounded bg-white/80 dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/10 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:text-[#f1f0e8] backdrop-blur-xs"
                 >
                   {sourceIcon(st)}
                   <span>{st}</span>
@@ -210,7 +210,7 @@ function PolishedSkillCard({ skill }: { skill: ProfileSkill }) {
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-[#111a2e] px-3 py-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-slate-50 dark:hover:bg-[#18233d] transition-colors shrink-0 cursor-pointer"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700/80 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-3 py-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:bg-slate-50 dark:hover:bg-white/[0.08] transition-colors shrink-0 cursor-pointer font-sans"
         >
           <span>{expanded ? "Hide provenance" : "View supporting evidence"}</span>
           {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -225,9 +225,9 @@ function PolishedSkillCard({ skill }: { skill: ProfileSkill }) {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.25 }}
-            className="overflow-hidden pt-3.5 border-t border-slate-200/60 dark:border-slate-800 mt-3.5"
+            className="overflow-hidden pt-3.5 border-t border-slate-200/60 dark:border-white/[0.06] mt-3.5"
           >
-            <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-[#98a4b3] mb-2 font-sans">
               Cryptographic Supporting Evidence ({skill.supports.length})
             </h4>
 
@@ -235,27 +235,27 @@ function PolishedSkillCard({ skill }: { skill: ProfileSkill }) {
               {skill.supports.map((support) => (
                 <li
                   key={support.evidence_id}
-                  className="rounded-lg bg-white dark:bg-[#0c1222] border border-slate-200/80 dark:border-slate-800/80 p-3 space-y-1 text-xs"
+                  className="rounded-xl bg-white/80 dark:bg-white/[0.03] backdrop-blur-md border border-slate-200/80 dark:border-white/[0.06] p-3 space-y-1 text-xs"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900 dark:text-slate-100">{support.title}</span>
-                    <span className="text-[10px] uppercase font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200/60 dark:border-indigo-800/60 px-2 py-0.5 rounded">
+                    <span className="font-bold text-slate-900 dark:text-slate-100 font-sans">{support.title}</span>
+                    <span className="text-[10px] uppercase font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-950/80 border border-indigo-200/60 dark:border-indigo-800/60 px-2 py-0.5 rounded-md backdrop-blur-xs font-sans">
                       Origin: {support.origin}
                     </span>
                   </div>
 
-                  <p className="text-slate-600 dark:text-slate-400 font-mono text-[11px]">
+                  <p className="text-slate-600 dark:text-[#98a4b3] font-mono text-[11px]">
                     Span: &quot;{support.evidence_span}&quot;
                   </p>
 
-                  <div className="flex items-center gap-3 text-[11px] text-slate-400 pt-1">
+                  <div className="flex items-center gap-3 text-[11px] text-slate-400 dark:text-[#98a4b3] pt-1 font-sans">
                     <span>Effective Confidence: {Math.round(support.effective_confidence * 100)}%</span>
                     <span>&middot;</span>
                     <span>Tier: {support.verification_tier}</span>
                   </div>
 
                   {support.likely_duplicate_of && (
-                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900/60 p-2 rounded-md mt-1">
+                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-amber-700 dark:text-amber-400 bg-amber-50/80 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-900/60 p-2 rounded-xl mt-1 backdrop-blur-xs font-sans">
                       <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
                       <span>Potential duplicate source detected; deduplicated to prevent score inflation.</span>
                     </div>

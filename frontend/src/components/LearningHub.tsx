@@ -68,27 +68,27 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Header & Filter */}
-      <div className="bg-white dark:bg-[#151921] rounded-2xl p-6 border border-slate-200 dark:border-white/[0.08] shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Header & Filter Card */}
+      <div className="bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/[0.08] shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <BookOpen className="h-5 w-5 text-[#3b71d9]" />
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Adaptive Learning & Courses Hub</h2>
+            <BookOpen className="h-5 w-5 text-[#3b71d9] dark:text-[#b0c6ff]" />
+            <h2 className="text-lg font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">Curated Learning Hub</h2>
           </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Curated industry courses mapped directly to close your career skill gaps. Completing coursework issues verified Passport credits.
+          <p className="text-sm text-slate-500 dark:text-[#98a4b3] font-sans">
+            Targeted coursework mapped directly to closed skill gaps and high-demand industry roles.
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-1.5 bg-slate-100 dark:bg-white/[0.05] p-1 rounded-xl">
+        <div className="flex flex-wrap gap-1.5 bg-slate-100/80 dark:bg-white/[0.04] p-1.5 rounded-2xl border border-slate-200/50 dark:border-white/[0.06] backdrop-blur-xs">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 selectedCategory === cat
-                  ? "bg-white dark:bg-[#101319] text-[#3b71d9] dark:text-[#b0c6ff] shadow-xs"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                  ? "bg-white dark:bg-[#3b71d9]/25 text-[#3b71d9] dark:text-[#b0c6ff] shadow-xs border border-slate-200/60 dark:border-blue-500/40"
+                  : "text-slate-600 dark:text-[#98a4b3] hover:text-slate-900 dark:hover:text-white"
               }`}
             >
               {cat}
@@ -99,20 +99,20 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
 
       {/* Courses Grid */}
       {loading ? (
-        <div className="p-8 text-center bg-white dark:bg-[#151921] rounded-2xl border border-slate-200 dark:border-white/[0.08]">
+        <div className="p-8 text-center bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl border border-slate-200/70 dark:border-white/[0.08] shadow-lg">
           <div className="inline-block animate-spin h-8 w-8 border-4 border-[#3b71d9] border-t-transparent rounded-full mb-3" />
-          <p className="text-sm text-slate-500 dark:text-slate-400">Loading recommended learning catalog...</p>
+          <p className="text-sm text-slate-500 dark:text-[#98a4b3] font-sans">Loading recommended learning catalog...</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {courses.map((course) => (
             <div
               key={course.id}
-              className="bg-white dark:bg-[#151921] rounded-2xl p-6 border border-slate-200 dark:border-white/[0.08] shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 dark:hover:border-white/[0.15] transition-all"
+              className="bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/[0.08] shadow-lg flex flex-col justify-between space-y-4 hover:border-slate-300 dark:hover:border-white/[0.18] transition-all"
             >
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-900/30 text-[#3b71d9] dark:text-[#b0c6ff]">
+                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-blue-50/80 dark:bg-blue-900/30 text-[#3b71d9] dark:text-[#b0c6ff] backdrop-blur-xs">
                     {course.category} • {course.provider}
                   </span>
                   <div className="flex items-center gap-1 text-xs font-bold text-amber-500">
@@ -121,12 +121,12 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
                   </div>
                 </div>
 
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">{course.title}</h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">{course.description}</p>
+                <h3 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">{course.title}</h3>
+                <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-1 line-clamp-2 font-sans">{course.description}</p>
 
                 {/* Explainable recommendation badge */}
                 {course.recommendation_reason && (
-                  <div className="mt-2.5 p-2 rounded-lg bg-blue-50/70 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/40 text-[11px] text-[#3b71d9] dark:text-[#b0c6ff] font-medium flex items-start gap-1.5">
+                  <div className="mt-2.5 p-2 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/40 text-[11px] text-[#3b71d9] dark:text-[#b0c6ff] font-medium flex items-start gap-1.5 backdrop-blur-xs font-sans">
                     <span className="shrink-0 font-bold">💡 Why:</span>
                     <span>{course.recommendation_reason}</span>
                   </div>
@@ -137,7 +137,7 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
                   {course.skills.map((s) => (
                     <span
                       key={s}
-                      className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300"
+                      className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100/80 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300"
                     >
                       {s}
                     </span>
@@ -147,7 +147,7 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
 
               {/* Course footer / progress */}
               <div className="pt-4 border-t border-slate-100 dark:border-white/[0.06] space-y-3">
-                <div className="flex items-center justify-between text-xs text-slate-500">
+                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-[#98a4b3] font-sans">
                   <span className="flex items-center gap-1">
                     <Clock className="h-3.5 w-3.5" />
                     {course.duration_hours} hours total
@@ -162,7 +162,7 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
                         toast.info(`Curriculum Module: ${course.title} — ${course.description}`);
                       }
                     }}
-                    className="text-[#3b71d9] dark:text-[#b0c6ff] hover:underline flex items-center gap-1 cursor-pointer"
+                    className="text-[#3b71d9] dark:text-[#b0c6ff] hover:underline flex items-center gap-1 cursor-pointer font-sans"
                   >
                     <span>Curriculum</span>
                     <ExternalLink className="h-3 w-3" />
@@ -171,14 +171,14 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
 
                 {course.is_enrolled ? (
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center justify-between text-xs font-sans">
                       <span className="font-semibold text-slate-700 dark:text-slate-300">
                         {course.progress >= 100 ? "Completed" : `In Progress: ${course.progress}%`}
                       </span>
                       {course.progress < 100 && (
                         <button
                           onClick={() => handleUpdateProgress(course.id, 100)}
-                          className="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer flex items-center gap-1"
+                          className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 cursor-pointer flex items-center gap-1 font-sans"
                         >
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           Mark Completed
@@ -195,7 +195,7 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
                 ) : (
                   <button
                     onClick={() => handleEnroll(course.id)}
-                    className="w-full py-2 bg-[#3b71d9] hover:bg-[#2f5db3] text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shadow-[#3b71d9]/20"
+                    className="w-full py-2 bg-[#3b71d9] hover:bg-[#2f5db3] text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shadow-[#3b71d9]/20 font-sans"
                   >
                     <PlayCircle className="h-4 w-4" />
                     Enroll in Course

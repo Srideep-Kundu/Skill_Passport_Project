@@ -210,7 +210,7 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
   return (
     <div className="space-y-6">
       {/* HEADER */}
-      <div className="rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-[#111821]/80 backdrop-blur-md p-6 sm:p-8 shadow-sm">
+      <div className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-6 sm:p-8 shadow-lg">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
@@ -404,7 +404,7 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
           </div>
         </div>
       ) : (
-        <div className="grid gap-5">
+        <div className="grid gap-6">
           {filteredMatches.map((match) => {
             const providerBadge = getProviderBadge(match.provider);
             const strength = getEvidenceStrength(match);
@@ -419,7 +419,7 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
                 key={match.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white/90 dark:bg-[#111821]/90 backdrop-blur-md p-6 sm:p-7 shadow-sm hover:border-[#4f46e5]/40 dark:hover:border-[#38bdf8]/40 transition-all duration-300 relative overflow-hidden group"
+                className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-6 sm:p-7 shadow-lg hover:border-[#4f46e5]/40 dark:hover:border-white/[0.18] transition-all duration-300 relative overflow-hidden group"
               >
                 {/* Ambient glow accent */}
                 <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#4f46e5]/40 dark:via-[#38bdf8]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

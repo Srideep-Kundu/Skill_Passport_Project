@@ -85,7 +85,7 @@ export function GitHubVerification({
   const projectEvidence = evidence.filter((item) => item.evidence_type === "project" && item.external_url);
 
   return (
-    <section className="rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#111821]/90 backdrop-blur-xs p-5 sm:p-6 shadow-sm space-y-4 text-slate-900 dark:text-[#f1f0e8]">
+    <section className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-5 sm:p-6 shadow-lg space-y-4 text-slate-900 dark:text-[#f1f0e8]">
       <div className="border-b border-slate-100 dark:border-white/[0.08] pb-3.5">
         <h2 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] flex items-center gap-2">
           <GitBranch className="h-4 w-4 text-[#3b71d9] dark:text-[#b0c6ff]" />
@@ -96,7 +96,7 @@ export function GitHubVerification({
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl bg-slate-50 dark:bg-[#151e29] border border-slate-200/80 dark:border-white/[0.08] p-3.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md border border-slate-200/60 dark:border-white/[0.06] p-3.5">
         <span className="text-xs font-medium text-slate-700 dark:text-[#f1f0e8]">{identityStatus}</span>
         <div className="flex items-center gap-2">
           <label className="sr-only" htmlFor="github-username">
@@ -107,12 +107,12 @@ export function GitHubVerification({
             value={username}
             onChange={(event) => setUsername(event.target.value)}
             placeholder="GitHub handle (e.g. maya-dev)"
-            className="rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#111821] px-3 py-1.5 text-xs focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
+            className="rounded-lg border border-slate-300 dark:border-white/10 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-3 py-1.5 text-xs focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
           />
           <button
             type="button"
             onClick={() => void saveIdentity()}
-            className="rounded-lg border border-[#3b71d9] dark:border-blue-500 bg-white dark:bg-[#182337] px-3 py-1.5 text-xs font-semibold text-[#3b71d9] dark:text-[#b0c6ff] hover:bg-blue-50 dark:hover:bg-[#1f2d47] transition-colors cursor-pointer"
+            className="rounded-lg border border-[#3b71d9] dark:border-blue-500 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-3 py-1.5 text-xs font-semibold text-[#3b71d9] dark:text-[#b0c6ff] hover:bg-blue-50 dark:hover:bg-white/[0.08] transition-colors cursor-pointer"
           >
             Save Handle
           </button>
@@ -124,7 +124,7 @@ export function GitHubVerification({
           {projectEvidence.map((item) => (
             <li
               key={item.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/40 dark:bg-[#151e29] p-3.5 hover:border-blue-300 dark:hover:border-blue-800 transition-colors"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-3.5 hover:border-[#3b71d9]/50 dark:hover:border-blue-500/50 transition-colors"
             >
               <div className="space-y-0.5">
                 <span className="text-xs font-bold text-slate-900 dark:text-[#f1f0e8] block">{item.title}</span>
@@ -136,7 +136,7 @@ export function GitHubVerification({
                 type="button"
                 onClick={() => void verify(item.id)}
                 disabled={isVerifyingId === item.id}
-                className="rounded-lg border border-[#3b71d9] dark:border-blue-500 bg-blue-50/50 dark:bg-[#182337] px-3 py-1.5 text-xs font-semibold text-[#3b71d9] dark:text-[#b0c6ff] hover:bg-[#3b71d9] hover:text-white disabled:opacity-50 transition-colors cursor-pointer"
+                className="rounded-lg border border-[#3b71d9] dark:border-blue-500 bg-blue-50/50 dark:bg-[#3b71d9]/20 px-3 py-1.5 text-xs font-semibold text-[#3b71d9] dark:text-[#b0c6ff] hover:bg-[#3b71d9] hover:text-white disabled:opacity-50 transition-colors cursor-pointer"
               >
                 {isVerifyingId === item.id ? "Verifying..." : "Run GitHub Verification"}
               </button>
@@ -150,13 +150,13 @@ export function GitHubVerification({
       )}
 
       {message && (
-        <div role="alert" className="rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 p-2.5 text-xs font-medium text-red-700 dark:text-red-300">
+        <div role="alert" className="rounded-xl bg-red-50/80 dark:bg-red-950/40 backdrop-blur-md border border-red-200 dark:border-red-900/60 p-2.5 text-xs font-medium text-red-700 dark:text-red-300">
           {message}
         </div>
       )}
 
       {result && (
-        <div className="rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/40 dark:bg-emerald-950/40 p-4 space-y-2">
+        <div className="rounded-2xl border border-emerald-200/80 dark:border-emerald-900/60 bg-emerald-50/40 dark:bg-emerald-950/30 backdrop-blur-md p-4 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-900 dark:text-slate-100">Verification Outcome:</span>
             <span className="rounded-full bg-emerald-100 dark:bg-emerald-950 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">

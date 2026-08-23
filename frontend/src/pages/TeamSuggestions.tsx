@@ -130,7 +130,7 @@ export function TeamSuggestions({
   }
 
   return (
-    <section className="rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#111821]/90 backdrop-blur-md p-5 sm:p-6 shadow-sm space-y-5 text-slate-900 dark:text-[#f1f0e8]">
+    <section className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-5 sm:p-6 shadow-lg space-y-5 text-slate-900 dark:text-[#f1f0e8]">
       <div className="border-b border-slate-100 dark:border-white/[0.08] pb-3.5 flex items-start justify-between">
         <div>
           <h2 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] flex items-center gap-2 font-sans">
@@ -141,7 +141,7 @@ export function TeamSuggestions({
             Deterministic pairing algorithm: Maximizes Target Skill Coverage minus 0.5× Jaccard Redundancy.
           </p>
         </div>
-        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50 dark:bg-[#182337] text-[#3b71d9] dark:text-[#b0c6ff] border border-blue-200/60 dark:border-blue-900/60">
+        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50/80 dark:bg-[#3b71d9]/20 text-[#3b71d9] dark:text-[#b0c6ff] border border-blue-200/60 dark:border-blue-500/30 backdrop-blur-xs">
           Zero-LLM Authority
         </span>
       </div>
@@ -158,16 +158,16 @@ export function TeamSuggestions({
                 type="button"
                 key={idx}
                 onClick={() => handleSelectProject(proj)}
-                className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer backdrop-blur-md ${
                   selectedProject === proj.title
-                    ? "border-[#3b71d9] bg-blue-50/60 dark:bg-[#182337] dark:border-blue-500/50 shadow-xs"
-                    : "border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-[#151e29] hover:border-slate-300"
+                    ? "border-[#3b71d9] bg-blue-50/70 dark:bg-[#3b71d9]/20 dark:border-[#3b71d9]/80 shadow-xs"
+                    : "border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] hover:border-slate-300 dark:hover:border-white/[0.16]"
                 }`}
               >
                 <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight">{proj.title}</p>
                 <div className="flex flex-wrap gap-1 mt-2">
                   {proj.skills.slice(0, 3).map((s, i) => (
-                    <span key={i} className="text-[9px] px-1.5 py-0.2 rounded bg-white dark:bg-[#111821] text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-white/10">
+                    <span key={i} className="text-[9px] px-1.5 py-0.2 rounded bg-white/80 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-white/10">
                       {s}
                     </span>
                   ))}
@@ -192,14 +192,14 @@ export function TeamSuggestions({
                 <div
                   key={peer.id}
                   onClick={() => toggleCandidate(peer.id)}
-                  className={`p-3 rounded-xl border flex items-start justify-between gap-2.5 transition-all cursor-pointer ${
+                  className={`p-3.5 rounded-2xl border flex items-start justify-between gap-2.5 transition-all cursor-pointer backdrop-blur-md ${
                     isSelected
-                      ? "border-emerald-500/60 bg-emerald-50/30 dark:bg-emerald-950/20 dark:border-emerald-500/40"
-                      : "border-slate-200 dark:border-white/10 bg-slate-50/40 dark:bg-[#151e29] opacity-60 hover:opacity-100"
+                      ? "border-emerald-500/60 bg-emerald-50/40 dark:bg-emerald-950/30 dark:border-emerald-500/50"
+                      : "border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] opacity-75 hover:opacity-100 hover:border-slate-300 dark:hover:border-white/[0.16]"
                   }`}
                 >
                   <div className="flex items-start gap-2.5">
-                    <div className="h-8 w-8 rounded-lg bg-[#3b71d9]/10 text-[#3b71d9] dark:text-[#b0c6ff] font-bold text-xs flex items-center justify-center shrink-0">
+                    <div className="h-8 w-8 rounded-xl bg-[#3b71d9]/15 text-[#3b71d9] dark:text-[#b0c6ff] font-bold text-xs flex items-center justify-center shrink-0">
                       {peer.avatar}
                     </div>
                     <div>
@@ -207,7 +207,7 @@ export function TeamSuggestions({
                       <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{peer.domain}</p>
                       <div className="flex flex-wrap gap-1 mt-1.5">
                         {peer.skills.slice(0, 3).map((s, i) => (
-                          <span key={i} className="text-[9px] px-1 py-0.2 rounded bg-white dark:bg-[#111821] text-slate-600 dark:text-slate-300">
+                          <span key={i} className="text-[9px] px-1.5 py-0.2 rounded bg-white/80 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300">
                             {s}
                           </span>
                         ))}
@@ -253,7 +253,7 @@ export function TeamSuggestions({
               return (
                 <div
                   key={index}
-                  className="p-4 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/50 dark:bg-[#151e29] space-y-2.5"
+                  className="p-4.5 rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md space-y-2.5"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] uppercase font-bold text-slate-400">Rank #{index + 1}</span>

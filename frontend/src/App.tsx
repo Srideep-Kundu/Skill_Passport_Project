@@ -23,6 +23,14 @@ import {
   Briefcase,
   Users2,
   TrendingUp,
+  GraduationCap,
+  Building2,
+  Sparkles,
+  Award,
+  Clock,
+  Layers,
+  FileSpreadsheet,
+  Download,
 } from "lucide-react";
 import { LandingPage } from "./pages/LandingPage";
 import { useAuth } from "./auth/AuthContext";
@@ -47,11 +55,35 @@ const InstitutionDashboard = lazy(async () => ({
 
 export type StudentTab = "overview" | "passport" | "evidence" | "gaps" | "assessments" | "learning" | "placements" | "collaborations" | "github" | "matches" | "discovery" | "teams";
 export type RecruiterTab = "overview" | "internships" | "post_job" | "candidates";
+export type AcademicianTab =
+  | "opportunities"
+  | "applications"
+  | "workspaces"
+  | "passport"
+  | "internships"
+  | "proposals"
+  | "mentorship_events"
+  | "advising"
+  | "documents"
+  | "history";
+export type InstitutionTab =
+  | "overview"
+  | "departments"
+  | "cohorts"
+  | "skills"
+  | "internships"
+  | "placements"
+  | "faculty"
+  | "partnerships"
+  | "interventions"
+  | "reports";
 
 export function App() {
   const { session, signOut, justLoggedIn, completePostLoginTransition } = useAuth();
   const [studentTab, setStudentTab] = useState<StudentTab>("overview");
   const [recruiterTab, setRecruiterTab] = useState<RecruiterTab>("overview");
+  const [academicianTab, setAcademicianTab] = useState<AcademicianTab>("opportunities");
+  const [institutionTab, setInstitutionTab] = useState<InstitutionTab>("overview");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [copilotOpen, setCopilotOpen] = useState(false);
@@ -142,6 +174,34 @@ export function App() {
     { id: "internships", label: "Your Internships", icon: <ClipboardList className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "post_job", label: "Post New Internship", icon: <PlusCircle className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "candidates", label: "Ranked Candidates", icon: <Target className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+  ];
+
+  // 10 Faculty / Academician Portal navigation tabs
+  const academicianNavItems: { id: AcademicianTab; label: string; icon: React.ReactNode }[] = [
+    { id: "opportunities", label: "Opportunities", icon: <Briefcase className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "applications", label: "My Applications", icon: <FileText className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "workspaces", label: "Workspaces", icon: <Layers className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "passport", label: "Academic Passport", icon: <GraduationCap className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "internships", label: "Industrial Training", icon: <Building2 className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "proposals", label: "R&D & Grants", icon: <Sparkles className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "mentorship_events", label: "Mentorship & Events", icon: <Users className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "advising", label: "Project Advising", icon: <Award className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "documents", label: "Vault Documents", icon: <BookOpen className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "history", label: "History & Outcomes", icon: <Clock className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+  ];
+
+  // 10 University / Institution Intelligence navigation tabs
+  const institutionNavItems: { id: InstitutionTab; label: string; icon: React.ReactNode }[] = [
+    { id: "overview", label: "Executive Overview", icon: <Building2 className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "departments", label: "Department Drill-Down", icon: <FileSpreadsheet className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "cohorts", label: "Cohorts & At-Risk", icon: <Users className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "skills", label: "Skill & Curriculum Gap", icon: <TrendingUp className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "internships", label: "Internship Funnel", icon: <Briefcase className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "placements", label: "Placement Outcomes", icon: <Award className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "faculty", label: "Faculty Immersion", icon: <GraduationCap className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "partnerships", label: "Corporate Partnerships", icon: <Layers className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "interventions", label: "Action Plans", icon: <Sparkles className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "reports", label: "Institutional Reports", icon: <Download className="h-4 w-4 shrink-0" aria-hidden="true" /> },
   ];
 
   return (
@@ -313,6 +373,86 @@ export function App() {
                   </button>
                 );
               })}
+
+            {isAcademician &&
+              academicianNavItems.map((item) => {
+                const isActive = academicianTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setAcademicianTab(item.id);
+                      setMobileMenuOpen(false);
+                    }}
+                    title={isCollapsed ? item.label : undefined}
+                    className={`relative w-full flex items-center rounded-xl text-xs font-semibold transition-colors duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#4f46e5] focus-visible:outline-none ${isCollapsed ? "justify-center px-0 py-3" : "px-3.5 py-2.5 gap-3"
+                      } ${isActive
+                        ? "text-white font-bold"
+                        : "text-slate-600 dark:text-[#8ea2c6] hover:bg-slate-100/80 dark:hover:bg-[#151e29] hover:text-slate-900 dark:hover:text-[#f1f0e8]"
+                      }`}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="active-academician-nav"
+                        className="absolute inset-0 rounded-xl bg-[#4f46e5] dark:bg-[#182337] dark:border dark:border-[#38bdf8]/30 shadow-md shadow-indigo-500/25 dark:shadow-[0_0_15px_rgba(56,189,248,0.15)] z-0 overflow-hidden"
+                        transition={sidebarIndicatorTransition}
+                      >
+                        <div className="hidden dark:block absolute left-0 top-2 bottom-2 w-1 rounded-r bg-[#38bdf8] shadow-[0_0_8px_#38bdf8]" />
+                      </motion.div>
+                    )}
+                    <span className={`relative z-10 text-base shrink-0 flex items-center justify-center w-5 h-5 ${isActive ? "text-white dark:text-[#38bdf8]" : "text-slate-500 dark:text-[#8ea2c6]"}`}>
+                      {item.icon}
+                    </span>
+                    <span
+                      className={`relative z-10 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out font-sans ${isCollapsed ? "max-w-0 opacity-0" : "max-w-xs opacity-100"
+                        }`}
+                    >
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
+
+            {isInstitution &&
+              institutionNavItems.map((item) => {
+                const isActive = institutionTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setInstitutionTab(item.id);
+                      setMobileMenuOpen(false);
+                    }}
+                    title={isCollapsed ? item.label : undefined}
+                    className={`relative w-full flex items-center rounded-xl text-xs font-semibold transition-colors duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#4f46e5] focus-visible:outline-none ${isCollapsed ? "justify-center px-0 py-3" : "px-3.5 py-2.5 gap-3"
+                      } ${isActive
+                        ? "text-white font-bold"
+                        : "text-slate-600 dark:text-[#8ea2c6] hover:bg-slate-100/80 dark:hover:bg-[#151e29] hover:text-slate-900 dark:hover:text-[#f1f0e8]"
+                      }`}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="active-institution-nav"
+                        className="absolute inset-0 rounded-xl bg-[#4f46e5] dark:bg-[#182337] dark:border dark:border-[#38bdf8]/30 shadow-md shadow-indigo-500/25 dark:shadow-[0_0_15px_rgba(56,189,248,0.15)] z-0 overflow-hidden"
+                        transition={sidebarIndicatorTransition}
+                      >
+                        <div className="hidden dark:block absolute left-0 top-2 bottom-2 w-1 rounded-r bg-[#38bdf8] shadow-[0_0_8px_#38bdf8]" />
+                      </motion.div>
+                    )}
+                    <span className={`relative z-10 text-base shrink-0 flex items-center justify-center w-5 h-5 ${isActive ? "text-white dark:text-[#38bdf8]" : "text-slate-500 dark:text-[#8ea2c6]"}`}>
+                      {item.icon}
+                    </span>
+                    <span
+                      className={`relative z-10 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out font-sans ${isCollapsed ? "max-w-0 opacity-0" : "max-w-xs opacity-100"
+                        }`}
+                    >
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
           </div>
         </div>
 
@@ -460,7 +600,11 @@ export function App() {
                 </div>
               }
             >
-              <AcademicianDashboard token={session.access_token} />
+              <AcademicianDashboard
+                token={session.access_token}
+                activeTab={academicianTab}
+                onTabChange={setAcademicianTab}
+              />
             </Suspense>
           ) : isInstitution ? (
             <Suspense
@@ -471,7 +615,11 @@ export function App() {
                 </div>
               }
             >
-              <InstitutionDashboard token={session.access_token} />
+              <InstitutionDashboard
+                token={session.access_token}
+                activeTab={institutionTab}
+                onTabChange={setInstitutionTab}
+              />
             </Suspense>
           ) : (
             <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-sm">

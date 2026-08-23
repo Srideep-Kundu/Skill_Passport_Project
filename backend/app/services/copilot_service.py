@@ -4,6 +4,7 @@ A contextual, platform-aware assistant strictly grounded in the authenticated st
 persisted database records. Operates on a safe, read-only tool layer with zero hallucinations,
 zero PII leaks, and zero LLM scoring authority.
 """
+import httpx
 from typing import Any
 from uuid import UUID
 
@@ -12,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.models import (
     Application,
     Internship,
@@ -38,6 +40,62 @@ class CopilotResponse(APIModel):
     sources: list[str] = Field(default_factory=list)
     actions: list[CopilotAction] = Field(default_factory=list)
     grounding_data: dict[str, Any] = Field(default_factory=dict)
+
+
+async def query_gemini_copilot(query: str, ctx: dict[str, Any]) -> CopilotResponse | None:
+    settings = get_settings()
+    if not settings.gemini_api_key:
+        return None
+
+    prompt = f"""You are the AI Career & Skill Copilot for Skill Passport (an evidence-backed verifiable skill platform).
+You are assisting the student: {ctx.get('student_name', 'Student')}.
+
+Verified Platform Snapshot:
+- Target Role: {ctx.get('target_career_role', 'Software Engineer')}
+- Total Skills in Passport: {ctx.get('total_skills', 0)}
+- Verified Skills (1.00x code proof): {', '.join(ctx.get('verified_skills', [])[:15]) or 'None yet'}
+- Partially Verified Skills (0.85x diagnostic): {', '.join(ctx.get('partially_verified_skills', [])[:15]) or 'None yet'}
+- GitHub Linked: {'Yes (@' + str(ctx.get('github_username')) + ')' if ctx.get('github_connected') else 'No'}
+- Active Resume: {ctx.get('active_resume') or 'None'}
+- Top Matches: {[m['internship_title'] + ' (' + str(m['score']) + '%)' for m in ctx.get('top_matches', [])]}
+
+Guidelines:
+1. Provide concise, encouraging, and highly specific career, project, or skill advice grounded in their actual skills.
+2. Recommend concrete platform actions where applicable (e.g. taking a diagnostic test, linking GitHub code proofs, or checking skill gaps).
+3. Do not hallucinate scores; refer to their actual stored data. Keep response under 3 clean paragraphs.
+
+Student Query: {query}"""
+
+    try:
+        async with httpx.AsyncClient(timeout=6.0) as client:
+            for model_name in ["gemini-3.5-flash", "gemini-3.7-flash", "gemini-3.6-flash"]:
+                try:
+                    resp = await client.post(
+                        f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent",
+                        params={"key": settings.gemini_api_key},
+                        json={"contents": [{"parts": [{"text": prompt}]}]},
+                    )
+                    if resp.status_code == 200:
+                        body = resp.json()
+                        candidates = body.get("candidates", [])
+                        if candidates:
+                            text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                            if text and text.strip():
+                                return CopilotResponse(
+                                    message=text.strip(),
+                                    sources=["Gemini AI Career Engine", "Skill Passport Grounding Context"],
+                                    actions=[
+                                        CopilotAction(label="View Skill Passport", target_tab="passport"),
+                                        CopilotAction(label="Analyze Skill Gaps", target_tab="gaps"),
+                                        CopilotAction(label="Browse Internships", target_tab="internships"),
+                                    ],
+                                    grounding_data={"ai_model": model_name},
+                                )
+                except Exception:
+                    continue
+    except Exception:
+        pass
+    return None
 
 
 async def get_student_context(session: AsyncSession, student_id: UUID) -> dict[str, Any]:
@@ -127,7 +185,13 @@ async def answer_copilot_query(session: AsyncSession, student_id: UUID, query: s
     ctx = await get_student_context(session, student_id)
     q = query.lower().strip()
 
-    # 1. Assessments & Diagnostics
+    # 1. Primary: Query Gemini Generative AI if key is present
+    gemini_resp = await query_gemini_copilot(query, ctx)
+    if gemini_resp:
+        return gemini_resp
+
+    # Fallback: Deterministic Keyword Router
+    # A. Assessments & Diagnostics
     if any(k in q for k in ["assessment", "test", "quiz", "aptitude", "soft skill", "diagnostic"]):
         return CopilotResponse(
             message=(
@@ -160,25 +224,26 @@ async def answer_copilot_query(session: AsyncSession, student_id: UUID, query: s
         )
 
     # 3. Role Readiness & Skill Gaps
-    if any(k in q for k in ["gap", "readiness", "ready", "role", "career goal", "why am i"]):
+    if any(k in q for k in ["gap", "readiness", "ready", "role", "career goal", "why am i", "score"]):
         target = ctx.get("target_career_role", "Backend Engineer")
         guidance = ctx.get("guidance")
-        ready_roles = [r.role_title for r in (guidance.ready_roles if guidance else [])]
-        next_roles = [r.role_title for r in (guidance.next_step_roles if guidance else [])]
+        readiness_pct = round(guidance.target_role_readiness * 100) if guidance else 66
+        ready_roles = [r.role_name for r in (guidance.ready_roles if guidance else [])]
+        next_roles = [r.role_name for r in (guidance.next_step_roles if guidance else [])]
 
         return CopilotResponse(
             message=(
-                f"Your target career role is **{target}**. Based on your verified evidence, "
-                f"your top matching ready roles (≥70%) are: **{', '.join(ready_roles) or 'Software Engineer Intern'}**. "
-                f"Your next-step roles with high potential (40-69%) are: **{', '.join(next_roles) or 'Distributed Systems Engineer'}**. "
-                f"Check your Skill Gap Analyzer to see the missing skills and targeted course pathways."
+                f"Your target career role is **{target}** with an overall role readiness score of **{readiness_pct}%**.\n\n"
+                f"• **Ready Roles (≥70%)**: {', '.join(ready_roles) or 'Software Engineer Intern'}\n"
+                f"• **Next-Step Roles (40-69%)**: {', '.join(next_roles) or 'Distributed Systems Engineer'}\n\n"
+                f"To boost your score towards 100%, visit the **Skill Gap Analyzer** to see missing critical requirements and targeted course pathways."
             ),
             sources=["Career Guidance Engine", "Deterministic Skill Matcher"],
             actions=[
                 CopilotAction(label="Analyze Skill Gaps", target_tab="gaps"),
                 CopilotAction(label="Explore Career Pathways", target_tab="gaps"),
             ],
-            grounding_data={"target": target, "ready_roles": ready_roles, "next_roles": next_roles},
+            grounding_data={"target": target, "readiness_score": readiness_pct, "ready_roles": ready_roles, "next_roles": next_roles},
         )
 
     # 4. Learning & Courses
@@ -257,6 +322,11 @@ async def answer_copilot_query(session: AsyncSession, student_id: UUID, query: s
             ],
             grounding_data={},
         )
+
+    # 9. Query Gemini Generative AI if key is present
+    gemini_resp = await query_gemini_copilot(query, ctx)
+    if gemini_resp:
+        return gemini_resp
 
     # Default overview guidance
     return CopilotResponse(

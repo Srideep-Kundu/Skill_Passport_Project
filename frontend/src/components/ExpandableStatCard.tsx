@@ -106,10 +106,10 @@ export function ExpandableStatCard({
           duration: 0.24,
           ease: [0.22, 1, 0.36, 1],
         }}
-        className={`absolute top-0 left-0 right-0 w-full origin-center rounded-2xl border p-4.5 transition-colors duration-200 cursor-pointer ${
+        className={`absolute top-0 left-0 right-0 w-full origin-center rounded-3xl border p-5 transition-all duration-200 cursor-pointer ${
           isHovered
-            ? "z-50 border-[#3b71d9]/90 dark:border-[#3b71d9]/80 bg-white dark:bg-[#151e29] shadow-2xl dark:shadow-[0_12px_35px_rgba(0,0,0,0.7)] ring-2 ring-[#3b71d9]/30"
-            : "z-10 border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#111821]/90 backdrop-blur-md shadow-sm hover:border-slate-300 dark:hover:border-white/[0.18]"
+            ? "z-50 border-[#3b71d9]/80 dark:border-[#3b71d9]/80 bg-white/85 dark:bg-[#0c121e]/75 backdrop-blur-xl shadow-2xl dark:shadow-[0_12px_35px_rgba(0,0,0,0.6)] ring-2 ring-[#3b71d9]/30"
+            : "z-10 border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl shadow-lg hover:border-slate-300 dark:hover:border-white/[0.18]"
         }`}
       >
         {/* Top Header */}
