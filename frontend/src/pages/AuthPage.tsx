@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Check, GraduationCap, Briefcase, BookOpen, Building2, X } from "lucide-react";
+import { Check, GraduationCap, Briefcase, BookOpen, Building2, X, Sparkles } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import { ApiError, api } from "../api";
 import { useAuth } from "../auth/AuthContext";
@@ -297,6 +297,40 @@ export function AuthPage({ isModal = false, onClose }: AuthPageProps = {}) {
               Names, universities, and protected attributes never affect scores.
             </li>
           </ul>
+        </div>
+
+        {/* Quick Demo Access (1-Click Login) */}
+        <div className="rounded-2xl border border-indigo-200/60 dark:border-indigo-800/40 bg-gradient-to-b from-indigo-50/50 to-slate-50/40 dark:from-[#131b28]/80 dark:to-[#10141d]/80 p-4 sm:p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-[#93c5fd] flex items-center gap-1.5 font-sans">
+              <Sparkles className="h-3.5 w-3.5 animate-pulse text-indigo-500" />
+              <span>Instant Demo Personas</span>
+            </span>
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300">
+              1-Click Login
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+            {DEMO_PERSONAS.map((p) => (
+              <button
+                key={p.email}
+                type="button"
+                onClick={() => void handlePersonaClick(p.email, p.pass)}
+                className="group relative text-left p-2.5 rounded-xl border border-slate-200/80 dark:border-white/10 bg-white/90 dark:bg-[#151e29]/90 hover:border-[#3b71d9] dark:hover:border-[#3b71d9] hover:bg-slate-50 dark:hover:bg-[#1a2536] transition-all cursor-pointer shadow-xs flex flex-col justify-between"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-[#3b71d9] dark:group-hover:text-[#93c5fd] transition-colors">
+                    {p.name}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-mono">→</span>
+                </div>
+                <span className="text-[10px] font-medium text-slate-500 dark:text-[#8ea2c6] mt-0.5">
+                  {p.role}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       </section>
 

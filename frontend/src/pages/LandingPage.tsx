@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, FileCheck2, Scale, ShieldCheck, Sparkles, Sun, Moon } from "lucide-react";
+import { ArrowRight, FileCheck2, Scale, ShieldCheck, Sparkles, Sun, Moon, Zap } from "lucide-react";
+import { toast } from "sonner";
 
+import { useAuth } from "../auth/AuthContext";
+import { api, ApiError } from "../api";
 import { LuminaAmbientHorizon } from "../components/LuminaAmbientHorizon";
 import { DotMatrixHeroHeader } from "../components/DotMatrixHero";
 import { AuthPage } from "./AuthPage";
@@ -12,6 +15,13 @@ interface LandingPageProps {
   defaultAuthOpen?: boolean;
 }
 
+const DEMO_SHORTCUTS = [
+  { label: "Student", name: "Maya Rivera", email: "maya@example.demo", pass: "DemoPassword123", badge: "35 Skills" },
+  { label: "Recruiter", name: "TechCorp Hiring", email: "recruiter@example.demo", pass: "DemoPassword123", badge: "3 Jobs" },
+  { label: "Faculty", name: "Dr. Arvind Rao", email: "faculty@example.demo", pass: "DemoPassword123", badge: "R&D Portal" },
+  { label: "Institution", name: "Dean Analytics", email: "dean@example.demo", pass: "DemoPassword123", badge: "NAAC Hub" },
+];
+
 const capabilities = [
   { icon: FileCheck2, title: "Evidence-Backed Skills", text: "Every passport skill traces to concrete code, repositories, and verified records." },
   { icon: Scale, title: "Deterministic Matching", text: "Mathematical multi-component scoring without unexplainable AI bias or black-box rankings." },
@@ -19,7 +29,9 @@ const capabilities = [
 ];
 
 export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false }: LandingPageProps) {
+  const { setSession } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(defaultAuthOpen);
+  const [authenticatingEmail, setAuthenticatingEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -28,6 +40,20 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [authModalOpen]);
+
+  async function handleQuickLogin(email: string, pass: string, name: string) {
+    setAuthenticatingEmail(email);
+    try {
+      const session = await api.login({ email, password: pass });
+      setSession(session, email);
+      toast.success(`Logged in as ${name} (${email})`);
+    } catch (caught) {
+      const msg = caught instanceof ApiError ? caught.detail : "Unable to authenticate demo account.";
+      toast.error(msg);
+    } finally {
+      setAuthenticatingEmail(null);
+    }
+  }
 
   return (
     <div className="relative flex min-h-screen w-full select-none flex-col overflow-hidden bg-[#070a10] font-sans text-white">
@@ -75,11 +101,11 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
       </header>
 
       {/* Main Hero Section */}
-      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center px-4 py-10 text-center sm:px-6 lg:px-8">
+      <main className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col items-center justify-center px-4 py-8 text-center sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-slate-950/70 px-4 py-1.5 text-xs font-semibold text-cyan-100 backdrop-blur-xl shadow-sm"
+          className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-300/25 bg-slate-950/70 px-4 py-1.5 text-xs font-semibold text-cyan-100 backdrop-blur-xl shadow-sm"
         >
           <Sparkles className="h-3.5 w-3.5 text-cyan-300 animate-pulse" aria-hidden="true" />
           <span>Verifiable Skill Passport & Multi-Persona Ecosystem</span>
@@ -90,7 +116,7 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.05 }}
-          className="my-4"
+          className="my-3"
         >
           <DotMatrixHeroHeader line1="INTELLIGENCE" line2="DESIGNED TO EVOLVE" />
         </motion.div>
@@ -99,7 +125,7 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.18 }}
-          className="mt-4 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base"
+          className="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base"
         >
           Students construct evidence-backed skill graphs. Recruiters, academicians, and institutions receive auditable, deterministic matching without black-box bias.
         </motion.p>
@@ -109,7 +135,7 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.24 }}
-          className="mt-8 flex flex-wrap items-center justify-center gap-3"
+          className="mt-6 flex flex-wrap items-center justify-center gap-3"
         >
           <button
             type="button"
@@ -121,12 +147,55 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
           </button>
         </motion.div>
 
+        {/* 1-Click Instant Demo Persona Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.28 }}
+          className="mt-6 w-full max-w-3xl rounded-2xl border border-white/10 bg-slate-950/60 p-3.5 sm:p-4 backdrop-blur-xl shadow-lg"
+        >
+          <div className="flex items-center justify-between px-1 mb-2.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-1.5 font-sans">
+              <Zap className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+              <span>Instant Demo Accounts (1-Click Login)</span>
+            </span>
+            <span className="text-[10px] text-slate-400">Click any persona to test instantly</span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {DEMO_SHORTCUTS.map((p) => (
+              <button
+                key={p.email}
+                type="button"
+                disabled={authenticatingEmail === p.email}
+                onClick={() => void handleQuickLogin(p.email, p.pass, p.name)}
+                className="group relative flex flex-col items-start p-2.5 rounded-xl border border-white/10 bg-white/5 hover:border-cyan-400/50 hover:bg-cyan-950/30 transition-all cursor-pointer text-left disabled:opacity-50"
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-800/40 text-cyan-300">
+                    {p.label}
+                  </span>
+                  <span className="text-[9px] text-slate-400 font-medium">
+                    {p.badge}
+                  </span>
+                </div>
+                <span className="text-xs font-bold text-white group-hover:text-cyan-200 mt-1.5 transition-colors">
+                  {authenticatingEmail === p.email ? "Logging in..." : p.name}
+                </span>
+                <span className="text-[9px] text-slate-400 truncate w-full mt-0.5 font-mono">
+                  {p.email}
+                </span>
+              </button>
+            ))}
+          </div>
+        </motion.div>
+
         {/* 3 Value Pillars */}
         <motion.div
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.32 }}
-          className="mt-12 grid w-full gap-4 text-left md:grid-cols-3"
+          transition={{ delay: 0.34 }}
+          className="mt-8 grid w-full gap-4 text-left md:grid-cols-3"
         >
           {capabilities.map(({ icon: Icon, title, text }) => (
             <article key={title} className="rounded-2xl border border-white/10 bg-slate-950/50 p-5 backdrop-blur-xl transition-transform hover:-translate-y-1">
