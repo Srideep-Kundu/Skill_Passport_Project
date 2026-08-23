@@ -302,7 +302,7 @@ export function SkillGapAnalyzer({ token, onNavigateToLearning, onNavigateToAsse
             <div className="flex items-center gap-4">
               <CircularReadinessGauge
                 readinessScore={analysis.overall_readiness_score}
-                label={`${analysis.target_role}`}
+                label="READY"
                 size={110}
               />
               <div>

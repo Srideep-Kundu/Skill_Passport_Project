@@ -101,17 +101,26 @@ export function CircularReadinessGauge({
       </svg>
 
       {/* Central Metric Readout */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-2">
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="text-center"
+          className="text-center flex flex-col items-center justify-center"
         >
-          <span className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-[#f1f0e8] block font-sans">
+          <span
+            className={`${
+              size <= 120 ? "text-2xl" : "text-3xl"
+            } font-black tracking-tight text-slate-900 dark:text-[#f1f0e8] block font-sans leading-none`}
+          >
             {clampedReadiness}%
           </span>
-          <span className="text-[10px] font-bold tracking-[0.2em] text-slate-500 dark:text-[#98a4b3] uppercase mt-0.5 block">
+          <span
+            className={`${
+              size <= 120 ? "text-[8px] tracking-wider max-w-[60px]" : "text-[10px] tracking-[0.2em] max-w-[110px]"
+            } font-bold text-slate-500 dark:text-[#98a4b3] uppercase mt-1 block truncate`}
+            title={label}
+          >
             {label}
           </span>
         </motion.div>

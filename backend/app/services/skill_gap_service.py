@@ -77,6 +77,27 @@ async def update_student_career_goals(session: AsyncSession, student_id: UUID, p
     return CareerGoalsResponse(**data)
 
 
+SKILL_ALIASES: dict[str, list[str]] = {
+    "react": ["react", "react.js", "reactjs", "frontend development"],
+    "typescript": ["typescript", "ts", "javascript", "js"],
+    "node.js": ["node.js", "nodejs", "node", "express", "backend development"],
+    "postgresql": ["postgresql", "postgres", "sql", "relational databases", "mysql"],
+    "docker": ["docker", "containerization", "containers", "devops"],
+    "rest api": ["rest api", "restful api", "rest", "api design", "apis"],
+    "git": ["git", "github", "version control", "gitlab"],
+    "fastapi": ["fastapi", "python", "backend frameworks", "flask", "django"],
+    "python": ["python", "python3", "backend programming"],
+    "machine learning": ["machine learning", "ml", "deep learning", "ai", "artificial intelligence"],
+    "pytorch": ["pytorch", "tensorflow", "keras", "neural networks"],
+    "sql": ["sql", "postgresql", "mysql", "databases"],
+    "data analysis": ["data analysis", "pandas", "numpy", "data science"],
+    "statistics": ["statistics", "probability", "mathematics"],
+    "kubernetes": ["kubernetes", "k8s", "cloud orchestration"],
+    "ci/cd": ["ci/cd", "continuous integration", "github actions"],
+    "linux": ["linux", "unix", "bash", "shell scripting"],
+}
+
+
 async def analyze_skill_gaps(session: AsyncSession, student_id: UUID, target_role: str | None = None) -> SkillGapAnalysisResponse:
     # 1. Get student career goals or default
     goals = await get_student_career_goals(session, student_id)
@@ -110,8 +131,18 @@ async def analyze_skill_gaps(session: AsyncSession, student_id: UUID, target_rol
         imp = req["importance"]
         name_lower = name.casefold()
 
+        matched_entry = None
         if name_lower in student_skill_map:
-            conf, tier = student_skill_map[name_lower]
+            matched_entry = student_skill_map[name_lower]
+        else:
+            aliases = SKILL_ALIASES.get(name_lower, [name_lower])
+            for alias in aliases:
+                if alias in student_skill_map:
+                    matched_entry = student_skill_map[alias]
+                    break
+
+        if matched_entry is not None:
+            conf, tier = matched_entry
             tier_mult = 1.0 if tier == VerificationTier.verified else (0.85 if tier == VerificationTier.partially_verified else 0.65)
             eff_prof = round(conf * tier_mult, 2)
             matched_count += 1
