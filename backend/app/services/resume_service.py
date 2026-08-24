@@ -254,7 +254,7 @@ def claims_from_parsed(parsed: ResumeParsedData, full_text: str = "") -> list[Ev
     # 1. Primary technical skills claim (all explicit skills in 1 immediate job)
     if parsed.explicit_technical_skills:
         skills = ", ".join(parsed.explicit_technical_skills)
-        claims.append(EvidenceClaim("skills", EvidenceType.coursework, "Resume Technical Skills", f"Explicit technical skills listed in resume: {skills}", skills))
+        claims.append(EvidenceClaim("skills", EvidenceType.coursework, "Resume technical skills", f"Explicit technical skills listed in resume: {skills}", skills))
 
     # 2. Key projects (top 4 high-impact project records)
     for item in parsed.projects[:4]:
