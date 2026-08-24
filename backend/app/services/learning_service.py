@@ -44,6 +44,13 @@ async def list_courses(
         stmt = stmt.where(LearningCourse.category.ilike(category))
 
     courses = (await session.scalars(stmt)).all()
+    if not courses:
+        try:
+            from seed.seed_sih_ecosystem import seed_sih_ecosystem
+            await seed_sih_ecosystem()
+            courses = (await session.scalars(stmt)).all()
+        except Exception:
+            pass
 
     # Get student enrollments and missing skill gaps for explainable recommendations
     enrollment_map: dict[UUID, CourseEnrollment] = {}

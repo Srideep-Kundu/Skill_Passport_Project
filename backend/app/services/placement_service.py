@@ -41,6 +41,13 @@ async def list_placement_drives(
         query = query.where(PlacementDrive.recruiter_id == recruiter_id)
 
     drives = (await session.scalars(query)).all()
+    if not drives:
+        try:
+            from seed.seed_sih_ecosystem import seed_sih_ecosystem
+            await seed_sih_ecosystem()
+            drives = (await session.scalars(query)).all()
+        except Exception:
+            pass
 
     reg_map: dict[UUID, PlacementRegistration] = {}
     if student_id:

@@ -69,12 +69,14 @@ async def lifespan(app: FastAPI):
             await create_matching_view(conn)
         try:
             from seed.seed_demo_data import seed_demo_data
+            from seed.seed_sih_ecosystem import seed_sih_ecosystem
             from seed.seed_skills import seed_skills
 
             await seed_skills()
             await seed_demo_data()
-        except Exception:  # noqa: BLE001 - optional startup seeding must not block the API
-            logger.info("seed_notice")
+            await seed_sih_ecosystem()
+        except Exception as seed_err:
+            logger.info("seed_notice", extra={"detail": str(seed_err)})
     except Exception:  # noqa: BLE001 - preserve teammate fail-soft startup behavior
         logger.warning("database_schema_auto_creation_notice")
     yield

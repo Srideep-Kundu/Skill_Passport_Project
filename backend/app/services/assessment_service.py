@@ -36,6 +36,13 @@ async def list_available_assessments(session: AsyncSession) -> list[AssessmentSu
         .options(selectinload(Assessment.questions))
     )
     assessments = (await session.scalars(stmt)).all()
+    if not assessments:
+        try:
+            from seed.seed_sih_ecosystem import seed_sih_ecosystem
+            await seed_sih_ecosystem()
+            assessments = (await session.scalars(stmt)).all()
+        except Exception:
+            pass
     return [
         AssessmentSummaryResponse(
             id=a.id,

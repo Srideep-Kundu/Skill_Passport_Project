@@ -294,7 +294,11 @@ async def convert_resume_to_evidence(session: AsyncSession, document: ResumeDocu
         created.append(evidence.id)
     await session.commit()
     for evidence_id in created:
-        await enqueue_extraction(session, evidence_id)
+        try:
+            from app.services.extraction_service import extract_evidence
+            await extract_evidence(session, evidence_id)
+        except Exception:
+            await enqueue_extraction(session, evidence_id)
     return created
 
 
