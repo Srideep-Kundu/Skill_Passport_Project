@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -21,6 +22,7 @@ from app.services.matching_service import (
     recompute_external_job_matches_for_student,
 )
 
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["external-job-matches"])
 
 
