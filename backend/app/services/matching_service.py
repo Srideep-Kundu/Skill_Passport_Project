@@ -365,8 +365,21 @@ async def persisted_external_job_matches(session: AsyncSession, student_id: UUID
 
 async def recompute_matches_for_internship(session: AsyncSession, internship_id: UUID) -> list[Match]:
     await activate_matching_role(session)
-    student_ids = [UUID(str(value)) for value in (await session.execute(text("SELECT DISTINCT student_id FROM matching_view ORDER BY student_id"))).scalars().all()]
-    matches = [await compute_and_persist_match(session, student_id, internship_id) for student_id in student_ids]
+    try:
+        student_ids = [UUID(str(value)) for value in (await session.execute(text("SELECT DISTINCT student_id FROM matching_view ORDER BY student_id"))).scalars().all()]
+    except Exception:
+        try:
+            student_ids = [UUID(str(value)) for value in (await session.execute(text("SELECT DISTINCT student_id FROM student_skills ORDER BY student_id"))).scalars().all()]
+        except Exception:
+            student_ids = []
+    matches: list[Match] = []
+    for student_id in student_ids[:50]:
+        try:
+            match = await compute_and_persist_match(session, student_id, internship_id)
+            if match is not None:
+                matches.append(match)
+        except Exception:
+            continue
     return sorted(matches, key=lambda match: (-float(match.final_score), str(match.student_id)))
 
 

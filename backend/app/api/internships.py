@@ -41,6 +41,15 @@ async def _owned_internship(session: AsyncSession, internship_id: UUID, recruite
 
 
 async def _validate_requirements(session: AsyncSession, requirements: list[InternshipRequirementCreate]) -> None:
+    if not requirements:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "At least one requirement is required")
+    total_skills = int((await session.scalar(select(func.count()).select_from(Skill))) or 0)
+    if total_skills == 0:
+        try:
+            from seed.seed_taxonomy import seed_taxonomy
+            await seed_taxonomy()
+        except Exception:
+            pass
     known = set((await session.scalars(select(Skill.id).where(Skill.id.in_([requirement.skill_id for requirement in requirements])))).all())
     if len(known) != len(requirements):
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "All requirements must reference canonical skills")
@@ -75,7 +84,10 @@ async def create_internship(payload: InternshipCreate, principal: Annotated[Recr
     for requirement in payload.requirements:
         session.add(InternshipRequirement(internship_id=internship.id, skill_id=requirement.skill_id, is_required=requirement.is_required, weight=requirement.weight))
     await session.commit()
-    await recompute_matches_for_internship(session, internship.id)
+    try:
+        await recompute_matches_for_internship(session, internship.id)
+    except Exception:
+        await session.rollback()
     await session.refresh(internship)
     return await _internship_response(session, internship)
 
