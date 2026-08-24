@@ -28,11 +28,8 @@ TIER_MULTIPLIER = {VerificationTier.verified.value: 1.0, VerificationTier.partia
 
 
 async def activate_matching_role(session: AsyncSession) -> None:
-    if session.get_bind().dialect.name == "postgresql":
-        try:
-            await session.execute(text("SET LOCAL ROLE skill_passport_matcher"))
-        except Exception:
-            pass
+    # No-op in multi-tenant cloud databases where custom local roles are not provisioned
+    return
 
 
 @dataclass(frozen=True)

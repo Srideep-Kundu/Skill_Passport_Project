@@ -81,15 +81,28 @@ async def create_internship(payload: InternshipCreate, principal: Annotated[Recr
     internship = Internship(recruiter_id=principal.id, title=payload.title, description=payload.description)
     session.add(internship)
     await session.flush()
+    requirements = []
     for requirement in payload.requirements:
-        session.add(InternshipRequirement(internship_id=internship.id, skill_id=requirement.skill_id, is_required=requirement.is_required, weight=requirement.weight))
+        req = InternshipRequirement(internship_id=internship.id, skill_id=requirement.skill_id, is_required=requirement.is_required, weight=requirement.weight)
+        session.add(req)
+        requirements.append(req)
     await session.commit()
+    
+    response = InternshipResponse(
+        id=internship.id,
+        title=internship.title,
+        description=internship.description,
+        recruiter_id=internship.recruiter_id,
+        created_at=internship.created_at,
+        requirements=[InternshipRequirementResponse.model_validate(req) for req in requirements],
+    )
+    
     try:
         await recompute_matches_for_internship(session, internship.id)
     except Exception:
-        await session.rollback()
-    await session.refresh(internship)
-    return await _internship_response(session, internship)
+        pass
+        
+    return response
 
 
 @router.get("", response_model=PaginatedResponse[InternshipResponse])
