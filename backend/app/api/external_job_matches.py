@@ -26,12 +26,23 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["external-job-matches"])
 
 
-async def _match_response(session: AsyncSession, match: ExternalJobMatch) -> ExternalJobMatchResponse:
+async def _match_response(session: AsyncSession, match: ExternalJobMatch) -> ExternalJobMatchResponse | None:
     job = await session.get(ExternalJob, match.external_job_id)
     if job is None:
-        raise HTTPException(status_code=404, detail="External job not found")
-    explanation = await render_external_job_explanation(session, match.id)
-    assert explanation is not None
+        return None
+    try:
+        explanation = await render_external_job_explanation(session, match.id)
+    except Exception:
+        explanation = None
+    explanation_response = ExplanationResponse.model_validate(explanation) if explanation else ExplanationResponse(
+        lines=[f"Match score: {float(match.final_score):.0%}"],
+        items=[],
+        deterministic_score=float(match.deterministic_score),
+        semantic_score=float(match.semantic_score),
+        verification_bonus=float(match.verification_bonus),
+        final_score=float(match.final_score),
+        score_version=match.score_version,
+    )
     return ExternalJobMatchResponse(
         id=match.id,
         student_id=match.student_id,
@@ -51,7 +62,7 @@ async def _match_response(session: AsyncSession, match: ExternalJobMatch) -> Ext
         final_score=float(match.final_score),
         score_version=match.score_version,
         is_stale=await external_job_match_is_stale(session, match),
-        explanation=ExplanationResponse.model_validate(explanation),
+        explanation=explanation_response,
     )
 
 
@@ -60,8 +71,13 @@ async def recompute_external_job_matches(
     principal: Annotated[Student, Depends(require_role("student"))],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> list[ExternalJobMatchResponse]:
-    matches = await recompute_external_job_matches_for_student(session, principal.id)
-    return [await _match_response(session, match) for match in matches]
+    try:
+        matches = await recompute_external_job_matches_for_student(session, principal.id)
+    except Exception:
+        await session.rollback()
+        matches = []
+    items = [await _match_response(session, m) for m in matches]
+    return [item for item in items if item is not None]
 
 
 @router.get("/external-jobs/matches", response_model=PaginatedResponse[ExternalJobMatchResponse])
@@ -79,16 +95,6 @@ async def recommended_external_job_matches(
 ) -> PaginatedResponse[ExternalJobMatchResponse]:
     from sqlalchemy import or_
 
-    total_jobs = int((await session.scalar(select(func.count()).select_from(ExternalJob))) or 0)
-    if total_jobs == 0:
-        try:
-            from seed.seed_demo_data import seed_demo_data
-            from seed.seed_sih_ecosystem import seed_sih_ecosystem
-            await seed_demo_data()
-            await seed_sih_ecosystem()
-        except Exception:
-            pass
-
     existing_count = int(
         (
             await session.scalar(
@@ -104,6 +110,7 @@ async def recommended_external_job_matches(
             await recompute_external_job_matches_for_student(session, principal.id)
         except Exception as recompute_err:
             logger.warning("external_job_matches_recompute_deferred", extra={"error": str(recompute_err)})
+            await session.rollback()
 
     filters: list[ColumnElement[bool]] = [
         ExternalJobMatch.student_id == principal.id,
@@ -154,7 +161,8 @@ async def recommended_external_job_matches(
     )
     total = int(await session.scalar(select(func.count()).select_from(statement.subquery())) or 0)
     matches = list((await session.scalars(statement.offset((page - 1) * page_size).limit(page_size))).all())
-    return PaginatedResponse(page=page, page_size=page_size, total=total, items=[await _match_response(session, match) for match in matches])
+    items = [await _match_response(session, m) for m in matches]
+    return PaginatedResponse(page=page, page_size=page_size, total=total, items=[item for item in items if item is not None])
 
 
 @router.get("/external-jobs/{external_job_id}/match", response_model=ExternalJobMatchStateResponse)

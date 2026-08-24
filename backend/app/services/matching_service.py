@@ -377,10 +377,16 @@ async def recompute_external_job_matches_for_student(session: AsyncSession, stud
                 select(ExternalJob.id)
                 .where(ExternalJob.is_active.is_(True))
                 .order_by(ExternalJob.posted_at.desc().nullslast(), ExternalJob.company_name, ExternalJob.title, ExternalJob.external_id)
+                .limit(50)
             )
         ).all()
     )
-    computed = [await compute_and_persist_external_job_match(session, student_id, job_id) for job_id in job_ids]
+    computed: list[ExternalJobMatch | None] = []
+    for job_id in job_ids:
+        try:
+            computed.append(await compute_and_persist_external_job_match(session, student_id, job_id))
+        except Exception:
+            continue
     return [match for match in computed if match is not None]
 
 
