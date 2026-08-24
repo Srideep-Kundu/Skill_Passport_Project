@@ -223,7 +223,7 @@ export function ResumeIntelligence({
               } catch {
                 stopPolling();
               }
-            }, 1200);
+            }, 500);
           }
         } else if (active.parse_status === "uploaded") {
           setPhase("reading");

@@ -33,7 +33,12 @@ async def resume_client(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
         async with factory() as session:
             yield session
 
+    async def mock_rate_limit(*args, **kwargs):
+        return None
+
     monkeypatch.setattr(resumes, "LocalResumeStorage", lambda: resume_service.LocalResumeStorage(tmp_path))
+    monkeypatch.setattr("app.api.auth.enforce_rate_limit", mock_rate_limit)
+    monkeypatch.setattr("app.api.resumes.enforce_rate_limit", mock_rate_limit)
     app.dependency_overrides[get_session] = override_session
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client:
         yield client

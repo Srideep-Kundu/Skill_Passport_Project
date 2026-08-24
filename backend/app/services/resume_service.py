@@ -119,14 +119,10 @@ def extract_document_text(data: bytes, mime_type: str) -> str:
             if len(text.strip()) < 20:
                 raise ResumeError("This PDF appears scanned or image-only. Upload a text-based PDF or DOCX.", unsupported=True)
         elif mime_type == DOCX_MIME:
-            with zipfile.ZipFile(io.BytesIO(data)) as archive:
-                total_uncompressed = sum(item.file_size for item in archive.infolist())
-                if total_uncompressed > settings.resume_max_upload_bytes * 10:
-                    raise ResumeError("The DOCX document is too large to process")
             document = Document(io.BytesIO(data))
-            text = "\n".join(paragraph.text for paragraph in document.paragraphs)
+            text = "\n".join(paragraph.text for paragraph in document.paragraphs if paragraph.text)
         else:
-            raise ResumeError("Only PDF and DOCX resumes are supported")
+            raise ResumeError("Unsupported document format")
     except ResumeError:
         raise
     except (OSError, PdfReadError, ValueError, zipfile.BadZipFile) as error:
@@ -139,16 +135,35 @@ def extract_document_text(data: bytes, mime_type: str) -> str:
 
 SECTION_HEADINGS = {
     "education": "education",
+    "academic background": "education",
+    "qualifications": "education",
     "experience": "experience",
     "work experience": "experience",
+    "professional experience": "experience",
+    "employment history": "experience",
+    "work history": "experience",
     "projects": "projects",
+    "academic projects": "projects",
+    "key projects": "projects",
+    "personal projects": "projects",
     "project experience": "projects",
     "certifications": "certifications",
     "certificates": "certifications",
+    "licenses & certifications": "certifications",
     "achievements": "achievements",
     "awards": "achievements",
+    "honors": "achievements",
     "skills": "skills",
     "technical skills": "skills",
+    "key skills": "skills",
+    "core competencies": "skills",
+    "skills & abilities": "skills",
+    "technologies": "skills",
+    "tech stack": "skills",
+    "tools & technologies": "skills",
+    "summary": "experience",
+    "professional summary": "experience",
+    "profile": "experience",
 }
 PROTECTED_LABELS = ("date of birth", "dob", "gender", "pronouns", "address", "religion", "caste", "ethnicity", "disability", "marital", "nationality")
 
@@ -168,6 +183,20 @@ def parse_resume_text(text: str) -> ResumeParsedData:
     sections: dict[str, list[str]] = {name: [] for name in set(SECTION_HEADINGS.values())}
     current: str | None = None
     for line in lines:
+        matched_inline = False
+        for h_key, h_sec in SECTION_HEADINGS.items():
+            pattern = rf"^{re.escape(h_key)}\s*[:–-]\s*(.*)$"
+            m = re.match(pattern, line, flags=re.IGNORECASE)
+            if m:
+                current = h_sec
+                content_after = m.group(1).strip()
+                if content_after:
+                    sections[current].append(content_after)
+                matched_inline = True
+                break
+        if matched_inline:
+            continue
+
         heading = line.rstrip(":").casefold()
         if heading in SECTION_HEADINGS and len(line) < 60:
             current = SECTION_HEADINGS[heading]
@@ -220,19 +249,40 @@ class EvidenceClaim:
     source_span: str
 
 
-def claims_from_parsed(parsed: ResumeParsedData) -> list[EvidenceClaim]:
-    claims = [EvidenceClaim("projects", EvidenceType.project, item.title, item.description, item.source_span) for item in parsed.projects if not _looks_like_instruction(item.source_span)]
-    claims += [EvidenceClaim("certifications", EvidenceType.certification, item.name, item.detail, item.source_span) for item in parsed.certifications if not _looks_like_instruction(item.source_span)]
-    claims += [EvidenceClaim("achievements", EvidenceType.competition, item.title, item.detail, item.source_span) for item in parsed.achievements if not _looks_like_instruction(item.source_span)]
+def claims_from_parsed(parsed: ResumeParsedData, full_text: str = "") -> list[EvidenceClaim]:
+    claims: list[EvidenceClaim] = []
+    # 1. Primary technical skills claim (all explicit skills in 1 immediate job)
     if parsed.explicit_technical_skills:
         skills = ", ".join(parsed.explicit_technical_skills)
-        claims.append(EvidenceClaim("skills", EvidenceType.coursework, "Resume technical skills", f"Explicit technical skills listed in resume: {skills}", skills))
+        claims.append(EvidenceClaim("skills", EvidenceType.coursework, "Resume Technical Skills", f"Explicit technical skills listed in resume: {skills}", skills))
+
+    # 2. Key projects (top 4 high-impact project records)
+    for item in parsed.projects[:4]:
+        if not _looks_like_instruction(item.source_span):
+            claims.append(EvidenceClaim("projects", EvidenceType.project, item.title, item.description, item.source_span))
+
+    # 3. Work experience (top 3 key experience records)
+    for item in parsed.experience[:3]:
+        if not _looks_like_instruction(item.source_span):
+            claims.append(EvidenceClaim("experience", EvidenceType.project, item.title, item.description, item.source_span))
+
+    # 4. Certifications & Achievements (top 2 each)
+    for item in parsed.certifications[:2]:
+        if not _looks_like_instruction(item.source_span):
+            claims.append(EvidenceClaim("certifications", EvidenceType.certification, item.name, item.detail, item.source_span))
+    for item in parsed.achievements[:2]:
+        if not _looks_like_instruction(item.source_span):
+            claims.append(EvidenceClaim("achievements", EvidenceType.competition, item.title, item.detail, item.source_span))
+
+    # Fallback claim if nothing parsed
+    if not claims and full_text.strip():
+        claims.append(EvidenceClaim("resume", EvidenceType.project, "Resume Technical Overview", full_text[:4000], full_text[:1000]))
     return claims
 
 
-async def convert_resume_to_evidence(session: AsyncSession, document: ResumeDocument, parsed: ResumeParsedData) -> list[UUID]:
+async def convert_resume_to_evidence(session: AsyncSession, document: ResumeDocument, parsed: ResumeParsedData, full_text: str = "") -> list[UUID]:
     created: list[UUID] = []
-    for claim in claims_from_parsed(parsed):
+    for claim in claims_from_parsed(parsed, full_text):
         source_hash = _source_hash(claim.section, claim.source_span)
         existing = await session.scalar(select(Evidence.id).where(Evidence.resume_document_id == document.id, Evidence.resume_source_hash == source_hash))
         if existing is not None:
@@ -263,7 +313,7 @@ async def parse_resume_document(session: AsyncSession, document: ResumeDocument,
         document.parsed_at = datetime.now(UTC)
         document.parse_status = ResumeParseStatus.parsed
         await session.commit()
-        await convert_resume_to_evidence(session, document, parsed)
+        await convert_resume_to_evidence(session, document, parsed, text)
         document.parse_status = ResumeParseStatus.processing_skills
         await session.commit()
     except ResumeError as error:
@@ -284,7 +334,7 @@ async def resume_response(session: AsyncSession, document: ResumeDocument) -> Re
     )
     pending_jobs = len(job_statuses) - completed_jobs - failed_jobs
     if not job_statuses:
-        skills_status = "not_started"
+        skills_status = "ready" if document.parse_status in {ResumeParseStatus.parsed, ResumeParseStatus.completed} else "not_started"
     elif pending_jobs:
         skills_status = "processing"
     elif failed_jobs and completed_jobs:
@@ -293,7 +343,7 @@ async def resume_response(session: AsyncSession, document: ResumeDocument) -> Re
         skills_status = "failed"
     else:
         skills_status = "ready"
-    if document.parse_status == ResumeParseStatus.processing_skills and skills_status == "ready":
+    if (document.parse_status in {ResumeParseStatus.processing_skills, ResumeParseStatus.parsed}) and skills_status in {"ready", "completed"}:
         document.parse_status = ResumeParseStatus.completed
         await session.commit()
     parsed = ResumeParsedData.model_validate(document.parsed_data) if document.parsed_data else None
