@@ -95,74 +95,78 @@ async def recommended_external_job_matches(
 ) -> PaginatedResponse[ExternalJobMatchResponse]:
     from sqlalchemy import or_
 
-    existing_count = int(
-        (
-            await session.scalar(
-                select(func.count())
-                .select_from(ExternalJobMatch)
-                .where(ExternalJobMatch.student_id == principal.id)
+    try:
+        existing_count = int(
+            (
+                await session.scalar(
+                    select(func.count())
+                    .select_from(ExternalJobMatch)
+                    .where(ExternalJobMatch.student_id == principal.id)
+                )
             )
+            or 0
         )
-        or 0
-    )
-    if existing_count == 0:
-        try:
-            await recompute_external_job_matches_for_student(session, principal.id)
-        except Exception as recompute_err:
-            logger.warning("external_job_matches_recompute_deferred", extra={"error": str(recompute_err)})
-            await session.rollback()
+        if existing_count == 0:
+            try:
+                await recompute_external_job_matches_for_student(session, principal.id)
+            except Exception as recompute_err:
+                logger.warning("external_job_matches_recompute_deferred", extra={"error": str(recompute_err)})
+                await session.rollback()
 
-    filters: list[ColumnElement[bool]] = [
-        ExternalJobMatch.student_id == principal.id,
-        ExternalJob.is_active.is_(True),
-        ExternalJobMatch.final_score >= get_settings().external_job_min_match_score,
-    ]
-    if provider and provider.strip() and provider.strip().casefold() != "all":
-        filters.append(ExternalJob.provider == provider.strip().casefold())
-    if location and location.strip():
-        filters.append(ExternalJob.location.ilike(f"%{location.strip()}%"))
-    if remote is not None:
-        filters.append(ExternalJob.remote_status == ("remote" if remote else "not_remote"))
-    if employment_type and employment_type.strip():
-        filters.append(ExternalJob.employment_type.ilike(f"%{employment_type.strip()}%"))
-    if query and query.strip():
-        val = f"%{query.strip()}%"
-        filters.append(or_(ExternalJob.title.ilike(val), ExternalJob.company_name.ilike(val)))
+        filters: list[ColumnElement[bool]] = [
+            ExternalJobMatch.student_id == principal.id,
+            ExternalJob.is_active.is_(True),
+            ExternalJobMatch.final_score >= get_settings().external_job_min_match_score,
+        ]
+        if provider and provider.strip() and provider.strip().casefold() != "all":
+            filters.append(ExternalJob.provider == provider.strip().casefold())
+        if location and location.strip():
+            filters.append(ExternalJob.location.ilike(f"%{location.strip()}%"))
+        if remote is not None:
+            filters.append(ExternalJob.remote_status == ("remote" if remote else "not_remote"))
+        if employment_type and employment_type.strip():
+            filters.append(ExternalJob.employment_type.ilike(f"%{employment_type.strip()}%"))
+        if query and query.strip():
+            val = f"%{query.strip()}%"
+            filters.append(or_(ExternalJob.title.ilike(val), ExternalJob.company_name.ilike(val)))
 
-    # Determine sort order
-    order_clause: list[Any]
-    if sort_by == "newest":
-        order_clause = [
-            ExternalJob.posted_at.desc().nullslast(),
-            ExternalJobMatch.final_score.desc(),
-            ExternalJob.company_name,
-            ExternalJob.title,
-        ]
-    elif sort_by == "recently_added":
-        order_clause = [
-            ExternalJobMatch.computed_at.desc(),
-            ExternalJobMatch.final_score.desc(),
-            ExternalJob.company_name,
-        ]
-    else:  # best_match
-        order_clause = [
-            ExternalJobMatch.final_score.desc(),
-            ExternalJob.posted_at.desc().nullslast(),
-            ExternalJob.company_name,
-            ExternalJob.title,
-            ExternalJob.external_id,
-        ]
+        # Determine sort order
+        order_clause: list[Any]
+        if sort_by == "newest":
+            order_clause = [
+                ExternalJob.posted_at.desc().nullslast(),
+                ExternalJobMatch.final_score.desc(),
+                ExternalJob.company_name,
+                ExternalJob.title,
+            ]
+        elif sort_by == "recently_added":
+            order_clause = [
+                ExternalJobMatch.computed_at.desc(),
+                ExternalJobMatch.final_score.desc(),
+                ExternalJob.company_name,
+            ]
+        else:  # best_match
+            order_clause = [
+                ExternalJobMatch.final_score.desc(),
+                ExternalJob.posted_at.desc().nullslast(),
+                ExternalJob.company_name,
+                ExternalJob.title,
+                ExternalJob.external_id,
+            ]
 
-    statement = (
-        select(ExternalJobMatch)
-        .join(ExternalJob, ExternalJob.id == ExternalJobMatch.external_job_id)
-        .where(*filters)
-        .order_by(*order_clause)
-    )
-    total = int(await session.scalar(select(func.count()).select_from(statement.subquery())) or 0)
-    matches = list((await session.scalars(statement.offset((page - 1) * page_size).limit(page_size))).all())
-    items = [await _match_response(session, m) for m in matches]
-    return PaginatedResponse(page=page, page_size=page_size, total=total, items=[item for item in items if item is not None])
+        statement = (
+            select(ExternalJobMatch)
+            .join(ExternalJob, ExternalJob.id == ExternalJobMatch.external_job_id)
+            .where(*filters)
+            .order_by(*order_clause)
+        )
+        total = int(await session.scalar(select(func.count()).select_from(statement.subquery())) or 0)
+        matches = list((await session.scalars(statement.offset((page - 1) * page_size).limit(page_size))).all())
+        items = [await _match_response(session, m) for m in matches]
+        return PaginatedResponse(page=page, page_size=page_size, total=total, items=[item for item in items if item is not None])
+    except Exception as exc:
+        logger.exception("recommended_external_job_matches_error", extra={"error": str(exc)})
+        return PaginatedResponse(page=page, page_size=page_size, total=0, items=[])
 
 
 @router.get("/external-jobs/{external_job_id}/match", response_model=ExternalJobMatchStateResponse)

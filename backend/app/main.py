@@ -174,7 +174,7 @@ async def safe_unhandled_exception(request: Request, exc: Exception) -> JSONResp
     )
     return JSONResponse(
         status_code=500,
-        content={"detail": "Internal server error", "request_id": request_id_context.get()},
+        content={"detail": f"Internal server error: {exc}", "request_id": request_id_context.get()},
     )
 
 
