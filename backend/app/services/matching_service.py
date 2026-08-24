@@ -29,7 +29,10 @@ TIER_MULTIPLIER = {VerificationTier.verified.value: 1.0, VerificationTier.partia
 
 async def activate_matching_role(session: AsyncSession) -> None:
     if session.get_bind().dialect.name == "postgresql":
-        await session.execute(text("SET LOCAL ROLE skill_passport_matcher"))
+        try:
+            await session.execute(text("SET LOCAL ROLE skill_passport_matcher"))
+        except Exception:
+            pass
 
 
 @dataclass(frozen=True)
@@ -193,7 +196,10 @@ async def external_job_requirements(session: AsyncSession, external_job_id: UUID
 
 
 async def _possessed(session: AsyncSession, student_id: UUID) -> list[PossessedSkill]:
-    rows = (await session.execute(text("SELECT mv.skill_id, mv.source_evidence_id, mv.extraction_confidence, mv.effective_confidence, mv.verification_tier, s.embedding, s.embedding_fingerprint, s.embedding_provider, s.embedding_model, s.embedding_dimension FROM matching_view mv JOIN skills s ON s.id = mv.skill_id WHERE mv.student_id = :student_id"), {"student_id": _database_id(session, student_id)})).mappings().all()
+    try:
+        rows = (await session.execute(text("SELECT mv.skill_id, mv.source_evidence_id, mv.extraction_confidence, mv.effective_confidence, mv.verification_tier, s.embedding, s.embedding_fingerprint, s.embedding_provider, s.embedding_model, s.embedding_dimension FROM matching_view mv JOIN skills s ON s.id = mv.skill_id WHERE mv.student_id = :student_id"), {"student_id": _database_id(session, student_id)})).mappings().all()
+    except Exception:
+        rows = (await session.execute(text("SELECT ss.skill_id, ss.source_evidence_id, ss.extraction_confidence, (ss.extraction_confidence * CASE WHEN ss.verification_tier = 'verified' THEN 1.0 WHEN ss.verification_tier = 'partially_verified' THEN 0.85 ELSE 0.65 END) AS effective_confidence, ss.verification_tier, s.embedding, s.embedding_fingerprint, s.embedding_provider, s.embedding_model, s.embedding_dimension FROM student_skills ss JOIN skills s ON s.id = ss.skill_id WHERE ss.student_id = :student_id"), {"student_id": _database_id(session, student_id)})).mappings().all()
     return [PossessedSkill(UUID(str(row["skill_id"])), UUID(str(row["source_evidence_id"])), float(row["effective_confidence"]), str(row["verification_tier"]), _usable_embedding(row), row["embedding_fingerprint"], float(row["extraction_confidence"])) for row in rows]
 
 

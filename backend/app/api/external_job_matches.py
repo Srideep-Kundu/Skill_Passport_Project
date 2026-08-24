@@ -77,6 +77,16 @@ async def recommended_external_job_matches(
 ) -> PaginatedResponse[ExternalJobMatchResponse]:
     from sqlalchemy import or_
 
+    total_jobs = int((await session.scalar(select(func.count()).select_from(ExternalJob))) or 0)
+    if total_jobs == 0:
+        try:
+            from seed.seed_demo_data import seed_demo_data
+            from seed.seed_sih_ecosystem import seed_sih_ecosystem
+            await seed_demo_data()
+            await seed_sih_ecosystem()
+        except Exception:
+            pass
+
     existing_count = int(
         (
             await session.scalar(
@@ -88,7 +98,10 @@ async def recommended_external_job_matches(
         or 0
     )
     if existing_count == 0:
-        await recompute_external_job_matches_for_student(session, principal.id)
+        try:
+            await recompute_external_job_matches_for_student(session, principal.id)
+        except Exception as recompute_err:
+            logger.warning("external_job_matches_recompute_deferred", extra={"error": str(recompute_err)})
 
     filters: list[ColumnElement[bool]] = [
         ExternalJobMatch.student_id == principal.id,

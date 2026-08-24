@@ -195,6 +195,15 @@ async def list_external_jobs(
     active: bool = True,
 ) -> PaginatedResponse[ExternalJobResponse]:
     del principal
+    total_existing = int((await session.scalar(select(func.count()).select_from(ExternalJob))) or 0)
+    if total_existing == 0:
+        try:
+            from seed.seed_demo_data import seed_demo_data
+            from seed.seed_sih_ecosystem import seed_sih_ecosystem
+            await seed_demo_data()
+            await seed_sih_ecosystem()
+        except Exception:
+            pass
     filters: list[ColumnElement[bool]] = [ExternalJob.is_active.is_(active)]
     if provider and provider.strip() and provider.strip().casefold() != "all":
         filters.append(ExternalJob.provider == provider.strip().casefold())

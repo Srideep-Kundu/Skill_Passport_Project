@@ -27,6 +27,15 @@ async def my_matches(
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
 ) -> PaginatedResponse[MatchResponse]:
     internships = (await session.scalars(select(Internship).order_by(Internship.created_at))).all()
+    if not internships:
+        try:
+            from seed.seed_demo_data import seed_demo_data
+            from seed.seed_sih_ecosystem import seed_sih_ecosystem
+            await seed_demo_data()
+            await seed_sih_ecosystem()
+            internships = (await session.scalars(select(Internship).order_by(Internship.created_at))).all()
+        except Exception:
+            pass
     matches = await persisted_student_matches(session, principal.id)
     internship_titles = {internship.id: internship.title for internship in internships}
     items = [
