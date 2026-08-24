@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 from uuid import UUID
 
@@ -30,6 +31,7 @@ from app.services.matching_service import (
     recompute_matches_for_internship,
 )
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/internships", tags=["internships"])
 
 
@@ -48,8 +50,8 @@ async def _validate_requirements(session: AsyncSession, requirements: list[Inter
         try:
             from seed.seed_taxonomy import seed_taxonomy
             await seed_taxonomy()
-        except Exception:
-            pass
+        except Exception as seed_err:  # noqa: BLE001
+            logger.warning("taxonomy_seed_deferred", extra={"error": str(seed_err)})
     known = set((await session.scalars(select(Skill.id).where(Skill.id.in_([requirement.skill_id for requirement in requirements])))).all())
     if len(known) != len(requirements):
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "All requirements must reference canonical skills")
@@ -99,8 +101,8 @@ async def create_internship(payload: InternshipCreate, principal: Annotated[Recr
     
     try:
         await recompute_matches_for_internship(session, internship.id)
-    except Exception:
-        pass
+    except Exception as recompute_err:  # noqa: BLE001
+        logger.warning("internship_matches_recompute_deferred", extra={"error": str(recompute_err)})
         
     return response
 
