@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { api } from "../api";
@@ -98,5 +98,23 @@ describe("InternshipMatches", () => {
     expect(screen.getByText(/Why You Match: Fullstack Platform Intern/)).toBeInTheDocument();
     expect(screen.getByText("Exact Skills")).toBeInTheDocument();
     expect(document.body.textContent).toContain("FastAPI Backend Project");
+  });
+
+  it("syncs configured providers before refreshing ranked matches", async () => {
+    vi.spyOn(api, "externalJobMatches").mockResolvedValue({ page: 1, page_size: 20, total: 0, items: [] });
+    const sync = vi.spyOn(api, "syncAllExternalJobs").mockResolvedValue({
+      total_created: 0,
+      total_updated: 0,
+      total_synced: 0,
+      providers: {},
+      synced_at: "2026-01-01T00:00:00Z",
+    });
+
+    render(<InternshipMatches token="token" />);
+    const refresh = await screen.findByRole("button", { name: "Discover & Refresh" });
+    await waitFor(() => expect(refresh).toBeEnabled());
+    fireEvent.click(refresh);
+
+    await waitFor(() => expect(sync).toHaveBeenCalledWith("token"));
   });
 });

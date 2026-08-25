@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Users, Sparkles, Check } from "lucide-react";
+import { Check } from "lucide-react";
 import { api } from "../api";
 import type { TeamSuggestion } from "../api";
+import { EditorialButton, EditorialPageHeader } from "../components/ui/EditorialPrimitives";
 
 interface CandidatePeer {
   id: string;
@@ -130,50 +131,35 @@ export function TeamSuggestions({
   }
 
   return (
-    <section className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-5 sm:p-6 shadow-lg space-y-5 text-slate-900 dark:text-[#f1f0e8]">
-      <div className="border-b border-slate-100 dark:border-white/[0.08] pb-3.5 flex items-start justify-between">
-        <div>
-          <h2 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] flex items-center gap-2 font-sans">
-            <Users className="h-4 w-4 text-[#3b71d9] dark:text-[#b0c6ff]" />
-            <span>Form a Complementary Student Team</span>
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-0.5 font-sans">
-            Deterministic pairing algorithm: Maximizes Target Skill Coverage minus 0.5× Jaccard Redundancy.
-          </p>
-        </div>
-        <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-blue-50/80 dark:bg-[#3b71d9]/20 text-[#3b71d9] dark:text-[#b0c6ff] border border-blue-200/60 dark:border-blue-500/30 backdrop-blur-xs">
-          Zero-LLM Authority
-        </span>
-      </div>
+    <div className="space-y-6 font-sans">
+      <EditorialPageHeader
+        category="STUDENT"
+        index="TEAM"
+        title="Form a Complementary Student Team"
+        subtitle="Deterministic pairing algorithm: Maximizes Target Skill Coverage minus 0.5× Jaccard Redundancy."
+      />
 
-      <form onSubmit={submit} className="space-y-4">
+      <form onSubmit={submit} className="border border-white/10 bg-[#071E2B] p-6 rounded-md space-y-6">
         {/* Step 1: Target Project Selector */}
-        <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-2">
+        <div className="space-y-3">
+          <label className="block font-mono text-xs text-[#8796A2] uppercase tracking-wider">
             1. Select Target Project or Challenge Objective
           </label>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {PRESET_PROJECT_TARGETS.map((proj, idx) => (
               <button
                 type="button"
                 key={idx}
                 onClick={() => handleSelectProject(proj)}
-                className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer backdrop-blur-md ${
+                className={`p-4 rounded-sm border text-left transition-colors cursor-pointer ${
                   selectedProject === proj.title
-                    ? "border-[#3b71d9] bg-blue-50/70 dark:bg-[#3b71d9]/20 dark:border-[#3b71d9]/80 shadow-xs"
-                    : "border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] hover:border-slate-300 dark:hover:border-white/[0.16]"
+                    ? "border-white/40 bg-white/10 text-white"
+                    : "border-white/10 bg-white/[0.01] text-[#BEC8CF] hover:border-white/20 hover:text-white"
                 }`}
               >
-                <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight">{proj.title}</p>
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {proj.skills.slice(0, 3).map((s, i) => (
-                    <span key={i} className="text-[9px] px-1.5 py-0.2 rounded bg-white/80 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-white/10">
-                      {s}
-                    </span>
-                  ))}
-                  {proj.skills.length > 3 && (
-                    <span className="text-[9px] text-slate-400">+{proj.skills.length - 3}</span>
-                  )}
+                <p className="font-mono text-xs font-semibold leading-snug">{proj.title}</p>
+                <div className="pt-2 font-mono text-[11px] text-[#8796A2]">
+                  {proj.skills.join(" · ")}
                 </div>
               </button>
             ))}
@@ -181,43 +167,39 @@ export function TeamSuggestions({
         </div>
 
         {/* Step 2: Peer Candidate Selector */}
-        <div>
-          <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-2">
-            2. Select Candidate Pool for Team Pairing ({selectedCandidateIds.length} selected)
+        <div className="space-y-3">
+          <label className="block font-mono text-xs text-[#8796A2] uppercase tracking-wider">
+            2. Select Candidate Pool ({selectedCandidateIds.length} selected)
           </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {PEER_CANDIDATE_POOL.map((peer) => {
               const isSelected = selectedCandidateIds.includes(peer.id);
               return (
                 <div
                   key={peer.id}
                   onClick={() => toggleCandidate(peer.id)}
-                  className={`p-3.5 rounded-2xl border flex items-start justify-between gap-2.5 transition-all cursor-pointer backdrop-blur-md ${
+                  className={`p-4 rounded-sm border flex items-start justify-between gap-3 transition-colors cursor-pointer ${
                     isSelected
-                      ? "border-emerald-500/60 bg-emerald-50/40 dark:bg-emerald-950/30 dark:border-emerald-500/50"
-                      : "border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] opacity-75 hover:opacity-100 hover:border-slate-300 dark:hover:border-white/[0.16]"
+                      ? "border-[#9CC7D8]/40 bg-[#9CC7D8]/10 text-white"
+                      : "border-white/10 bg-white/[0.01] text-[#8796A2] hover:border-white/20 hover:text-[#BEC8CF]"
                   }`}
                 >
-                  <div className="flex items-start gap-2.5">
-                    <div className="h-8 w-8 rounded-xl bg-[#3b71d9]/15 text-[#3b71d9] dark:text-[#b0c6ff] font-bold text-xs flex items-center justify-center shrink-0">
+                  <div className="flex items-start gap-3">
+                    <div className="h-7 w-7 rounded-sm border border-white/15 bg-white/5 text-white font-mono text-xs flex items-center justify-center shrink-0">
                       {peer.avatar}
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight">{peer.name}</p>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{peer.domain}</p>
-                      <div className="flex flex-wrap gap-1 mt-1.5">
-                        {peer.skills.slice(0, 3).map((s, i) => (
-                          <span key={i} className="text-[9px] px-1.5 py-0.2 rounded bg-white/80 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300">
-                            {s}
-                          </span>
-                        ))}
-                      </div>
+                      <p className="font-mono text-xs font-semibold text-[#F7F8F8] leading-tight">{peer.name}</p>
+                      <p className="font-mono text-[10px] text-[#8796A2] mt-0.5">{peer.domain}</p>
+                      <p className="font-mono text-[10px] text-[#BEC8CF] pt-1">
+                        {peer.skills.join(" · ")}
+                      </p>
                     </div>
                   </div>
-                  <div className={`h-5 w-5 rounded-md flex items-center justify-center shrink-0 ${
-                    isSelected ? "bg-emerald-600 text-white" : "border border-slate-300 dark:border-white/20"
+                  <div className={`h-4 w-4 rounded-xs flex items-center justify-center shrink-0 ${
+                    isSelected ? "bg-[#9CC7D8] text-[#021522]" : "border border-white/20"
                   }`}>
-                    {isSelected && <Check className="h-3 w-3" />}
+                    {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
                   </div>
                 </div>
               );
@@ -226,25 +208,27 @@ export function TeamSuggestions({
         </div>
 
         {error && (
-          <p role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">
+          <p role="alert" className="font-mono text-xs text-red-300">
             {error}
           </p>
         )}
 
-        <button
+        <EditorialButton
+          variant="primary"
           type="submit"
           disabled={isSubmitting}
-          className="rounded-xl bg-[#3b71d9] px-5 py-2.5 text-xs font-bold text-white shadow-sm shadow-[#3b71d9]/25 hover:bg-[#2563eb] focus:outline-none disabled:opacity-50 transition-colors cursor-pointer font-sans flex items-center gap-2"
         >
-          <Sparkles className="h-3.5 w-3.5" />
-          <span>{isSubmitting ? "Computing Synergy..." : "Compute Complementary Teams"}</span>
-        </button>
+          {isSubmitting ? "Computing Synergy..." : "Compute Complementary Teams"}
+        </EditorialButton>
       </form>
 
       {/* Results */}
       {suggestions && (
-        <div className="pt-3 border-t border-slate-100 dark:border-white/[0.08] space-y-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        <div className="border border-white/10 bg-[#071E2B] p-6 rounded-md space-y-4">
+          <h3
+            className="text-lg font-normal text-[#F7F8F8] border-b border-white/10 pb-3"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
             Complementary Pairing Recommendations
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -253,16 +237,16 @@ export function TeamSuggestions({
               return (
                 <div
                   key={index}
-                  className="p-4.5 rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md space-y-2.5"
+                  className="p-4 rounded-sm border border-white/10 bg-white/[0.01] space-y-2 font-mono"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase font-bold text-slate-400">Rank #{index + 1}</span>
-                    <span className="text-sm font-black text-[#3b71d9] dark:text-[#b0c6ff]">
+                    <span className="text-[10px] uppercase text-[#8796A2]">Rank #{index + 1}</span>
+                    <span className="text-xs text-[#9CC7D8] font-bold">
                       {Math.round(suggestion.complementarity_score * 100)}% Synergy
                     </span>
                   </div>
-                  <p className="text-xs font-bold text-slate-900 dark:text-white">{pairNames}</p>
-                  <div className="pt-2 border-t border-slate-200/50 dark:border-white/[0.06] flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                  <p className="text-xs text-[#F7F8F8] font-semibold font-sans">{pairNames}</p>
+                  <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-[#8796A2]">
                     <span>Coverage: {Math.round((suggestion.coverage_score ?? 0.9) * 100)}%</span>
                     <span>Redundancy: -{Math.round((suggestion.redundancy_penalty ?? 0.05) * 100)}%</span>
                   </div>
@@ -272,7 +256,6 @@ export function TeamSuggestions({
           </div>
         </div>
       )}
-    </section>
+    </div>
   );
 }
-

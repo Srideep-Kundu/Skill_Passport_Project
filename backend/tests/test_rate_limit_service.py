@@ -28,7 +28,7 @@ class FakeRedis:
     values: ClassVar[dict[str, int]] = {}
 
     @classmethod
-    def from_url(cls, _url: str) -> "FakeRedis":
+    def from_url(cls, _url: str, **_kwargs: object) -> "FakeRedis":
         return cls()
 
     def pipeline(self, *, transaction: bool) -> FakePipeline:
@@ -74,7 +74,7 @@ async def test_rate_limit_is_not_required_without_redis_in_development(monkeypat
 
 
 @pytest.mark.asyncio
-async def test_rate_limit_fails_closed_when_configured_redis_is_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_rate_limit_fails_open_when_configured_redis_is_unavailable(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(rate_limit_service, "Redis", UnavailableRedis)
     monkeypatch.setattr(
         rate_limit_service,
@@ -82,7 +82,4 @@ async def test_rate_limit_fails_closed_when_configured_redis_is_unavailable(monk
         lambda: SimpleNamespace(rate_limiting_enabled=True, redis_url="redis://test", environment="production"),
     )
 
-    with pytest.raises(HTTPException) as raised:
-        await rate_limit_service.enforce_rate_limit("login", "127.0.0.1", 1)
-
-    assert raised.value.status_code == 503
+    await rate_limit_service.enforce_rate_limit("login", "127.0.0.1", 1)

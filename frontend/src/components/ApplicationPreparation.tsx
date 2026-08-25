@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, CheckCircle2, FileText, Send, ExternalLink, AlertCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Send, ExternalLink, AlertCircle } from "lucide-react";
 
 import { ApiError, api } from "../api";
 import type { Application, ApplicationField, ApplicationForm } from "../api";
 import { ApplicationTracking } from "./ApplicationTracking";
+import { EditorialButton } from "./ui/EditorialPrimitives";
 
 const EXECUTION_STATES = ["needs_input", "prepared", "ready_to_submit"];
 
@@ -25,7 +26,7 @@ function FieldInput({
     id: field.field_id,
     name: field.field_id,
     className:
-      "mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white dark:bg-[#111821] px-3 py-1.5 text-xs text-slate-900 dark:text-[#f1f0e8] focus:border-[#3b71d9] focus:outline-none font-sans",
+      "mt-1 w-full rounded-md border border-white/15 bg-white/[0.03] px-3 py-1.5 font-mono text-xs text-[#F7F8F8] focus:border-white focus:outline-none",
   };
 
   if (field.field_type === "select")
@@ -36,9 +37,9 @@ function FieldInput({
         onChange={(event) => onChange(event.target.value)}
         className={`${common.className} cursor-pointer`}
       >
-        <option value="">Select an answer</option>
+        <option value="" className="bg-[#071E2B] text-[#BEC8CF]">Select an answer</option>
         {field.allowed_values.map((option) => (
-          <option key={option} value={option}>
+          <option key={option} value={option} className="bg-[#071E2B] text-[#F7F8F8]">
             {option}
           </option>
         ))}
@@ -53,7 +54,7 @@ function FieldInput({
         type="checkbox"
         checked={value === true}
         onChange={(event) => onChange(event.target.checked)}
-        className="mt-2 rounded border-slate-300 text-[#3b71d9] focus:ring-[#3b71d9]"
+        className="mt-2 rounded-xs border-white/20 text-[#9CC7D8] focus:ring-0"
       />
     );
 
@@ -194,24 +195,25 @@ export function ApplicationPreparation({
 
   if (application.status === "approved" && !form)
     return (
-      <div className="mt-4 rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-4 sm:p-5 shadow-lg space-y-2">
-        <h4 className="font-bold text-sm text-slate-900 dark:text-[#f1f0e8] flex items-center gap-1.5 font-sans">
-          <FileText className="h-4 w-4 text-[#3b71d9] dark:text-[#b0c6ff]" />
-          <span>Application preparation</span>
+      <div className="mt-4 rounded-md border border-white/10 bg-[#071E2B] p-5 space-y-3 font-sans">
+        <h4
+          className="text-lg font-normal text-[#F7F8F8]"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          Application Preparation
         </h4>
-        <p className="text-xs text-slate-600 dark:text-[#98a4b3] font-sans">
+        <p className="text-xs text-[#BEC8CF] leading-relaxed">
           Prepare the provider-neutral field list and review exactly what can be used. Sensitive questions always require your direct input.
         </p>
-        <button
-          type="button"
+        <EditorialButton
+          variant="primary"
           disabled={busy}
           onClick={() => void prepare()}
-          className="mt-2 rounded-xl bg-[#3b71d9] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-[#3b71d9]/25 hover:bg-[#2563eb] disabled:opacity-50 transition-colors cursor-pointer font-sans"
         >
           {busy ? "Preparing…" : "Prepare application"}
-        </button>
+        </EditorialButton>
         {error ? (
-          <p role="alert" className="mt-2 text-xs font-medium text-red-600 dark:text-red-400 font-sans">
+          <p role="alert" className="mt-2 text-xs font-mono text-red-300">
             {error}
           </p>
         ) : null}
@@ -224,14 +226,16 @@ export function ApplicationPreparation({
     <>
       <section
         aria-label="Application preparation"
-        className="mt-4 rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-4 sm:p-5 text-slate-900 dark:text-[#f1f0e8] space-y-3 shadow-lg"
+        className="mt-4 rounded-md border border-white/10 bg-[#071E2B] p-6 text-[#F7F8F8] space-y-4 font-sans"
       >
-        <div className="border-b border-slate-100 dark:border-white/[0.08] pb-3">
-          <h4 className="font-bold text-sm text-slate-900 dark:text-[#f1f0e8] flex items-center gap-1.5 font-sans">
-            <FileText className="h-4 w-4 text-[#3b71d9] dark:text-[#b0c6ff]" />
-            <span>Application preparation</span>
+        <div className="border-b border-white/10 pb-4">
+          <h4
+            className="text-xl font-normal text-[#F7F8F8]"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            Application Preparation
           </h4>
-          <p className="mt-1 text-xs text-slate-600 dark:text-[#98a4b3] font-sans">
+          <p className="mt-1 font-mono text-xs text-[#8796A2]">
             Provider: {form.provider} ·{" "}
             {form.submission_capability.submission_ready
               ? "Automatic submission supported for this employer"
@@ -239,18 +243,18 @@ export function ApplicationPreparation({
                 ? "Provider integration connected, but assisted application is required"
                 : "Provider integration is not connected"}
           </p>
-          <p className="text-[11px] text-slate-500 dark:text-[#98a4b3] font-sans">{form.submission_capability.reason}</p>
-          <p className="mt-1 text-xs text-slate-600 dark:text-[#98a4b3] font-sans">
+          <p className="font-mono text-[11px] text-[#8796A2] mt-0.5">{form.submission_capability.reason}</p>
+          <p className="font-mono text-xs text-[#9CC7D8] mt-1">
             Resume: {application.application_snapshot.resume.original_filename}
           </p>
         </div>
 
         {form.unresolved_field_ids.length ? (
-          <p className="rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 backdrop-blur-md border border-amber-200 dark:border-amber-900/60 p-2.5 text-xs text-amber-900 dark:text-amber-300 font-medium font-sans">
+          <p className="rounded-sm bg-[#9CC7D8]/10 border border-[#9CC7D8]/30 p-3 text-xs text-[#9CC7D8] font-mono">
             {form.unresolved_field_ids.length} required field{form.unresolved_field_ids.length === 1 ? "" : "s"} need direct input.
           </p>
         ) : (
-          <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1 font-sans">
+          <p className="text-xs text-emerald-400 font-mono flex items-center gap-1.5">
             <CheckCircle2 className="h-3.5 w-3.5" />
             <span>All required fields are resolved. Review before marking ready.</span>
           </p>
@@ -260,22 +264,22 @@ export function ApplicationPreparation({
           {form.fields.map((field) => (
             <div
               key={field.field_id}
-              className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-3.5"
+              className="rounded-sm border border-white/10 bg-white/[0.01] p-4 space-y-1.5"
             >
-              <label htmlFor={field.field_id} className="text-xs font-bold text-slate-900 dark:text-[#f1f0e8] flex items-center gap-1.5 font-sans">
+              <label htmlFor={field.field_id} className="text-xs font-semibold text-[#F7F8F8] flex items-center gap-1.5">
                 {field.sensitive ? (
-                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                  <AlertTriangle className="h-3.5 w-3.5 text-[#9CC7D8]" />
                 ) : field.is_answered ? (
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" aria-hidden="true" />
                 ) : (
-                  <AlertCircle className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
+                  <AlertCircle className="h-3.5 w-3.5 text-[#9CC7D8]" aria-hidden="true" />
                 )}
                 <span>
                   {field.label}
                   {field.required ? " (required)" : ""}
                 </span>
               </label>
-              <p className="mt-0.5 text-[11px] text-slate-500 dark:text-[#98a4b3] font-sans">
+              <p className="text-[11px] text-[#8796A2] font-mono">
                 {field.sensitive
                   ? "Sensitive — answer directly; its value is not shown again."
                   : field.requires_user_input
@@ -285,7 +289,7 @@ export function ApplicationPreparation({
                       : "No answer yet."}
               </p>
               {field.sensitive && field.is_answered && draft[field.field_id] === undefined ? (
-                <p className="mt-2 text-xs text-emerald-600 dark:text-emerald-400 font-semibold font-sans">Direct answer recorded</p>
+                <p className="mt-2 text-xs text-emerald-400 font-mono">Direct answer recorded</p>
               ) : (
                 <FieldInput
                   field={field}
@@ -298,21 +302,20 @@ export function ApplicationPreparation({
         </div>
 
         {error ? (
-          <p role="alert" className="text-xs font-medium text-red-600 dark:text-red-400 font-sans">
+          <p role="alert" className="text-xs font-mono text-red-300">
             {error}
           </p>
         ) : null}
 
-        <div className="flex flex-wrap gap-2 pt-2 font-sans">
+        <div className="flex flex-wrap gap-2 pt-2">
           {Object.keys(draft).length ? (
-            <button
-              type="button"
+            <EditorialButton
+              variant="secondary"
               disabled={busy}
               onClick={() => void saveAnswers()}
-              className="rounded-lg border border-[#3b71d9] dark:border-blue-500 bg-white dark:bg-[#111821] px-3.5 py-1.5 text-xs font-semibold text-[#3b71d9] dark:text-[#b0c6ff] hover:bg-blue-50 dark:hover:bg-[#1a2430] transition-colors cursor-pointer"
             >
               Save answers
-            </button>
+            </EditorialButton>
           ) : null}
 
           {form.is_assisted ? (
@@ -320,34 +323,32 @@ export function ApplicationPreparation({
               href={application.manual_apply_url ?? application.application_snapshot.job.source_url}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 rounded-lg bg-[#3b71d9] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-[#3b71d9]/25 hover:bg-[#2563eb] transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-md border border-white/20 bg-white/10 px-4 py-2 font-mono text-xs text-[#F7F8F8] hover:bg-white/15 transition-colors"
             >
               <span>Continue on provider site</span>
               <ExternalLink className="h-3 w-3" />
             </a>
           ) : application.status === "prepared" ? (
-            <button
-              type="button"
+            <EditorialButton
+              variant="primary"
               disabled={busy || form.unresolved_field_ids.length > 0}
               onClick={() => void ready()}
-              className="rounded-lg bg-[#3b71d9] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-[#3b71d9]/25 hover:bg-[#2563eb] disabled:opacity-50 transition-colors cursor-pointer"
             >
               Mark ready to submit
-            </button>
+            </EditorialButton>
           ) : application.status === "ready_to_submit" ? (
-            <button
-              type="button"
+            <EditorialButton
+              variant="primary"
               disabled={busy}
               onClick={() => void submit()}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[#3b71d9] px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-[#3b71d9]/25 hover:bg-[#2563eb] disabled:opacity-50 transition-colors cursor-pointer"
             >
-              <Send className="h-3 w-3" />
+              <Send className="h-3 w-3 mr-1" />
               <span>Submit application</span>
-            </button>
+            </EditorialButton>
           ) : null}
         </div>
 
-        <p className="text-[11px] text-slate-500 dark:text-slate-400 pt-1">
+        <p className="font-mono text-[11px] text-[#8796A2] pt-1">
           No browser automation is used. Provider credentials are never shown in this application.
         </p>
       </section>

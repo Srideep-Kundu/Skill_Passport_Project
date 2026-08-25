@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  Briefcase,
   Building2,
   Calendar,
   GraduationCap,
@@ -11,6 +10,7 @@ import { api } from "../api/service";
 import { errorMessage } from "../api/client";
 import type { PlacementDrive } from "../api/types";
 import { toast } from "sonner";
+import { EditorialButton, EditorialPageHeader } from "./ui/EditorialPrimitives";
 
 interface Props {
   token: string;
@@ -55,119 +55,117 @@ export function PlacementDrives({ token }: Props) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/[0.08] shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <Briefcase className="h-5 w-5 text-[#3b71d9] dark:text-[#b0c6ff]" />
-            <h2 className="text-lg font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">Campus Placement & Job Drives</h2>
-          </div>
-          <p className="text-sm text-slate-500 dark:text-[#98a4b3] font-sans">
-            Verified institutional placement drives. Apply directly with your Skill Passport verified profile and portfolio.
-          </p>
-        </div>
-      </div>
+    <div className="space-y-6 font-sans">
+      <EditorialPageHeader
+        category="STUDENT"
+        index="CAMPUS"
+        title="Campus Placement & Job Drives"
+        subtitle="Verified institutional placement drives. Apply directly with your Skill Passport verified profile and portfolio."
+      />
 
       {loading ? (
-        <div className="p-8 text-center bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl border border-slate-200/70 dark:border-white/[0.08] shadow-lg">
-          <div className="inline-block animate-spin h-8 w-8 border-4 border-[#3b71d9] border-t-transparent rounded-full mb-3" />
-          <p className="text-sm text-slate-500 dark:text-[#98a4b3] font-sans">Loading placement schedule...</p>
+        <div className="p-12 text-center border border-white/10 bg-[#071E2B] rounded-md">
+          <div className="inline-block animate-spin h-6 w-6 border-2 border-white/20 border-t-white rounded-full mb-3" />
+          <p className="font-mono text-xs text-[#8796A2]">Loading placement schedule...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {drives.map((drive) => (
             <div
               key={drive.id}
-              className="bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/[0.08] shadow-lg flex flex-col justify-between space-y-4 hover:border-slate-300 dark:hover:border-white/[0.18] transition-all"
+              className="border border-white/10 bg-[#071E2B] p-6 rounded-md flex flex-col justify-between space-y-5 hover:border-white/20 transition-colors"
             >
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-[#3b71d9] dark:text-[#b0c6ff] flex items-center gap-1.5 font-sans">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between font-mono text-xs">
+                  <span className="text-[#9CC7D8] flex items-center gap-1.5 font-bold">
                     <Building2 className="h-3.5 w-3.5" />
                     {drive.company_name}
                   </span>
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-50/80 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-800/40 backdrop-blur-xs">
+                  <span className="text-[#F7F8F8] border border-white/15 px-2 py-0.5 rounded-xs">
                     ₹{drive.ctc_lpa} LPA
                   </span>
                 </div>
 
-                <h3 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">{drive.title}</h3>
-                <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-1 font-sans">{drive.description}</p>
+                <h3
+                  className="text-xl font-normal text-[#F7F8F8]"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  {drive.title}
+                </h3>
+                <p className="text-xs text-[#BEC8CF] leading-relaxed line-clamp-2">{drive.description}</p>
 
                 {/* Eligibility & Info */}
-                <div className="grid grid-cols-2 gap-2 mt-4 text-xs text-slate-600 dark:text-slate-300 font-sans">
+                <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-xs text-[#8796A2]">
                   <div className="flex items-center gap-1.5">
-                    <GraduationCap className="h-3.5 w-3.5 text-slate-400" />
-                    <span>Min CGPA: <strong>{drive.minimum_cgpa}</strong></span>
+                    <GraduationCap className="h-3.5 w-3.5" />
+                    <span>Min CGPA: <strong className="text-[#F7F8F8]">{drive.minimum_cgpa}</strong></span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5 text-slate-400" />
-                    <span>Batch: <strong>{drive.passing_year}</strong></span>
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>Batch: <strong className="text-[#F7F8F8]">{drive.passing_year}</strong></span>
                   </div>
                 </div>
 
-                {/* Required Skills */}
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  {drive.required_skills.map((s) => (
-                    <span
-                      key={s}
-                      className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100/80 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300"
-                    >
-                      {s}
-                    </span>
-                  ))}
+                {/* Required Skills as dots */}
+                <div className="pt-1">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-[#8796A2] block mb-1">
+                    Requirements
+                  </span>
+                  <p className="font-mono text-xs text-[#BEC8CF]">
+                    {drive.required_skills.join(" · ")}
+                  </p>
                 </div>
               </div>
 
               {/* Action / Registration state */}
-              <div className="pt-4 border-t border-slate-100 dark:border-white/[0.06]">
+              <div className="pt-4 border-t border-white/10">
                 {drive.is_registered ? (
-                  <div className="p-2.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/20 backdrop-blur-md border border-emerald-200/60 dark:border-emerald-900/30 flex items-center justify-between text-xs font-semibold text-emerald-700 dark:text-emerald-300 font-sans">
+                  <div className="p-3 rounded-sm border border-white/15 bg-white/5 flex items-center justify-between font-mono text-xs text-[#F7F8F8]">
                     <span className="flex items-center gap-1.5">
-                      <CheckCircle2 className="h-4 w-4" />
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                       Registration Confirmed
                     </span>
-                    <span className="uppercase text-[10px] tracking-wider bg-white/80 dark:bg-emerald-900/50 px-2 py-0.5 rounded-md backdrop-blur-xs">
+                    <span className="uppercase text-[10px] text-[#9CC7D8]">
                       {drive.registration_status || "Registered"}
                     </span>
                   </div>
                 ) : (
                   <div>
                     {registeringId === drive.id ? (
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         <textarea
                           placeholder="Optional notes or areas of interest for the recruiter..."
                           value={notes}
                           onChange={(e) => setNotes(e.target.value)}
                           rows={2}
-                          className="w-full text-xs p-2.5 rounded-2xl bg-white/80 dark:bg-white/[0.04] backdrop-blur-md border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-[#f1f0e8] focus:outline-none focus:border-[#3b71d9]"
+                          className="w-full text-xs p-3 rounded-md bg-white/[0.03] border border-white/15 text-[#F7F8F8] focus:outline-none focus:border-white"
                         />
-                        <div className="flex justify-end gap-2 font-sans">
+                        <div className="flex justify-end gap-2 font-mono text-xs">
                           <button
+                            type="button"
                             onClick={() => setRegisteringId(null)}
-                            className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-800 dark:hover:text-white cursor-pointer"
+                            className="px-3 py-1.5 text-[#8796A2] hover:text-[#F7F8F8] cursor-pointer"
                           >
                             Cancel
                           </button>
-                          <button
+                          <EditorialButton
+                            variant="primary"
                             onClick={() => handleRegister(drive.id)}
                             disabled={submitting}
-                            className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-1 cursor-pointer"
                           >
-                            <Send className="h-3 w-3" />
+                            <Send className="h-3 w-3 mr-1" />
                             Submit Registration
-                          </button>
+                          </EditorialButton>
                         </div>
                       </div>
                     ) : (
-                      <button
+                      <EditorialButton
+                        variant="primary"
                         onClick={() => setRegisteringId(drive.id)}
-                        className="w-full py-2 bg-[#3b71d9] hover:bg-[#2f5db3] text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shadow-[#3b71d9]/20 font-sans"
+                        className="w-full justify-center"
                       >
-                        <Briefcase className="h-4 w-4" />
                         Register for Placement Drive
-                      </button>
+                      </EditorialButton>
                     )}
                   </div>
                 )}

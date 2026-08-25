@@ -48,7 +48,9 @@ async def _validate_requirements(session: AsyncSession, requirements: list[Inter
     total_skills = int((await session.scalar(select(func.count()).select_from(Skill))) or 0)
     if total_skills == 0:
         try:
-            from seed.seed_taxonomy import seed_taxonomy
+            from seed.seed_taxonomy import (  # type: ignore[import-not-found]  # Optional fail-soft seed hook.
+                seed_taxonomy,
+            )
             await seed_taxonomy()
         except Exception as seed_err:  # noqa: BLE001
             logger.warning("taxonomy_seed_deferred", extra={"error": str(seed_err)})

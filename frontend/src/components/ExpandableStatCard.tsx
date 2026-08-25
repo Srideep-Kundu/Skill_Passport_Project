@@ -62,29 +62,22 @@ export function ExpandableStatCard({
       role="region"
       aria-label={`${title} details`}
     >
-      {/* 
-        STATIC GHOST SLOT:
-        Preserves rock-solid grid geometry so hovering NEVER causes surrounding cards or page to shake.
-      */}
-      <div className="invisible pointer-events-none p-4.5 rounded-2xl border border-transparent flex flex-col justify-between h-full">
+      {/* STATIC GHOST SLOT */}
+      <div className="invisible pointer-events-none p-5 rounded-md border border-transparent flex flex-col justify-between h-full">
         <div>
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase">{title}</span>
+            <span className="text-[11px] font-mono uppercase">{title}</span>
             <div className="w-4 h-4" />
           </div>
-          <div className="mt-2.5 flex items-baseline justify-between gap-2">
-            <span className="text-2xl font-black">{mainValue}</span>
+          <div className="mt-2 flex items-baseline justify-between gap-2">
+            <span className="text-3xl font-normal" style={{ fontFamily: "var(--font-display)" }}>{mainValue}</span>
           </div>
         </div>
-        {progressBar && <div className="mt-2 h-2 w-full" />}
+        {progressBar && <div className="mt-2 h-1.5 w-full" />}
         {footerText && <p className="text-[11px] mt-1">{footerText}</p>}
       </div>
 
-      {/* 
-        OMNIDIRECTIONAL ENLARGING CARD:
-        Scales smoothly outward from center with elevated z-index and glowing focus ring.
-        Stays within safe bounds to prevent any edge clipping or cut-offs.
-      */}
+      {/* EXPANDABLE CARD */}
       <motion.div
         initial={false}
         animate={
@@ -92,8 +85,8 @@ export function ExpandableStatCard({
             ? {}
             : isHovered
             ? {
-                scale: 1.04,
-                y: -6,
+                scale: 1.02,
+                y: -4,
                 zIndex: 50,
               }
             : {
@@ -103,64 +96,67 @@ export function ExpandableStatCard({
               }
         }
         transition={{
-          duration: 0.24,
-          ease: [0.22, 1, 0.36, 1],
+          duration: 0.22,
+          ease: [0.16, 1, 0.3, 1],
         }}
-        className={`absolute top-0 left-0 right-0 w-full origin-center rounded-3xl border p-5 transition-all duration-200 cursor-pointer ${
+        className={`absolute top-0 left-0 right-0 w-full origin-center rounded-md border p-5 transition-colors cursor-pointer ${
           isHovered
-            ? "z-50 border-[#3b71d9]/80 dark:border-[#3b71d9]/80 bg-white/85 dark:bg-[#0c121e]/75 backdrop-blur-xl shadow-2xl dark:shadow-[0_12px_35px_rgba(0,0,0,0.6)] ring-2 ring-[#3b71d9]/30"
-            : "z-10 border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl shadow-lg hover:border-slate-300 dark:hover:border-white/[0.18]"
+            ? "z-50 border-white/30 bg-[#0B2634] shadow-xl"
+            : "z-10 border-white/10 bg-[#071E2B]"
         }`}
       >
         {/* Top Header */}
         <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-500 dark:text-[#98a4b3] uppercase tracking-wider font-sans">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#8796A2]">
             {title}
           </span>
-          <div className="flex items-center gap-1.5 text-[#3b71d9] dark:text-[#b0c6ff]">
+          <div className="flex items-center gap-1.5 text-[#9CC7D8]">
             {icon}
           </div>
         </div>
 
         {/* Primary Numbers & Progress */}
-        <div className="mt-2.5">
+        <div className="mt-2">
           <div className="flex items-baseline justify-between gap-2">
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-black text-slate-900 dark:text-[#f1f0e8] font-sans">
+              <span
+                className="text-3xl font-normal text-[#F7F8F8]"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
                 {mainValue}
               </span>
               {badge && (
-                <span className={badge.className ?? "text-xs font-bold text-emerald-600 dark:text-emerald-400"}>
+                <span className={badge.className ?? "text-xs font-mono text-emerald-400"}>
                   {badge.text}
                 </span>
               )}
             </div>
             {subValue && (
-              <span className="text-[11px] font-semibold text-slate-500 dark:text-[#98a4b3] shrink-0 font-sans">
+              <span className="font-mono text-xs text-[#8796A2] shrink-0">
                 {subValue}
               </span>
             )}
           </div>
 
           {progressBar && (
-            <div className="mt-2 h-2 w-full rounded-full bg-slate-100 dark:bg-[#1d2025] overflow-hidden">
+            <div className="mt-2 h-1.5 w-full rounded-xs bg-white/5 overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min(100, Math.max(0, progressBar.value))}%` }}
-                transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-                className={progressBar.color ?? "h-full rounded-full bg-[#3b71d9]"}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                className={progressBar.color ?? "h-full rounded-xs bg-[#9CC7D8]"}
               />
             </div>
           )}
 
           {footerText && (
-            <p className="text-[11px] text-slate-500 dark:text-[#98a4b3] mt-1 font-sans">
+            <p className="font-mono text-[11px] text-[#8796A2] mt-1">
               {footerText}
             </p>
           )}
         </div>
 
-        {/* Enlarged Internal Details (Unfolds smoothly inside the card) */}
+        {/* Enlarged Internal Details */}
         <AnimatePresence>
           {isHovered && (
             <motion.div
@@ -172,7 +168,7 @@ export function ExpandableStatCard({
               animate={{
                 opacity: 1,
                 height: "auto",
-                marginTop: 14,
+                marginTop: 12,
               }}
               exit={
                 prefersReducedMotion
@@ -180,16 +176,16 @@ export function ExpandableStatCard({
                   : { opacity: 0, height: 0, marginTop: 0 }
               }
               transition={{
-                duration: 0.24,
-                ease: [0.22, 1, 0.36, 1],
+                duration: 0.20,
+                ease: [0.16, 1, 0.3, 1],
               }}
-              className="border-t border-slate-100 dark:border-slate-800/80 pt-3 overflow-hidden text-xs text-slate-700 dark:text-slate-300"
+              className="border-t border-white/10 pt-3 overflow-hidden text-xs text-[#BEC8CF]"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                <span className="font-mono text-[10px] uppercase text-[#9CC7D8]">
                   {hoverTitle}
                 </span>
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                <span className="font-mono text-[9px] uppercase tracking-wider text-[#8796A2] border border-white/10 px-1.5 py-0.5 rounded-xs">
                   Expanded
                 </span>
               </div>

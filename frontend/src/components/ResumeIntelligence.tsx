@@ -8,7 +8,6 @@ import {
   AlertCircle,
   RefreshCw,
   Trash2,
-  Sparkles,
   Layers,
   ShieldCheck,
   Briefcase,
@@ -34,7 +33,6 @@ export type ProcessingPhase =
   | "complete"
   | "error";
 
-// Common category mapping helper based on skill names
 const SKILL_CATEGORY_MAP: Record<string, string> = {
   python: "Languages",
   javascript: "Languages",
@@ -104,19 +102,19 @@ function getSkillCategory(skillName: string): string {
 function getCategoryIcon(category: string) {
   switch (category) {
     case "Languages":
-      return <Code2 className="h-3.5 w-3.5 text-indigo-400" />;
+      return <Code2 className="h-3.5 w-3.5 text-white/70" />;
     case "Frontend":
-      return <Layers className="h-3.5 w-3.5 text-cyan-400" />;
+      return <Layers className="h-3.5 w-3.5 text-white/70" />;
     case "Backend":
-      return <Terminal className="h-3.5 w-3.5 text-emerald-400" />;
+      return <Terminal className="h-3.5 w-3.5 text-white/70" />;
     case "Databases":
-      return <Database className="h-3.5 w-3.5 text-amber-400" />;
+      return <Database className="h-3.5 w-3.5 text-white/70" />;
     case "Cloud & DevOps":
-      return <Cloud className="h-3.5 w-3.5 text-sky-400" />;
+      return <Cloud className="h-3.5 w-3.5 text-white/70" />;
     case "AI & Machine Learning":
-      return <Cpu className="h-3.5 w-3.5 text-purple-400" />;
+      return <Cpu className="h-3.5 w-3.5 text-white/70" />;
     default:
-      return <Sparkles className="h-3.5 w-3.5 text-blue-400" />;
+      return <FileCheck className="h-3.5 w-3.5 text-white/70" />;
   }
 }
 
@@ -144,7 +142,6 @@ export function ResumeIntelligence({
   const [isRetryingFailed, setIsRetryingFailed] = useState(false);
   const [isReplacing, setIsReplacing] = useState(false);
 
-  // Polling tracker
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopPolling = useCallback(() => {
@@ -243,137 +240,170 @@ export function ResumeIntelligence({
     return () => stopPolling();
   }, [load, stopPolling]);
 
-  // Orchestrated upload and multi-stage automated processing
+  async function waitForExtraction(documentId: string) {
+    stopPolling();
+    return new Promise<"ready" | "partial_failure" | "failed" | "timeout" | "unavailable">((resolve) => {
+      let attempts = 0;
+      pollingRef.current = setInterval(async () => {
+        attempts += 1;
+        try {
+          const response = await api.resumes(token);
+          const latest = response.items.find((item) => item.id === documentId);
+          if (!latest) {
+            if (attempts >= 15) {
+              stopPolling();
+              resolve("timeout");
+            }
+            return;
+          }
+
+          setActiveResume(latest);
+          if (latest.skills_status === "ready") {
+            stopPolling();
+            resolve("ready");
+          } else if (latest.skills_status === "partial_failure") {
+            stopPolling();
+            resolve("partial_failure");
+          } else if (latest.skills_status === "failed" || latest.parse_status === "failed") {
+            stopPolling();
+            resolve("failed");
+          } else if (attempts >= 15) {
+            stopPolling();
+            resolve("timeout");
+          }
+        } catch {
+          stopPolling();
+          resolve("unavailable");
+        }
+      }, 1200);
+    });
+  }
+
   async function processResumeFile(file: File) {
     if (!file) return;
 
-    // Client-side file extension check
-    const ext = file.name.toLowerCase().split(".").pop();
-    if (ext !== "pdf" && ext !== "docx") {
-      toast.error("Please upload a valid PDF or DOCX resume document.");
+    const lowerName = file.name.toLowerCase();
+    if (!lowerName.endsWith(".pdf") && !lowerName.endsWith(".docx")) {
+      toast.error("Please upload a PDF or DOCX file.");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Resume file exceeds 10MB size limit.");
       return;
     }
 
-    setIsReplacing(false);
     setCurrentFileName(file.name);
     setErrorMessage(null);
     setErrorType(null);
     setPhase("uploading");
 
+    let uploadedDoc: ResumeDocument;
     try {
-      // 1. Upload
-      const uploadedDoc = await api.uploadResume(file, token);
+      uploadedDoc = await api.uploadResume(file, token);
       setActiveResume(uploadedDoc);
-
-      if (uploadedDoc.parse_status === "unsupported") {
-        setPhase("error");
-        setErrorMessage(uploadedDoc.safe_error_message || "Resume format is unsupported.");
-        setErrorType("parse");
-        toast.error("Resume unsupported.");
-        await load();
-        onChanged();
-        return;
-      }
-
-      // 2. Reading phase
+      toast.info("Resume uploaded. Extracting skills...");
       setPhase("reading");
-
-      // 3. Automated Parsing & Extraction
-      let parsedDoc = uploadedDoc;
-      if (uploadedDoc.parse_status !== "completed") {
-        try {
-          parsedDoc = await api.parseResume(uploadedDoc.id, token);
-          setActiveResume(parsedDoc);
-        } catch (parseErr) {
-          setPhase("error");
-          setErrorType("parse");
-          setErrorMessage(parseErr instanceof ApiError ? parseErr.detail : "Analysis failed.");
-          toast.error("We couldn't fully analyze this resume.");
-          return;
-        }
-      }
-
-      // 4. Discovering & Categorizing skills
-      setPhase("discovering");
-
-      // Check if background worker is still processing skills
-      if (parsedDoc.parse_status === "processing_skills" || parsedDoc.skills_status === "processing") {
-        // Poll status until completed or terminal
-        const outcome = await new Promise<"ready" | "partial_failure" | "failed" | "timeout" | "unavailable">((resolve) => {
-          let attempts = 0;
-          pollingRef.current = setInterval(async () => {
-            attempts++;
-            try {
-              const res = await api.resumes(token);
-              const latest = (res.items || []).find((r) => r.id === parsedDoc.id);
-              if (latest) {
-                setActiveResume(latest);
-                if (latest.skills_status === "ready") {
-                  stopPolling();
-                  resolve("ready");
-                } else if (latest.skills_status === "partial_failure") {
-                  stopPolling();
-                  resolve("partial_failure");
-                } else if (latest.skills_status === "failed" || latest.parse_status === "failed") {
-                  stopPolling();
-                  resolve("failed");
-                } else if (attempts > 15) {
-                  stopPolling();
-                  resolve("timeout");
-                }
-              }
-            } catch {
-              stopPolling();
-              resolve("unavailable");
-            }
-          }, 1200);
-        });
-
-        if (outcome !== "ready") {
-          setPhase(outcome === "partial_failure" ? "partial_failure" : outcome === "failed" ? "error" : "discovering");
-          setErrorType(outcome === "failed" ? "extraction" : null);
-          setErrorMessage(
-            outcome === "failed"
-              ? "Your file is safe. Retry when the extraction service is available."
-              : "Your resume is still processing. Check back shortly; it has not yet updated your passport.",
-          );
-          if (outcome === "failed") {
-            toast.error("Resume skill extraction failed.");
-          } else {
-            toast.info("Resume uploaded; skill extraction is still processing.");
-          }
-          await load();
-          return;
-        }
-      } else if (parsedDoc.skills_status !== "ready") {
-        setPhase("discovering");
-        setErrorMessage("Your resume is still processing. It has not yet updated your passport.");
-        return;
-      }
-
-      // 5. Automated Skill Passport Update (Internal Activation)
-      setPhase("building_passport");
-      try {
-        await api.activateResume(uploadedDoc.id, token);
-      } catch (caught) {
-        setPhase("error");
-        setErrorType("activate");
-        setErrorMessage(caught instanceof ApiError ? caught.detail : "Passport update failed.");
-        toast.error("Resume analysis finished, but the passport update failed.");
-        return;
-      }
-
-      // 6. Complete
-      setPhase("complete");
-      toast.success("Resume analyzed and Skill Passport updated!");
-      await load();
-      onChanged();
     } catch (caught) {
       setPhase("error");
       setErrorType("upload");
-      const msg = caught instanceof ApiError ? caught.detail : "Resume upload failed.";
+      const msg = caught instanceof ApiError ? caught.detail : "Upload failed. Please check network.";
       setErrorMessage(msg);
       toast.error(msg);
+      return;
+    }
+
+    let parsedDoc: ResumeDocument;
+    try {
+      setPhase("discovering");
+      parsedDoc = await api.parseResume(uploadedDoc.id, token);
+      setActiveResume(parsedDoc);
+      setPhase("categorizing");
+    } catch (caught) {
+      setPhase("error");
+      setErrorType("parse");
+      const msg = caught instanceof ApiError ? caught.detail : "Resume analysis failed.";
+      setErrorMessage(msg);
+      toast.error(msg);
+      return;
+    }
+
+    if (parsedDoc.parse_status === "unsupported" || parsedDoc.parse_status === "failed") {
+      setPhase("error");
+      setErrorType("parse");
+      setErrorMessage(parsedDoc.safe_error_message || "This resume could not be analyzed safely.");
+      return;
+    }
+
+    if (parsedDoc.skills_status !== "ready") {
+      setPhase("discovering");
+      const outcome = await waitForExtraction(parsedDoc.id);
+      if (outcome !== "ready") {
+        setPhase(outcome === "partial_failure" ? "partial_failure" : outcome === "failed" ? "error" : "discovering");
+        setErrorType(outcome === "failed" ? "extraction" : null);
+        setErrorMessage(
+          outcome === "failed"
+            ? "Your file is safe. Retry when the extraction service is available."
+            : "Your resume is still processing. It has not yet updated your passport."
+        );
+        toast.info(outcome === "partial_failure" ? "Some resume evidence could not be processed." : "Resume uploaded; skill extraction is still processing.");
+        return;
+      }
+    }
+
+    try {
+      setPhase("building_passport");
+      const activeDoc = await api.activateResume(parsedDoc.id, token);
+      setActiveResume(activeDoc);
+      setPhase("complete");
+      setIsReplacing(false);
+      toast.success("Skill Passport successfully updated with verified resume claims!");
+      onChanged();
+    } catch (caught) {
+      setPhase("error");
+      setErrorType("activate");
+      const msg = caught instanceof ApiError ? caught.detail : "Passport update failed.";
+      setErrorMessage(msg);
+      toast.error(msg);
+    }
+  }
+
+  async function retryAnalysis() {
+    if (!activeResume) return;
+    setIsReanalyzing(true);
+    setErrorMessage(null);
+    setErrorType(null);
+    setPhase("discovering");
+
+    try {
+      const parsed = await api.parseResume(activeResume.id, token);
+      setActiveResume(parsed);
+      setPhase("categorizing");
+
+      if (parsed.skills_status !== "ready") {
+        setPhase("discovering");
+        const outcome = await waitForExtraction(parsed.id);
+        if (outcome !== "ready") {
+          setPhase(outcome === "partial_failure" ? "partial_failure" : outcome === "failed" ? "error" : "discovering");
+          setErrorType(outcome === "failed" ? "extraction" : null);
+          setErrorMessage("Re-analysis is still processing. Your passport has not been updated yet.");
+          toast.info("Resume re-analysis has not reached a ready state yet.");
+          return;
+        }
+      }
+
+      const activated = await api.activateResume(parsed.id, token);
+      setActiveResume(activated);
+      setPhase("complete");
+      toast.success("Resume analysis successfully completed!");
+      onChanged();
+    } catch (caught) {
+      setPhase("error");
+      setErrorType("parse");
+      const msg = caught instanceof ApiError ? caught.detail : "Re-analysis failed.";
+      setErrorMessage(msg);
+      toast.error(msg);
+    } finally {
+      setIsReanalyzing(false);
     }
   }
 
@@ -381,44 +411,17 @@ export function ResumeIntelligence({
     if (!activeResume) return;
     setIsRetryingFailed(true);
     setErrorMessage(null);
-    setErrorType(null);
     try {
-      const retried = await api.retryFailedResume(activeResume.id, token);
-      setActiveResume(retried);
+      const updated = await api.retryFailedResume(activeResume.id, token);
+      setActiveResume(updated);
+      toast.info("Retrying pending skill extraction items...");
       setPhase("discovering");
-      const outcome = await new Promise<"ready" | "partial_failure" | "failed" | "timeout" | "unavailable">((resolve) => {
-        let attempts = 0;
-        pollingRef.current = setInterval(async () => {
-          attempts++;
-          try {
-            const response = await api.resumes(token);
-            const latest = response.items.find((item) => item.id === activeResume.id);
-            if (!latest) return;
-            setActiveResume(latest);
-            if (latest.skills_status === "ready") {
-              stopPolling();
-              resolve("ready");
-            } else if (latest.skills_status === "partial_failure") {
-              stopPolling();
-              resolve("partial_failure");
-            } else if (latest.skills_status === "failed") {
-              stopPolling();
-              resolve("failed");
-            } else if (attempts > 15) {
-              stopPolling();
-              resolve("timeout");
-            }
-          } catch {
-            stopPolling();
-            resolve("unavailable");
-          }
-        }, 1200);
-      });
+      const outcome = await waitForExtraction(updated.id);
       if (outcome === "ready") {
-        await api.activateResume(activeResume.id, token);
+        const activated = await api.activateResume(updated.id, token);
+        setActiveResume(activated);
         setPhase("complete");
         toast.success("Remaining resume evidence processed successfully!");
-        await load();
         onChanged();
       } else if (outcome === "partial_failure") {
         setPhase("partial_failure");
@@ -432,52 +435,14 @@ export function ResumeIntelligence({
         setErrorMessage("Your resume is still processing. Check back shortly.");
       }
     } catch (caught) {
-      setPhase(activeResume.completed_jobs > 0 ? "partial_failure" : "error");
-      setErrorType(activeResume.completed_jobs > 0 ? null : "extraction");
-      setErrorMessage(caught instanceof ApiError ? caught.detail : "Failed evidence could not be requeued.");
-      toast.error("Failed evidence could not be requeued.");
+      const msg = caught instanceof ApiError ? caught.detail : "Could not retry failed items.";
+      setErrorMessage(msg);
+      toast.error(msg);
     } finally {
       setIsRetryingFailed(false);
     }
   }
 
-  // Retry failed parsing without re-upload
-  async function retryAnalysis() {
-    if (!activeResume) return;
-    setIsReanalyzing(true);
-    setErrorMessage(null);
-    setErrorType(null);
-    setPhase("reading");
-
-    try {
-      const parsedDoc = await api.parseResume(activeResume.id, token);
-      setActiveResume(parsedDoc);
-      setPhase("discovering");
-
-      if (parsedDoc.skills_status !== "ready") {
-        setErrorMessage("Re-analysis is still processing. Your passport has not been updated yet.");
-        toast.info("Resume re-analysis is still processing.");
-        return;
-      }
-
-      await api.activateResume(activeResume.id, token);
-      setPhase("building_passport");
-      await load();
-      setPhase("complete");
-      toast.success("Resume re-analyzed successfully!");
-      onChanged();
-    } catch (caught) {
-      setPhase("error");
-      setErrorType("parse");
-      const msg = caught instanceof ApiError ? caught.detail : "Re-analysis failed.";
-      setErrorMessage(msg);
-      toast.error(msg);
-    } finally {
-      setIsReanalyzing(false);
-    }
-  }
-
-  // Retry passport update without re-upload or re-parsing
   async function retryPassportUpdate() {
     if (!activeResume) return;
     if (activeResume.skills_status !== "ready") {
@@ -487,13 +452,11 @@ export function ResumeIntelligence({
     }
     setErrorMessage(null);
     setErrorType(null);
-    setPhase("building_passport");
-
     try {
-      await api.activateResume(activeResume.id, token);
+      const activeDoc = await api.activateResume(activeResume.id, token);
+      setActiveResume(activeDoc);
       setPhase("complete");
-      toast.success("Skill Passport updated!");
-      await load();
+      toast.success("Passport successfully updated!");
       onChanged();
     } catch (caught) {
       setPhase("error");
@@ -504,7 +467,6 @@ export function ResumeIntelligence({
     }
   }
 
-  // Safe delete resume
   async function handleDeleteResume() {
     if (!activeResume) return;
     setIsDeleting(true);
@@ -523,7 +485,6 @@ export function ResumeIntelligence({
     }
   }
 
-  // Group real extracted skills into categories
   const categorizedSkills = useMemo(() => {
     if (!activeResume?.parsed_summary?.explicit_technical_skills) return {};
     const groups: Record<string, string[]> = {};
@@ -550,7 +511,6 @@ export function ResumeIntelligence({
   const certCount = parsedSummary?.certifications?.length || 0;
   const achievementCount = parsedSummary?.achievements?.length || 0;
 
-  // Drag and drop handlers
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(true);
@@ -568,7 +528,6 @@ export function ResumeIntelligence({
     }
   };
 
-  // Determine current active view state
   const isProcessing =
     phase === "uploading" ||
     phase === "reading" ||
@@ -577,33 +536,27 @@ export function ResumeIntelligence({
     phase === "building_passport";
 
   return (
-    <section className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-5 sm:p-6 shadow-lg text-slate-900 dark:text-[#f1f0e8] flex flex-col justify-between transition-all duration-300 relative overflow-hidden">
-      {/* Ambient background glow for active/complete states */}
-      <div className="absolute -top-24 -right-24 w-48 h-48 bg-gradient-to-br from-indigo-500/10 to-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-
+    <section className="border border-white/10 bg-[#061524] p-6 rounded-md text-white font-sans space-y-6">
       {/* Header Bar */}
-      <div className="border-b border-slate-100 dark:border-white/[0.08] pb-3.5 flex items-start justify-between gap-3">
+      <div className="border-b border-white/10 pb-4 flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] flex items-center gap-2 font-sans">
-            <FileText className="h-4.5 w-4.5 text-[#3b71d9] dark:text-[#b0c6ff]" />
+          <h2 className="text-xl font-normal text-white flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
+            <FileText className="h-4 w-4 text-white/80" />
             <span>Resume Intelligence</span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-0.5 font-sans">
+          <p className="text-xs text-neutral-400 mt-0.5">
             Turn your resume into evidence-backed skills with automatic cryptographic verification.
           </p>
         </div>
 
         {activeResume && phase === "complete" && !isReplacing && (
-          <div className="flex items-center gap-1.5">
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100/90 dark:bg-emerald-950/80 border border-emerald-200/80 dark:border-emerald-800/80 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold px-2.5 py-0.5 font-sans shadow-xs">
-              <CheckCircle2 className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-              <span>Active Resume</span>
-            </span>
-          </div>
+          <span className="font-mono text-xs uppercase tracking-wider text-white border border-white/20 px-2.5 py-0.5 rounded-xs flex items-center gap-1.5">
+            <CheckCircle2 className="h-3 w-3 text-white" />
+            <span>Active Resume</span>
+          </span>
         )}
       </div>
 
-      {/* Hidden File Input for Clean File Selection */}
       <input
         ref={fileInputRef}
         aria-label="Resume file"
@@ -616,10 +569,9 @@ export function ResumeIntelligence({
         className="hidden"
       />
 
-      {/* Main Dynamic Stateful Content Area */}
-      <div className="my-auto py-4 min-h-[220px] flex flex-col justify-center">
+      <div className="min-h-[160px] flex flex-col justify-center">
         <AnimatePresence initial={false}>
-          {/* 1. EMPTY / UPLOAD DROPZONE STATE */}
+          {/* 1. EMPTY / UPLOAD DROPZONE */}
           {(phase === "idle" || isReplacing) && (
             <motion.div
               key="empty-dropzone"
@@ -631,33 +583,21 @@ export function ResumeIntelligence({
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`group relative rounded-2xl border-2 border-dashed transition-all duration-300 p-6 sm:p-8 flex flex-col items-center justify-center text-center cursor-pointer ${
+              className={`border border-dashed p-8 rounded-md flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${
                 isDragOver
-                  ? "border-[#4f46e5] bg-indigo-50/50 dark:bg-indigo-950/30 scale-[0.99]"
-                  : "border-slate-300/70 dark:border-white/[0.08] bg-slate-50/40 dark:bg-white/[0.02] hover:border-[#4f46e5]/60 hover:bg-slate-50/70 dark:hover:bg-white/[0.04]"
+                  ? "border-white bg-white/5"
+                  : "border-white/20 bg-white/[0.02] hover:border-white/40 hover:bg-white/[0.04]"
               }`}
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100/80 dark:bg-indigo-950/80 text-[#4f46e5] dark:text-[#93c5fd] shadow-sm mb-3 group-hover:scale-110 group-hover:shadow-indigo-500/20 transition-all duration-300">
-                <Upload className="h-5 w-5" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white mb-3">
+                <Upload className="h-4 w-4" />
               </div>
-              <p className="text-sm font-bold text-slate-800 dark:text-[#f1f0e8] font-sans">
-                Drag & drop your resume here, or <span className="text-[#3b71d9] dark:text-[#93c5fd] underline underline-offset-2">choose a file</span>
+              <p className="text-sm font-medium text-white">
+                Drag & drop your resume here, or <span className="underline underline-offset-4">choose a file</span>
               </p>
-              <p className="text-xs text-slate-500 dark:text-[#8ea2c6] mt-1 font-sans">
-                Supports text-based <span className="font-semibold">PDF</span> and <span className="font-semibold">DOCX</span> documents (up to 10MB)
+              <p className="text-xs text-neutral-400 mt-1">
+                Supports text-based <span className="text-neutral-300">PDF</span> and <span className="text-neutral-300">DOCX</span> documents (up to 10MB)
               </p>
-
-              <div className="flex items-center gap-2 mt-4">
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-200/70 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400">
-                  PDF
-                </span>
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-slate-200/70 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400">
-                  DOCX
-                </span>
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/50 dark:border-emerald-800/50">
-                  Zero-Effort Auto-Sync
-                </span>
-              </div>
 
               {isReplacing && activeResume && (
                 <button
@@ -667,7 +607,7 @@ export function ResumeIntelligence({
                     setIsReplacing(false);
                     setPhase("complete");
                   }}
-                  className="mt-4 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors"
+                  className="mt-4 font-mono text-xs text-neutral-400 hover:text-white transition-colors"
                 >
                   Cancel replace
                 </button>
@@ -675,7 +615,7 @@ export function ResumeIntelligence({
             </motion.div>
           )}
 
-          {/* 2. ACTIVE PROCESSING STATE (Reading, Discovering, Categorizing, Building) */}
+          {/* 2. PROCESSING STATE */}
           {isProcessing && (
             <motion.div
               key="processing-state"
@@ -683,87 +623,34 @@ export function ResumeIntelligence({
               animate={{ opacity: 1, scale: 1 }}
               exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.3 }}
-              className="rounded-xl border border-indigo-200/60 dark:border-indigo-800/40 bg-gradient-to-b from-indigo-50/40 to-slate-50/50 dark:from-[#131a27]/90 dark:to-[#111821]/90 p-5 sm:p-6 space-y-5"
+              className="border border-white/15 bg-white/[0.03] p-6 rounded-md space-y-4 font-mono text-xs"
             >
-              {/* Filename & Progress Pulse Bar */}
               <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-100 dark:bg-indigo-950 text-[#4f46e5] dark:text-[#93c5fd]">
-                    <FileText className="h-4 w-4 animate-pulse" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                      {currentFileName || activeResume?.original_filename || "Resume Document"}
-                    </p>
-                    <p className="text-[11px] text-indigo-600 dark:text-[#93c5fd] font-medium">
-                      {phase === "uploading" && "Uploading document safely..."}
-                      {phase === "reading" && "Reading and understanding structure..."}
-                      {phase === "discovering" && "Identifying evidence & extracting claims..."}
-                      {phase === "categorizing" && "Organizing competencies..."}
-                      {phase === "building_passport" && "Updating verified Skill Passport..."}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <div className="h-2 w-2 rounded-full bg-[#4f46e5] dark:bg-[#38bdf8] animate-ping" />
-                  <span className="text-[11px] font-bold text-indigo-600 dark:text-[#38bdf8] uppercase tracking-wider">
-                    Analyzing
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileText className="h-4 w-4 text-white" />
+                  <span className="text-white truncate">
+                    {currentFileName || activeResume?.original_filename || "Resume Document"}
                   </span>
                 </div>
-              </div>
-
-              {/* Animated Laser Scanning Shimmer Container */}
-              <div className="relative rounded-lg overflow-hidden border border-slate-200/80 dark:border-white/[0.08] bg-white/60 dark:bg-[#151e29]/70 p-4">
-                {!prefersReducedMotion && (
-                  <motion.div
-                    initial={{ top: "-10%" }}
-                    animate={{ top: "110%" }}
-                    transition={{ repeat: Infinity, duration: 2.2, ease: "linear" }}
-                    className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#4f46e5] dark:via-[#38bdf8] to-transparent shadow-[0_0_12px_rgba(56,189,248,0.8)] pointer-events-none z-10"
-                  />
-                )}
-
-                <div className="space-y-2.5">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white text-[10px]">
-                      ✓
-                    </span>
-                    <span>Document integrity verified</span>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    {phase === "uploading" || phase === "reading" ? (
-                      <span className="flex h-4 w-4 items-center justify-center rounded-full bg-indigo-500 text-white text-[10px] animate-spin">
-                        •
-                      </span>
-                    ) : (
-                      <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-white text-[10px]">
-                        ✓
-                      </span>
-                    )}
-                    <span>Technical text & provenance extracted</span>
-                  </div>
-
-                  <div className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    {phase === "building_passport" ? (
-                      <span className="flex h-4 w-4 items-center justify-center rounded-full bg-indigo-500 text-white text-[10px] animate-spin">
-                        •
-                      </span>
-                    ) : (
-                      <span className="flex h-4 w-4 items-center justify-center rounded-full bg-slate-300 dark:bg-slate-700 text-transparent text-[10px]">
-                        •
-                      </span>
-                    )}
-                    <span>Skill Passport record generation</span>
-                  </div>
+                <div className="flex items-center gap-1.5 shrink-0 uppercase tracking-wider text-white">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                  <span>Analyzing</span>
                 </div>
               </div>
 
-              {/* Progress Line */}
-              <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+              <div className="space-y-1.5 text-neutral-300">
+                <p>
+                  {phase === "uploading" && "01 / Uploading document..."}
+                  {phase === "reading" && "02 / Reading document structure..."}
+                  {phase === "discovering" && "03 / Extracting technical claims and spans..."}
+                  {phase === "categorizing" && "04 / Normalizing into canonical taxonomy..."}
+                  {phase === "building_passport" && "05 / Generating cryptographic Skill Passport..."}
+                </p>
+              </div>
+
+              <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
                 <motion.div
-                  className="bg-gradient-to-r from-[#4f46e5] to-[#38bdf8] h-full"
+                  className="bg-white h-full"
                   initial={{ width: "20%" }}
                   animate={{
                     width:
@@ -778,43 +665,42 @@ export function ResumeIntelligence({
                   transition={{ duration: 0.5 }}
                 />
               </div>
+
               {errorMessage && phase === "discovering" && (
-                <p className="text-xs text-amber-700 dark:text-amber-300">{errorMessage}</p>
+                <p className="text-red-400">{errorMessage}</p>
               )}
             </motion.div>
           )}
 
+          {/* PARTIAL FAILURE STATE */}
           {phase === "partial_failure" && activeResume && (
             <motion.div
               key="partial-failure-state"
               initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
-              className="rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/60 dark:bg-amber-950/20 p-5 space-y-4"
+              className="border border-white/15 bg-white/[0.03] p-5 rounded-md space-y-3 font-mono text-xs"
             >
               <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                <AlertCircle className="h-4 w-4 shrink-0 text-white mt-0.5" />
                 <div className="space-y-1">
-                  <p className="text-sm font-bold text-amber-900 dark:text-amber-200">Resume partially analyzed</p>
-                  <p className="text-xs text-amber-800 dark:text-amber-300">
+                  <p className="text-sm font-medium text-white">Resume partially analyzed</p>
+                  <p className="text-neutral-300">
                     {activeResume.completed_jobs} of {activeResume.total_jobs} evidence items processed successfully.
                   </p>
-                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                  <p className="text-neutral-400">
                     {activeResume.failed_jobs} items could not be processed because the extraction service was temporarily unavailable.
                   </p>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-400 pt-1">
-                    Your current Skill Passport reflects the successfully processed evidence. Readiness may increase after the remaining resume evidence is processed.
-                  </p>
-                  {errorMessage && <p className="text-xs text-rose-700 dark:text-rose-300">{errorMessage}</p>}
+                  {errorMessage && <p className="text-red-400">{errorMessage}</p>}
                 </div>
               </div>
               <button
                 type="button"
                 disabled={isRetryingFailed}
                 onClick={() => void retryFailedItems()}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-white/20 bg-white/10 text-white font-mono text-xs transition-colors cursor-pointer disabled:opacity-50"
               >
-                <RefreshCw className={`h-3.5 w-3.5 ${isRetryingFailed ? "animate-spin" : ""}`} />
+                <RefreshCw className={`h-3 w-3 ${isRetryingFailed ? "animate-spin" : ""}`} />
                 <span>{isRetryingFailed ? "Retrying..." : "Retry failed items"}</span>
               </button>
             </motion.div>
@@ -830,18 +716,16 @@ export function ResumeIntelligence({
               transition={{ duration: 0.3 }}
               className="space-y-4"
             >
-              {/* Document Banner Card */}
-              <div className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-3">
+              {/* Document Banner */}
+              <div className="border border-white/10 bg-white/[0.02] p-4 rounded-sm flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100/80 dark:bg-indigo-950/80 text-[#4f46e5] dark:text-[#93c5fd] shadow-xs">
-                    <FileCheck className="h-5 w-5" />
-                  </div>
+                  <FileCheck className="h-5 w-5 text-white/80 shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                    <p className="text-sm font-medium text-white truncate">
                       {activeResume.original_filename}
                     </p>
-                    <p className="text-[11px] text-slate-500 dark:text-[#98a4b3] mt-0.5">
-                      {(activeResume.size_bytes / 1024).toFixed(1)} KB &middot; Verified via {activeResume.parser_version}
+                    <p className="font-mono text-xs text-neutral-400 mt-0.5">
+                      {(activeResume.size_bytes / 1024).toFixed(1)} KB · Verified via {activeResume.parser_version}
                     </p>
                   </div>
                 </div>
@@ -850,7 +734,7 @@ export function ResumeIntelligence({
                   <button
                     type="button"
                     onClick={() => setIsReplacing(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200/80 dark:border-white/10 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.08] transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/15 bg-white/[0.03] text-xs font-mono text-neutral-300 hover:text-white transition-colors cursor-pointer"
                   >
                     <Upload className="h-3 w-3" />
                     <span>Replace</span>
@@ -859,7 +743,7 @@ export function ResumeIntelligence({
                     type="button"
                     disabled={isDeleting}
                     onClick={() => void handleDeleteResume()}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-rose-200/80 dark:border-rose-900/40 bg-rose-50/50 dark:bg-rose-950/20 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/60 transition-colors cursor-pointer disabled:opacity-50"
+                    className="p-1.5 rounded-full border border-white/10 text-neutral-400 hover:text-red-400 hover:border-red-500/30 transition-colors cursor-pointer disabled:opacity-50"
                     title="Remove resume"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -867,47 +751,47 @@ export function ResumeIntelligence({
                 </div>
               </div>
 
-              {/* Discovered Real Metrics Row */}
-              <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                <div className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-3 text-center">
-                  <p className="text-lg sm:text-xl font-extrabold text-[#4f46e5] dark:text-[#93c5fd]">
+              {/* Metrics Row */}
+              <div className="grid grid-cols-3 gap-3 font-mono">
+                <div className="border border-white/10 bg-white/[0.02] p-3 text-center rounded-sm">
+                  <p className="text-2xl font-normal text-white" style={{ fontFamily: "var(--font-display)" }}>
                     {allExtractedSkills.length}
                   </p>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-[#8ea2c6] mt-0.5">
+                  <p className="text-[10px] uppercase tracking-wider text-neutral-400 mt-0.5">
                     Skills Extracted
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-3 text-center">
-                  <p className="text-lg sm:text-xl font-extrabold text-emerald-600 dark:text-emerald-400">
+                <div className="border border-white/10 bg-white/[0.02] p-3 text-center rounded-sm">
+                  <p className="text-2xl font-normal text-white" style={{ fontFamily: "var(--font-display)" }}>
                     {activeResume.generated_evidence_count}
                   </p>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-[#8ea2c6] mt-0.5">
+                  <p className="text-[10px] uppercase tracking-wider text-neutral-400 mt-0.5">
                     Evidence Records
                   </p>
                 </div>
 
-                <div className="rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-3 text-center">
-                  <p className="text-lg sm:text-xl font-extrabold text-sky-600 dark:text-sky-400">
+                <div className="border border-white/10 bg-white/[0.02] p-3 text-center rounded-sm">
+                  <p className="text-2xl font-normal text-white" style={{ fontFamily: "var(--font-display)" }}>
                     {Object.keys(categorizedSkills).length}
                   </p>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-[#8ea2c6] mt-0.5">
+                  <p className="text-[10px] uppercase tracking-wider text-neutral-400 mt-0.5">
                     Categories
                   </p>
                 </div>
               </div>
 
-              {/* Categorized Skills / Top Skills Preview */}
+              {/* Categorized Skills View */}
               <div className="space-y-2 pt-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">
                     Extracted Competencies
                   </span>
                   {allExtractedSkills.length > 8 && (
                     <button
                       type="button"
                       onClick={() => setShowAllSkills((prev) => !prev)}
-                      className="text-xs font-semibold text-[#3b71d9] dark:text-[#93c5fd] hover:underline flex items-center gap-1 cursor-pointer"
+                      className="font-mono text-xs text-neutral-400 hover:text-white flex items-center gap-1 cursor-pointer"
                     >
                       <span>{showAllSkills ? "Show top skills" : `View all (${allExtractedSkills.length})`}</span>
                       {showAllSkills ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
@@ -916,22 +800,18 @@ export function ResumeIntelligence({
                 </div>
 
                 {showAllSkills ? (
-                  /* Full Categorized View */
                   <div className="space-y-3 pt-1 max-h-56 overflow-y-auto pr-1">
-                    {Object.entries(categorizedSkills).map(([catName, skills], idx) => (
-                      <motion.div
+                    {Object.entries(categorizedSkills).map(([catName, skills]) => (
+                      <div
                         key={catName}
-                        initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: idx * 0.04 }}
-                        className="rounded-lg border border-slate-200/60 dark:border-white/[0.06] bg-white/40 dark:bg-[#131a27]/60 p-2.5 space-y-1.5"
+                        className="border border-white/10 bg-white/[0.02] p-3 rounded-sm space-y-2"
                       >
-                        <div className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-200">
-                          <span className="flex items-center gap-1.5">
+                        <div className="flex items-center justify-between text-xs font-mono text-neutral-300">
+                          <span className="flex items-center gap-1.5 uppercase tracking-wider">
                             {getCategoryIcon(catName)}
                             <span>{catName}</span>
                           </span>
-                          <span className="text-[10px] font-normal text-slate-400">
+                          <span className="text-neutral-400">
                             {skills.length} {skills.length === 1 ? "skill" : "skills"}
                           </span>
                         </div>
@@ -939,69 +819,65 @@ export function ResumeIntelligence({
                           {skills.map((skill) => (
                             <span
                               key={skill}
-                              className="inline-flex items-center gap-1 rounded-md bg-indigo-50/70 dark:bg-indigo-950/50 border border-indigo-200/50 dark:border-indigo-800/40 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:text-[#93c5fd]"
+                              className="font-mono text-xs border border-white/15 bg-white/5 px-2 py-0.5 rounded-xs text-white"
                             >
-                              <span>{skill}</span>
+                              {skill}
                             </span>
                           ))}
                         </div>
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
                 ) : (
-                  /* Compact Top Skills Chips */
                   <div className="flex flex-wrap gap-1.5 pt-1">
-                    {topSkills.map((skill, idx) => (
-                      <motion.span
+                    {topSkills.map((skill) => (
+                      <span
                         key={skill}
-                        initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: idx * 0.03 }}
-                        className="inline-flex items-center gap-1 rounded-md bg-indigo-50/80 dark:bg-indigo-950/60 border border-indigo-200/60 dark:border-indigo-800/50 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:text-[#93c5fd] shadow-2xs"
+                        className="font-mono text-xs border border-white/15 bg-white/5 px-2 py-0.5 rounded-xs text-white"
                       >
-                        <span>{skill}</span>
-                      </motion.span>
+                        {skill}
+                      </span>
                     ))}
                     {remainingSkillsCount > 0 && (
                       <button
                         type="button"
                         onClick={() => setShowAllSkills(true)}
-                        className="inline-flex items-center gap-1 rounded-md bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/10 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                        className="font-mono text-xs border border-white/10 bg-white/[0.02] px-2 py-0.5 rounded-xs text-neutral-400 hover:text-white cursor-pointer"
                       >
-                        <span>+{remainingSkillsCount} more</span>
+                        +{remainingSkillsCount} more
                       </button>
                     )}
                   </div>
                 )}
               </div>
 
-              {/* Real Evidence Details Accordion (Projects & Certifications) */}
+              {/* Claims & Projects Accordion */}
               {(projectCount > 0 || certCount > 0 || achievementCount > 0) && (
-                <div className="border-t border-slate-100 dark:border-white/[0.06] pt-2">
+                <div className="border-t border-white/10 pt-3">
                   <button
                     type="button"
                     onClick={() => setShowExtractedDetails((prev) => !prev)}
-                    className="w-full flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-[#8ea2c6] hover:text-slate-800 dark:hover:text-white py-1 cursor-pointer"
+                    className="w-full flex items-center justify-between text-xs font-mono text-neutral-400 hover:text-white py-1 cursor-pointer"
                   >
-                    <span className="flex items-center gap-1.5">
+                    <span className="flex items-center gap-1.5 uppercase">
                       <Briefcase className="h-3.5 w-3.5" />
-                      <span>Extracted Experience & Claims ({projectCount + certCount + achievementCount})</span>
+                      <span>Extracted Claims ({projectCount + certCount + achievementCount})</span>
                     </span>
                     {showExtractedDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                   </button>
 
                   {showExtractedDetails && parsedSummary && (
-                    <div className="space-y-2 pt-2 text-xs text-slate-600 dark:text-[#98a4b3] max-h-40 overflow-y-auto">
+                    <div className="space-y-2 pt-2 text-xs text-neutral-300 max-h-40 overflow-y-auto">
                       {parsedSummary.projects?.map((proj, i) => (
-                        <div key={i} className="rounded-lg bg-slate-50 dark:bg-[#151e29] p-2 border border-slate-200/60 dark:border-white/[0.06]">
-                          <p className="font-bold text-slate-800 dark:text-slate-200">{proj.title}</p>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{proj.description}</p>
+                        <div key={i} className="border border-white/5 bg-white/[0.02] p-2.5 rounded-sm">
+                          <p className="font-medium text-white">{proj.title}</p>
+                          <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-2">{proj.description}</p>
                         </div>
                       ))}
                       {parsedSummary.certifications?.map((cert, i) => (
-                        <div key={i} className="rounded-lg bg-slate-50 dark:bg-[#151e29] p-2 border border-slate-200/60 dark:border-white/[0.06]">
-                          <p className="font-bold text-slate-800 dark:text-slate-200">{cert.name}</p>
-                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{cert.detail}</p>
+                        <div key={i} className="border border-white/5 bg-white/[0.02] p-2.5 rounded-sm">
+                          <p className="font-medium text-white">{cert.name}</p>
+                          <p className="text-[11px] text-neutral-400 mt-0.5">{cert.detail}</p>
                         </div>
                       ))}
                     </div>
@@ -1011,27 +887,27 @@ export function ResumeIntelligence({
             </motion.div>
           )}
 
-          {/* 4. ERROR & ACTIONABLE RETRY STATE */}
+          {/* 4. ERROR STATE */}
           {phase === "error" && (
             <motion.div
               key="error-state"
               initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
-              className="rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50/50 dark:bg-rose-950/20 p-5 space-y-4 text-center"
+              className="border border-red-500/30 bg-red-950/20 p-5 rounded-md space-y-4 text-center font-sans"
             >
-              <div className="flex h-12 w-12 mx-auto items-center justify-center rounded-2xl bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400">
-                <AlertCircle className="h-6 w-6" />
+              <div className="flex h-10 w-10 mx-auto items-center justify-center rounded-full border border-red-500/40 bg-red-900/30 text-red-300">
+                <AlertCircle className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm font-bold text-rose-900 dark:text-rose-200">
+                <p className="text-sm font-medium text-white">
                   {errorType === "upload" && "Resume upload failed"}
                   {errorType === "parse" && "We couldn't fully analyze this resume"}
                   {errorType === "extraction" && "We couldn't finish analyzing your resume"}
                   {errorType === "activate" && "Skill Passport update pending"}
                   {!errorType && "Resume analysis notice"}
                 </p>
-                <p className="text-xs text-rose-700 dark:text-rose-300 mt-1 max-w-md mx-auto">
+                <p className="text-xs text-red-300 mt-1 max-w-md mx-auto">
                   {errorMessage || "An unexpected error occurred during processing."}
                 </p>
               </div>
@@ -1041,7 +917,7 @@ export function ResumeIntelligence({
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold transition-colors cursor-pointer shadow-xs"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-red-500/40 bg-red-900/30 text-white text-xs font-mono transition-colors cursor-pointer"
                   >
                     <RefreshCw className="h-3.5 w-3.5" />
                     <span>Retry Upload</span>
@@ -1054,7 +930,7 @@ export function ResumeIntelligence({
                       type="button"
                       disabled={isReanalyzing}
                       onClick={() => void retryAnalysis()}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#3b71d9] hover:bg-[#2563eb] text-white text-xs font-semibold transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-white/20 bg-white/10 text-white text-xs font-mono transition-colors cursor-pointer disabled:opacity-50"
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${isReanalyzing ? "animate-spin" : ""}`} />
                       <span>{isReanalyzing ? "Analyzing..." : "Retry Analysis"}</span>
@@ -1062,7 +938,7 @@ export function ResumeIntelligence({
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#111821] text-xs font-semibold text-slate-700 dark:text-slate-200 transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-white/10 bg-white/[0.02] text-xs font-mono text-neutral-300 hover:text-white transition-colors cursor-pointer"
                     >
                       <span>Upload different file</span>
                     </button>
@@ -1074,7 +950,7 @@ export function ResumeIntelligence({
                     type="button"
                     disabled={isRetryingFailed}
                     onClick={() => void retryFailedItems()}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#3b71d9] hover:bg-[#2563eb] text-white text-xs font-semibold transition-colors cursor-pointer shadow-xs disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-white/20 bg-white/10 text-white text-xs font-mono transition-colors cursor-pointer disabled:opacity-50"
                   >
                     <RefreshCw className={`h-3.5 w-3.5 ${isRetryingFailed ? "animate-spin" : ""}`} />
                     <span>{isRetryingFailed ? "Retrying..." : "Retry analysis"}</span>
@@ -1085,7 +961,7 @@ export function ResumeIntelligence({
                   <button
                     type="button"
                     onClick={() => void retryPassportUpdate()}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#3b71d9] hover:bg-[#2563eb] text-white text-xs font-semibold transition-colors cursor-pointer shadow-xs"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-white/20 bg-white/10 text-white text-xs font-mono transition-colors cursor-pointer"
                   >
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     <span>Retry Passport Update</span>
@@ -1097,11 +973,10 @@ export function ResumeIntelligence({
         </AnimatePresence>
       </div>
 
-      {/* Footer Helper Note */}
-      <div className="border-t border-slate-100 dark:border-white/[0.06] pt-3 flex items-center justify-between text-[11px] text-slate-500 dark:text-[#8ea2c6]">
-        <span className="flex items-center gap-1">
-          <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
-          <span>Deterministic provenance &bull; Protected attributes never extracted</span>
+      <div className="border-t border-white/10 pt-3 flex items-center justify-between font-mono text-[10px] text-neutral-400">
+        <span className="flex items-center gap-1.5">
+          <ShieldCheck className="h-3.5 w-3.5 text-white/80" />
+          <span>Deterministic provenance · Protected attributes never extracted</span>
         </span>
       </div>
     </section>

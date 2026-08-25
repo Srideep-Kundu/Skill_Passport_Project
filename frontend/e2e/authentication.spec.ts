@@ -10,11 +10,11 @@ test("student sees a safe authentication error from the browser UI", async ({ pa
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: "Sign in or create an account" }).click();
+  await page.getByRole("button", { name: "Sign In", exact: true }).click();
   await page.getByLabel("Email").fill("demo@example.test");
   await page.getByLabel("Password").fill("incorrect-password");
-  await page.locator("form").getByRole("button", { name: "Sign in" }).click();
+  await page.locator("form").getByRole("button", { name: "Sign In to Workspace" }).click();
 
   await expect(page.getByRole("alert")).toHaveText("Invalid email or password");
-  await expect(page.getByRole("heading", { name: "Welcome back" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Welcome back to your passport." })).toBeVisible();
 });

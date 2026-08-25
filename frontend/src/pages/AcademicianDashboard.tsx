@@ -400,20 +400,20 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
         return "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40";
       case "active":
       case "in_progress":
-        return "bg-blue-50 dark:bg-blue-950/40 text-[#3b71d9] dark:text-[#b0c6ff] border-blue-200 dark:border-blue-800/40";
+        return "bg-[#9CC7D8]/10 text-[#9CC7D8] border-[#9CC7D8]/30";
       case "shortlisted":
       case "discussion":
-        return "bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/40";
+        return "bg-white/5 text-[#BEC8CF] border-white/15";
       case "submitted":
       case "under_review":
         return "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/40";
       case "draft":
-        return "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700";
+        return "bg-white/[0.03] text-[#BEC8CF] border-white/10";
       case "rejected":
       case "withdrawn":
         return "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/40";
       default:
-        return "bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800";
+        return "bg-white/[0.02] text-[#8796A2] border-white/10";
     }
   };
 
@@ -433,102 +433,103 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
   if (loading && !passport) {
     return (
       <div className="p-12 text-center max-w-7xl mx-auto">
-        <div className="inline-block animate-spin h-8 w-8 border-4 border-[#3b71d9] border-t-transparent rounded-full mb-3" />
-        <p className="text-sm text-slate-500 dark:text-slate-400">Loading Faculty & Academician Portal...</p>
+        <div className="inline-block animate-spin h-8 w-8 border-2 border-[#9CC7D8] border-t-transparent rounded-full mb-3" />
+        <p className="text-sm text-[#8796A2]">Loading Faculty & Academician Portal...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8 font-['Manrope']">
+    <div className="faculty-portal p-6 md:p-10 max-w-7xl mx-auto space-y-8 font-sans">
       {/* Welcome Banner */}
-      <div className="bg-white dark:bg-[#151921] rounded-3xl p-8 border border-slate-200 dark:border-white/[0.08] shadow-xs relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#3b71d9]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-[#3b71d9] dark:text-[#b0c6ff] text-xs font-bold mb-3">
-                <GraduationCap className="h-3.5 w-3.5" />
-                Faculty & Academician Portal • Phase 1 & 2
-              </div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white">
-                {passport?.full_name || "Faculty Fellow"}
-              </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
-                {passport?.designation} • {passport?.department} • <strong>{passport?.institution_name}</strong>
-              </p>
+      <div className="border border-white/10 bg-[#071E2B] rounded-md p-6 md:p-8 space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-[#8796A2] mb-2">
+              <GraduationCap className="h-3.5 w-3.5" />
+              <span>Faculty & Academician Portal</span>
             </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowNotificationsModal(true)}
-                className="p-2 bg-slate-100 dark:bg-white/[0.05] hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl relative cursor-pointer"
-                title="Notifications"
-              >
-                <Bell className="h-4 w-4" />
-                {notifications.filter((n) => !n.is_read).length > 0 && (
-                  <span className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-rose-500 rounded-full text-[9px] font-bold text-white flex items-center justify-center">
-                    {notifications.filter((n) => !n.is_read).length}
-                  </span>
-                )}
-              </button>
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                  passport?.collaboration_availability === "available"
-                    ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200"
-                    : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200"
-                }`}
-              >
-                ● Availability: {passport?.collaboration_availability?.replace("_", " ").toUpperCase()}
-              </span>
-              <button
-                onClick={() => setActiveTab("passport")}
-                className="px-4 py-2 bg-[#3b71d9] hover:bg-[#2f5db3] text-white text-xs font-bold rounded-xl transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
-              >
-                <Edit3 className="h-3.5 w-3.5" /> Edit Passport
-              </button>
-            </div>
+            <h1
+              className="text-3xl md:text-4xl font-normal text-[#F7F8F8]"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              {passport?.full_name || "Faculty Fellow"}
+            </h1>
+            <p className="font-mono text-xs text-[#BEC8CF] mt-1">
+              {passport?.designation} · {passport?.department} · <span className="text-[#9CC7D8]">{passport?.institution_name}</span>
+            </p>
           </div>
 
-          {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6 pt-6 border-t border-slate-100 dark:border-white/[0.06]">
-            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.03]">
-              <span className="text-xs text-slate-400 uppercase font-semibold">Active Workspaces</span>
-              <p className="text-2xl font-black text-[#3b71d9] mt-0.5">
-                {workspaces.filter((w) => w.status === "active").length}
-              </p>
-            </div>
-            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.03]">
-              <span className="text-xs text-slate-400 uppercase font-semibold">Total Proposals</span>
-              <p className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">{applications.length}</p>
-            </div>
-            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.03]">
-              <span className="text-xs text-slate-400 uppercase font-semibold">Grants Secured</span>
-              <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
-                ₹{((passport?.total_grants_secured || 0) / 100000).toFixed(1)} L
-              </p>
-            </div>
-            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.03]">
-              <span className="text-xs text-slate-400 uppercase font-semibold">Live Advising</span>
-              <p className="text-2xl font-black text-purple-600 dark:text-purple-400 mt-0.5">{advisedProjects.length}</p>
-            </div>
-            <div className="p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.03]">
-              <span className="text-xs text-slate-400 uppercase font-semibold">Completed Collabs</span>
-              <p className="text-2xl font-black text-amber-500 mt-0.5">{historyItems.length}</p>
-            </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowNotificationsModal(true)}
+              className="p-2.5 border border-white/15 bg-white/[0.03] hover:bg-white/10 text-white rounded-md relative cursor-pointer transition-colors"
+              title="Notifications"
+            >
+              <Bell className="h-4 w-4" />
+              {notifications.filter((n) => !n.is_read).length > 0 && (
+                <span className="absolute -top-1 -right-1 h-3.5 w-3.5 bg-[#9CC7D8] text-[#021522] rounded-full text-[9px] font-bold flex items-center justify-center">
+                  {notifications.filter((n) => !n.is_read).length}
+                </span>
+              )}
+            </button>
+            <span
+              className={`px-3 py-1 rounded-sm text-xs font-mono border ${
+                passport?.collaboration_availability === "available"
+                  ? "bg-emerald-950/40 text-emerald-400 border-emerald-800/40"
+                  : "bg-amber-950/40 text-[#9CC7D8] border-white/15"
+              }`}
+            >
+              ● {passport?.collaboration_availability?.replace("_", " ").toUpperCase()}
+            </span>
+            <button
+              onClick={() => setActiveTab("passport")}
+              className="px-4 py-2 border border-white/20 bg-white/10 hover:bg-white/15 text-white font-mono text-xs rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Edit3 className="h-3.5 w-3.5" />
+              <span>Edit Passport</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Metrics Bar */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-6 border-t border-white/10">
+          <div className="p-4 rounded-sm border border-white/10 bg-white/[0.01]">
+            <span className="font-mono text-[10px] text-[#8796A2] uppercase tracking-wider block">Active Workspaces</span>
+            <p className="text-2xl font-normal text-[#9CC7D8] mt-1" style={{ fontFamily: "var(--font-display)" }}>
+              {workspaces.filter((w) => w.status === "active").length}
+            </p>
+          </div>
+          <div className="p-4 rounded-sm border border-white/10 bg-white/[0.01]">
+            <span className="font-mono text-[10px] text-[#8796A2] uppercase tracking-wider block">Total Proposals</span>
+            <p className="text-2xl font-normal text-[#F7F8F8] mt-1" style={{ fontFamily: "var(--font-display)" }}>{applications.length}</p>
+          </div>
+          <div className="p-4 rounded-sm border border-white/10 bg-white/[0.01]">
+            <span className="font-mono text-[10px] text-[#8796A2] uppercase tracking-wider block">Grants Secured</span>
+            <p className="text-2xl font-normal text-emerald-400 mt-1" style={{ fontFamily: "var(--font-display)" }}>
+              ₹{((passport?.total_grants_secured || 0) / 100000).toFixed(1)} L
+            </p>
+          </div>
+          <div className="p-4 rounded-sm border border-white/10 bg-white/[0.01]">
+            <span className="font-mono text-[10px] text-[#8796A2] uppercase tracking-wider block">Live Advising</span>
+            <p className="text-2xl font-normal text-[#F7F8F8] mt-1" style={{ fontFamily: "var(--font-display)" }}>{advisedProjects.length}</p>
+          </div>
+          <div className="p-4 rounded-sm border border-white/10 bg-white/[0.01]">
+            <span className="font-mono text-[10px] text-[#8796A2] uppercase tracking-wider block">Completed Collabs</span>
+            <p className="text-2xl font-normal text-[#9CC7D8] mt-1" style={{ fontFamily: "var(--font-display)" }}>{historyItems.length}</p>
           </div>
         </div>
       </div>
 
       {/* Active Section Header Badge */}
-      <div className="flex items-center justify-between pb-2 border-b border-slate-200/80 dark:border-white/[0.08]">
+      <div className="flex items-center justify-between pb-2 border-b border-white/10">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">Active View:</span>
-          <span className="px-3 py-1 rounded-xl text-xs font-bold bg-[#3b71d9]/10 text-[#3b71d9] dark:text-[#b0c6ff] border border-[#3b71d9]/20 flex items-center gap-1.5">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-[#8796A2]">Active View:</span>
+          <span className="px-3 py-1 rounded-sm text-xs font-mono bg-[#9CC7D8]/10 text-[#9CC7D8] border border-[#9CC7D8]/30 flex items-center gap-1.5">
             {navTabs.find((t) => t.id === activeTab)?.label || "Faculty Hub"}
           </span>
         </div>
-        <span className="text-[11px] text-slate-400 dark:text-slate-500">Navigate anytime via the left sidebar</span>
+        <span className="hidden sm:inline text-[11px] text-[#8796A2]">Navigate anytime via the left sidebar</span>
       </div>
 
       {/* TAB 1: OPPORTUNITIES & DISCOVERY */}
@@ -536,23 +537,23 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
         <div className="space-y-6">
           {/* Filters Bar */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {/* Filter Pills */}
+            <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-2 md:pb-0">
               {[
                 { id: "all", label: "All Programs" },
                 { id: "industrial_immersion", label: "Industry Immersion" },
-                { id: "industrial_training", label: "Industrial Training" },
-                { id: "faculty_internship", label: "Faculty Internships" },
-                { id: "fdp", label: "FDP & Workshops" },
-                { id: "research_grant", label: "R&D Grants" },
-                { id: "consultancy_request", label: "Consultancy" },
+                { id: "research_grant", label: "Research Grants" },
+                { id: "consultancy", label: "Consultancy" },
+                { id: "guest_lecture", label: "Guest Lectures" },
+                { id: "advising", label: "Advising" },
               ].map((t) => (
                 <button
                   key={t.id}
                   onClick={() => setOppTypeFilter(t.id)}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-md text-xs font-mono transition-colors cursor-pointer ${
                     oppTypeFilter === t.id
-                      ? "bg-[#3b71d9] text-white shadow-xs"
-                      : "bg-slate-100 dark:bg-white/[0.04] text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      ? "border border-white/20 bg-white/15 text-white"
+                      : "border border-white/10 bg-white/[0.02] text-[#8796A2] hover:text-white"
                   }`}
                 >
                   {t.label}
@@ -561,13 +562,13 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
             </div>
 
             <div className="relative min-w-[240px]">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#8796A2]" />
               <input
                 type="text"
                 placeholder="Search domain, corporate..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-xs pl-9 pr-4 py-2 rounded-xl bg-white dark:bg-[#151921] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white"
+                className="w-full font-mono text-xs pl-9 pr-4 py-2 rounded-md bg-[#071E2B] border border-white/15 text-[#F7F8F8] placeholder:text-[#8796A2] focus:border-white focus:outline-none"
               />
             </div>
           </div>
@@ -586,56 +587,61 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
               .map((opp) => (
                 <div
                   key={opp.id}
-                  className="bg-white dark:bg-[#151921] rounded-2xl p-6 border border-slate-200 dark:border-white/[0.08] shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 dark:hover:border-white/[0.15] transition-all"
+                  className="bg-[#071E2B] rounded-md p-6 border border-white/10 flex flex-col justify-between space-y-4 hover:border-white/20 transition-colors"
                 >
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-900/30 text-[#3b71d9] dark:text-[#b0c6ff]">
+                    <div className="flex items-center justify-between mb-2 font-mono">
+                      <span className="text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-xs border border-white/15 text-[#9CC7D8]">
                         {opp.opportunity_type.replace("_", " ")}
                       </span>
                       {opp.stipend_or_grant && (
-                        <span className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-200/50 dark:border-emerald-800/40">
+                        <span className="text-xs text-emerald-400 bg-emerald-950/40 px-2.5 py-0.5 rounded-xs border border-emerald-800/40">
                           Grant: ₹{(opp.stipend_or_grant / 1000).toFixed(0)}k
                         </span>
                       )}
                     </div>
 
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{opp.title}</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1">
-                      <Building2 className="h-3.5 w-3.5" />
-                      <strong>{opp.organization_name}</strong> • Domain: {opp.domain}
+                    <h3
+                      className="text-xl font-normal text-[#F7F8F8]"
+                      style={{ fontFamily: "var(--font-display)" }}
+                    >
+                      {opp.title}
+                    </h3>
+                    <p className="text-xs text-[#BEC8CF] mt-1 flex items-center gap-1 font-mono">
+                      <Building2 className="h-3.5 w-3.5 text-[#8796A2]" />
+                      <span>{opp.organization_name}</span> · Domain: <span className="text-[#9CC7D8]">{opp.domain}</span>
                     </p>
 
-                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-3 line-clamp-3">
+                    <p className="text-xs text-[#BEC8CF] mt-3 line-clamp-3 leading-relaxed">
                       {opp.description}
                     </p>
 
-                    <div className="flex flex-wrap items-center gap-3 mt-4 text-xs text-slate-500">
+                    <div className="flex flex-wrap items-center gap-3 mt-4 text-xs font-mono text-[#8796A2]">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3.5 w-3.5" /> {opp.duration_weeks} Weeks
                       </span>
                       <span className="flex items-center gap-1">
-                        <Calendar className="h-3.5 w-3.5" /> Mode: <strong className="capitalize">{opp.mode || "Hybrid"}</strong>
+                        <Calendar className="h-3.5 w-3.5" /> Mode: <strong className="capitalize text-[#BEC8CF]">{opp.mode || "Hybrid"}</strong>
                       </span>
                       {opp.deadline && (
-                        <span className="flex items-center gap-1">
-                          <AlertCircle className="h-3.5 w-3.5 text-amber-500" /> Deadline: {new Date(opp.deadline).toLocaleDateString()}
+                        <span className="flex items-center gap-1 text-[#9CC7D8]">
+                          <AlertCircle className="h-3.5 w-3.5" /> Deadline: {new Date(opp.deadline).toLocaleDateString()}
                         </span>
                       )}
                     </div>
                   </div>
 
                   {/* Actions */}
-                  <div className="pt-4 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between gap-3">
+                  <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-3">
                     <button
                       onClick={() => setSelectedOppDetail(opp)}
-                      className="px-3.5 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-50 dark:bg-white/[0.04] rounded-xl cursor-pointer"
+                      className="px-3.5 py-2 text-xs font-mono text-[#BEC8CF] hover:text-white bg-white/[0.03] border border-white/10 rounded-md cursor-pointer transition-colors"
                     >
                       View Details
                     </button>
 
                     {opp.has_applied ? (
-                      <div className="p-2 px-3 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/30 flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                      <div className="p-2 px-3 rounded-md bg-emerald-950/30 border border-emerald-800/40 flex items-center gap-1.5 text-xs font-mono text-emerald-400">
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         <span>Proposal {opp.application_status?.toUpperCase() || "SUBMITTED"}</span>
                       </div>
@@ -649,7 +655,7 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                             application_type: opp.opportunity_type,
                             problem_statement: "",
                             methodology: "",
-                            timeline_weeks: opp.duration_weeks,
+                            timeline_weeks: opp.duration_weeks || 12,
                             budget_requested: opp.stipend_or_grant || 0,
                             industry_support_required: "",
                             deliverables: opp.deliverables?.length ? opp.deliverables : ["Initial Research Charter", "Final Technical Deliverable"],
@@ -659,9 +665,9 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                           });
                           setShowApplyModal(true);
                         }}
-                        className="px-4 py-2 bg-[#3b71d9] hover:bg-[#2f5db3] text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs shadow-[#3b71d9]/20"
+                        className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-mono rounded-md transition-colors cursor-pointer"
                       >
-                        <Sparkles className="h-3.5 w-3.5" /> Apply / Submit Proposal
+                        Submit Proposal
                       </button>
                     )}
                   </div>
@@ -674,11 +680,11 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
       {/* TAB 2: MY APPLICATIONS & PROPOSALS */}
       {activeTab === "applications" && (
         <div className="space-y-6">
-          <div className="bg-white dark:bg-[#151921] rounded-3xl p-6 border border-slate-200 dark:border-white/[0.08] shadow-xs space-y-6">
+          <div className="bg-[#071E2B] rounded-md p-6 border border-white/10 space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
                 <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-[#3b71d9]" />
+                  <FileText className="h-5 w-5 text-[#9CC7D8]" />
                   My Applications & Proposal Lifecycle Tracking
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -731,7 +737,7 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                           {app.status === "accepted" ? (
                             <span className="text-emerald-600 font-bold">Workspace Active</span>
                           ) : app.status === "discussion" ? (
-                            <span className="text-purple-600 font-bold">Schedule Sync</span>
+                            <span className="text-[#9CC7D8] font-bold">Schedule Sync</span>
                           ) : app.status === "draft" ? (
                             <span className="text-amber-600 font-bold">Ready to Submit</span>
                           ) : (
@@ -769,17 +775,17 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
         <div className="space-y-6">
           {selectedWorkspace ? (
             /* Workspace Room Detail View */
-            <div className="bg-white dark:bg-[#151921] rounded-3xl p-6 md:p-8 border border-slate-200 dark:border-white/[0.08] shadow-xs space-y-6">
+            <div className="bg-[#071E2B] rounded-md p-6 md:p-8 border border-white/10 space-y-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-white/[0.06]">
                 <div>
                   <button
                     onClick={() => setSelectedWorkspace(null)}
-                    className="text-xs text-[#3b71d9] font-bold hover:underline mb-2 block cursor-pointer"
+                    className="text-xs text-[#9CC7D8] font-medium hover:underline mb-2 block cursor-pointer"
                   >
                     ← Back to All Workspaces
                   </button>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-[#3b71d9]">
+                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-xs bg-[#9CC7D8]/10 text-[#9CC7D8] border border-[#9CC7D8]/30">
                       {selectedWorkspace.collaboration_type.replace("_", " ")}
                     </span>
                     <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border uppercase ${getStatusBadge(selectedWorkspace.status)}`}>
@@ -817,30 +823,30 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                   {/* Milestones Checkoff */}
                   <div className="p-6 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.06] space-y-4">
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      <CheckSquare className="h-4 w-4 text-[#3b71d9]" />
+                    <CheckSquare className="h-4 w-4 text-[#9CC7D8]" />
                       Milestones & Technical Deliverables
                     </h3>
                     <div className="space-y-3">
                       {selectedWorkspace.milestones.map((m) => (
                         <div
                           key={m.id}
-                          className="flex items-center justify-between p-3.5 rounded-xl bg-white dark:bg-[#151921] border border-slate-200 dark:border-white/[0.08]"
+                          className="flex items-center justify-between p-3.5 rounded-sm bg-white/[0.01] border border-white/10"
                         >
                           <div className="flex items-center gap-3">
                             <input
                               type="checkbox"
                               checked={m.status === "completed"}
                               onChange={() => handleToggleMilestone(selectedWorkspace.id, m.id, m.status)}
-                              className="h-4 w-4 rounded text-[#3b71d9] cursor-pointer"
+                              className="h-4 w-4 rounded-xs text-[#9CC7D8] cursor-pointer"
                             />
                             <div>
-                              <p className={`text-xs font-bold ${m.status === "completed" ? "line-through text-slate-400" : "text-slate-900 dark:text-white"}`}>
+                              <p className={`text-xs font-semibold ${m.status === "completed" ? "line-through text-[#8796A2]" : "text-[#F7F8F8]"}`}>
                                 {m.title}
                               </p>
-                              {m.due_date && <span className="text-[10px] text-slate-400">Due: {m.due_date}</span>}
+                              {m.due_date && <span className="text-[10px] text-[#8796A2]">Due: {m.due_date}</span>}
                             </div>
                           </div>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getStatusBadge(m.status)}`}>
+                          <span className={`px-2 py-0.5 rounded-xs text-[10px] uppercase font-mono border ${getStatusBadge(m.status)}`}>
                             {m.status.replace("_", " ")}
                           </span>
                         </div>
@@ -849,22 +855,22 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                   </div>
 
                   {/* Tasks / Action Items */}
-                  <div className="p-6 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.06] space-y-4">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      <Layers className="h-4 w-4 text-[#3b71d9]" />
+                  <div className="p-6 rounded-md bg-[#071E2B] border border-white/10 space-y-4">
+                    <h3 className="text-sm font-bold text-[#F7F8F8] flex items-center gap-2">
+                      <Layers className="h-4 w-4 text-[#9CC7D8]" />
                       Sprint Tasks & Action Items
                     </h3>
                     <div className="space-y-2">
                       {selectedWorkspace.tasks.map((t) => (
                         <div
                           key={t.id}
-                          className="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-[#151921] border border-slate-200 dark:border-white/[0.08]"
+                          className="flex items-center justify-between p-3 rounded-sm bg-white/[0.01] border border-white/10"
                         >
                           <div>
-                            <p className="text-xs font-bold text-slate-900 dark:text-white">{t.title}</p>
-                            <span className="text-[10px] text-slate-400">Assigned: {t.assigned_to}</span>
+                            <p className="text-xs font-semibold text-[#F7F8F8]">{t.title}</p>
+                            <span className="text-[10px] text-[#8796A2]">Assigned: {t.assigned_to}</span>
                           </div>
-                          <span className="text-[10px] uppercase px-2 py-0.5 rounded bg-slate-100 dark:bg-white/[0.04] font-bold">
+                          <span className="text-[10px] uppercase px-2 py-0.5 rounded-xs bg-white/10 text-[#BEC8CF]">
                             {t.status}
                           </span>
                         </div>
@@ -877,12 +883,12 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                         placeholder="Add new collaboration task..."
                         value={newTaskTitle}
                         onChange={(e) => setNewTaskTitle(e.target.value)}
-                        className="flex-1 text-xs px-3 py-2 rounded-xl bg-white dark:bg-[#151921] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white"
+                        className="flex-1 text-xs px-3 py-2 rounded-md bg-white/[0.03] border border-white/15 text-[#F7F8F8] placeholder:text-[#8796A2]"
                       />
                       <select
                         value={newTaskAssignee}
                         onChange={(e) => setNewTaskAssignee(e.target.value)}
-                        className="text-xs px-3 py-2 rounded-xl bg-white dark:bg-[#151921] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white"
+                        className="text-xs px-3 py-2 rounded-md bg-[#071E2B] border border-white/15 text-[#F7F8F8]"
                       >
                         <option value="Faculty Lead">Faculty Lead</option>
                         <option value="Industry Lead">Industry Lead</option>
@@ -891,7 +897,7 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                       </select>
                       <button
                         onClick={() => handleAddTask(selectedWorkspace.id)}
-                        className="px-4 py-2 bg-[#3b71d9] text-white text-xs font-bold rounded-xl cursor-pointer"
+                        className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs rounded-md cursor-pointer"
                       >
                         Add Task
                       </button>
@@ -902,33 +908,33 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                 {/* Right Col: Discussion Stream & Participants */}
                 <div className="space-y-6">
                   {/* Participants */}
-                  <div className="p-6 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.06] space-y-3">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      <Users className="h-4 w-4 text-[#3b71d9]" /> Workspace Team
+                  <div className="p-6 rounded-md bg-[#071E2B] border border-white/10 space-y-3">
+                    <h3 className="text-sm font-bold text-[#F7F8F8] flex items-center gap-2">
+                      <Users className="h-4 w-4 text-[#9CC7D8]" /> Workspace Team
                     </h3>
                     <div className="space-y-2">
                       {selectedWorkspace.participants.map((p, idx) => (
-                        <div key={idx} className="p-2.5 rounded-xl bg-white dark:bg-[#151921] border border-slate-200 dark:border-white/[0.08] text-xs">
-                          <p className="font-bold text-slate-900 dark:text-white">{p.name}</p>
-                          <p className="text-[10px] text-slate-400">{p.role} • {p.company || p.department}</p>
+                        <div key={idx} className="p-2.5 rounded-sm bg-white/[0.01] border border-white/10 text-xs">
+                          <p className="font-semibold text-[#F7F8F8]">{p.name}</p>
+                          <p className="text-[10px] text-[#8796A2]">{p.role} • {p.company || p.department}</p>
                         </div>
                       ))}
                     </div>
                   </div>
 
                   {/* Discussion Thread */}
-                  <div className="p-6 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.06] space-y-3">
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4 text-[#3b71d9]" /> Industry Updates & Chat
+                  <div className="p-6 rounded-md bg-[#071E2B] border border-white/10 space-y-3">
+                    <h3 className="text-sm font-bold text-[#F7F8F8] flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4 text-[#9CC7D8]" /> Industry Updates & Chat
                     </h3>
                     <div className="space-y-3 max-h-60 overflow-y-auto">
                       {selectedWorkspace.discussion_posts.map((post) => (
-                        <div key={post.id} className="p-3 rounded-xl bg-white dark:bg-[#151921] border border-slate-200 dark:border-white/[0.08] text-xs space-y-1">
+                        <div key={post.id} className="p-3 rounded-sm bg-white/[0.01] border border-white/10 text-xs space-y-1">
                           <div className="flex items-center justify-between">
-                            <span className="font-bold text-slate-900 dark:text-white">{post.author_name}</span>
-                            <span className="text-[10px] text-slate-400 uppercase">{post.author_role}</span>
+                            <span className="font-semibold text-[#F7F8F8]">{post.author_name}</span>
+                            <span className="text-[10px] text-[#8796A2] uppercase">{post.author_role}</span>
                           </div>
-                          <p className="text-slate-600 dark:text-slate-300">{post.content}</p>
+                          <p className="text-[#BEC8CF]">{post.content}</p>
                         </div>
                       ))}
                     </div>
@@ -939,11 +945,11 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                         placeholder="Write update to industry team..."
                         value={newDiscussionText}
                         onChange={(e) => setNewDiscussionText(e.target.value)}
-                        className="w-full text-xs p-3 rounded-xl bg-white dark:bg-[#151921] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white"
+                        className="w-full text-xs p-3 rounded-md bg-white/[0.03] border border-white/15 text-[#F7F8F8] placeholder:text-[#8796A2]"
                       />
                       <button
                         onClick={() => handleAddDiscussion(selectedWorkspace.id)}
-                        className="w-full py-2 bg-[#3b71d9] text-white text-xs font-bold rounded-xl cursor-pointer"
+                        className="w-full py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs rounded-md cursor-pointer"
                       >
                         Send Update
                       </button>
@@ -967,50 +973,50 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
               </div>
 
               {workspaces.length === 0 ? (
-                <div className="p-12 text-center bg-white dark:bg-[#151921] rounded-3xl border border-slate-200 dark:border-white/[0.08] text-sm text-slate-400">
+                <div className="p-12 text-center bg-[#071E2B] rounded-md border border-white/10 text-sm font-mono text-[#8796A2]">
                   No active workspaces yet. Once an industry partner accepts your proposal, a collaboration workspace is instantiated here.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-mono">
                   {workspaces.map((ws) => (
                     <div
                       key={ws.id}
-                      className="bg-white dark:bg-[#151921] rounded-3xl p-6 border border-slate-200 dark:border-white/[0.08] shadow-xs space-y-4 hover:border-slate-300 dark:hover:border-white/[0.15] transition-all cursor-pointer"
+                      className="bg-[#071E2B] rounded-md p-6 border border-white/10 space-y-4 hover:border-white/20 transition-colors cursor-pointer"
                       onClick={() => setSelectedWorkspace(ws)}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-[#3b71d9]">
+                        <span className="text-[10px] uppercase px-2.5 py-0.5 rounded-xs bg-[#9CC7D8]/10 text-[#9CC7D8] border border-[#9CC7D8]/30">
                           {ws.collaboration_type.replace("_", " ")}
                         </span>
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border uppercase ${getStatusBadge(ws.status)}`}>
+                        <span className={`px-2.5 py-0.5 rounded-xs text-[10px] border uppercase ${getStatusBadge(ws.status)}`}>
                           {ws.status}
                         </span>
                       </div>
 
                       <div>
-                        <h3 className="text-base font-bold text-slate-900 dark:text-white">{ws.title}</h3>
-                        <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-1">
+                        <h3 className="text-base font-semibold text-[#F7F8F8]">{ws.title}</h3>
+                        <p className="text-xs text-[#8796A2] mt-0.5 flex items-center gap-1">
                           <Building2 className="h-3.5 w-3.5" /> <strong>{ws.organization_name}</strong> • Lead: {ws.industry_lead_name}
                         </p>
                       </div>
 
                       {/* Progress Bar */}
                       <div>
-                        <div className="flex justify-between text-xs font-bold mb-1">
-                          <span className="text-slate-400">Milestone Progress</span>
-                          <span className="text-emerald-600">{ws.progress_percentage}%</span>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-[#8796A2]">Milestone Progress</span>
+                          <span className="text-emerald-400">{ws.progress_percentage}%</span>
                         </div>
-                        <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-white/[0.04] overflow-hidden">
+                        <div className="w-full h-1.5 rounded-xs bg-white/10 overflow-hidden">
                           <div
-                            className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                            className="h-full bg-emerald-400 rounded-xs transition-all duration-500"
                             style={{ width: `${ws.progress_percentage}%` }}
                           />
                         </div>
                       </div>
 
-                      <div className="pt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs text-slate-500 font-bold">
+                      <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs text-[#8796A2]">
                         <span>{ws.milestones?.length || 0} Milestones</span>
-                        <span className="text-[#3b71d9] flex items-center gap-1">
+                        <span className="text-[#9CC7D8] flex items-center gap-1">
                           Open Room <ArrowUpRight className="h-3.5 w-3.5" />
                         </span>
                       </div>
@@ -1025,12 +1031,12 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
 
       {/* TAB 4: FACULTY ACADEMIC PASSPORT */}
       {activeTab === "passport" && (
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-[#151921] rounded-3xl p-8 border border-slate-200 dark:border-white/[0.08] shadow-xs space-y-6">
+        <div className="space-y-6 font-mono">
+          <div className="bg-[#071E2B] rounded-md p-8 border border-white/10 space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-white/[0.06]">
               <div>
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <GraduationCap className="h-6 w-6 text-[#3b71d9]" />
+                  <GraduationCap className="h-6 w-6 text-[#9CC7D8]" />
                   Faculty Professional Academic Passport
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1122,7 +1128,7 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                   <button
                     onClick={handleSavePassport}
                     disabled={savingPassport}
-                    className="px-5 py-2 bg-[#3b71d9] text-white text-xs font-bold rounded-xl cursor-pointer"
+                    className="px-5 py-2 bg-white/10 text-white text-xs font-medium border border-white/20 rounded-md cursor-pointer"
                   >
                     {savingPassport ? "Saving..." : "Save Passport"}
                   </button>
@@ -1136,7 +1142,7 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                     <span className="text-xs text-slate-400 uppercase font-bold">Research Areas</span>
                     <div className="flex flex-wrap gap-1.5">
                       {passport?.research_areas?.map((r, i) => (
-                        <span key={i} className="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-50 dark:bg-blue-900/30 text-[#3b71d9]">
+                        <span key={i} className="px-2.5 py-1 rounded-xs text-xs font-mono bg-[#9CC7D8]/10 text-[#9CC7D8] border border-[#9CC7D8]/30">
                           {r}
                         </span>
                       ))}
@@ -1169,9 +1175,9 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                     <div className="space-y-2">
                       {passport?.publications && passport.publications.length > 0 ? (
                         passport.publications.map((p, idx) => (
-                          <div key={idx} className="p-3 rounded-xl bg-white dark:bg-[#151921] border border-slate-200 dark:border-white/[0.08] text-xs">
-                            <p className="font-bold text-slate-900 dark:text-white">{p.title}</p>
-                            <p className="text-[10px] text-slate-400">{p.journal_or_conf} • {p.year}</p>
+                          <div key={idx} className="p-3 rounded-sm bg-white/[0.01] border border-white/10 text-xs">
+                            <p className="font-semibold text-[#F7F8F8]">{p.title}</p>
+                            <p className="text-[10px] text-[#8796A2]">{p.journal_or_conf} • {p.year}</p>
                           </div>
                         ))
                       ) : (
@@ -1188,28 +1194,28 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
 
       {/* TAB 5: INDUSTRIAL TRAINING & FACULTY INTERNSHIPS */}
       {activeTab === "internships" && (
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-[#151921] rounded-3xl p-6 md:p-8 border border-slate-200 dark:border-white/[0.08] shadow-xs space-y-4">
-            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-[#3b71d9]" />
+        <div className="space-y-6 font-mono">
+          <div className="bg-[#071E2B] rounded-md p-6 md:p-8 border border-white/10 space-y-4">
+            <h2 className="text-base font-bold text-[#F7F8F8] flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-[#9CC7D8]" />
               Faculty Industrial Training & Sabbatical Immersion Lifecycle
             </h2>
-            <p className="text-xs text-slate-500 max-w-3xl">
+            <p className="text-xs text-[#8796A2] max-w-3xl">
               Dedicated track for AICTE / corporate industrial training, faculty summer internships, and sabbaticals with milestones, mentor feedback, and reflection reports.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
-              <div className="p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/30">
-                <span className="text-xs text-blue-600 font-bold uppercase">1. Selection & Mentor Alignment</span>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Corporate mentor assignment and kickoff charter agreement.</p>
+              <div className="p-4 rounded-sm bg-white/[0.01] border border-white/10">
+                <span className="text-xs text-[#9CC7D8] font-bold uppercase">1. Selection & Mentor Alignment</span>
+                <p className="text-xs text-[#8796A2] mt-1">Corporate mentor assignment and kickoff charter agreement.</p>
               </div>
-              <div className="p-4 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-100 dark:border-purple-900/30">
-                <span className="text-xs text-purple-600 font-bold uppercase">2. Milestone Execution</span>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Hands-on industrial sprint completion and weekly sync reviews.</p>
+              <div className="p-4 rounded-sm bg-white/[0.01] border border-white/10">
+                <span className="text-xs text-[#9CC7D8] font-bold uppercase">2. Milestone Execution</span>
+                <p className="text-xs text-[#8796A2] mt-1">Hands-on industrial sprint completion and weekly sync reviews.</p>
               </div>
-              <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30">
-                <span className="text-xs text-emerald-600 font-bold uppercase">3. Outcome & Certification</span>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">Completion report submission and academic credential endorsement.</p>
+              <div className="p-4 rounded-sm bg-white/[0.01] border border-white/10">
+                <span className="text-xs text-emerald-400 font-bold uppercase">3. Outcome & Certification</span>
+                <p className="text-xs text-[#8796A2] mt-1">Completion report submission and academic credential endorsement.</p>
               </div>
             </div>
           </div>
@@ -1218,13 +1224,13 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
 
       {/* TAB 6: R&D PROPOSALS */}
       {activeTab === "proposals" && (
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-[#151921] rounded-3xl p-6 md:p-8 border border-slate-200 dark:border-white/[0.08] shadow-xs space-y-4">
-            <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-[#3b71d9]" />
+        <div className="space-y-6 font-mono">
+          <div className="bg-[#071E2B] rounded-md p-6 md:p-8 border border-white/10 space-y-4">
+            <h2 className="text-base font-bold text-[#F7F8F8] flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-[#9CC7D8]" />
               Applied Research Grants & Joint R&D Proposal Hub
             </h2>
-            <p className="text-xs text-slate-500 max-w-3xl">
+            <p className="text-xs text-[#8796A2] max-w-3xl">
               Construct structured research proposals with methodology, budget breakdowns, student research assistants, and industry deliverables.
             </p>
 
@@ -1234,7 +1240,7 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                   setActiveTab("opportunities");
                   setOppTypeFilter("research_grant");
                 }}
-                className="px-4 py-2 bg-[#3b71d9] hover:bg-[#2f5db3] text-white text-xs font-bold rounded-xl cursor-pointer"
+                className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-mono rounded-md cursor-pointer"
               >
                 Browse Open R&D Grants
               </button>
@@ -1245,14 +1251,14 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
 
       {/* TAB 7: MENTORSHIP & EVENTS */}
       {activeTab === "mentorship_events" && (
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-[#151921] rounded-3xl p-6 md:p-8 border border-slate-200 dark:border-white/[0.08] shadow-xs space-y-6">
+        <div className="space-y-6 font-mono">
+          <div className="bg-[#071E2B] rounded-md p-6 md:p-8 border border-white/10 space-y-6">
             <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Users className="h-5 w-5 text-[#3b71d9]" />
+              <h2 className="text-base font-bold text-[#F7F8F8] flex items-center gap-2">
+                <Users className="h-5 w-5 text-[#9CC7D8]" />
                 Industry Mentorship, Masterclasses & Faculty Workshops
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-[#8796A2] mt-0.5">
                 Registrations loaded from your persisted faculty event records.
               </p>
             </div>
@@ -1260,24 +1266,24 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
             {/* Event Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {events.length === 0 ? (
-                <div className="md:col-span-2 p-8 text-center text-xs text-slate-400">
+                <div className="md:col-span-2 p-8 text-center text-xs text-[#8796A2]">
                   No faculty event registrations are available.
                 </div>
               ) : events.map((ev) => {
                 return (
-                  <div key={ev.id} className="p-6 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] space-y-4">
+                  <div key={ev.id} className="p-6 rounded-sm bg-white/[0.01] border border-white/10 space-y-4">
                     <div className="flex justify-between items-start">
                       <div>
-                        <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-purple-50 dark:bg-purple-900/30 text-purple-600">
+                        <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-xs bg-[#9CC7D8]/10 text-[#9CC7D8] border border-[#9CC7D8]/30">
                           {ev.event_type.toUpperCase()}
                         </span>
-                        <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-1.5">{ev.event_title}</h3>
-                        <p className="text-xs text-slate-500">Host: <strong>{ev.host_organization}</strong> • {ev.scheduled_at ? new Date(ev.scheduled_at).toLocaleDateString() : "Date pending"}</p>
+                        <h3 className="text-sm font-semibold text-[#F7F8F8] mt-1.5">{ev.event_title}</h3>
+                        <p className="text-xs text-[#8796A2]">Host: <strong>{ev.host_organization}</strong> • {ev.scheduled_at ? new Date(ev.scheduled_at).toLocaleDateString() : "Date pending"}</p>
                       </div>
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300">Role: {ev.role} • Status: {ev.status}</p>
+                    <p className="text-xs text-[#BEC8CF]">Role: {ev.role} • Status: {ev.status}</p>
                     <div className="pt-2 flex justify-end">
-                      <span className="text-xs text-emerald-600 font-bold flex items-center gap-1">
+                      <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
                         <CheckCircle2 className="h-4 w-4" /> {ev.status}
                       </span>
                     </div>
@@ -1291,48 +1297,48 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
 
       {/* TAB 8: LIVE PROJECT ADVISING */}
       {activeTab === "advising" && (
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-[#151921] rounded-3xl p-6 md:p-8 border border-slate-200 dark:border-white/[0.08] shadow-xs space-y-6">
+        <div className="space-y-6 font-mono">
+          <div className="bg-[#071E2B] rounded-md p-6 md:p-8 border border-white/10 space-y-6">
             <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Award className="h-5 w-5 text-[#3b71d9]" />
+              <h2 className="text-base font-bold text-[#F7F8F8] flex items-center gap-2">
+                <Award className="h-5 w-5 text-[#9CC7D8]" />
                 Live Industry Projects — Faculty Advisor Hub
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-[#8796A2] mt-0.5">
                 Review student innovation teams, monitor challenge milestones, and provide verifiable academic feedback.
               </p>
             </div>
 
             <div className="space-y-4">
               {advisedProjects.length === 0 ? (
-                <div className="p-8 text-center text-xs text-slate-400">No active student challenges currently assigned for advising.</div>
+                <div className="p-8 text-center text-xs text-[#8796A2]">No active student challenges currently assigned for advising.</div>
               ) : (
                 advisedProjects.map((p) => (
-                  <div key={p.challenge_id} className="p-6 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] space-y-4">
+                  <div key={p.challenge_id} className="p-6 rounded-sm bg-white/[0.01] border border-white/10 space-y-4">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h3 className="text-sm font-bold text-slate-900 dark:text-white">{p.title}</h3>
-                        <p className="text-xs text-slate-500">Corporate Host: {p.host_company} • {p.duration_weeks} Weeks</p>
+                        <h3 className="text-sm font-semibold text-[#F7F8F8]">{p.title}</h3>
+                        <p className="text-xs text-[#8796A2]">Corporate Host: {p.host_company} • {p.duration_weeks} Weeks</p>
                       </div>
-                      <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">
+                      <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-xs bg-emerald-950 text-emerald-400 border border-emerald-800/40">
                         {p.status}
                       </span>
                     </div>
 
-                    <p className="text-xs text-slate-600 dark:text-slate-300">{p.problem_statement}</p>
+                    <p className="text-xs text-[#BEC8CF]">{p.problem_statement}</p>
 
                     {/* Student Teams */}
                     <div className="space-y-3 pt-2">
-                      <span className="text-xs font-bold text-slate-400 uppercase">Enrolled Student Teams</span>
+                      <span className="text-xs font-mono uppercase text-[#8796A2]">Enrolled Student Teams</span>
                       {p.student_teams?.map((st) => (
-                        <div key={st.id} className="p-4 rounded-xl bg-white dark:bg-[#151921] border border-slate-200 dark:border-white/[0.08] space-y-3">
+                        <div key={st.id} className="p-4 rounded-sm bg-[#071E2B] border border-white/10 space-y-3">
                           <div className="flex justify-between items-center text-xs">
-                            <span className="font-bold text-slate-900 dark:text-white">Team: {st.team_members.join(", ")}</span>
-                            <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-blue-50 text-[#3b71d9]">{st.status}</span>
+                            <span className="text-[#F7F8F8]">Team: {st.team_members.join(", ")}</span>
+                            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-xs bg-[#9CC7D8]/10 text-[#9CC7D8] border border-[#9CC7D8]/30">{st.status}</span>
                           </div>
 
                           {st.feedback && (
-                            <p className="text-xs text-slate-500 italic bg-slate-50 dark:bg-white/[0.02] p-2 rounded-lg">
+                            <p className="text-xs text-[#8796A2] italic bg-white/[0.02] p-2 rounded-xs">
                               {st.feedback}
                             </p>
                           )}
@@ -1343,11 +1349,11 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                               placeholder="Add academic advisor endorsement / feedback..."
                               value={advisingFeedbackMap[st.id] || ""}
                               onChange={(e) => setAdvisingFeedbackMap({ ...advisingFeedbackMap, [st.id]: e.target.value })}
-                              className="flex-1 text-xs px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white"
+                              className="flex-1 text-xs px-3 py-1.5 rounded-md bg-white/[0.03] border border-white/15 text-[#F7F8F8] placeholder:text-[#8796A2]"
                             />
                             <button
                               onClick={() => handleSubmitAdvisingFeedback(st.id)}
-                              className="px-3 py-1.5 bg-[#3b71d9] text-white text-xs font-bold rounded-xl cursor-pointer"
+                              className="px-3 py-1.5 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-mono rounded-md cursor-pointer"
                             >
                               Submit Endorsement
                             </button>
@@ -1365,38 +1371,38 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
 
       {/* TAB 9: DOCUMENTS VAULT */}
       {activeTab === "documents" && (
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-[#151921] rounded-3xl p-6 md:p-8 border border-slate-200 dark:border-white/[0.08] shadow-xs space-y-6">
+        <div className="space-y-6 font-mono">
+          <div className="bg-[#071E2B] rounded-md p-6 md:p-8 border border-white/10 space-y-6">
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-[#3b71d9]" />
+                <h2 className="text-base font-bold text-[#F7F8F8] flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-[#9CC7D8]" />
                   Faculty Secure Document Vault
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-[#8796A2] mt-0.5">
                   Store CVs, detailed research proposals, FDP completion certificates, and consultancy deliverables.
                 </p>
               </div>
             </div>
 
             {/* Document Upload Form */}
-            <form onSubmit={handleUploadDoc} className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] grid grid-cols-1 md:grid-cols-4 gap-3">
+            <form onSubmit={handleUploadDoc} className="p-4 rounded-sm bg-white/[0.01] border border-white/10 grid grid-cols-1 md:grid-cols-4 gap-3">
               <div>
-                <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Title</label>
+                <label className="text-[10px] uppercase font-mono text-[#8796A2] block mb-1">Title</label>
                 <input
                   type="text"
                   placeholder="e.g. CV 2026 / Grant Proposal"
                   value={docTitle}
                   onChange={(e) => setDocTitle(e.target.value)}
-                  className="w-full text-xs p-2 rounded-xl bg-white dark:bg-[#151921] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white"
+                  className="w-full text-xs p-2 rounded-md bg-white/[0.03] border border-white/15 text-[#F7F8F8] placeholder:text-[#8796A2]"
                 />
               </div>
               <div>
-                <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">Type</label>
+                <label className="text-[10px] uppercase font-mono text-[#8796A2] block mb-1">Type</label>
                 <select
                   value={docType}
                   onChange={(e) => setDocType(e.target.value)}
-                  className="w-full text-xs p-2 rounded-xl bg-white dark:bg-[#151921] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white"
+                  className="w-full text-xs p-2 rounded-md bg-[#071E2B] border border-white/15 text-[#F7F8F8]"
                 >
                   <option value="research_document">Research Document / Proposal</option>
                   <option value="fdp_certificate">FDP / Training Certificate</option>
@@ -1405,20 +1411,20 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                 </select>
               </div>
               <div>
-                <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">URL / Storage Link</label>
+                <label className="text-[10px] uppercase font-mono text-[#8796A2] block mb-1">URL / Storage Link</label>
                 <input
                   type="text"
                   placeholder="https://drive.google.com/..."
                   value={docUrl}
                   onChange={(e) => setDocUrl(e.target.value)}
-                  className="w-full text-xs p-2 rounded-xl bg-white dark:bg-[#151921] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white"
+                  className="w-full text-xs p-2 rounded-md bg-white/[0.03] border border-white/15 text-[#F7F8F8] placeholder:text-[#8796A2]"
                 />
               </div>
               <div className="flex items-end">
                 <button
                   type="submit"
                   disabled={uploadingDoc}
-                  className="w-full py-2 bg-[#3b71d9] text-white text-xs font-bold rounded-xl cursor-pointer"
+                  className="w-full py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-mono rounded-md cursor-pointer"
                 >
                   {uploadingDoc ? "Saving..." : "Upload Document"}
                 </button>
@@ -1428,18 +1434,18 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
             {/* Documents List */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {documents.map((doc) => (
-                <div key={doc.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] space-y-2">
-                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-blue-50 text-[#3b71d9]">
+                <div key={doc.id} className="p-4 rounded-sm bg-white/[0.01] border border-white/10 space-y-2">
+                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-xs bg-[#9CC7D8]/10 text-[#9CC7D8] border border-[#9CC7D8]/30">
                     {doc.document_type.replace("_", " ")}
                   </span>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">{doc.title}</h4>
-                  <p className="text-[10px] text-slate-400">{doc.file_name} • {(doc.file_size_bytes / 1024).toFixed(0)} KB</p>
+                  <h4 className="text-xs font-semibold text-[#F7F8F8] truncate">{doc.title}</h4>
+                  <p className="text-[10px] text-[#8796A2]">{doc.file_name} • {(doc.file_size_bytes / 1024).toFixed(0)} KB</p>
                   {doc.file_url && (
                     <a
                       href={doc.file_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-[#3b71d9] font-bold flex items-center gap-1 hover:underline pt-1"
+                      className="text-xs text-[#9CC7D8] flex items-center gap-1 hover:underline pt-1"
                     >
                       View File <ExternalLink className="h-3 w-3" />
                     </a>
@@ -1453,38 +1459,38 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
 
       {/* TAB 10: HISTORY & OUTCOMES */}
       {activeTab === "history" && (
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-[#151921] rounded-3xl p-6 md:p-8 border border-slate-200 dark:border-white/[0.08] shadow-xs space-y-6">
+        <div className="space-y-6 font-mono">
+          <div className="bg-[#071E2B] rounded-md p-6 md:p-8 border border-white/10 space-y-6">
             <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Clock className="h-5 w-5 text-[#3b71d9]" />
+              <h2 className="text-base font-bold text-[#F7F8F8] flex items-center gap-2">
+                <Clock className="h-5 w-5 text-[#9CC7D8]" />
                 Completed Collaborations & Verifiable Outcomes
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs text-[#8796A2] mt-0.5">
                 Archived track record of completed corporate research, consultancy contracts, FDPs, and industrial immersions.
               </p>
             </div>
 
             {historyItems.length === 0 ? (
-              <div className="p-12 text-center text-xs text-slate-400">No completed collaborations archived yet.</div>
+              <div className="p-12 text-center text-xs text-[#8796A2]">No completed collaborations archived yet.</div>
             ) : (
               <div className="space-y-4">
                 {historyItems.map((item) => (
-                  <div key={item.id} className="p-5 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200 dark:border-white/[0.06] space-y-2">
+                  <div key={item.id} className="p-5 rounded-sm bg-white/[0.01] border border-white/10 space-y-2">
                     <div className="flex justify-between items-start">
                       <div>
-                        <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">
+                        <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-xs bg-emerald-950 text-emerald-400 border border-emerald-800/40">
                           {item.collaboration_type.replace("_", " ")}
                         </span>
-                        <h3 className="text-sm font-bold text-slate-900 dark:text-white mt-1">{item.title}</h3>
-                        <p className="text-xs text-slate-500">Organization: <strong>{item.organization_name}</strong> • Role: {item.role}</p>
+                        <h3 className="text-sm font-semibold text-[#F7F8F8] mt-1">{item.title}</h3>
+                        <p className="text-xs text-[#8796A2]">Organization: <strong>{item.organization_name}</strong> • Role: {item.role}</p>
                       </div>
-                      <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full">
+                      <span className="text-xs text-emerald-400 font-mono">
                         COMPLETED
                       </span>
                     </div>
                     {item.outcome_summary && (
-                      <p className="text-xs text-slate-600 dark:text-slate-300 pt-1">{item.outcome_summary}</p>
+                      <p className="text-xs text-[#BEC8CF] pt-1">{item.outcome_summary}</p>
                     )}
                   </div>
                 ))}
@@ -1496,42 +1502,42 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
 
       {/* MODAL 1: OPPORTUNITY DETAIL MODAL */}
       {selectedOppDetail && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#151921] rounded-3xl p-6 md:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-white/[0.08] shadow-2xl space-y-6">
-            <div className="flex justify-between items-start pb-4 border-b border-slate-100 dark:border-white/[0.06]">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#071E2B] rounded-md p-6 md:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/15 shadow-2xl space-y-6 text-[#F7F8F8] font-sans">
+            <div className="flex justify-between items-start pb-4 border-b border-white/10">
               <div>
-                <span className="text-[10px] uppercase font-bold px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-900/30 text-[#3b71d9]">
+                <span className="text-[10px] uppercase font-mono px-2.5 py-1 rounded-xs bg-[#9CC7D8]/10 text-[#9CC7D8] border border-[#9CC7D8]/30">
                   {selectedOppDetail.opportunity_type.replace("_", " ")}
                 </span>
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white mt-2">
+                <h2 className="text-xl font-normal text-[#F7F8F8] mt-2" style={{ fontFamily: "var(--font-display)" }}>
                   {selectedOppDetail.title}
                 </h2>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-[#8796A2] font-mono">
                   {selectedOppDetail.organization_name} • Domain: {selectedOppDetail.domain}
                 </p>
               </div>
               <button
                 onClick={() => setSelectedOppDetail(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
+                className="p-1 rounded-sm text-[#8796A2] hover:text-white cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="space-y-4 text-xs">
+            <div className="space-y-4 text-xs font-mono">
               <div>
-                <h4 className="font-bold text-slate-900 dark:text-white uppercase text-[10px] mb-1">Description</h4>
-                <p className="text-slate-600 dark:text-slate-300 leading-relaxed">{selectedOppDetail.description}</p>
+                <h4 className="uppercase text-[10px] text-[#8796A2] mb-1">Description</h4>
+                <p className="text-[#BEC8CF] leading-relaxed font-sans">{selectedOppDetail.description}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-slate-50 dark:bg-white/[0.02]">
+              <div className="grid grid-cols-2 gap-4 p-4 rounded-sm bg-white/[0.02] border border-white/10">
                 <div>
-                  <span className="text-[10px] uppercase text-slate-400 font-bold block">Duration</span>
-                  <span className="font-bold text-slate-900 dark:text-white">{selectedOppDetail.duration_weeks} Weeks</span>
+                  <span className="text-[10px] uppercase text-[#8796A2] block">Duration</span>
+                  <span className="text-[#F7F8F8]">{selectedOppDetail.duration_weeks} Weeks</span>
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase text-slate-400 font-bold block">Funding / Stipend</span>
-                  <span className="font-bold text-emerald-600">
+                  <span className="text-[10px] uppercase text-[#8796A2] block">Funding / Stipend</span>
+                  <span className="text-emerald-400">
                     {selectedOppDetail.stipend_or_grant ? `₹${selectedOppDetail.stipend_or_grant.toLocaleString()}` : "Honorary / Academic"}
                   </span>
                 </div>
@@ -1539,10 +1545,10 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
 
               {selectedOppDetail.required_expertise && selectedOppDetail.required_expertise.length > 0 && (
                 <div>
-                  <h4 className="font-bold text-slate-900 dark:text-white uppercase text-[10px] mb-1">Required Faculty Expertise</h4>
+                  <h4 className="uppercase text-[10px] text-[#8796A2] mb-1">Required Faculty Expertise</h4>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedOppDetail.required_expertise.map((exp, i) => (
-                      <span key={i} className="px-2 py-0.5 rounded bg-blue-50 text-[#3b71d9] font-bold">
+                      <span key={i} className="px-2 py-0.5 rounded-xs bg-[#9CC7D8]/10 text-[#9CC7D8] border border-[#9CC7D8]/30">
                         {exp}
                       </span>
                     ))}
@@ -1551,10 +1557,10 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
               )}
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-white/[0.06]">
+            <div className="flex justify-end gap-3 pt-4 border-t border-white/10 font-mono">
               <button
                 onClick={() => setSelectedOppDetail(null)}
-                className="px-4 py-2 text-xs font-bold text-slate-500 cursor-pointer"
+                className="px-4 py-2 text-xs text-[#8796A2] hover:text-white cursor-pointer"
               >
                 Close
               </button>
@@ -1579,7 +1585,7 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                   });
                   setShowApplyModal(true);
                 }}
-                className="px-4 py-2 bg-[#3b71d9] text-white text-xs font-bold rounded-xl cursor-pointer"
+                className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs rounded-md cursor-pointer"
               >
                 Apply / Submit Proposal
               </button>
@@ -1590,111 +1596,111 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
 
       {/* MODAL 2: APPLY / PROPOSAL SUBMISSION MODAL */}
       {showApplyModal && applyingOpportunity && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#151921] rounded-3xl p-6 md:p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-white/[0.08] shadow-2xl space-y-6">
-            <div className="flex justify-between items-start pb-4 border-b border-slate-100 dark:border-white/[0.06]">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#071E2B] rounded-md p-6 md:p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-white/15 shadow-2xl space-y-6 text-[#F7F8F8] font-sans">
+            <div className="flex justify-between items-start pb-4 border-b border-white/10">
               <div>
-                <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-blue-50 text-[#3b71d9]">
+                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-xs bg-[#9CC7D8]/10 text-[#9CC7D8] border border-[#9CC7D8]/30">
                   {applyingOpportunity.opportunity_type.replace("_", " ")}
                 </span>
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white mt-1">
+                <h2 className="text-xl font-normal text-[#F7F8F8] mt-1" style={{ fontFamily: "var(--font-display)" }}>
                   Submit Proposal: {applyingOpportunity.title}
                 </h2>
-                <p className="text-xs text-slate-500">Corporate Partner: {applyingOpportunity.organization_name}</p>
+                <p className="text-xs text-[#8796A2] font-mono">Corporate Partner: {applyingOpportunity.organization_name}</p>
               </div>
               <button
                 onClick={() => setShowApplyModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
+                className="p-1 rounded-sm text-[#8796A2] hover:text-white cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 font-mono">
               <div>
-                <label className="text-xs font-bold text-slate-400 block mb-1">Proposal Title *</label>
+                <label className="text-xs text-[#BEC8CF] block mb-1">Proposal Title *</label>
                 <input
                   type="text"
                   value={proposalForm.proposal_title}
                   onChange={(e) => setProposalForm({ ...proposalForm, proposal_title: e.target.value })}
-                  className="w-full text-xs p-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white"
+                  className="w-full text-xs p-3 rounded-md bg-white/[0.03] border border-white/15 text-[#F7F8F8] placeholder:text-[#8796A2]"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-400 block mb-1">Executive Summary / Proposal Text *</label>
+                <label className="text-xs text-[#BEC8CF] block mb-1">Executive Summary / Proposal Text *</label>
                 <textarea
                   rows={4}
                   placeholder="Outline problem understanding, faculty expertise fit, research goals, or consultancy scope..."
                   value={proposalForm.proposal_text}
                   onChange={(e) => setProposalForm({ ...proposalForm, proposal_text: e.target.value })}
-                  className="w-full text-xs p-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white"
+                  className="w-full text-xs p-3 rounded-md bg-white/[0.03] border border-white/15 text-[#F7F8F8] placeholder:text-[#8796A2]"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-slate-400 block mb-1">Methodology / Technical Approach</label>
+                  <label className="text-xs text-[#BEC8CF] block mb-1">Methodology / Technical Approach</label>
                   <textarea
                     rows={3}
                     placeholder="Algorithms, experimental setup, or training modules..."
                     value={proposalForm.methodology}
                     onChange={(e) => setProposalForm({ ...proposalForm, methodology: e.target.value })}
-                    className="w-full text-xs p-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white"
+                    className="w-full text-xs p-3 rounded-md bg-white/[0.03] border border-white/15 text-[#F7F8F8] placeholder:text-[#8796A2]"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-400 block mb-1">Industry Support Required</label>
+                  <label className="text-xs text-[#BEC8CF] block mb-1">Industry Support Required</label>
                   <textarea
                     rows={3}
                     placeholder="Cloud credits, hardware datasets, mentor review cadence..."
                     value={proposalForm.industry_support_required}
                     onChange={(e) => setProposalForm({ ...proposalForm, industry_support_required: e.target.value })}
-                    className="w-full text-xs p-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white"
+                    className="w-full text-xs p-3 rounded-md bg-white/[0.03] border border-white/15 text-[#F7F8F8] placeholder:text-[#8796A2]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-slate-400 block mb-1">Timeline (Weeks)</label>
+                  <label className="text-xs text-[#BEC8CF] block mb-1">Timeline (Weeks)</label>
                   <input
                     type="number"
                     value={proposalForm.timeline_weeks}
                     onChange={(e) => setProposalForm({ ...proposalForm, timeline_weeks: parseInt(e.target.value) || 0 })}
-                    className="w-full text-xs p-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white"
+                    className="w-full text-xs p-3 rounded-md bg-white/[0.03] border border-white/15 text-[#F7F8F8]"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-400 block mb-1">Requested Budget / Grant (₹)</label>
+                  <label className="text-xs text-[#BEC8CF] block mb-1">Requested Budget / Grant (₹)</label>
                   <input
                     type="number"
                     value={proposalForm.budget_requested}
                     onChange={(e) => setProposalForm({ ...proposalForm, budget_requested: parseFloat(e.target.value) || 0 })}
-                    className="w-full text-xs p-3 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-white"
+                    className="w-full text-xs p-3 rounded-md bg-white/[0.03] border border-white/15 text-[#F7F8F8]"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-white/[0.06]">
+            <div className="flex justify-end gap-3 pt-4 border-t border-white/10 font-mono">
               <button
                 onClick={() => setShowApplyModal(false)}
-                className="px-4 py-2 text-xs font-bold text-slate-500 cursor-pointer"
+                className="px-4 py-2 text-xs text-[#8796A2] hover:text-white cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleSubmitProposal(true)}
                 disabled={submittingProposal}
-                className="px-4 py-2 bg-slate-100 dark:bg-white/[0.05] hover:bg-slate-200 text-slate-800 dark:text-white text-xs font-bold rounded-xl cursor-pointer"
+                className="px-4 py-2 bg-white/[0.05] hover:bg-white/10 border border-white/10 text-[#F7F8F8] text-xs rounded-md cursor-pointer"
               >
                 Save Draft
               </button>
               <button
                 onClick={() => handleSubmitProposal(false)}
                 disabled={submittingProposal}
-                className="px-5 py-2 bg-[#3b71d9] hover:bg-[#2f5db3] text-white text-xs font-bold rounded-xl cursor-pointer shadow-xs"
+                className="px-5 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs rounded-md cursor-pointer"
               >
                 {submittingProposal ? "Submitting..." : "Submit to Industry"}
               </button>
@@ -1705,54 +1711,54 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
 
       {/* MODAL 3: APPLICATION DETAIL VIEW */}
       {selectedAppDetail && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#151921] rounded-3xl p-6 md:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-white/[0.08] shadow-2xl space-y-6">
-            <div className="flex justify-between items-start pb-4 border-b border-slate-100 dark:border-white/[0.06]">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#071E2B] rounded-md p-6 md:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-white/15 shadow-2xl space-y-6 text-[#F7F8F8] font-sans">
+            <div className="flex justify-between items-start pb-4 border-b border-white/10">
               <div>
-                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border uppercase ${getStatusBadge(selectedAppDetail.status)}`}>
+                <span className={`px-2.5 py-0.5 rounded-xs text-[10px] font-mono border uppercase ${getStatusBadge(selectedAppDetail.status)}`}>
                   {selectedAppDetail.status}
                 </span>
-                <h2 className="text-xl font-bold text-slate-900 dark:text-white mt-2">
+                <h2 className="text-xl font-normal text-[#F7F8F8] mt-2" style={{ fontFamily: "var(--font-display)" }}>
                   {selectedAppDetail.proposal_title || selectedAppDetail.opportunity_title}
                 </h2>
-                <p className="text-xs text-slate-500">Corporate Partner: {selectedAppDetail.organization_name}</p>
+                <p className="text-xs text-[#8796A2] font-mono">Corporate Partner: {selectedAppDetail.organization_name}</p>
               </div>
               <button
                 onClick={() => setSelectedAppDetail(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
+                className="p-1 rounded-sm text-[#8796A2] hover:text-white cursor-pointer"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="space-y-4 text-xs">
+            <div className="space-y-4 text-xs font-mono">
               <div>
-                <h4 className="font-bold text-slate-400 uppercase text-[10px] mb-1">Proposal Overview</h4>
-                <p className="text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-white/[0.02] p-3.5 rounded-xl">
+                <h4 className="uppercase text-[10px] text-[#8796A2] mb-1">Proposal Overview</h4>
+                <p className="text-[#BEC8CF] leading-relaxed bg-white/[0.02] border border-white/10 p-3.5 rounded-sm font-sans">
                   {selectedAppDetail.proposal_text || "No detailed proposal text provided."}
                 </p>
               </div>
 
               {selectedAppDetail.reviewer_notes && (
-                <div className="p-3.5 rounded-xl bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40">
-                  <span className="font-bold text-purple-700 dark:text-purple-300 uppercase text-[10px] block mb-1">Industry Reviewer Notes</span>
-                  <p className="text-slate-700 dark:text-slate-300">{selectedAppDetail.reviewer_notes}</p>
+                <div className="p-3.5 rounded-sm bg-white/[0.02] border border-white/10">
+                  <span className="text-[#9CC7D8] uppercase text-[10px] block mb-1">Industry Reviewer Notes</span>
+                  <p className="text-[#BEC8CF] font-sans">{selectedAppDetail.reviewer_notes}</p>
                 </div>
               )}
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-white/[0.06]">
+            <div className="flex justify-end gap-3 pt-4 border-t border-white/10 font-mono">
               {selectedAppDetail.status !== "accepted" && selectedAppDetail.status !== "completed" && selectedAppDetail.status !== "withdrawn" && (
                 <button
                   onClick={() => handleWithdrawApplication(selectedAppDetail.id)}
-                  className="px-4 py-2 text-rose-600 text-xs font-bold cursor-pointer"
+                  className="px-4 py-2 text-rose-400 text-xs cursor-pointer"
                 >
                   Withdraw Application
                 </button>
               )}
               <button
                 onClick={() => setSelectedAppDetail(null)}
-                className="px-4 py-2 bg-slate-100 dark:bg-white/[0.05] text-slate-800 dark:text-white text-xs font-bold rounded-xl cursor-pointer"
+                className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs rounded-md cursor-pointer"
               >
                 Close
               </button>
@@ -1763,47 +1769,47 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
 
       {/* MODAL 4: NOTIFICATIONS MODAL */}
       {showNotificationsModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#151921] rounded-3xl p-6 max-w-lg w-full border border-slate-200 dark:border-white/[0.08] shadow-2xl space-y-4">
-            <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-white/[0.06]">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Bell className="h-4 w-4 text-[#3b71d9]" /> Notifications & Alerts
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#071E2B] rounded-md p-6 max-w-lg w-full border border-white/15 shadow-2xl space-y-4 text-[#F7F8F8] font-sans">
+            <div className="flex justify-between items-center pb-3 border-b border-white/10">
+              <h3 className="text-sm font-bold text-[#F7F8F8] flex items-center gap-2 font-mono">
+                <Bell className="h-4 w-4 text-[#9CC7D8]" /> Notifications & Alerts
               </h3>
               <button
                 onClick={() => setShowNotificationsModal(false)}
-                className="p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                className="p-1 text-[#8796A2] hover:text-white cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <div className="space-y-2 max-h-80 overflow-y-auto">
+            <div className="space-y-2 max-h-80 overflow-y-auto font-mono">
               {notifications.length === 0 ? (
-                <div className="p-6 text-center text-xs text-slate-400">No notifications at this time.</div>
+                <div className="p-6 text-center text-xs text-[#8796A2]">No notifications at this time.</div>
               ) : (
                 notifications.map((n) => (
                   <div
                     key={n.id}
-                    className={`p-3 rounded-xl border text-xs space-y-1 ${
+                    className={`p-3 rounded-sm border text-xs space-y-1 ${
                       n.is_read
-                        ? "bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06]"
-                        : "bg-blue-50/50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800/40"
+                        ? "bg-white/[0.01] border-white/10"
+                        : "bg-[#9CC7D8]/10 border-[#9CC7D8]/30"
                     }`}
                   >
                     <div className="flex justify-between items-start">
-                      <span className="font-bold text-slate-900 dark:text-white">{n.title}</span>
-                      <span className="text-[10px] text-slate-400">{new Date(n.created_at).toLocaleDateString()}</span>
+                      <span className="font-semibold text-[#F7F8F8]">{n.title}</span>
+                      <span className="text-[10px] text-[#8796A2]">{new Date(n.created_at).toLocaleDateString()}</span>
                     </div>
-                    <p className="text-slate-600 dark:text-slate-300 text-[11px]">{n.message}</p>
+                    <p className="text-[#BEC8CF] text-[11px]">{n.message}</p>
                   </div>
                 ))
               )}
             </div>
 
-            <div className="pt-2 text-right">
+            <div className="pt-2 text-right font-mono">
               <button
                 onClick={() => setShowNotificationsModal(false)}
-                className="px-4 py-2 bg-slate-100 dark:bg-white/[0.05] text-xs font-bold rounded-xl cursor-pointer"
+                className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs rounded-md cursor-pointer"
               >
                 Close
               </button>

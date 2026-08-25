@@ -19,6 +19,8 @@ describe("ApplicationTracking", () => {
   it("renders an unknown timeline and only safe reconciliation actions", async () => {
     vi.spyOn(api, "applicationTimeline").mockResolvedValue([{ id: "event-id", application_id: application.id, event_type: "submission_unknown", status: "unknown", source: "system", provider_status: null, safe_metadata: {}, created_at: "2026-01-01T00:00:00Z" }]);
     const reconcile = vi.spyOn(api, "reconcileApplication").mockResolvedValue(application);
+    const withdrawn = { ...application, status: "withdrawn" as const };
+    const withdraw = vi.spyOn(api, "withdrawApplication").mockResolvedValue(withdrawn);
     render(<ApplicationTracking application={application} token="token" onChanged={() => undefined} />);
     await act(async () => { await Promise.resolve(); });
     expect(screen.getByText("Submission status could not be confirmed.")).toBeInTheDocument();
@@ -28,5 +30,9 @@ describe("ApplicationTracking", () => {
     await act(async () => { await Promise.resolve(); });
     expect(reconcile).toHaveBeenCalledWith(application.id, "token");
     expect(screen.getByRole("button", { name: "Mark submitted manually" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Mark Withdrawn Locally" }));
+    await act(async () => { await Promise.resolve(); });
+    expect(withdraw).toHaveBeenCalledWith(application.id, "token");
   });
 });

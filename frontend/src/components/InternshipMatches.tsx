@@ -24,6 +24,7 @@ import { ApiError, api } from "../api";
 import type { Application, ExternalJobMatch } from "../api";
 import { ApplicationPreparation } from "./ApplicationPreparation";
 import { LoadingState, ErrorState } from "./AsyncState";
+import { LiquidGlassButton } from "./ui/EditorialPrimitives";
 
 interface InternshipMatchesProps {
   token: string;
@@ -38,41 +39,41 @@ function getProviderBadge(provider: string) {
   if (norm.includes("yc")) {
     return {
       label: "YC STARTUP",
-      bg: "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/30",
+      bg: "border-white/20 bg-white/5 text-white",
     };
   }
   if (norm.includes("greenhouse")) {
     return {
       label: "GREENHOUSE",
-      bg: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+      bg: "border-white/20 bg-white/5 text-white",
     };
   }
   if (norm.includes("lever")) {
     return {
       label: "LEVER",
-      bg: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30",
+      bg: "border-white/20 bg-white/5 text-white",
     };
   }
   if (norm.includes("ashby")) {
     return {
       label: "ASHBY",
-      bg: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30",
+      bg: "border-white/20 bg-white/5 text-white",
     };
   }
   return {
     label: provider.toUpperCase(),
-    bg: "bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30",
+    bg: "border-white/10 bg-white/[0.02] text-neutral-300",
   };
 }
 
 function getEvidenceStrength(match: ExternalJobMatch): { label: "Strong" | "Good" | "Partial"; color: string } {
   if (match.verification_bonus >= 0.08 || match.deterministic_score >= 0.8) {
-    return { label: "Strong", color: "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500/30" };
+    return { label: "Strong", color: "border-white/20 bg-white/10 text-white" };
   }
   if (match.verification_bonus >= 0.04 || match.deterministic_score >= 0.5) {
-    return { label: "Good", color: "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 border-blue-500/30" };
+    return { label: "Good", color: "border-white/15 bg-white/5 text-neutral-200" };
   }
-  return { label: "Partial", color: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border-amber-500/30" };
+  return { label: "Partial", color: "border-white/10 bg-white/[0.02] text-neutral-400" };
 }
 
 function formatDate(dateStr: string | null): string {
@@ -160,36 +161,40 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
       try {
         localStorage.setItem("saved_matched_job_ids", JSON.stringify(Array.from(next)));
       } catch {
-        // Ignore storage error
+        // ignore
       }
       return next;
     });
   };
 
-  const handleSyncAndRecompute = async () => {
+  const handlePrepareApplication = async (match: ExternalJobMatch) => {
+    setPreparingMatchId(match.id);
     try {
-      setRefreshing(true);
-      toast.loading("Discovering fresh opportunities across YC, Greenhouse, Lever, and Ashby...");
-      await api.syncAllExternalJobs(token);
-      toast.dismiss();
-      toast.success("Live opportunities refreshed & ranked!");
-      await loadMatches(true);
-    } catch (err) {
-      toast.dismiss();
-      toast.error(err instanceof ApiError ? err.detail : "Failed to refresh opportunities.");
-      setRefreshing(false);
+      const apps = await api.applications(token);
+      let app = apps.items.find((a) => a.external_job_id === match.external_job_id);
+
+      if (!app) {
+        app = await api.createApplication(match.external_job_id, match.id, token);
+        toast.success("Created new application dossier for review.");
+      }
+
+      setApplicationInReview(app);
+    } catch (caught) {
+      toast.error(caught instanceof ApiError ? caught.detail : "Failed to initiate application.");
+    } finally {
+      setPreparingMatchId(null);
     }
   };
 
-  const handlePrepareApplication = async (match: ExternalJobMatch) => {
+  const handleSyncAndRecompute = async () => {
+    setRefreshing(true);
     try {
-      setPreparingMatchId(match.id);
-      const app = await api.createApplication(match.external_job_id, match.id, token);
-      setApplicationInReview(app);
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.detail : "Could not initialize application preparation.");
-    } finally {
-      setPreparingMatchId(null);
+      await api.syncAllExternalJobs(token);
+      toast.success("Discovered live opportunities and recomputed deterministic match scores!");
+      await loadMatches(true);
+    } catch (caught) {
+      toast.error(caught instanceof ApiError ? caught.detail : "Failed to refresh matches.");
+      setRefreshing(false);
     }
   };
 
@@ -208,58 +213,56 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
   }, [matches, entryLevelOnly]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-white font-sans">
       {/* HEADER */}
-      <div className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-6 sm:p-8 shadow-lg">
+      <div className="border border-white/10 bg-[#061524] p-6 rounded-md">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-500/10 text-[#4f46e5] dark:text-[#38bdf8]">
-                <Target className="h-5 w-5" />
+              <span className="flex h-6 w-6 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white">
+                <Target className="h-3.5 w-3.5" />
               </span>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#4f46e5] dark:text-[#38bdf8] font-sans">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">
                 Deterministic Recommendation Engine
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-[#f1f0e8] tracking-tight font-sans">
+            <h1 className="text-2xl sm:text-3xl font-normal text-white" style={{ fontFamily: "var(--font-display)" }}>
               Ranked Internship Opportunities
             </h1>
-            <p className="text-sm text-slate-600 dark:text-[#98a4b3] font-sans">
+            <p className="text-xs text-neutral-400">
               Live opportunities ranked against your verified Skill Passport evidence.
             </p>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
+            <LiquidGlassButton
               disabled={refreshing || loading}
               onClick={handleSyncAndRecompute}
-              className="flex items-center gap-2 rounded-xl bg-[#4f46e5] dark:bg-[#38bdf8] px-4 py-2.5 text-xs font-bold text-white dark:text-slate-950 shadow-md shadow-indigo-500/20 hover:opacity-90 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+              size="sm"
             >
-              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
               <span>{refreshing ? "Refreshing..." : "Discover & Refresh"}</span>
-            </button>
+            </LiquidGlassButton>
           </div>
         </div>
 
-        {/* TOP CONTROLS & FILTER CHIPS */}
-        <div className="mt-6 pt-6 border-t border-slate-100 dark:border-white/[0.08] space-y-4">
-          {/* Search and Sort Bar */}
+        {/* CONTROLS */}
+        <div className="mt-6 pt-6 border-t border-white/10 space-y-4">
           <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
             <div className="relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-[#8ea2c6]" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search opportunities by title, company, or keywords..."
-                className="w-full rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/70 dark:bg-[#151e29] pl-10 pr-4 py-2.5 text-xs text-slate-900 dark:text-[#f1f0e8] placeholder:text-slate-400 focus:border-[#4f46e5] focus:outline-none transition-all font-sans"
+                className="w-full rounded-md border border-white/15 bg-white/[0.03] pl-9 pr-8 py-2 text-xs text-white placeholder:text-neutral-400 focus:border-white focus:outline-none"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -267,23 +270,23 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
             </div>
 
             <div className="flex items-center gap-2">
-              <SlidersHorizontal className="h-4 w-4 text-slate-400 dark:text-[#8ea2c6] hidden sm:block" />
+              <SlidersHorizontal className="h-3.5 w-3.5 text-neutral-400 hidden sm:block" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
                 aria-label="Sort opportunities"
-                className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/70 dark:bg-[#151e29] px-3.5 py-2.5 text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] focus:border-[#4f46e5] focus:outline-none cursor-pointer font-sans"
+                className="rounded-md border border-white/15 bg-white/[0.03] px-3 py-2 text-xs text-white focus:border-white focus:outline-none font-mono"
               >
-                <option value="best_match">Sort by: Best Match</option>
-                <option value="newest">Sort by: Newest</option>
-                <option value="recently_added">Sort by: Recently Added</option>
+                <option value="best_match" className="bg-[#061524]">Sort by: Best Match</option>
+                <option value="newest" className="bg-[#061524]">Sort by: Newest</option>
+                <option value="recently_added" className="bg-[#061524]">Sort by: Recently Added</option>
               </select>
             </div>
           </div>
 
-          {/* Source Chips */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">
+          {/* Filter Chips */}
+          <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
+            <span className="text-[10px] uppercase tracking-wider text-neutral-400 mr-1">
               Source:
             </span>
             {[
@@ -299,10 +302,10 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
                   key={source.id}
                   type="button"
                   onClick={() => setProviderFilter(source.id as ProviderFilter)}
-                  className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer font-sans ${
+                  className={`rounded-full px-3 py-1 text-xs transition-colors cursor-pointer ${
                     active
-                      ? "bg-[#4f46e5] dark:bg-[#182337] text-white dark:text-[#38bdf8] border border-transparent dark:border-[#38bdf8]/40 shadow-xs"
-                      : "bg-slate-100 dark:bg-[#151e29] text-slate-600 dark:text-[#8ea2c6] hover:bg-slate-200/70 dark:hover:bg-[#1c2838] border border-slate-200/60 dark:border-white/[0.06]"
+                      ? "bg-white text-black font-medium"
+                      : "border border-white/10 bg-white/[0.02] text-neutral-400 hover:text-white"
                   }`}
                 >
                   {source.label}
@@ -310,18 +313,18 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
               );
             })}
 
-            <div className="hidden sm:block h-4 w-[1px] bg-slate-200 dark:bg-white/10 mx-1" />
+            <div className="hidden sm:block h-3 w-[1px] bg-white/10 mx-1" />
 
-            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">
+            <span className="text-[10px] uppercase tracking-wider text-neutral-400 mr-1">
               Filter:
             </span>
             <button
               type="button"
               onClick={() => setRemoteOnly((v) => !v)}
-              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer font-sans ${
+              className={`rounded-full px-3 py-1 text-xs transition-colors cursor-pointer ${
                 remoteOnly
-                  ? "bg-[#4f46e5] dark:bg-[#182337] text-white dark:text-[#38bdf8] border border-transparent dark:border-[#38bdf8]/40"
-                  : "bg-slate-100 dark:bg-[#151e29] text-slate-600 dark:text-[#8ea2c6] hover:bg-slate-200/70 dark:hover:bg-[#1c2838] border border-slate-200/60 dark:border-white/[0.06]"
+                  ? "bg-white text-black font-medium"
+                  : "border border-white/10 bg-white/[0.02] text-neutral-400 hover:text-white"
               }`}
             >
               Remote
@@ -329,10 +332,10 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
             <button
               type="button"
               onClick={() => setIndiaOnly((v) => !v)}
-              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer font-sans ${
+              className={`rounded-full px-3 py-1 text-xs transition-colors cursor-pointer ${
                 indiaOnly
-                  ? "bg-[#4f46e5] dark:bg-[#182337] text-white dark:text-[#38bdf8] border border-transparent dark:border-[#38bdf8]/40"
-                  : "bg-slate-100 dark:bg-[#151e29] text-slate-600 dark:text-[#8ea2c6] hover:bg-slate-200/70 dark:hover:bg-[#1c2838] border border-slate-200/60 dark:border-white/[0.06]"
+                  ? "bg-white text-black font-medium"
+                  : "border border-white/10 bg-white/[0.02] text-neutral-400 hover:text-white"
               }`}
             >
               India
@@ -340,10 +343,10 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
             <button
               type="button"
               onClick={() => setInternshipOnly((v) => !v)}
-              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer font-sans ${
+              className={`rounded-full px-3 py-1 text-xs transition-colors cursor-pointer ${
                 internshipOnly
-                  ? "bg-[#4f46e5] dark:bg-[#182337] text-white dark:text-[#38bdf8] border border-transparent dark:border-[#38bdf8]/40"
-                  : "bg-slate-100 dark:bg-[#151e29] text-slate-600 dark:text-[#8ea2c6] hover:bg-slate-200/70 dark:hover:bg-[#1c2838] border border-slate-200/60 dark:border-white/[0.06]"
+                  ? "bg-white text-black font-medium"
+                  : "border border-white/10 bg-white/[0.02] text-neutral-400 hover:text-white"
               }`}
             >
               Internship
@@ -351,10 +354,10 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
             <button
               type="button"
               onClick={() => setEntryLevelOnly((v) => !v)}
-              className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition-all cursor-pointer font-sans ${
+              className={`rounded-full px-3 py-1 text-xs transition-colors cursor-pointer ${
                 entryLevelOnly
-                  ? "bg-[#4f46e5] dark:bg-[#182337] text-white dark:text-[#38bdf8] border border-transparent dark:border-[#38bdf8]/40"
-                  : "bg-slate-100 dark:bg-[#151e29] text-slate-600 dark:text-[#8ea2c6] hover:bg-slate-200/70 dark:hover:bg-[#1c2838] border border-slate-200/60 dark:border-white/[0.06]"
+                  ? "bg-white text-black font-medium"
+                  : "border border-white/10 bg-white/[0.02] text-neutral-400 hover:text-white"
               }`}
             >
               Entry Level
@@ -363,40 +366,38 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
         </div>
       </div>
 
-      {/* MATCH CARDS LIST */}
+      {/* MATCH CARDS */}
       {loading ? (
         <LoadingState label="Computing deterministic match scores against verified Skill Passport..." />
       ) : error ? (
         <ErrorState message={error} onRetry={() => void loadMatches()} />
       ) : filteredMatches.length === 0 ? (
-        /* ACTIONABLE EMPTY STATE */
-        <div className="rounded-3xl border border-slate-200/80 dark:border-white/[0.08] bg-white/80 dark:bg-[#111821]/80 backdrop-blur-md p-10 sm:p-14 text-center space-y-4 shadow-sm">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-[#151e29] text-[#4f46e5] dark:text-[#38bdf8] border border-indigo-200/60 dark:border-white/10">
-            <Sparkles className="h-7 w-7" />
+        <div className="border border-dashed border-white/10 p-12 text-center space-y-4 rounded-md">
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white">
+            <Sparkles className="h-4 w-4" />
           </div>
-          <div className="max-w-md mx-auto space-y-1.5">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">
+          <div className="max-w-md mx-auto space-y-1">
+            <h3 className="text-base font-normal text-white" style={{ fontFamily: "var(--font-display)" }}>
               Find opportunities matched to your skills
             </h3>
-            <p className="text-xs text-slate-500 dark:text-[#98a4b3] font-sans">
+            <p className="text-xs text-neutral-400">
               Synchronize real startup and tech postings from YC, Greenhouse, Lever, and Ashby to discover personalized, verified recommendations.
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <button
-              type="button"
+            <LiquidGlassButton
               onClick={handleSyncAndRecompute}
               disabled={refreshing}
-              className="flex items-center gap-2 rounded-xl bg-[#4f46e5] dark:bg-[#38bdf8] px-5 py-2.5 text-xs font-bold text-white dark:text-slate-950 shadow-md shadow-indigo-500/20 hover:opacity-90 transition-all cursor-pointer font-sans"
+              size="sm"
             >
-              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
               <span>Discover internships</span>
-            </button>
+            </LiquidGlassButton>
             {onNavigateToDiscovery && (
               <button
                 type="button"
                 onClick={onNavigateToDiscovery}
-                className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#151e29] px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-[#f1f0e8] hover:bg-slate-100 dark:hover:bg-[#1c2838] transition-all cursor-pointer font-sans"
+                className="rounded-full border border-white/15 bg-white/[0.03] px-4 py-2 text-xs font-mono text-neutral-300 hover:text-white transition-colors cursor-pointer"
               >
                 Browse Job Market
               </button>
@@ -404,59 +405,53 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
           </div>
         </div>
       ) : (
-        <div className="grid gap-6">
+        <div className="grid gap-4">
           {filteredMatches.map((match) => {
             const providerBadge = getProviderBadge(match.provider);
             const strength = getEvidenceStrength(match);
             const isSaved = savedJobIds.has(match.external_job_id);
 
-            // Separate matched vs missing from explanation items if available
             const matchedSkills = match.explanation?.items?.filter((i) => i.status !== "missing") || [];
             const missingSkills = match.explanation?.items?.filter((i) => i.status === "missing") || [];
 
             return (
-              <motion.article
+              <article
                 key={match.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-6 sm:p-7 shadow-lg hover:border-[#4f46e5]/40 dark:hover:border-white/[0.18] transition-all duration-300 relative overflow-hidden group"
+                className="border border-white/10 bg-[#061524] p-6 rounded-md transition-colors hover:border-white/20 relative"
               >
-                {/* Ambient glow accent */}
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#4f46e5]/40 dark:via-[#38bdf8]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-
                 <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
-                  {/* Left Column: Job Info */}
+                  {/* Left Column */}
                   <div className="space-y-3 flex-1 min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className={`rounded-lg border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${providerBadge.bg}`}>
+                    <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
+                      <span className={`border px-2 py-0.5 rounded-xs uppercase tracking-wider ${providerBadge.bg}`}>
                         {providerBadge.label}
                       </span>
-                      <span className={`rounded-lg border px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider ${strength.color}`}>
+                      <span className={`border px-2 py-0.5 rounded-xs uppercase tracking-wider ${strength.color}`}>
                         {strength.label} Evidence
                       </span>
                     </div>
 
                     <div>
-                      <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-[#f1f0e8] group-hover:text-[#4f46e5] dark:group-hover:text-[#38bdf8] transition-colors font-sans">
+                      <h2 className="text-xl font-normal text-white" style={{ fontFamily: "var(--font-display)" }}>
                         {match.title}
                       </h2>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-slate-600 dark:text-[#98a4b3] font-sans">
-                        <span className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200">
-                          <Building2 className="h-3.5 w-3.5 text-slate-400" />
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs text-neutral-400 font-sans">
+                        <span className="flex items-center gap-1.5 text-neutral-200">
+                          <Building2 className="h-3.5 w-3.5 text-neutral-400" />
                           {match.company_name}
                         </span>
                         {match.location && (
                           <span className="flex items-center gap-1">
-                            <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                            <MapPin className="h-3.5 w-3.5 text-neutral-400" />
                             {match.location}
                           </span>
                         )}
                         {match.remote_status && (
-                          <span className="capitalize text-emerald-600 dark:text-emerald-400 font-semibold">
-                            &bull; {match.remote_status.replace("_", " ")}
+                          <span className="capitalize text-neutral-300">
+                            • {match.remote_status.replace("_", " ")}
                           </span>
                         )}
-                        <span className="flex items-center gap-1 text-slate-400">
+                        <span className="flex items-center gap-1 text-neutral-400">
                           <Clock className="h-3.5 w-3.5" />
                           {formatDate(match.posted_at)}
                         </span>
@@ -464,9 +459,9 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
                     </div>
 
                     {/* Matched Skills */}
-                    <div className="space-y-1.5 pt-1">
-                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-700 dark:text-[#8ea2c6] uppercase tracking-wider font-sans">
-                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                    <div className="space-y-1 pt-1 font-mono">
+                      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-neutral-400">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-white" />
                         <span>Matched Skills ({matchedSkills.length})</span>
                       </div>
                       <div className="flex flex-wrap gap-1.5">
@@ -474,29 +469,29 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
                           matchedSkills.map((item) => (
                             <span
                               key={item.skill_id}
-                              className="rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 px-2.5 py-1 text-xs font-semibold text-emerald-800 dark:text-emerald-300 font-sans"
+                              className="border border-white/15 bg-white/5 px-2 py-0.5 text-xs text-white rounded-xs"
                             >
                               {item.skill_name}
                             </span>
                           ))
                         ) : (
-                          <span className="text-xs text-slate-400 italic">No exact requirements matched yet.</span>
+                          <span className="text-xs text-neutral-400 italic">No exact requirements matched yet.</span>
                         )}
                       </div>
                     </div>
 
                     {/* Missing Skills */}
                     {missingSkills.length > 0 && (
-                      <div className="space-y-1.5 pt-1">
-                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider font-sans">
-                          <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                      <div className="space-y-1 pt-1 font-mono">
+                        <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-neutral-400">
+                          <AlertTriangle className="h-3.5 w-3.5 text-neutral-400" />
                           <span>Missing Skills ({missingSkills.length})</span>
                         </div>
                         <div className="flex flex-wrap gap-1.5">
                           {missingSkills.map((item) => (
                             <span
                               key={item.skill_id}
-                              className="rounded-lg bg-slate-100 dark:bg-[#151e29] border border-slate-200/60 dark:border-white/[0.06] px-2.5 py-1 text-xs font-medium text-slate-600 dark:text-[#8ea2c6] font-sans"
+                              className="border border-white/5 bg-white/[0.02] px-2 py-0.5 text-xs text-neutral-400 rounded-xs"
                             >
                               {item.skill_name}
                             </span>
@@ -506,27 +501,25 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
                     )}
                   </div>
 
-                  {/* Right Column: Score & Action Buttons */}
-                  <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between gap-4 shrink-0 border-t lg:border-t-0 pt-4 lg:pt-0 border-slate-100 dark:border-white/[0.08]">
-                    {/* Large Match Badge */}
+                  {/* Right Column: Score & Actions */}
+                  <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between gap-4 shrink-0 border-t lg:border-t-0 pt-4 lg:pt-0 border-white/10 font-mono">
                     <div className="text-left lg:text-right">
-                      <div className="inline-flex items-baseline gap-1 rounded-2xl bg-indigo-50 dark:bg-[#182337] border border-indigo-200/60 dark:border-[#38bdf8]/30 px-4 py-2 text-indigo-700 dark:text-[#38bdf8] shadow-xs">
-                        <span className="text-2xl sm:text-3xl font-black font-sans">
+                      <div className="inline-flex items-baseline gap-1 border border-white/20 bg-white/5 px-3 py-1.5 rounded-xs">
+                        <span className="text-2xl font-normal text-white" style={{ fontFamily: "var(--font-display)" }}>
                           {Math.round(match.final_score * 100)}%
                         </span>
-                        <span className="text-xs font-bold uppercase tracking-wider font-sans">MATCH</span>
+                        <span className="text-[10px] uppercase text-neutral-400">MATCH</span>
                       </div>
-                      <p className="text-[11px] text-slate-400 dark:text-[#8ea2c6] mt-1 font-sans">
+                      <p className="text-[11px] text-neutral-400 mt-1">
                         Exact: {Math.round(match.deterministic_score * 100)}% · Bonus: +{Math.round(match.verification_bonus * 100)}%
                       </p>
                     </div>
 
-                    {/* Actions Toolbar */}
                     <div className="flex flex-wrap items-center gap-2">
                       <button
                         type="button"
                         onClick={() => setActiveExplanationMatch(match)}
-                        className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50 dark:bg-[#151e29] px-3.5 py-2 text-xs font-bold text-[#4f46e5] dark:text-[#38bdf8] hover:bg-slate-100 dark:hover:bg-[#1c2838] transition-colors cursor-pointer font-sans"
+                        className="rounded-full border border-white/15 bg-white/[0.03] px-3.5 py-1.5 text-xs font-mono text-neutral-300 hover:text-white transition-colors cursor-pointer"
                       >
                         Why this match?
                       </button>
@@ -535,113 +528,112 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
                         href={match.source_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50 dark:bg-[#151e29] p-2 text-slate-600 dark:text-[#8ea2c6] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1c2838] transition-colors"
+                        className="rounded-full border border-white/15 bg-white/[0.03] p-2 text-neutral-400 hover:text-white transition-colors"
                         title="View original job post"
                       >
-                        <ExternalLink className="h-4 w-4" />
+                        <ExternalLink className="h-3.5 w-3.5" />
                       </a>
 
                       <button
                         type="button"
                         onClick={() => handleToggleSave(match.external_job_id)}
-                        className={`rounded-xl border p-2 transition-colors cursor-pointer ${
+                        className={`rounded-full border p-2 transition-colors cursor-pointer ${
                           isSaved
-                            ? "bg-amber-50 dark:bg-amber-950/40 border-amber-300 text-amber-600 dark:text-amber-400"
-                            : "border-slate-200/80 dark:border-white/[0.08] bg-slate-50 dark:bg-[#151e29] text-slate-500 dark:text-[#8ea2c6] hover:text-slate-900 dark:hover:text-white"
+                            ? "border-white bg-white text-black"
+                            : "border-white/15 bg-white/[0.03] text-neutral-400 hover:text-white"
                         }`}
                         title={isSaved ? "Saved" : "Save opportunity"}
                       >
-                        {isSaved ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
+                        {isSaved ? <BookmarkCheck className="h-3.5 w-3.5" /> : <Bookmark className="h-3.5 w-3.5" />}
                       </button>
 
-                      <button
-                        type="button"
+                      <LiquidGlassButton
                         disabled={preparingMatchId === match.id}
                         onClick={() => handlePrepareApplication(match)}
-                        className="flex items-center gap-1.5 rounded-xl bg-[#4f46e5] dark:bg-[#38bdf8] px-3.5 py-2 text-xs font-bold text-white dark:text-slate-950 shadow-sm shadow-indigo-500/20 hover:opacity-90 active:scale-95 transition-all cursor-pointer font-sans disabled:opacity-50"
+                        size="sm"
                       >
                         <Send className="h-3.5 w-3.5" />
                         <span>{preparingMatchId === match.id ? "Preparing..." : "Prepare application"}</span>
-                      </button>
+                      </LiquidGlassButton>
                     </div>
                   </div>
                 </div>
-              </motion.article>
+              </article>
             );
           })}
         </div>
       )}
 
-      {/* WHY THIS MATCH EXPLANATION MODAL */}
+      {/* WHY THIS MATCH MODAL */}
       <AnimatePresence>
         {activeExplanationMatch && (
-          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-2xl rounded-3xl border border-slate-200/80 dark:border-white/[0.12] bg-white dark:bg-[#111821] shadow-2xl p-6 sm:p-8 space-y-6 text-slate-900 dark:text-[#f1f0e8]"
+              className="w-full max-w-2xl border border-white/15 bg-[#061524] shadow-2xl p-6 sm:p-8 space-y-6 text-white rounded-md"
             >
-              <div className="flex items-start justify-between border-b border-slate-100 dark:border-white/[0.08] pb-4">
+              <div className="flex items-start justify-between border-b border-white/10 pb-4">
                 <div>
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#4f46e5] dark:text-[#38bdf8] font-sans">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">
                     Deterministic Explainability Breakdown
                   </span>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-[#f1f0e8] mt-0.5 font-sans">
+                  <h3 className="text-xl font-normal text-white mt-0.5" style={{ fontFamily: "var(--font-display)" }}>
                     Why You Match: {activeExplanationMatch.title}
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-[#98a4b3] font-sans">
+                  <p className="text-xs text-neutral-400 font-sans">
                     {activeExplanationMatch.company_name} · Matched against your verified Skill Passport
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setActiveExplanationMatch(null)}
-                  className="rounded-xl p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-[#151e29]"
+                  className="p-1 text-neutral-400 hover:text-white"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
 
               {/* Score Breakdown Cards */}
-              <div className="grid grid-cols-4 gap-2 text-center">
-                <div className="rounded-2xl bg-slate-50 dark:bg-[#151e29] border border-slate-200/60 dark:border-white/[0.08] p-3">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#8ea2c6] block font-sans">
+              <div className="grid grid-cols-4 gap-2 text-center font-mono">
+                <div className="border border-white/10 bg-white/[0.02] p-2.5 rounded-sm">
+                  <span className="text-[10px] uppercase text-neutral-400 block">
                     Exact Skills
                   </span>
-                  <strong className="text-base sm:text-lg font-black text-[#4f46e5] dark:text-[#38bdf8] font-sans">
+                  <strong className="text-lg font-normal text-white mt-0.5 block" style={{ fontFamily: "var(--font-display)" }}>
                     {Math.round(activeExplanationMatch.deterministic_score * 100)}%
                   </strong>
                 </div>
-                <div className="rounded-2xl bg-slate-50 dark:bg-[#151e29] border border-slate-200/60 dark:border-white/[0.08] p-3">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#8ea2c6] block font-sans">
+                <div className="border border-white/10 bg-white/[0.02] p-2.5 rounded-sm">
+                  <span className="text-[10px] uppercase text-neutral-400 block">
                     Semantic Fit
                   </span>
-                  <strong className="text-base sm:text-lg font-black text-purple-600 dark:text-purple-400 font-sans">
+                  <strong className="text-lg font-normal text-white mt-0.5 block" style={{ fontFamily: "var(--font-display)" }}>
                     {Math.round(activeExplanationMatch.semantic_score * 100)}%
                   </strong>
                 </div>
-                <div className="rounded-2xl bg-slate-50 dark:bg-[#151e29] border border-slate-200/60 dark:border-white/[0.08] p-3">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-[#8ea2c6] block font-sans">
+                <div className="border border-white/10 bg-white/[0.02] p-2.5 rounded-sm">
+                  <span className="text-[10px] uppercase text-neutral-400 block">
                     Verification
                   </span>
-                  <strong className="text-base sm:text-lg font-black text-emerald-600 dark:text-emerald-400 font-sans">
+                  <strong className="text-lg font-normal text-white mt-0.5 block" style={{ fontFamily: "var(--font-display)" }}>
                     +{Math.round(activeExplanationMatch.verification_bonus * 100)}%
                   </strong>
                 </div>
-                <div className="rounded-2xl bg-indigo-50 dark:bg-[#182337] border border-indigo-200 dark:border-[#38bdf8]/40 p-3">
-                  <span className="text-[10px] uppercase font-bold text-[#4f46e5] dark:text-[#38bdf8] block font-sans">
+                <div className="border border-white/20 bg-white/5 p-2.5 rounded-sm">
+                  <span className="text-[10px] uppercase text-white block">
                     Overall
                   </span>
-                  <strong className="text-base sm:text-lg font-black text-[#4f46e5] dark:text-[#38bdf8] font-sans">
+                  <strong className="text-lg font-normal text-white mt-0.5 block" style={{ fontFamily: "var(--font-display)" }}>
                     {Math.round(activeExplanationMatch.final_score * 100)}%
                   </strong>
                 </div>
               </div>
 
               {/* Matched Skills with Evidence */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-sans">
+              <div className="space-y-3 font-sans">
+                <h4 className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">
                   Matched Skills & Evidence Provenance
                 </h4>
                 <div className="space-y-2">
@@ -650,19 +642,19 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
                     .map((item) => (
                       <div
                         key={item.skill_id}
-                        className="flex items-start gap-3 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/60 dark:bg-[#151e29] p-3.5"
+                        className="flex items-start gap-3 border border-white/10 bg-white/[0.02] p-3 rounded-xs"
                       >
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                        <CheckCircle2 className="h-4 w-4 text-white shrink-0 mt-0.5" />
                         <div className="space-y-0.5 flex-1 min-w-0 text-xs">
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">
+                          <div className="flex items-center justify-between font-mono">
+                            <span className="font-medium text-white">
                               {item.skill_name}
                             </span>
-                            <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            <span className="text-neutral-300">
                               +{Math.round((item.total_contribution || item.contribution || 0) * 100)}% Fit
                             </span>
                           </div>
-                          <p className="text-[11px] text-slate-500 dark:text-[#98a4b3] font-sans">
+                          <p className="text-[11px] text-neutral-400 font-mono">
                             {item.evidence_title
                               ? `✓ Demonstrated in: ${item.evidence_title}`
                               : "✓ Verified in student skill passport"}
@@ -675,8 +667,8 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
 
               {/* Missing Skills Section */}
               {activeExplanationMatch.explanation?.items?.some((i) => i.status === "missing") && (
-                <div className="space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 font-sans">
+                <div className="space-y-3 font-sans">
+                  <h4 className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">
                     Skills to Learn / Evidence Missing
                   </h4>
                   <div className="space-y-2">
@@ -685,15 +677,15 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
                       .map((item) => (
                         <div
                           key={item.skill_id}
-                          className="flex items-start gap-3 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/60 dark:bg-[#151e29] p-3.5"
+                          className="flex items-start gap-3 border border-white/5 bg-white/[0.02] p-3 rounded-xs"
                         >
-                          <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                          <div className="space-y-0.5 flex-1 min-w-0 text-xs">
-                            <span className="font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">
+                          <AlertTriangle className="h-4 w-4 text-neutral-400 shrink-0 mt-0.5" />
+                          <div className="space-y-0.5 flex-1 min-w-0 text-xs font-mono">
+                            <span className="text-neutral-300">
                               {item.skill_name}
                             </span>
-                            <p className="text-[11px] text-slate-500 dark:text-[#98a4b3] font-sans">
-                              Not currently verified in your Skill Passport. Upload evidence or take a skill assessment to boost your match score.
+                            <p className="text-[11px] text-neutral-400">
+                              Not currently verified in your Skill Passport. Upload evidence or complete projects to boost match score.
                             </p>
                           </div>
                         </div>
@@ -703,13 +695,12 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
               )}
 
               <div className="pt-2 flex justify-end">
-                <button
-                  type="button"
+                <LiquidGlassButton
                   onClick={() => setActiveExplanationMatch(null)}
-                  className="rounded-xl bg-[#4f46e5] dark:bg-[#38bdf8] px-5 py-2.5 text-xs font-bold text-white dark:text-slate-950 hover:opacity-90 cursor-pointer font-sans"
+                  size="sm"
                 >
                   Close Explanation
-                </button>
+                </LiquidGlassButton>
               </div>
             </motion.div>
           </div>
@@ -719,26 +710,26 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
       {/* APPLICATION PREPARATION MODAL */}
       <AnimatePresence>
         {applicationInReview && (
-          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-2xl rounded-3xl border border-slate-200/80 dark:border-white/[0.12] bg-white dark:bg-[#111821] shadow-2xl p-6 sm:p-8 space-y-4"
+              className="w-full max-w-2xl border border-white/15 bg-[#061524] shadow-2xl p-6 sm:p-8 space-y-4 rounded-md"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3.5">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
-                  <FileCheck2 className="h-5 w-5 text-[#4f46e5] dark:text-[#38bdf8]" />
-                  <h3 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">
+                  <FileCheck2 className="h-4 w-4 text-white" />
+                  <h3 className="text-lg font-normal text-white" style={{ fontFamily: "var(--font-display)" }}>
                     Application Review & Verification
                   </h3>
                 </div>
                 <button
                   type="button"
                   onClick={() => setApplicationInReview(null)}
-                  className="rounded-xl p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                  className="p-1 text-neutral-400 hover:text-white"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
 
@@ -748,11 +739,11 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
                 onChanged={(updated) => setApplicationInReview(updated)}
               />
 
-              <div className="pt-3 border-t border-slate-100 dark:border-white/[0.08] flex justify-end">
+              <div className="pt-3 border-t border-white/10 flex justify-end">
                 <button
                   type="button"
                   onClick={() => setApplicationInReview(null)}
-                  className="rounded-xl border border-slate-200 dark:border-white/10 px-4 py-2 text-xs font-bold text-slate-700 dark:text-[#f1f0e8] hover:bg-slate-100 dark:hover:bg-[#151e29] cursor-pointer font-sans"
+                  className="rounded-full border border-white/15 bg-white/[0.03] px-4 py-1.5 font-mono text-xs text-neutral-300 hover:text-white transition-colors cursor-pointer"
                 >
                   Done Reviewing
                 </button>

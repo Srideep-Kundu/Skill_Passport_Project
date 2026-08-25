@@ -1,24 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Target,
-  TrendingUp,
-  AlertCircle,
   CheckCircle2,
-  BookOpen,
+  AlertCircle,
+  ShieldCheck,
   ArrowRight,
   Sparkles,
-  ShieldCheck,
-  Zap,
-  Compass,
-  Building2,
-  Briefcase,
 } from "lucide-react";
 import { api } from "../api/service";
 import { errorMessage } from "../api/client";
 import type { CareerGoals, CareerGuidanceOverview, SkillGapAnalysis } from "../api/types";
 import { CircularReadinessGauge } from "./CircularReadinessGauge";
 import { toast } from "sonner";
+import { EditorialButton, EditorialPageHeader, EditorialTextTabs } from "./ui/EditorialPrimitives";
 
 interface Props {
   token: string;
@@ -38,7 +32,7 @@ export function SkillGapAnalyzer({ token, onNavigateToLearning, onNavigateToAsse
   const [selectedRole, setSelectedRole] = useState<string>("Full Stack Developer");
   const [analysis, setAnalysis] = useState<SkillGapAnalysis | null>(null);
   const [guidance, setGuidance] = useState<CareerGuidanceOverview | null>(null);
-  const [activeTab, setActiveTab] = useState<"gaps" | "guidance">("gaps");
+  const [activeTab, setActiveTab] = useState<string>("gaps");
   const [loading, setLoading] = useState(true);
   const [savingGoals, setSavingGoals] = useState(false);
 
@@ -101,9 +95,9 @@ export function SkillGapAnalyzer({ token, onNavigateToLearning, onNavigateToAsse
 
   if (loading && !analysis) {
     return (
-      <div className="p-8 text-center bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl border border-slate-200/70 dark:border-white/[0.08] shadow-lg">
-        <div className="inline-block animate-spin h-8 w-8 border-4 border-[#3b71d9] border-t-transparent rounded-full mb-3" />
-        <p className="text-sm text-slate-500 dark:text-[#98a4b3]">Analyzing career readiness and skill requirements...</p>
+      <div className="p-12 text-center border border-white/10 bg-[#071E2B] rounded-md">
+        <div className="inline-block animate-spin h-6 w-6 border-2 border-white/20 border-t-white rounded-full mb-3" />
+        <p className="font-mono text-xs text-[#8796A2]">Analyzing career readiness and skill requirements...</p>
       </div>
     );
   }
@@ -111,137 +105,144 @@ export function SkillGapAnalyzer({ token, onNavigateToLearning, onNavigateToAsse
   const verifiedSkills = analysis?.gap_items.filter((i) => i.status === "verified" || i.status === "assessed") || [];
   const missingSkills = analysis?.gap_items.filter((i) => i.status === "missing") || [];
 
+  const mainTabs = [
+    { id: "gaps", label: "Skill Gap Matrix & Readiness" },
+    { id: "guidance", label: `Career Pathways ${guidance ? `(${guidance.ready_roles.length} Ready)` : ""}` },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Target Role Selector Header */}
-      <div className="bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/[0.08] shadow-lg">
+    <div className="space-y-6 font-sans">
+      <EditorialPageHeader
+        category="STUDENT"
+        index="ANALYSIS"
+        title="Skill Gaps & Career Readiness"
+        subtitle="Evaluate your verified competency graph against target industry roles to discover actionable preparation paths."
+      />
+
+      {/* Target Role Selector Header Box */}
+      <div className="border border-white/10 bg-[#071E2B] p-6 rounded-md space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Target className="h-5 w-5 text-[#3b71d9] dark:text-[#b0c6ff]" />
-              <h2 className="text-lg font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">Target Career Role & Ambition</h2>
-            </div>
-            <p className="text-sm text-slate-500 dark:text-[#98a4b3] font-sans">
-              Select your aspiration to calculate real-time deterministic role readiness against verified Passport evidence.
-            </p>
+            <span className="font-mono text-[10px] uppercase tracking-wider text-[#8796A2] block mb-1">
+              Target Career Role
+            </span>
+            <h2
+              className="text-2xl font-normal text-[#F7F8F8]"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              {selectedRole}
+            </h2>
           </div>
+
           <div className="flex flex-wrap items-center gap-2">
             {POPULAR_ROLES.map((role) => (
               <button
                 key={role}
+                type="button"
                 onClick={() => handleRoleChange(role)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer backdrop-blur-md ${
+                className={`px-3 py-1.5 rounded-md font-mono text-xs transition-colors cursor-pointer ${
                   selectedRole === role
-                    ? "bg-[#3b71d9] text-white shadow-xs shadow-[#3b71d9]/30"
-                    : "bg-slate-100/80 dark:bg-white/[0.05] text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-white/[0.08]"
+                    ? "border border-[#9CC7D8]/40 bg-[#9CC7D8]/10 text-[#9CC7D8]"
+                    : "border border-white/10 bg-white/[0.02] text-[#8796A2] hover:text-[#F7F8F8]"
                 }`}
               >
                 {role}
               </button>
             ))}
             <button
+              type="button"
               onClick={handleSaveTargetRole}
               disabled={savingGoals}
-              className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1 cursor-pointer"
+              className="px-3 py-1.5 border border-white/20 bg-white/10 hover:bg-white/15 text-white font-mono text-xs rounded-md transition-colors flex items-center gap-1 cursor-pointer"
             >
-              <Sparkles className="h-3.5 w-3.5" />
-              Set Primary
+              <Sparkles className="h-3 w-3" />
+              <span>Set Primary</span>
             </button>
           </div>
         </div>
 
         {/* Tab Toggle */}
-        <div className="flex gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-white/[0.06]">
-          <button
-            onClick={() => setActiveTab("gaps")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              activeTab === "gaps"
-                ? "bg-[#3b71d9] text-white shadow-xs"
-                : "text-slate-600 dark:text-[#98a4b3] hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            Skill Gap Matrix & Readiness
-          </button>
-          <button
-            onClick={() => setActiveTab("guidance")}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-              activeTab === "guidance"
-                ? "bg-[#3b71d9] text-white shadow-xs"
-                : "text-slate-600 dark:text-[#98a4b3] hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            <Compass className="h-3.5 w-3.5" />
-            Career Guidance Pathways {guidance && `(${guidance.ready_roles.length} Ready)`}
-          </button>
-        </div>
+        <EditorialTextTabs
+          tabs={mainTabs}
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          className="pt-2"
+        />
       </div>
 
       {activeTab === "guidance" && guidance && (
         <div className="space-y-6">
-          {/* Top Role Readiness Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Ready Roles */}
-            <div className="bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/[0.08] shadow-lg space-y-4">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                <h3 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">Roles You Are Ready For</h3>
+            <div className="border border-white/10 bg-[#071E2B] p-6 rounded-md space-y-4">
+              <div className="border-b border-white/10 pb-3">
+                <h3
+                  className="text-lg font-normal text-[#F7F8F8]"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  Roles You Are Ready For
+                </h3>
+                <p className="text-xs text-[#8796A2] mt-0.5 font-mono">
+                  Verified evidence exceeds the 70% requirement threshold.
+                </p>
               </div>
-              <p className="text-xs text-slate-500 dark:text-[#98a4b3] font-sans">
-                You have strong verified evidence meeting or exceeding the 70% curriculum threshold.
-              </p>
+
               <div className="space-y-3">
                 {guidance.ready_roles.length > 0 ? (
                   guidance.ready_roles.map((r) => (
                     <div
                       key={r.role_name}
-                      className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 backdrop-blur-md border border-emerald-200/50 dark:border-emerald-900/30 space-y-2"
+                      className="border border-white/10 bg-white/[0.02] p-4 rounded-sm space-y-2"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-sm text-slate-900 dark:text-[#f1f0e8] font-sans">{r.role_name}</span>
-                        <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-100/90 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300">
+                        <span className="font-mono text-sm text-[#F7F8F8]">{r.role_name}</span>
+                        <span className="font-mono text-xs text-[#9CC7D8] border border-[#9CC7D8]/30 px-2 py-0.5 rounded-xs">
                           {Math.round(r.readiness_percentage)}% Ready
                         </span>
                       </div>
-                      <p className="text-xs text-slate-600 dark:text-slate-300">💡 {r.why_explanation}</p>
-                      <div className="flex items-center justify-between text-[11px] text-emerald-700 dark:text-emerald-400 pt-1">
-                        <span>Recommended: {r.recommended_next_step}</span>
+                      <p className="text-xs text-[#BEC8CF] leading-relaxed">{r.why_explanation}</p>
+                      <div className="font-mono text-[11px] text-[#8796A2] pt-1">
+                        Next step: {r.recommended_next_step}
                       </div>
                     </div>
                   ))
                 ) : (
-                  <p className="text-xs text-slate-400">Complete more coursework or assessments to unlock 70%+ ready roles.</p>
+                  <p className="text-xs font-mono text-[#8796A2]">
+                    Complete more coursework or assessments to unlock 70%+ ready roles.
+                  </p>
                 )}
               </div>
             </div>
 
             {/* Next-Step Roles */}
-            <div className="bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/[0.08] shadow-lg space-y-4">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-[#3b71d9] dark:text-[#b0c6ff]" />
-                <h3 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">Realistic Next-Step Roles</h3>
+            <div className="border border-white/10 bg-[#071E2B] p-6 rounded-md space-y-4">
+              <div className="border-b border-white/10 pb-3">
+                <h3
+                  className="text-lg font-normal text-[#F7F8F8]"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  Realistic Next-Step Roles
+                </h3>
+                <p className="text-xs text-[#8796A2] mt-0.5 font-mono">
+                  Closing 1–2 specific gaps qualifies you for direct interviews.
+                </p>
               </div>
-              <p className="text-xs text-slate-500 dark:text-[#98a4b3] font-sans">
-                Roles where bridging 1–2 specific gaps will quickly qualify you for interviews.
-              </p>
+
               <div className="space-y-3">
                 {guidance.next_step_roles.map((r) => (
                   <div
                     key={r.role_name}
-                    className="p-4 rounded-2xl bg-blue-50/40 dark:bg-blue-950/20 backdrop-blur-md border border-blue-100 dark:border-blue-900/30 space-y-2"
+                    className="border border-white/10 bg-white/[0.02] p-4 rounded-sm space-y-2"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-sm text-slate-900 dark:text-[#f1f0e8] font-sans">{r.role_name}</span>
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-blue-100/90 dark:bg-blue-900/50 text-[#3b71d9] dark:text-[#b0c6ff]">
+                      <span className="font-mono text-sm text-[#F7F8F8]">{r.role_name}</span>
+                      <span className="font-mono text-xs text-[#BEC8CF] border border-white/15 px-2 py-0.5 rounded-xs">
                         {Math.round(r.readiness_percentage)}% Match
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300">💡 {r.why_explanation}</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {r.missing_critical_skills.map((s) => (
-                        <span key={s} className="text-[10px] px-2 py-0.5 rounded-md bg-rose-50/80 dark:bg-rose-950/40 text-rose-600 dark:text-rose-300 font-semibold">
-                          Missing: {s}
-                        </span>
-                      ))}
+                    <p className="text-xs text-[#BEC8CF] leading-relaxed">{r.why_explanation}</p>
+                    <div className="font-mono text-xs text-[#9CC7D8] pt-1">
+                      Missing: {r.missing_critical_skills.join(" · ")}
                     </div>
                   </div>
                 ))}
@@ -249,43 +250,49 @@ export function SkillGapAnalyzer({ token, onNavigateToLearning, onNavigateToAsse
             </div>
           </div>
 
-          {/* Action Plan & Industry Alignment */}
+          {/* Action Steps & Industry Sectors */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/[0.08] shadow-lg space-y-3">
-              <div className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-amber-500" />
-                <h3 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">Actionable Next Steps</h3>
-              </div>
+            <div className="border border-white/10 bg-[#071E2B] p-6 rounded-md space-y-4">
+              <h3
+                className="text-lg font-normal text-[#F7F8F8] border-b border-white/10 pb-3"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                Actionable Next Steps
+              </h3>
               <div className="space-y-2.5">
                 {guidance.learning_action_plan.map((item) => (
-                  <div key={item.priority} className="flex items-start gap-3 p-3 rounded-2xl bg-slate-50/50 dark:bg-white/[0.03] backdrop-blur-md border border-slate-200/40 dark:border-white/[0.04]">
-                    <span className="w-5 h-5 rounded-full bg-[#3b71d9] text-white flex items-center justify-center text-xs font-bold shrink-0">
-                      {item.priority}
+                  <div
+                    key={item.priority}
+                    className="flex items-start gap-3 border border-white/10 bg-white/[0.01] p-3 rounded-sm"
+                  >
+                    <span className="font-mono text-xs text-[#9CC7D8] font-bold shrink-0">
+                      0{item.priority}
                     </span>
                     <div>
-                      <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">{item.action}</p>
-                      <p className="text-[11px] text-slate-500 dark:text-[#98a4b3] mt-0.5 font-sans">Impact: {item.impact}</p>
+                      <p className="text-xs text-[#F7F8F8] leading-relaxed">{item.action}</p>
+                      <p className="font-mono text-[11px] text-[#8796A2] mt-0.5">Impact: {item.impact}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/[0.08] shadow-lg space-y-3">
-              <div className="flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-[#3b71d9] dark:text-[#b0c6ff]" />
-                <h3 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">Aligning Industry Sectors</h3>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-[#98a4b3] font-sans">
-                Sectors actively hiring for your primary target role ({guidance.target_role}):
+            <div className="border border-white/10 bg-[#071E2B] p-6 rounded-md space-y-4">
+              <h3
+                className="text-lg font-normal text-[#F7F8F8] border-b border-white/10 pb-3"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                Aligning Industry Sectors
+              </h3>
+              <p className="font-mono text-xs text-[#8796A2]">
+                Sectors actively hiring for {guidance.target_role}:
               </p>
-              <div className="flex flex-wrap gap-2 pt-2">
+              <div className="flex flex-wrap gap-2 pt-1">
                 {guidance.aligning_industry_sectors.map((sec) => (
                   <span
                     key={sec}
-                    className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100/80 dark:bg-white/[0.05] text-slate-800 dark:text-slate-200 border border-slate-200/60 dark:border-white/[0.08] flex items-center gap-1.5 backdrop-blur-xs"
+                    className="font-mono text-xs text-[#BEC8CF] border border-white/10 bg-white/[0.02] px-3 py-1.5 rounded-sm"
                   >
-                    <Briefcase className="h-3.5 w-3.5 text-[#3b71d9]" />
                     {sec}
                   </span>
                 ))}
@@ -295,91 +302,94 @@ export function SkillGapAnalyzer({ token, onNavigateToLearning, onNavigateToAsse
         </div>
       )}
 
-      {/* Decluttered Role Readiness Overview */}
+      {/* Role Readiness Overview */}
       {activeTab === "gaps" && analysis && (
-        <div className="bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/[0.08] shadow-lg space-y-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
+        <div className="border border-white/10 bg-[#071E2B] p-6 rounded-md space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex items-center gap-6">
               <CircularReadinessGauge
                 readinessScore={analysis.overall_readiness_score}
                 label="READY"
-                size={110}
+                size={100}
               />
-              <div>
-                <h3 className="text-xl font-black text-slate-900 dark:text-[#f1f0e8] font-sans">{analysis.target_role}</h3>
-                <p className="text-sm font-bold text-[#3b71d9] dark:text-[#b0c6ff] mt-0.5">
-                  {analysis.overall_readiness_score}% Role Ready
-                </p>
-                <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-1 font-sans">
+              <div className="space-y-1">
+                <h3
+                  className="text-2xl font-normal text-[#F7F8F8]"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  {analysis.target_role}
+                </h3>
+                <div className="font-mono text-xs text-[#9CC7D8]">
+                  {analysis.overall_readiness_score}% Deterministic Role Readiness
+                </div>
+                <p className="text-xs text-[#BEC8CF] max-w-xl leading-relaxed pt-1">
                   {analysis.overall_readiness_score >= 70
-                    ? "Strong match! You are interview-ready for this target role."
+                    ? "Strong verified match. You meet the qualification requirements for this target role."
                     : "Bridge critical missing skills below to unlock high-confidence recruiter matching."}
                 </p>
               </div>
             </div>
 
-            <div className="flex gap-2 self-start md:self-center">
+            <div className="flex flex-wrap gap-2 self-start md:self-center">
               {onNavigateToAssessment && (
-                <button
+                <EditorialButton
+                  variant="primary"
                   onClick={onNavigateToAssessment}
-                  className="px-3.5 py-2 bg-[#3b71d9] hover:bg-[#2f5db3] text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer font-sans"
                 >
-                  <ShieldCheck className="h-3.5 w-3.5" />
                   Take Assessment
-                </button>
+                </EditorialButton>
               )}
               {onNavigateToLearning && (
-                <button
+                <EditorialButton
+                  variant="secondary"
                   onClick={onNavigateToLearning}
-                  className="px-3.5 py-2 bg-white/80 dark:bg-white/[0.06] hover:bg-slate-100 dark:hover:bg-white/[0.1] text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer font-sans backdrop-blur-md border border-slate-200/60 dark:border-white/10"
                 >
-                  <BookOpen className="h-3.5 w-3.5" />
                   Bridge Gaps
-                </button>
+                </EditorialButton>
               )}
             </div>
           </div>
 
-          {/* Clean 2-column breakdown: Strong Skills vs Critical Gaps */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 border-t border-slate-100 dark:border-white/[0.06]">
-            <div className="p-3.5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/50 dark:border-emerald-900/30 backdrop-blur-md">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300 block mb-2 font-sans">
-                Strong Verified Skills ({verifiedSkills.length})
+          {/* 2-column breakdown: Strong Skills vs Critical Gaps */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-white/10">
+            <div className="border border-white/10 bg-white/[0.02] p-4 rounded-sm space-y-3">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-[#8796A2] block">
+                Verified Skills ({verifiedSkills.length})
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {verifiedSkills.length > 0 ? (
                   verifiedSkills.map((s) => (
                     <span
                       key={s.skill_name}
-                      className="px-2.5 py-1 rounded-xl bg-white/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 font-semibold text-xs flex items-center gap-1 backdrop-blur-xs"
+                      className="inline-flex items-center gap-1 font-mono text-xs text-[#F7F8F8] border border-white/15 bg-white/5 px-2.5 py-1 rounded-xs"
                     >
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                      {s.skill_name}
+                      <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                      <span>{s.skill_name}</span>
                     </span>
                   ))
                 ) : (
-                  <span className="text-xs text-slate-400 italic">No skills verified yet</span>
+                  <span className="text-xs font-mono text-[#8796A2]">No skills verified yet</span>
                 )}
               </div>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 backdrop-blur-md">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 block mb-2 font-sans">
-                Needs Improvement / Missing Gaps ({missingSkills.length})
+            <div className="border border-white/10 bg-white/[0.02] p-4 rounded-sm space-y-3">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-[#8796A2] block">
+                Missing Gaps ({missingSkills.length})
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {missingSkills.length > 0 ? (
                   missingSkills.map((s) => (
                     <span
                       key={s.skill_name}
-                      className="px-2.5 py-1 rounded-xl bg-white/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-300 font-semibold text-xs flex items-center gap-1 backdrop-blur-xs"
+                      className="inline-flex items-center gap-1 font-mono text-xs text-[#9CC7D8] border border-[#9CC7D8]/30 bg-[#9CC7D8]/10 px-2.5 py-1 rounded-xs"
                     >
-                      <AlertCircle className="h-3 w-3 text-amber-500" />
-                      {s.skill_name}
+                      <AlertCircle className="h-3 w-3 text-[#9CC7D8]" />
+                      <span>{s.skill_name}</span>
                     </span>
                   ))
                 ) : (
-                  <span className="text-xs text-emerald-600 font-semibold">All required skills met!</span>
+                  <span className="text-xs font-mono text-emerald-400">All required skills met</span>
                 )}
               </div>
             </div>
@@ -387,64 +397,70 @@ export function SkillGapAnalyzer({ token, onNavigateToLearning, onNavigateToAsse
         </div>
       )}
 
-      {/* Detailed Skill Gap Matrix */}
+      {/* Detailed Skill Gap Matrix as Ruled Rows */}
       {analysis && (
-        <div className="bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/[0.08] shadow-lg">
-          <h3 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] mb-4 flex items-center gap-2 font-sans">
-            <TrendingUp className="h-4 w-4 text-[#3b71d9] dark:text-[#b0c6ff]" />
-            Detailed Skill Gap Closure Roadmap
-          </h3>
-          <div className="divide-y divide-slate-100 dark:divide-white/[0.06]">
+        <div className="border border-white/10 bg-[#071E2B] p-6 rounded-md space-y-4">
+          <div className="border-b border-white/10 pb-3">
+            <h3
+              className="text-lg font-normal text-[#F7F8F8]"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              Detailed Skill Gap Closure Roadmap
+            </h3>
+          </div>
+
+          <div className="divide-y divide-white/10">
             {analysis.gap_items.map((item, idx) => (
               <motion.div
                 key={item.skill_name}
-                initial={{ opacity: 0, y: 5 }}
+                initial={{ opacity: 0, y: 4 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.04 }}
-                className="py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3"
+                transition={{ delay: idx * 0.03 }}
+                className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4"
               >
                 <div className="flex items-start gap-3">
-                  <div className="mt-0.5">
+                  <div className="mt-0.5 shrink-0">
                     {item.status === "verified" || item.status === "assessed" ? (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                     ) : (
-                      <AlertCircle className="h-4 w-4 text-amber-500" />
+                      <AlertCircle className="h-4 w-4 text-[#9CC7D8]" />
                     )}
                   </div>
-                  <div>
+                  <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm text-slate-900 dark:text-[#f1f0e8] font-sans">{item.skill_name}</span>
-                      <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-slate-100/80 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300">
+                      <span className="font-mono text-sm text-[#F7F8F8]">{item.skill_name}</span>
+                      <span className="font-mono text-[10px] uppercase text-[#8796A2]">
                         {item.category}
                       </span>
                       <span
-                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                        className={`font-mono text-[10px] uppercase px-1.5 py-0.5 rounded-xs ${
                           item.importance === "critical"
-                            ? "bg-rose-50/80 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200/50 dark:border-rose-900/30"
-                            : "bg-slate-100/80 dark:bg-white/[0.05] text-slate-600 dark:text-slate-400"
+                            ? "text-[#9CC7D8] border border-[#9CC7D8]/30"
+                            : "text-[#8796A2] border border-white/10"
                         }`}
                       >
                         {item.importance}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-1 font-sans">{item.recommended_action}</p>
+                    <p className="text-xs text-[#BEC8CF] leading-relaxed font-sans">{item.recommended_action}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 self-end md:self-auto">
+                <div className="flex items-center gap-3 self-end md:self-auto shrink-0 font-mono text-xs">
                   {item.status === "missing" && (
                     <button
+                      type="button"
                       onClick={onNavigateToLearning}
-                      className="px-3 py-1 bg-blue-50/80 dark:bg-[#3b71d9]/20 hover:bg-blue-100 text-[#3b71d9] dark:text-[#b0c6ff] text-xs font-semibold rounded-xl transition-colors cursor-pointer flex items-center gap-1 font-sans"
+                      className="text-[#9CC7D8] hover:text-[#F7F8F8] cursor-pointer flex items-center gap-1 transition-colors"
                     >
                       <span>Find Courses</span>
                       <ArrowRight className="h-3 w-3" />
                     </button>
                   )}
                   {item.status === "verified" && (
-                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-sans">
+                    <span className="text-emerald-400 flex items-center gap-1">
                       <ShieldCheck className="h-3.5 w-3.5" />
-                      {Math.round(item.proficiency_score * 100)}% Proficiency
+                      <span>{Math.round(item.proficiency_score * 100)}% Proficiency</span>
                     </span>
                   )}
                 </div>

@@ -1,18 +1,17 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  ShieldCheck,
   Clock,
   Award,
   CheckCircle2,
   XCircle,
   Play,
   RotateCcw,
-  Sparkles,
 } from "lucide-react";
 import { api } from "../api/service";
 import { errorMessage } from "../api/client";
 import type { Assessment, AssessmentAttempt } from "../api/types";
 import { toast } from "sonner";
+import { EditorialButton, EditorialPageHeader } from "./ui/EditorialPrimitives";
 
 interface Props {
   token: string;
@@ -84,9 +83,9 @@ export function SkillAssessments({ token, onAssessmentCompleted }: Props) {
 
   if (loading && !activeAssessment) {
     return (
-      <div className="p-8 text-center bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl border border-slate-200/70 dark:border-white/[0.08] shadow-lg">
-        <div className="inline-block animate-spin h-8 w-8 border-4 border-[#3b71d9] border-t-transparent rounded-full mb-3" />
-        <p className="text-sm text-slate-500 dark:text-[#98a4b3]">Loading diagnostic assessments catalog...</p>
+      <div className="p-12 text-center border border-white/10 bg-[#071E2B] rounded-md">
+        <div className="inline-block animate-spin h-6 w-6 border-2 border-white/20 border-t-white rounded-full mb-3" />
+        <p className="font-mono text-xs text-[#8796A2]">Loading diagnostic assessments catalog...</p>
       </div>
     );
   }
@@ -99,68 +98,71 @@ export function SkillAssessments({ token, onAssessmentCompleted }: Props) {
 
     if (attemptResult) {
       return (
-        <div className="bg-white/60 dark:bg-[#0c121e]/75 backdrop-blur-2xl rounded-3xl p-8 border border-slate-200/70 dark:border-white/[0.08] shadow-2xl text-center max-w-xl mx-auto space-y-6">
-          <div className="inline-flex p-4 rounded-full bg-slate-50/60 dark:bg-white/[0.05]">
+        <div className="border border-white/10 bg-[#071E2B] p-8 rounded-md text-center max-w-xl mx-auto space-y-6 font-sans">
+          <div className="inline-flex p-4 rounded-full border border-white/10 bg-white/[0.02]">
             {attemptResult.passed ? (
-              <Award className="h-16 w-16 text-emerald-500" />
+              <Award className="h-12 w-12 text-emerald-400" />
             ) : (
-              <XCircle className="h-16 w-16 text-amber-500" />
+              <XCircle className="h-12 w-12 text-[#9CC7D8]" />
             )}
           </div>
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">
-              {attemptResult.passed ? "Assessment Passed!" : "Needs Improvement"}
+          <div className="space-y-1">
+            <h2
+              className="text-2xl font-normal text-[#F7F8F8]"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              {attemptResult.passed ? "Assessment Passed" : "Needs Improvement"}
             </h2>
-            <p className="text-sm text-slate-500 dark:text-[#98a4b3] mt-1 font-sans">
+            <p className="font-mono text-xs text-[#8796A2]">
               {attemptResult.assessment_title}
             </p>
           </div>
 
-          <div className="p-4 rounded-2xl bg-slate-50/50 dark:bg-white/[0.03] backdrop-blur-md border border-slate-200/60 dark:border-white/[0.06] flex items-center justify-around">
+          <div className="p-4 rounded-sm border border-white/10 bg-white/[0.02] flex items-center justify-around font-mono">
             <div>
-              <span className="text-xs uppercase tracking-wider text-slate-500 dark:text-[#98a4b3]">Your Score</span>
-              <p className="text-2xl font-black text-slate-900 dark:text-[#f1f0e8] font-sans">{attemptResult.percentage}%</p>
+              <span className="text-[10px] uppercase tracking-wider text-[#8796A2] block">Your Score</span>
+              <p className="text-2xl font-normal text-[#F7F8F8] mt-0.5">{attemptResult.percentage}%</p>
             </div>
+            <div className="h-8 w-px bg-white/10" />
             <div>
-              <span className="text-xs uppercase tracking-wider text-slate-500 dark:text-[#98a4b3]">Passing Threshold</span>
-              <p className="text-2xl font-black text-slate-900 dark:text-[#f1f0e8] font-sans">{activeAssessment.passing_score}%</p>
+              <span className="text-[10px] uppercase tracking-wider text-[#8796A2] block">Threshold</span>
+              <p className="text-2xl font-normal text-[#F7F8F8] mt-0.5">{activeAssessment.passing_score}%</p>
             </div>
+            <div className="h-8 w-px bg-white/10" />
             <div>
-              <span className="text-xs uppercase tracking-wider text-slate-500 dark:text-[#98a4b3]">Status</span>
-              <p className={`text-base font-bold font-sans ${attemptResult.passed ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
+              <span className="text-[10px] uppercase tracking-wider text-[#8796A2] block">Status</span>
+              <p className={`text-sm font-semibold mt-1 ${attemptResult.passed ? "text-emerald-400" : "text-[#9CC7D8]"}`}>
                 {attemptResult.passed ? "Verified" : "Retake"}
               </p>
             </div>
           </div>
 
           {attemptResult.passed && (
-            <div className="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 backdrop-blur-md border border-emerald-200/70 dark:border-emerald-900/40 text-left text-xs text-emerald-800 dark:text-emerald-300 flex items-start gap-2">
-              <Sparkles className="h-4 w-4 shrink-0 mt-0.5" />
-              <span>
-                <strong>Passport Updated:</strong> A certified evidence badge with extraction confidence 0.95 and tier <code className="font-bold">VERIFIED</code> has been registered under your Skill Passport.
-              </span>
+            <div className="p-4 rounded-sm border border-white/15 bg-white/5 text-left text-xs font-mono text-[#BEC8CF]">
+              <span className="text-[#F7F8F8] font-bold">Passport Updated: </span>
+              A certified evidence record with tier VERIFIED has been registered under your Skill Passport.
             </div>
           )}
 
           <div className="flex justify-center gap-3 pt-2">
-            <button
+            <EditorialButton
+              variant="secondary"
               onClick={() => setActiveAssessment(null)}
-              className="px-5 py-2.5 bg-slate-100/80 dark:bg-white/[0.08] hover:bg-slate-200 text-slate-800 dark:text-slate-200 text-sm font-semibold rounded-xl cursor-pointer"
             >
               Back to Catalog
-            </button>
+            </EditorialButton>
             {!attemptResult.passed && (
-              <button
+              <EditorialButton
+                variant="primary"
                 onClick={() => {
                   setAnswers({});
                   setCurrentQuestionIdx(0);
                   setAttemptResult(null);
                 }}
-                className="px-5 py-2.5 bg-[#3b71d9] hover:bg-[#2f5db3] text-white text-sm font-semibold rounded-xl flex items-center gap-1.5 cursor-pointer"
               >
-                <RotateCcw className="h-4 w-4" />
+                <RotateCcw className="h-3.5 w-3.5 mr-1" />
                 Retry Assessment
-              </button>
+              </EditorialButton>
             )}
           </div>
         </div>
@@ -168,23 +170,29 @@ export function SkillAssessments({ token, onAssessmentCompleted }: Props) {
     }
 
     return (
-      <div className="bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/[0.08] shadow-lg space-y-6">
+      <div className="border border-white/10 bg-[#071E2B] p-6 rounded-md space-y-6 font-sans">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-white/[0.06]">
+        <div className="flex items-center justify-between pb-4 border-b border-white/10">
           <div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">{activeAssessment.title}</h2>
-            <span className="text-xs text-slate-500 dark:text-[#98a4b3] font-sans">
-              Question {currentQuestionIdx + 1} of {questions.length} • {answeredCount} Answered
+            <h2
+              className="text-xl font-normal text-[#F7F8F8]"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              {activeAssessment.title}
+            </h2>
+            <span className="font-mono text-xs text-[#8796A2]">
+              Question {currentQuestionIdx + 1} of {questions.length} · {answeredCount} Answered
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="px-3 py-1 bg-blue-50/80 dark:bg-blue-900/30 text-[#3b71d9] dark:text-[#b0c6ff] text-xs font-bold rounded-lg flex items-center gap-1 backdrop-blur-xs">
-              <Clock className="h-3.5 w-3.5" />
-              {activeAssessment.duration_minutes} Mins
+          <div className="flex items-center gap-3 font-mono text-xs">
+            <span className="border border-white/10 bg-white/[0.02] px-2.5 py-1 text-[#9CC7D8] rounded-xs flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              <span>{activeAssessment.duration_minutes} Mins</span>
             </span>
             <button
+              type="button"
               onClick={() => setActiveAssessment(null)}
-              className="px-3 py-1 bg-slate-100/80 dark:bg-white/[0.08] hover:bg-slate-200 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-lg cursor-pointer"
+              className="text-[#8796A2] hover:text-[#F7F8F8] cursor-pointer"
             >
               Quit
             </button>
@@ -193,26 +201,27 @@ export function SkillAssessments({ token, onAssessmentCompleted }: Props) {
 
         {/* Question body */}
         <div className="space-y-4">
-          <p className="text-base font-semibold text-slate-900 dark:text-[#f1f0e8] leading-relaxed font-sans">
+          <p className="text-base text-[#F7F8F8] leading-relaxed">
             {currentQ.question_text}
           </p>
 
-          <div className="grid grid-cols-1 gap-2.5 pt-2">
+          <div className="grid grid-cols-1 gap-2.5 pt-2 font-mono text-xs">
             {currentQ.options.map((opt) => {
               const isSelected = answers[currentQ.id] === opt;
               return (
                 <button
                   key={opt}
+                  type="button"
                   onClick={() => handleSelectOption(currentQ.id, opt)}
-                  className={`p-4 rounded-2xl text-left text-sm font-medium transition-all cursor-pointer border backdrop-blur-md ${
+                  className={`p-3.5 rounded-sm text-left transition-colors cursor-pointer border ${
                     isSelected
-                      ? "bg-blue-50/80 dark:bg-[#3b71d9]/25 border-[#3b71d9] text-[#3b71d9] dark:text-[#b0c6ff] shadow-xs ring-1 ring-[#3b71d9]/30"
-                      : "bg-slate-50/50 dark:bg-white/[0.03] border-slate-200/60 dark:border-white/[0.06] text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.06]"
+                      ? "border-white/40 bg-white/10 text-white"
+                      : "border-white/10 bg-white/[0.02] text-[#BEC8CF] hover:border-white/20 hover:text-white"
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <span>{opt}</span>
-                    {isSelected && <CheckCircle2 className="h-4 w-4 text-[#3b71d9] shrink-0" />}
+                    {isSelected && <CheckCircle2 className="h-3.5 w-3.5 text-white shrink-0" />}
                   </div>
                 </button>
               );
@@ -221,30 +230,31 @@ export function SkillAssessments({ token, onAssessmentCompleted }: Props) {
         </div>
 
         {/* Navigation & Submit */}
-        <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-white/[0.06]">
+        <div className="flex items-center justify-between pt-4 border-t border-white/10">
           <button
+            type="button"
             onClick={() => setCurrentQuestionIdx((p) => Math.max(0, p - 1))}
             disabled={currentQuestionIdx === 0}
-            className="px-4 py-2 bg-slate-100/80 dark:bg-white/[0.08] hover:bg-slate-200 disabled:opacity-40 text-slate-700 dark:text-slate-300 text-xs font-semibold rounded-xl cursor-pointer"
+            className="font-mono text-xs text-[#8796A2] hover:text-white disabled:opacity-30 cursor-pointer"
           >
-            Previous
+            Previous Question
           </button>
 
           {currentQuestionIdx < questions.length - 1 ? (
-            <button
+            <EditorialButton
+              variant="primary"
               onClick={() => setCurrentQuestionIdx((p) => Math.min(questions.length - 1, p + 1))}
-              className="px-4 py-2 bg-[#3b71d9] hover:bg-[#2f5db3] text-white text-xs font-semibold rounded-xl cursor-pointer"
             >
               Next Question
-            </button>
+            </EditorialButton>
           ) : (
-            <button
+            <EditorialButton
+              variant="primary"
               onClick={handleSubmit}
               disabled={submitting || answeredCount === 0}
-              className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs shadow-emerald-600/30 flex items-center gap-1.5 cursor-pointer font-sans"
             >
               {submitting ? "Grading..." : "Submit Assessment"}
-            </button>
+            </EditorialButton>
           )}
         </div>
       </div>
@@ -253,52 +263,50 @@ export function SkillAssessments({ token, onAssessmentCompleted }: Props) {
 
   // Catalog view
   return (
-    <div className="space-y-6">
-      <div className="bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/[0.08] shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <ShieldCheck className="h-5 w-5 text-[#3b71d9] dark:text-[#b0c6ff]" />
-            <h2 className="text-lg font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">Diagnostic Skill Assessments</h2>
-          </div>
-          <p className="text-sm text-slate-500 dark:text-[#98a4b3] font-sans">
-            Standardized technical assessments validating core capabilities into your Skill Passport with verifiable evidence records.
-          </p>
-        </div>
-      </div>
+    <div className="space-y-6 font-sans">
+      <EditorialPageHeader
+        category="STUDENT"
+        index="DIAGNOSTIC"
+        title="Diagnostic Skill Assessments"
+        subtitle="Standardized technical assessments validating core capabilities into your Skill Passport with verifiable evidence records."
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {assessments.map((ass) => (
           <div
             key={ass.id}
-            className="bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/[0.08] shadow-lg flex flex-col justify-between space-y-4 hover:border-slate-300 dark:hover:border-white/[0.18] transition-all"
+            className="border border-white/10 bg-[#071E2B] p-6 rounded-md flex flex-col justify-between space-y-4 hover:border-white/20 transition-colors"
           >
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50/80 dark:bg-blue-900/30 text-[#3b71d9] dark:text-[#b0c6ff] backdrop-blur-xs">
-                  {ass.category}
-                </span>
-                <span className="text-xs text-slate-500 dark:text-[#98a4b3] flex items-center gap-1 font-sans">
-                  <Clock className="h-3.5 w-3.5" />
-                  {ass.duration_minutes} mins
+            <div className="space-y-2">
+              <div className="flex items-center justify-between font-mono text-[10px] uppercase text-[#8796A2]">
+                <span className="border border-white/10 px-2 py-0.5 rounded-xs">{ass.category}</span>
+                <span className="flex items-center gap-1 text-[#9CC7D8]">
+                  <Clock className="h-3 w-3" />
+                  <span>{ass.duration_minutes} mins</span>
                 </span>
               </div>
-              <h3 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">{ass.title}</h3>
-              <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-1 font-sans">
-                Targeted skill validation for <strong>{ass.canonical_skill_name}</strong>. Pass score: {ass.passing_score}%.
+              <h3
+                className="text-xl font-normal text-[#F7F8F8]"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                {ass.title}
+              </h3>
+              <p className="text-xs text-[#BEC8CF] leading-relaxed">
+                Targeted skill validation for <strong className="text-white font-mono">{ass.canonical_skill_name}</strong>. Pass threshold: {ass.passing_score}%.
               </p>
             </div>
 
-            <div className="pt-4 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
-              <span className="text-xs text-slate-600 dark:text-[#98a4b3] font-medium font-sans">
-                {ass.question_count || 5} Interactive Questions
+            <div className="pt-4 border-t border-white/10 flex items-center justify-between font-mono text-xs">
+              <span className="text-[#8796A2]">
+                {ass.question_count || 5} Questions
               </span>
-              <button
+              <EditorialButton
+                variant="primary"
                 onClick={() => handleStartAssessment(ass.id)}
-                className="px-4 py-2 bg-[#3b71d9] hover:bg-[#2f5db3] text-white text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-xs shadow-[#3b71d9]/20 font-sans"
               >
-                <Play className="h-3.5 w-3.5" />
-                Start Test
-              </button>
+                <Play className="h-3 w-3 mr-1" />
+                <span>Start Test</span>
+              </EditorialButton>
             </div>
           </div>
         ))}

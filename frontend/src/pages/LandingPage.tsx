@@ -1,25 +1,20 @@
-import { useEffect, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, FileCheck2, Scale, ShieldCheck, Sparkles, Sun, Moon } from "lucide-react";
-
-import { LuminaAmbientHorizon } from "../components/LuminaAmbientHorizon";
-import { DotMatrixHeroHeader } from "../components/DotMatrixHero";
+import { useState, useEffect } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AuthPage } from "./AuthPage";
+import { LiquidGlassButton } from "../components/ui/EditorialPrimitives";
 
-interface LandingPageProps {
-  isDarkMode: boolean;
-  onToggleTheme: () => void;
+export interface LandingPageProps {
+  isDarkMode?: boolean;
+  onToggleTheme?: () => void;
   defaultAuthOpen?: boolean;
 }
 
-const capabilities = [
-  { icon: FileCheck2, title: "Evidence-Backed Skills", text: "Every passport skill traces to concrete code, repositories, and verified records." },
-  { icon: Scale, title: "Deterministic Matching", text: "Mathematical multi-component scoring without unexplainable AI bias or black-box rankings." },
-  { icon: ShieldCheck, title: "Fair by Construction", text: "Protected attributes and demographic proxies are isolated from matching queries." },
-];
-
-export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false }: LandingPageProps) {
+export function LandingPage({ defaultAuthOpen = false }: LandingPageProps) {
+  const prefersReducedMotion = useReducedMotion();
   const [authModalOpen, setAuthModalOpen] = useState(defaultAuthOpen);
+  const [authRole, setAuthRole] = useState<"student" | "recruiter" | "academician" | "institution">("student");
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [activeSection, setActiveSection] = useState<string>("home");
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -29,118 +24,421 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [authModalOpen]);
 
+  const openAuth = (mode: "login" | "register" = "login", role: "student" | "recruiter" | "academician" | "institution" = "student") => {
+    setAuthMode(mode);
+    setAuthRole(role);
+    setAuthModalOpen(true);
+  };
+
   return (
-    <div className="relative flex min-h-dvh w-full min-w-0 select-none flex-col overflow-x-clip bg-slate-50 font-sans text-slate-900 transition-colors duration-200 dark:bg-[#070a10] dark:text-white">
-      {/* Lumina Horizon Animated Wave Canvas */}
-      <LuminaAmbientHorizon className="opacity-90" />
+    <div className="relative min-h-screen w-full bg-[#031322] text-white selection:bg-white/20 selection:text-white">
+      {/* 1. HERO SECTION WITH FULLSCREEN BACKGROUND VIDEO */}
+      <div className="relative min-h-screen w-full overflow-hidden flex flex-col justify-between">
+        {/* Background Video */}
+        <video
+          autoPlay={!prefersReducedMotion}
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 h-full w-full object-cover z-0"
+          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4"
+        />
 
-      {/* Grid Overlay & Glow */}
-      <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(#94a3b8_1px,transparent_1px)] [background-size:28px_28px] opacity-25 dark:bg-[radial-gradient(#38bdf8_1px,transparent_1px)] dark:opacity-15" />
-      <div className="pointer-events-none absolute -top-36 left-1/2 z-0 h-[350px] w-[700px] -translate-x-1/2 rounded-full bg-gradient-to-b from-indigo-300/30 via-sky-200/20 to-transparent blur-3xl dark:from-indigo-500/20 dark:via-cyan-500/10" />
+        {/* Subtle Dark Vignette for Typography Readability */}
+        <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-[#031322]/80 via-transparent to-[#031322]" />
 
-      {/* Header Bar */}
-      <header className="relative z-20 mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
-        <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#3b71d9] to-[#6366f1] text-white shadow-md shadow-indigo-500/25">
-            <span className="text-sm font-black tracking-wider">SP</span>
+        {/* Glassmorphic Navigation Bar */}
+        <nav className="relative z-20 flex w-full max-w-7xl items-center justify-between px-6 py-6 sm:px-8 mx-auto">
+          <div className="flex items-center gap-3">
+            <a
+              href="#home"
+              className="text-2xl sm:text-3xl tracking-tight text-white font-normal cursor-pointer"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              Skill Passport<sup className="text-xs font-mono ml-0.5 opacity-80">®</sup>
+            </a>
           </div>
-          <div className="flex min-w-0 items-center">
-            <span className="whitespace-nowrap text-xs font-bold tracking-tight text-slate-900 sm:text-sm dark:text-white">Skill Passport</span>
-            <span className="ml-2 hidden whitespace-nowrap rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700 md:inline-block dark:border-cyan-800/50 dark:bg-cyan-950/80 dark:text-cyan-300">
-              Verifiable Engine
-            </span>
+
+          <div className="hidden md:flex items-center gap-8 text-sm font-normal text-neutral-400">
+            <a
+              href="#problem"
+              onClick={() => setActiveSection("problem")}
+              className={`transition-colors hover:text-white ${activeSection === "problem" ? "text-white" : ""}`}
+            >
+              The Problem
+            </a>
+            <a
+              href="#pipeline"
+              onClick={() => setActiveSection("pipeline")}
+              className={`transition-colors hover:text-white ${activeSection === "pipeline" ? "text-white" : ""}`}
+            >
+              Verification Engine
+            </a>
+            <a
+              href="#matching"
+              onClick={() => setActiveSection("matching")}
+              className={`transition-colors hover:text-white ${activeSection === "matching" ? "text-white" : ""}`}
+            >
+              Explainable Matching
+            </a>
+            <a
+              href="#ecosystem"
+              onClick={() => setActiveSection("ecosystem")}
+              className={`transition-colors hover:text-white ${activeSection === "ecosystem" ? "text-white" : ""}`}
+            >
+              Ecosystem
+            </a>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => openAuth("login")}
+              className="text-xs sm:text-sm text-neutral-300 hover:text-white px-3 py-1.5 transition-colors cursor-pointer"
+            >
+              Sign In
+            </button>
+            <LiquidGlassButton size="sm" onClick={() => openAuth("register")}>
+              Begin Journey
+            </LiquidGlassButton>
+          </div>
+        </nav>
+
+        {/* Cinematic Centered Hero Content */}
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-center text-center px-6 py-20 max-w-5xl mx-auto my-auto">
+          <div className="mb-6 font-mono text-[11px] uppercase tracking-[0.25em] text-neutral-400 animate-fade-rise">
+            VERIFIABLE PROFESSIONAL IDENTITY & MATCHING
+          </div>
+
+          <h1
+            className="text-5xl sm:text-7xl md:text-8xl leading-[0.95] tracking-[-2.46px] max-w-5xl font-normal text-white animate-fade-rise"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            Where evidence becomes <em className="not-italic text-neutral-400">opportunity.</em>
+          </h1>
+
+          <p className="mt-8 max-w-2xl text-base sm:text-lg leading-relaxed text-neutral-300 font-normal animate-fade-rise-delay">
+            We build digital verification systems for deep thinkers, engineers, and quiet innovators. Transform code repositories, resumes, and assessments into evidence-linked skill records with explainable, deterministic matching.
+          </p>
+
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-4 animate-fade-rise-delay-2">
+            <LiquidGlassButton size="lg" onClick={() => openAuth("register")}>
+              Begin Journey
+            </LiquidGlassButton>
+            <a
+              href="#pipeline"
+              className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/5 px-8 py-4 text-base text-neutral-300 backdrop-blur-xs transition-all hover:border-white/40 hover:text-white cursor-pointer"
+            >
+              Explore Verification
+            </a>
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <button
-            type="button"
-            onClick={onToggleTheme}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200/80 bg-white/70 text-slate-600 shadow-xs backdrop-blur-md transition-colors hover:bg-slate-100 hover:text-slate-900 cursor-pointer dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
-            title="Toggle theme"
-            aria-label="Toggle theme"
-          >
-            {isDarkMode ? <Sun className="h-4 w-4 text-amber-300" /> : <Moon className="h-4 w-4 text-slate-600" />}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setAuthModalOpen(true)}
-            className="inline-flex min-h-9 items-center gap-1 rounded-xl border border-sky-200/80 bg-white/80 px-3 py-2 text-[11px] font-bold text-indigo-600 shadow-xs backdrop-blur-md transition-all hover:bg-sky-50 sm:gap-1.5 sm:px-4 sm:text-xs cursor-pointer dark:border-cyan-400/30 dark:bg-cyan-950/40 dark:text-cyan-200 dark:hover:bg-cyan-900/60"
-          >
-            <span>Sign In</span>
-            <ArrowRight className="h-3.5 w-3.5" />
-          </button>
+        {/* Subtle Bottom Status Bar */}
+        <div className="relative z-10 border-t border-white/10 px-8 py-4 max-w-7xl mx-auto w-full flex flex-col sm:flex-row items-center justify-between text-xs font-mono text-neutral-400 gap-2">
+          <span>DETERMINISTIC COMPUTE ENGINE · PERSISTED FORMULA VERSION</span>
+          <span>PGVECTOR COSINE EMBEDDINGS + EVIDENCE PROVENANCE</span>
         </div>
-      </header>
+      </div>
 
-      {/* Main Hero Section */}
-      <main className="relative z-10 mx-auto flex w-full min-w-0 max-w-6xl flex-1 flex-col items-center justify-start px-3 py-5 text-center sm:px-6 sm:py-8 lg:justify-center lg:px-8 lg:py-10">
-        <motion.div
-          initial={{ opacity: 0, y: -12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-4 inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-sky-200/80 bg-white/80 px-3 py-1.5 text-[10px] font-semibold leading-4 text-sky-800 shadow-sm backdrop-blur-xl sm:px-4 sm:text-xs dark:border-cyan-300/25 dark:bg-slate-950/70 dark:text-cyan-100"
-        >
-          <Sparkles className="h-3.5 w-3.5 text-sky-600 animate-pulse dark:text-cyan-300" aria-hidden="true" />
-          <span>Verifiable Skill Passport & Multi-Persona Ecosystem</span>
-        </motion.div>
-
-        {/* Illuminated 5x7 Dot-Matrix Hero Typography */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.05 }}
-          className="my-3 w-full max-w-full overflow-hidden px-1 sm:px-2"
-        >
-          <DotMatrixHeroHeader line1="LUMINA INTEL" />
-        </motion.div>
-
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.18 }}
-          className="mt-3 max-w-2xl px-1 text-xs leading-5 text-slate-600 sm:px-0 sm:text-sm sm:leading-6 lg:text-base dark:text-slate-300"
-        >
-          Students construct evidence-backed skill graphs. Recruiters, academicians, and institutions receive auditable, deterministic matching without black-box bias.
-        </motion.p>
-
-        {/* Primary CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.24 }}
-          className="mt-6 flex w-full flex-wrap items-center justify-center gap-3"
-        >
-          <button
-            type="button"
-            onClick={() => setAuthModalOpen(true)}
-            className="group relative isolate inline-flex min-h-12 w-full max-w-xs cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl border border-indigo-200/80 bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 px-6 py-3 text-sm font-bold text-white shadow-[0_8px_24px_rgba(79,70,229,0.25)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(79,70,229,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 active:translate-y-0 active:scale-[0.985] sm:w-auto sm:px-7 sm:py-3.5 dark:border-cyan-100/25 dark:bg-slate-950/20 dark:bg-gradient-to-r dark:from-cyan-300/15 dark:via-sky-400/20 dark:to-indigo-400/25 dark:text-cyan-50 dark:shadow-[0_8px_28px_rgba(14,165,233,0.14),inset_0_1px_0_rgba(255,255,255,0.18)] dark:ring-1 dark:ring-inset dark:ring-white/15 dark:backdrop-blur-2xl dark:backdrop-saturate-150 dark:before:pointer-events-none dark:before:absolute dark:before:inset-x-3 dark:before:top-px dark:before:h-px dark:before:bg-gradient-to-r dark:before:from-transparent dark:before:via-white/60 dark:before:to-transparent dark:hover:border-cyan-100/45 dark:hover:from-cyan-300/25 dark:hover:via-sky-400/30 dark:hover:to-indigo-400/35 dark:hover:shadow-[0_10px_32px_rgba(34,211,238,0.22),0_0_20px_rgba(99,102,241,0.14),inset_0_1px_0_rgba(255,255,255,0.24)] dark:focus-visible:ring-cyan-200/70"
-          >
-            <span className="relative z-10 font-bold">Get Started</span>
-            <ArrowRight className="relative z-10 h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
-          </button>
-        </motion.div>
-
-        {/* 3 Value Pillars */}
-        <motion.div
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.34 }}
-          className="mt-8 grid w-full min-w-0 grid-cols-1 gap-4 text-left lg:grid-cols-3"
-        >
-          {capabilities.map(({ icon: Icon, title, text }) => (
-            <article key={title} className="min-w-0 rounded-2xl border border-slate-200/80 bg-white/70 p-4 shadow-lg shadow-slate-100/80 backdrop-blur-xl transition-all hover:-translate-y-1 hover:shadow-xl hover:border-slate-300 sm:p-5 dark:border-white/10 dark:bg-slate-950/50 dark:shadow-none dark:hover:border-white/20">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 border border-sky-200 text-sky-700 mb-3 shadow-xs dark:bg-cyan-950/60 dark:border-cyan-800/50 dark:text-cyan-300">
-                <Icon className="h-5 w-5" aria-hidden="true" />
+      {/* 2. SECTION 01: THE PROBLEM */}
+      <section id="problem" className="relative z-10 border-b border-white/10 px-6 py-28 sm:px-12 max-w-7xl mx-auto">
+        <div className="mb-4 font-mono text-[11px] uppercase tracking-widest text-neutral-400">
+          SECTION 01 / RECRUITMENT CRISIS
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+          <div className="lg:col-span-6">
+            <h2
+              className="text-4xl sm:text-5xl md:text-6xl font-normal leading-[1.05] tracking-tight text-white"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              Claims are easy. <br />
+              <em className="not-italic text-neutral-400">Evidence is harder.</em>
+            </h2>
+          </div>
+          <div className="lg:col-span-6 space-y-6 text-neutral-300 text-sm sm:text-base leading-relaxed">
+            <p>
+              Traditional hiring relies on unverified resume claims, self-declared buzzwords, and opaque AI screeners that discard qualified talent or introduce demographic proxy bias.
+            </p>
+            <p>
+              Skill Passport replaces resume noise with an auditable evidence graph. Every technical competency claimed by a student is anchored to concrete source artifacts: GitHub commit histories, verified project repositories, diagnostic assessments, and certification records.
+            </p>
+            <div className="pt-4 border-t border-white/10 grid grid-cols-2 gap-6 font-mono text-xs">
+              <div>
+                <div className="text-white text-2xl font-normal" style={{ fontFamily: "var(--font-display)" }}>
+                  0%
+                </div>
+                <div className="text-neutral-400 mt-1 uppercase">Black-Box LLM Scoring</div>
               </div>
-              <h2 className="text-sm font-bold text-slate-900 dark:text-white">{title}</h2>
-              <p className="mt-1.5 text-xs leading-5 text-slate-600 dark:text-slate-400">{text}</p>
-            </article>
-          ))}
-        </motion.div>
-      </main>
+              <div>
+                <div className="text-white text-2xl font-normal" style={{ fontFamily: "var(--font-display)" }}>
+                  100%
+                </div>
+                <div className="text-neutral-400 mt-1 uppercase">Evidence Provenance</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      {/* 70%–80% Auth Modal Dialog */}
+      {/* 3. SECTION 02: EVIDENCE TO SKILL PIPELINE */}
+      <section id="pipeline" className="relative z-10 border-b border-white/10 px-6 py-28 sm:px-12 max-w-7xl mx-auto">
+        <div className="mb-4 font-mono text-[11px] uppercase tracking-widest text-neutral-400">
+          SECTION 02 / PROVENANCE ARCHITECTURE
+        </div>
+        <h2
+          className="text-4xl sm:text-5xl md:text-6xl font-normal leading-[1.05] tracking-tight text-white mb-16"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          From raw artifacts to <em className="not-italic text-neutral-400">verifiable skills.</em>
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="border-t border-white/20 pt-6">
+            <div className="font-mono text-xs text-neutral-400 mb-3">01 / SUBMISSION</div>
+            <h3 className="text-xl font-normal text-white mb-2" style={{ fontFamily: "var(--font-display)" }}>
+              Raw Evidence Ingestion
+            </h3>
+            <p className="text-xs leading-relaxed text-neutral-400">
+              PDF resumes, LinkedIn archive exports, GitHub commit audits, and technical assessment records stored securely with SHA-256 fingerprints.
+            </p>
+          </div>
+
+          <div className="border-t border-white/20 pt-6">
+            <div className="font-mono text-xs text-neutral-400 mb-3">02 / EXTRACTION</div>
+            <h3 className="text-xl font-normal text-white mb-2" style={{ fontFamily: "var(--font-display)" }}>
+              Structured Schema Extraction
+            </h3>
+            <p className="text-xs leading-relaxed text-neutral-400">
+              Async Redis workers extract explicit technical competencies with exact text span evidence, strictly bounded against hallucination.
+            </p>
+          </div>
+
+          <div className="border-t border-white/20 pt-6">
+            <div className="font-mono text-xs text-neutral-400 mb-3">03 / NORMALIZATION</div>
+            <h3 className="text-xl font-normal text-white mb-2" style={{ fontFamily: "var(--font-display)" }}>
+              Canonical Taxonomy
+            </h3>
+            <p className="text-xs leading-relaxed text-neutral-400">
+              Extracted labels are mapped into canonical skill entities with pgvector semantic embeddings, normalizing aliases across languages and frameworks.
+            </p>
+          </div>
+
+          <div className="border-t border-white/20 pt-6">
+            <div className="font-mono text-xs text-neutral-400 mb-3">04 / VERIFICATION</div>
+            <h3 className="text-xl font-normal text-white mb-2" style={{ fontFamily: "var(--font-display)" }}>
+              Tiered Verification Multiplier
+            </h3>
+            <p className="text-xs leading-relaxed text-neutral-400">
+              Tier multipliers scale effective confidence: Verified (1.00x), Partially Verified (0.85x), and Unverified (0.65x).
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. SECTION 03: EXPLAINABLE DETERMINISTIC MATCHING */}
+      <section id="matching" className="relative z-10 border-b border-white/10 px-6 py-28 sm:px-12 max-w-7xl mx-auto">
+        <div className="mb-4 font-mono text-[11px] uppercase tracking-widest text-neutral-400">
+          SECTION 03 / DETERMINISTIC COMPUTATION
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+          <div className="lg:col-span-5">
+            <h2
+              className="text-4xl sm:text-5xl font-normal leading-[1.05] tracking-tight text-white mb-6"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              Auditable scoring. <br />
+              <em className="not-italic text-neutral-400">Zero black-box decisions.</em>
+            </h2>
+            <p className="text-sm leading-relaxed text-neutral-300 mb-6">
+              Our matching pipeline is a pure mathematical calculation. Every match score is broken down into three verifiable scoring components persisted directly to the database.
+            </p>
+            <div className="p-4 rounded-md border border-white/10 bg-[#061524]/60 font-mono text-xs text-neutral-300">
+              <div className="text-neutral-400 mb-2 font-semibold">// SCORING SPECIFICATION</div>
+              <div className="text-white">final_score = clamp(0.65 * D + 0.25 * S + 0.10 * V, 0, 1)</div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-7 space-y-4 font-mono text-xs">
+            <div className="border border-white/10 p-5 rounded-md bg-[#061524]/40">
+              <div className="flex justify-between text-neutral-400 mb-1">
+                <span>D = EXACT OVERLAP</span>
+                <span className="text-white">65% WEIGHT</span>
+              </div>
+              <p className="text-neutral-300 font-sans text-xs">
+                Weighted intersection of required canonical skills possessed by candidate with effective confidence weighting.
+              </p>
+            </div>
+
+            <div className="border border-white/10 p-5 rounded-md bg-[#061524]/40">
+              <div className="flex justify-between text-neutral-400 mb-1">
+                <span>S = SEMANTIC SIMILARITY</span>
+                <span className="text-white">25% WEIGHT</span>
+              </div>
+              <p className="text-neutral-300 font-sans text-xs">
+                Cosine distance across unmatched required skills using 768-dim taxonomy embeddings, with similarity below 0.75 clamped to zero.
+              </p>
+            </div>
+
+            <div className="border border-white/10 p-5 rounded-md bg-[#061524]/40">
+              <div className="flex justify-between text-neutral-400 mb-1">
+                <span>V = VERIFICATION ADJUSTMENT</span>
+                <span className="text-white">10% WEIGHT</span>
+              </div>
+              <p className="text-neutral-300 font-sans text-xs">
+                Independent adjustment derived from the persisted verification tiers of matched, evidence-backed skills.
+              </p>
+            </div>
+
+            <div className="border border-white/10 p-5 rounded-md bg-[#061524]/40">
+              <div className="flex justify-between text-neutral-400 mb-1">
+                <span>FAIRNESS GUARANTEE</span>
+                <span className="text-white">RESTRICTED VIEW</span>
+              </div>
+              <p className="text-neutral-300 font-sans text-xs">
+                Protected attributes (name, gender, age, college tier, GPA) are physically excluded from the matching query via restricted PostgreSQL view.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 5. SECTION 04: FOUR-PERSONA ECOSYSTEM */}
+      <section id="ecosystem" className="relative z-10 border-b border-white/10 px-6 py-28 sm:px-12 max-w-7xl mx-auto">
+        <div className="mb-4 font-mono text-[11px] uppercase tracking-widest text-neutral-400">
+          SECTION 04 / COLLABORATIVE ECOSYSTEM
+        </div>
+        <h2
+          className="text-4xl sm:text-5xl md:text-6xl font-normal leading-[1.05] tracking-tight text-white mb-16"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
+          Built for the entire <em className="not-italic text-neutral-400">academic-industry lifecycle.</em>
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="border border-white/10 p-6 rounded-md bg-[#061524]/40 flex flex-col justify-between h-full">
+            <div>
+              <div className="font-mono text-xs text-neutral-400 mb-2">01 / CANDIDATES</div>
+              <h3 className="text-2xl font-normal text-white mb-3" style={{ fontFamily: "var(--font-display)" }}>
+                Student
+              </h3>
+              <p className="text-xs leading-relaxed text-neutral-400 mb-6 font-sans">
+                Build an undeniable, evidence-backed skill dossier. Discover matched internships, identify skill gaps, and form complementary project teams.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => openAuth("register", "student")}
+              className="text-xs font-mono uppercase tracking-wider text-neutral-300 hover:text-white text-left transition-colors cursor-pointer"
+            >
+              Enter as Student →
+            </button>
+          </div>
+
+          <div className="border border-white/10 p-6 rounded-md bg-[#061524]/40 flex flex-col justify-between h-full">
+            <div>
+              <div className="font-mono text-xs text-neutral-400 mb-2">02 / HIRING</div>
+              <h3 className="text-2xl font-normal text-white mb-3" style={{ fontFamily: "var(--font-display)" }}>
+                Recruiter
+              </h3>
+              <p className="text-xs leading-relaxed text-neutral-400 mb-6 font-sans">
+                Post technical internships with weighted requirements. Review ranked candidates with full mathematical score breakdowns and verified evidence.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => openAuth("register", "recruiter")}
+              className="text-xs font-mono uppercase tracking-wider text-neutral-300 hover:text-white text-left transition-colors cursor-pointer"
+            >
+              Enter as Recruiter →
+            </button>
+          </div>
+
+          <div className="border border-white/10 p-6 rounded-md bg-[#061524]/40 flex flex-col justify-between h-full">
+            <div>
+              <div className="font-mono text-xs text-neutral-400 mb-2">03 / SCHOLARS</div>
+              <h3 className="text-2xl font-normal text-white mb-3" style={{ fontFamily: "var(--font-display)" }}>
+                Faculty
+              </h3>
+              <p className="text-xs leading-relaxed text-neutral-400 mb-6 font-sans">
+                Engage in industrial training, submit R&D grant proposals, manage joint student research workspaces, and advise student project capstones.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => openAuth("register", "academician")}
+              className="text-xs font-mono uppercase tracking-wider text-neutral-300 hover:text-white text-left transition-colors cursor-pointer"
+            >
+              Enter as Faculty →
+            </button>
+          </div>
+
+          <div className="border border-white/10 p-6 rounded-md bg-[#061524]/40 flex flex-col justify-between h-full">
+            <div>
+              <div className="font-mono text-xs text-neutral-400 mb-2">04 / LEADERSHIP</div>
+              <h3 className="text-2xl font-normal text-white mb-3" style={{ fontFamily: "var(--font-display)" }}>
+                Institution
+              </h3>
+              <p className="text-xs leading-relaxed text-neutral-400 mb-6 font-sans">
+                Real-time institutional intelligence: cohort readiness, curriculum gap analysis, placement outcome funnels, and corporate partnership tracking.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => openAuth("register", "institution")}
+              className="text-xs font-mono uppercase tracking-wider text-neutral-300 hover:text-white text-left transition-colors cursor-pointer"
+            >
+              Enter as Institution →
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 6. CLOSING CTA & FOOTER */}
+      <footer className="relative z-10 px-6 py-24 sm:px-12 max-w-7xl mx-auto">
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <h2
+            className="text-4xl sm:text-6xl font-normal leading-[1.0] text-white mb-6"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            Ready to make your skills <em className="not-italic text-neutral-400">undeniable?</em>
+          </h2>
+          <p className="text-sm text-neutral-400 leading-relaxed mb-8">
+            Build an evidence-backed Skill Passport from submitted records, or sign in to access your institutional workspace.
+          </p>
+          <LiquidGlassButton size="lg" onClick={() => openAuth("register")}>
+            Begin Journey Now
+          </LiquidGlassButton>
+        </div>
+
+        <div className="grid gap-4 border-t border-white/10 pt-8 md:grid-cols-3">
+          <section id="privacy" className="border border-white/10 p-4 text-xs text-neutral-400">
+            <h3 className="font-mono text-white">Privacy notice placeholder</h3>
+            <p className="mt-2 leading-relaxed">A production privacy notice must document evidence retention, recruiter consent, and account-data controls before launch.</p>
+          </section>
+          <section id="terms" className="border border-white/10 p-4 text-xs text-neutral-400">
+            <h3 className="font-mono text-white">Terms placeholder</h3>
+            <p className="mt-2 leading-relaxed">Production terms must define account responsibilities, evidence ownership, and acceptable platform use before launch.</p>
+          </section>
+          <section id="security" className="border border-white/10 p-4 text-xs text-neutral-400">
+            <h3 className="font-mono text-white">Security overview</h3>
+            <p className="mt-2 leading-relaxed">Authentication, role-based access, evidence provenance, and restricted matching inputs are enforced by the application API.</p>
+          </section>
+        </div>
+
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-neutral-400 font-mono gap-4">
+          <div>
+            © {new Date().getFullYear()} Skill Passport Platform. All rights reserved.
+          </div>
+          <div className="flex items-center gap-6">
+            <a href="#privacy" className="hover:text-white transition-colors">Privacy placeholder</a>
+            <a href="#terms" className="hover:text-white transition-colors">Terms placeholder</a>
+            <a href="#security" className="hover:text-white transition-colors">Security Provenance</a>
+          </div>
+        </div>
+      </footer>
+
+      {/* AUTH MODAL */}
       <AnimatePresence>
         {authModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 lg:p-8">
@@ -150,21 +448,27 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setAuthModalOpen(false)}
-              className="fixed inset-0 bg-slate-950/40 backdrop-blur-md dark:bg-slate-950/80"
+              className="fixed inset-0 bg-[#031322]/85 backdrop-blur-md"
               aria-hidden="true"
             />
 
-            {/* Modal Dialog Body */}
+            {/* Modal Container */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.94, y: 16 }}
+              initial={prefersReducedMotion ? false : { opacity: 0, scale: 0.96, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.94, y: 16 }}
-              transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              exit={prefersReducedMotion ? undefined : { opacity: 0, scale: 0.96, y: 16 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
               role="dialog"
               aria-modal="true"
-              className="relative z-10 w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-200 bg-white/95 text-slate-900 shadow-2xl p-4 sm:p-6 no-scrollbar dark:border-white/15 dark:bg-[#0b0f19] dark:text-white"
+              aria-label="Authentication"
+              className="relative z-10 w-full max-w-4xl max-h-[92vh] overflow-y-auto rounded-xl border border-white/15 bg-[#061524] shadow-2xl p-6 sm:p-8 text-white no-scrollbar"
             >
-              <AuthPage isModal onClose={() => setAuthModalOpen(false)} />
+              <AuthPage
+                isModal
+                initialMode={authMode}
+                initialRole={authRole}
+                onClose={() => setAuthModalOpen(false)}
+              />
             </motion.div>
           </div>
         )}

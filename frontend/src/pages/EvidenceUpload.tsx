@@ -5,6 +5,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { ApiError, api } from "../api";
 import type { EvidenceDetail } from "../api";
+import { LiquidGlassButton } from "../components/ui/EditorialPrimitives";
 
 const evidenceSchema = z.object({
   type: z.enum(["project", "certification"]),
@@ -124,96 +125,95 @@ export function EvidenceUpload({
     trackedEvidence?.extraction_status === "dead_lettered";
 
   return (
-    <section className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-5 sm:p-6 shadow-lg text-slate-900 dark:text-[#f1f0e8] space-y-4">
-      <div className="border-b border-slate-100 dark:border-white/[0.08] pb-3.5">
-        <h2 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">Add Technical Evidence</h2>
-        <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-0.5 font-sans">
+    <section className="border border-white/10 bg-[#061524] p-6 rounded-md text-white space-y-4 font-sans">
+      <div className="border-b border-white/10 pb-3">
+        <h2 className="text-xl font-normal text-white" style={{ fontFamily: "var(--font-display)" }}>
+          Add Technical Evidence
+        </h2>
+        <p className="text-xs text-neutral-400 mt-0.5">
           Projects and certifications are asynchronously parsed into verified skills
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-3">
-        <div className="grid grid-cols-2 gap-2">
-          <label className="block text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] col-span-2 sm:col-span-1 font-sans">
+      <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400">
             Evidence Type
             <select
               {...register("type")}
-              className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 px-3 py-1.5 text-xs focus:border-[#3b71d9] focus:outline-none bg-white/80 dark:bg-white/[0.04] backdrop-blur-md text-slate-900 dark:text-[#f1f0e8] cursor-pointer"
+              className="mt-1 w-full rounded-md border border-white/15 bg-white/[0.03] px-3 py-2 text-xs text-white focus:border-white focus:outline-none"
             >
-              <option value="project" className="dark:bg-[#0c121e]">Project Evidence</option>
-              <option value="certification" className="dark:bg-[#0c121e]">Certification</option>
+              <option value="project" className="bg-[#061524]">Project Evidence</option>
+              <option value="certification" className="bg-[#061524]">Certification</option>
             </select>
           </label>
 
-          <label className="block text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] col-span-2 sm:col-span-1 font-sans">
+          <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400">
             Title
             <input
               {...register("title")}
               placeholder="e.g. Distributed Task Queue"
-              className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-3 py-1.5 text-xs focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
+              className="mt-1 w-full rounded-md border border-white/15 bg-white/[0.03] px-3 py-2 text-xs text-white focus:border-white focus:outline-none"
             />
-            {errors.title && <span className="text-[11px] text-rose-600 dark:text-rose-400 mt-0.5 block">{errors.title.message}</span>}
+            {errors.title && <span className="text-[11px] text-red-400 mt-1 block">{errors.title.message}</span>}
           </label>
         </div>
 
-        <label className="block text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] font-sans">
+        <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400">
           Technical Details & Description
           <textarea
             {...register("description")}
             maxLength={10000}
+            rows={3}
             placeholder="Explain architecture, tools used, key algorithms, tests, or achievements..."
-            className="mt-1 min-h-20 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-3 py-1.5 text-xs focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
+            className="mt-1 w-full rounded-md border border-white/15 bg-white/[0.03] px-3 py-2 text-xs text-white focus:border-white focus:outline-none"
           />
-          {errors.description && <span className="text-[11px] text-rose-600 dark:text-rose-400 mt-0.5 block">{errors.description.message}</span>}
+          {errors.description && <span className="text-[11px] text-red-400 mt-1 block">{errors.description.message}</span>}
         </label>
 
-        <label className="block text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] font-sans">
-          GitHub or Public URL <span className="font-normal text-slate-400 dark:text-[#98a4b3] text-[11px]">(optional)</span>
+        <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400">
+          GitHub or Public URL <span className="text-neutral-500 lowercase">(optional)</span>
           <input
             {...register("externalUrl")}
             type="url"
             placeholder="https://github.com/username/repo"
-            className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-3 py-1.5 text-xs focus:border-[#3b71d9] focus:outline-none text-slate-900 dark:text-[#f1f0e8]"
+            className="mt-1 w-full rounded-md border border-white/15 bg-white/[0.03] px-3 py-2 text-xs text-white focus:border-white focus:outline-none"
           />
-          {errors.externalUrl && <span className="text-[11px] text-rose-600 dark:text-rose-400 mt-0.5 block">{errors.externalUrl.message}</span>}
+          {errors.externalUrl && <span className="text-[11px] text-red-400 mt-1 block">{errors.externalUrl.message}</span>}
         </label>
 
         {error && (
-          <p role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">
+          <div role="alert" className="p-2.5 text-xs text-red-300 border border-red-500/30 bg-red-950/20 rounded-sm font-mono">
             {error}
-          </p>
+          </div>
         )}
 
         {status && (
-          <div role="status" className="rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 backdrop-blur-md border border-emerald-100 dark:border-emerald-900/60 p-2.5 text-xs font-medium text-emerald-800 dark:text-emerald-300 font-sans">
+          <div role="status" className="p-2.5 text-xs font-mono text-neutral-300 border border-white/10 bg-white/[0.02] rounded-sm">
             {status}
           </div>
         )}
 
         {trackedEvidence?.extraction_status === "extracted" && trackedEvidence.extracted_skills.length > 0 && (
-          <div className="rounded-xl bg-blue-50/60 dark:bg-[#3b71d9]/15 backdrop-blur-md border border-blue-100 dark:border-blue-900/60 p-2 text-xs text-[#3b71d9] dark:text-[#b0c6ff] font-sans">
-            <span className="font-bold">Extracted skills: </span>
-            {trackedEvidence.extracted_skills.map((skill) => skill.canonical_name).join(", ")}
+          <div className="p-3 text-xs font-mono border border-white/15 bg-white/5 rounded-sm">
+            <span className="text-neutral-400">Extracted skills: </span>
+            <span className="text-white">{trackedEvidence.extracted_skills.map((skill) => skill.canonical_name).join(", ")}</span>
           </div>
         )}
 
-        <div className="flex items-center gap-2 pt-1 font-sans">
+        <div className="flex items-center gap-3 pt-2">
           {canRetry && (
             <button
               type="button"
               onClick={() => void retry()}
-              className="rounded-lg border border-[#3b71d9] dark:border-blue-500 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-3 py-2 text-xs font-semibold text-[#3b71d9] dark:text-[#b0c6ff] hover:bg-blue-50 dark:hover:bg-white/[0.08] transition-colors cursor-pointer"
+              className="rounded-full border border-white/20 bg-white/5 px-4 py-2 font-mono text-xs text-neutral-300 hover:text-white transition-colors cursor-pointer"
             >
               Retry Extraction
             </button>
           )}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="flex-1 rounded-lg bg-[#3b71d9] py-2 text-xs font-semibold text-white shadow-sm shadow-[#3b71d9]/25 hover:bg-[#2563eb] focus:outline-none disabled:opacity-50 transition-colors cursor-pointer font-sans"
-          >
+          <LiquidGlassButton type="submit" disabled={isSubmitting} size="sm">
             {isSubmitting ? "Saving Evidence..." : "Save and Extract Skills"}
-          </button>
+          </LiquidGlassButton>
         </div>
       </form>
     </section>

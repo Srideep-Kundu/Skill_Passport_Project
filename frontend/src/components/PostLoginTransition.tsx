@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { Role } from "../api";
-import { LuminaWaves } from "./LuminaWaves";
 
 interface WordItem {
   id: string;
@@ -17,49 +16,49 @@ interface WordItem {
 }
 
 const STUDENT_WORDS: WordItem[] = [
-  { id: "s-skills", text: "Skills", depth: "foreground", type: "indigo", origin: { x: -360, y: -90, rotate: -8 }, delay: 0.12 },
-  { id: "s-evidence", text: "Evidence", depth: "foreground", type: "cyan", origin: { x: -320, y: 130, rotate: 6 }, delay: 0.16 },
-  { id: "s-opps", text: "Opportunities", depth: "foreground", type: "indigo", origin: { x: 380, y: -80, rotate: 7 }, delay: 0.20 },
-  { id: "s-intern", text: "Internships", depth: "midground", type: "text", origin: { x: 340, y: 110, rotate: -6 }, delay: 0.24 },
-  { id: "s-verified", text: "Verified", depth: "foreground", type: "cyan", origin: { x: -50, y: -260, rotate: -5 }, delay: 0.28 },
-  { id: "s-talent", text: "Talent", depth: "midground", type: "text", origin: { x: 140, y: -250, rotate: 6 }, delay: 0.32 },
-  { id: "s-growth", text: "Growth", depth: "midground", type: "indigo", origin: { x: -100, y: 260, rotate: 5 }, delay: 0.36 },
-  { id: "s-career", text: "Career", depth: "midground", type: "text", origin: { x: 90, y: 250, rotate: -6 }, delay: 0.40 },
-  { id: "s-projects", text: "Projects", depth: "background", type: "muted", origin: { x: -310, y: -220, rotate: -9 }, delay: 0.44 },
-  { id: "s-exp", text: "Experience", depth: "midground", type: "text", origin: { x: 300, y: -210, rotate: 8 }, delay: 0.48 },
-  { id: "s-potential", text: "Potential", depth: "background", type: "muted", origin: { x: -270, y: 230, rotate: 7 }, delay: 0.52 },
-  { id: "s-teams", text: "Teams", depth: "background", type: "muted", origin: { x: 280, y: 220, rotate: -7 }, delay: 0.56 },
+  { id: "s-skills", text: "Skills", depth: "foreground", type: "indigo", origin: { x: -320, y: -80, rotate: -6 }, delay: 0.1 },
+  { id: "s-evidence", text: "Evidence", depth: "foreground", type: "cyan", origin: { x: -280, y: 110, rotate: 4 }, delay: 0.15 },
+  { id: "s-opps", text: "Opportunities", depth: "foreground", type: "indigo", origin: { x: 340, y: -70, rotate: 5 }, delay: 0.18 },
+  { id: "s-intern", text: "Internships", depth: "midground", type: "text", origin: { x: 300, y: 100, rotate: -5 }, delay: 0.22 },
+  { id: "s-verified", text: "Verified", depth: "foreground", type: "cyan", origin: { x: -40, y: -220, rotate: -4 }, delay: 0.25 },
+  { id: "s-talent", text: "Talent", depth: "midground", type: "text", origin: { x: 120, y: -210, rotate: 5 }, delay: 0.28 },
+  { id: "s-growth", text: "Growth", depth: "midground", type: "indigo", origin: { x: -80, y: 220, rotate: 4 }, delay: 0.32 },
+  { id: "s-career", text: "Career", depth: "midground", type: "text", origin: { x: 80, y: 210, rotate: -5 }, delay: 0.35 },
+  { id: "s-projects", text: "Projects", depth: "background", type: "muted", origin: { x: -270, y: -190, rotate: -7 }, delay: 0.38 },
+  { id: "s-exp", text: "Experience", depth: "midground", type: "text", origin: { x: 260, y: -180, rotate: 6 }, delay: 0.42 },
+  { id: "s-potential", text: "Potential", depth: "background", type: "muted", origin: { x: -230, y: 190, rotate: 5 }, delay: 0.45 },
+  { id: "s-teams", text: "Teams", depth: "background", type: "muted", origin: { x: 240, y: 180, rotate: -6 }, delay: 0.48 },
 ];
 
 const RECRUITER_WORDS: WordItem[] = [
-  { id: "r-talent", text: "Talent", depth: "foreground", type: "indigo", origin: { x: -360, y: -80, rotate: -7 }, delay: 0.12 },
-  { id: "r-skills", text: "Skills", depth: "foreground", type: "indigo", origin: { x: 370, y: -90, rotate: 6 }, delay: 0.16 },
-  { id: "r-evidence", text: "Evidence", depth: "foreground", type: "cyan", origin: { x: -330, y: 120, rotate: 5 }, delay: 0.20 },
-  { id: "r-candidates", text: "Candidates", depth: "foreground", type: "text", origin: { x: 350, y: 100, rotate: -6 }, delay: 0.24 },
-  { id: "r-projects", text: "Projects", depth: "midground", type: "muted", origin: { x: -60, y: -260, rotate: -5 }, delay: 0.28 },
-  { id: "r-verified", text: "Verified", depth: "foreground", type: "cyan", origin: { x: 110, y: -250, rotate: 7 }, delay: 0.32 },
-  { id: "r-fit", text: "Fit", depth: "midground", type: "indigo", origin: { x: -90, y: 260, rotate: 4 }, delay: 0.36 },
-  { id: "r-potential", text: "Potential", depth: "midground", type: "text", origin: { x: 120, y: 250, rotate: -5 }, delay: 0.40 },
-  { id: "r-teams", text: "Teams", depth: "background", type: "muted", origin: { x: -290, y: -210, rotate: -8 }, delay: 0.44 },
-  { id: "r-internships", text: "Internships", depth: "midground", type: "text", origin: { x: 290, y: 210, rotate: 8 }, delay: 0.48 },
+  { id: "r-talent", text: "Talent", depth: "foreground", type: "indigo", origin: { x: -320, y: -70, rotate: -6 }, delay: 0.1 },
+  { id: "r-skills", text: "Skills", depth: "foreground", type: "indigo", origin: { x: 330, y: -80, rotate: 5 }, delay: 0.15 },
+  { id: "r-evidence", text: "Evidence", depth: "foreground", type: "cyan", origin: { x: -290, y: 100, rotate: 4 }, delay: 0.18 },
+  { id: "r-candidates", text: "Candidates", depth: "foreground", type: "text", origin: { x: 310, y: 90, rotate: -5 }, delay: 0.22 },
+  { id: "r-projects", text: "Projects", depth: "midground", type: "muted", origin: { x: -50, y: -220, rotate: -4 }, delay: 0.25 },
+  { id: "r-verified", text: "Verified", depth: "foreground", type: "cyan", origin: { x: 100, y: -210, rotate: 6 }, delay: 0.28 },
+  { id: "r-fit", text: "Fit", depth: "midground", type: "indigo", origin: { x: -80, y: 220, rotate: 3 }, delay: 0.32 },
+  { id: "r-potential", text: "Potential", depth: "midground", type: "text", origin: { x: 100, y: 210, rotate: -4 }, delay: 0.35 },
+  { id: "r-teams", text: "Teams", depth: "background", type: "muted", origin: { x: -250, y: -180, rotate: -7 }, delay: 0.38 },
+  { id: "r-internships", text: "Internships", depth: "midground", type: "text", origin: { x: 250, y: 180, rotate: 7 }, delay: 0.42 },
 ];
 
 const ACADEMICIAN_WORDS: WordItem[] = [
-  { id: "a-research", text: "Research", depth: "foreground", type: "indigo", origin: { x: -360, y: -80, rotate: -7 }, delay: 0.12 },
-  { id: "a-mentorship", text: "Mentorship", depth: "foreground", type: "cyan", origin: { x: 370, y: -90, rotate: 6 }, delay: 0.16 },
-  { id: "a-sabbatical", text: "Sabbaticals", depth: "foreground", type: "indigo", origin: { x: -330, y: 120, rotate: 5 }, delay: 0.20 },
-  { id: "a-grants", text: "Grants & FDP", depth: "foreground", type: "text", origin: { x: 350, y: 100, rotate: -6 }, delay: 0.24 },
-  { id: "a-skills", text: "Skills", depth: "midground", type: "cyan", origin: { x: 110, y: -250, rotate: 7 }, delay: 0.32 },
-  { id: "a-innovation", text: "Innovation", depth: "midground", type: "indigo", origin: { x: -90, y: 260, rotate: 4 }, delay: 0.36 },
+  { id: "a-research", text: "Research", depth: "foreground", type: "indigo", origin: { x: -320, y: -70, rotate: -6 }, delay: 0.1 },
+  { id: "a-mentorship", text: "Mentorship", depth: "foreground", type: "cyan", origin: { x: 330, y: -80, rotate: 5 }, delay: 0.15 },
+  { id: "a-sabbatical", text: "Sabbaticals", depth: "foreground", type: "indigo", origin: { x: -290, y: 100, rotate: 4 }, delay: 0.18 },
+  { id: "a-grants", text: "Grants & FDP", depth: "foreground", type: "text", origin: { x: 310, y: 90, rotate: -5 }, delay: 0.22 },
+  { id: "a-skills", text: "Skills", depth: "midground", type: "cyan", origin: { x: 100, y: -210, rotate: 6 }, delay: 0.28 },
+  { id: "a-innovation", text: "Innovation", depth: "midground", type: "indigo", origin: { x: -80, y: 220, rotate: 3 }, delay: 0.32 },
 ];
 
 const INSTITUTION_WORDS: WordItem[] = [
-  { id: "i-analytics", text: "Analytics", depth: "foreground", type: "indigo", origin: { x: -360, y: -80, rotate: -7 }, delay: 0.12 },
-  { id: "i-placements", text: "Placements", depth: "foreground", type: "cyan", origin: { x: 370, y: -90, rotate: 6 }, delay: 0.16 },
-  { id: "i-outcomes", text: "Outcomes", depth: "foreground", type: "indigo", origin: { x: -330, y: 120, rotate: 5 }, delay: 0.20 },
-  { id: "i-readiness", text: "Employability", depth: "foreground", type: "text", origin: { x: 350, y: 100, rotate: -6 }, delay: 0.24 },
-  { id: "i-curriculum", text: "Curriculum", depth: "midground", type: "cyan", origin: { x: 110, y: -250, rotate: 7 }, delay: 0.32 },
-  { id: "i-industry", text: "Industry Linkage", depth: "midground", type: "indigo", origin: { x: -90, y: 260, rotate: 4 }, delay: 0.36 },
+  { id: "i-analytics", text: "Analytics", depth: "foreground", type: "indigo", origin: { x: -320, y: -70, rotate: -6 }, delay: 0.1 },
+  { id: "i-placements", text: "Placements", depth: "foreground", type: "cyan", origin: { x: 330, y: -80, rotate: 5 }, delay: 0.15 },
+  { id: "i-outcomes", text: "Outcomes", depth: "foreground", type: "indigo", origin: { x: -290, y: 100, rotate: 4 }, delay: 0.18 },
+  { id: "i-readiness", text: "Employability", depth: "foreground", type: "text", origin: { x: 310, y: 90, rotate: -5 }, delay: 0.22 },
+  { id: "i-curriculum", text: "Curriculum", depth: "midground", type: "cyan", origin: { x: 100, y: -210, rotate: 6 }, delay: 0.28 },
+  { id: "i-industry", text: "Industry Linkage", depth: "midground", type: "indigo", origin: { x: -80, y: 220, rotate: 3 }, delay: 0.32 },
 ];
 
 function extractFirstName(email?: string): string {
@@ -75,31 +74,6 @@ export interface PostLoginTransitionProps {
   userEmail?: string;
   displayName?: string;
   onComplete: () => void;
-}
-
-// Style helpers based on depth & color type
-function getDepthStyle(depth: WordItem["depth"]) {
-  switch (depth) {
-    case "foreground":
-      return "text-base sm:text-lg font-bold tracking-tight opacity-95";
-    case "midground":
-      return "text-xs sm:text-sm font-semibold tracking-normal opacity-85";
-    case "background":
-      return "text-[11px] sm:text-xs font-medium tracking-wide opacity-65 blur-[0.4px]";
-  }
-}
-
-function getTypeColor(type: WordItem["type"]) {
-  switch (type) {
-    case "indigo":
-      return "text-indigo-600 drop-shadow-[0_0_12px_rgba(79,70,229,0.35)] dark:text-[#b0c6ff] dark:drop-shadow-[0_0_12px_rgba(59,113,217,0.5)]";
-    case "cyan":
-      return "text-sky-600 drop-shadow-[0_0_10px_rgba(2,132,199,0.35)] dark:text-[#38bdf8] dark:drop-shadow-[0_0_10px_rgba(56,189,248,0.4)]";
-    case "text":
-      return "text-slate-800 dark:text-[#f1f0e8]";
-    case "muted":
-      return "text-slate-500 dark:text-[#98a4b3]";
-  }
 }
 
 export function PostLoginTransition({
@@ -168,73 +142,12 @@ export function PostLoginTransition({
     <div
       role="region"
       aria-label="Post login transition"
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-slate-50 text-slate-900 select-none font-sans dark:bg-[#101319] dark:text-[#f1f0e8]"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[#031322] text-white select-none"
     >
-      {/* BACKGROUND LAYER: Lumina Fresh Horizon Gradient or Dark Midnight */}
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-50 via-sky-50/50 to-indigo-50/40 dark:from-[#0b0e13] dark:via-[#101319] dark:to-[#151e29]" />
+      {/* Background Subtle Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#031322] via-[#061524] to-[#031322]" />
 
-      {/* LUMINA WAVE ANIMATION FLOW */}
-      {!prefersReduced && (
-        <LuminaWaves opacity={0.65} speed={1.1} interactive={false} />
-      )}
-
-      {/* Atmospheric Haze and Soft Central Convergence Glow */}
-      <motion.div
-        initial={{ opacity: 0.25, scale: 0.8 }}
-        animate={{
-          opacity: phase === "resolved" ? 0.75 : 0.45,
-          scale: phase === "resolved" ? 1.15 : 1,
-        }}
-        transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-        className="pointer-events-none absolute h-[540px] w-[540px] rounded-full bg-radial from-indigo-400/20 via-sky-300/10 to-transparent blur-3xl dark:from-[#3b71d9]/25 dark:via-[#b0c6ff]/10"
-      />
-
-      {/* Secondary subtle cyan/teal atmospheric aura */}
-      <motion.div
-        initial={{ opacity: 0.15 }}
-        animate={{ opacity: phase === "resolved" ? 0.4 : 0.2 }}
-        transition={{ duration: 1.6, ease: "easeInOut" }}
-        className="pointer-events-none absolute -top-12 h-96 w-96 rounded-full bg-radial from-sky-400/15 via-indigo-300/5 to-transparent blur-3xl dark:from-[#38bdf8]/15 dark:via-[#3b71d9]/5"
-      />
-
-      {/* Ambient Micro-Particles */}
-      {!prefersReduced && (
-        <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-30">
-          {[
-            { top: "20%", left: "15%", d: 18, size: 2 },
-            { top: "25%", right: "20%", d: 22, size: 3 },
-            { bottom: "30%", left: "25%", d: 20, size: 2 },
-            { bottom: "20%", right: "18%", d: 24, size: 2.5 },
-            { top: "60%", left: "12%", d: 16, size: 2 },
-            { top: "45%", right: "14%", d: 21, size: 3 },
-          ].map((pt, i) => (
-            <motion.div
-              key={i}
-              style={{
-                top: pt.top,
-                left: pt.left,
-                right: pt.right,
-                bottom: pt.bottom,
-                width: pt.size,
-                height: pt.size,
-              }}
-              animate={{
-                y: [0, -14, 10, 0],
-                x: [0, 8, -6, 0],
-                opacity: [0.2, 0.6, 0.3, 0.2],
-              }}
-              transition={{
-                duration: pt.d,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-              className="absolute rounded-full bg-indigo-500/40 dark:bg-[#b0c6ff]"
-            />
-          ))}
-        </div>
-      )}
-
-      {/* STAGES 2–5: INCOMING WORDS CONVERGING WITH ANTIGRAVITY DRIFT */}
+      {/* Floating incoming terms with subtle motion */}
       {!prefersReduced && phase === "converging" && (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           {words.map((word) => (
@@ -245,114 +158,68 @@ export function PostLoginTransition({
                 y: word.origin.y,
                 rotate: word.origin.rotate,
                 opacity: 0,
-                scale: word.depth === "foreground" ? 1.05 : word.depth === "midground" ? 0.95 : 0.82,
               }}
               animate={{
-                x: [word.origin.x, word.origin.x * 0.35, 0],
-                y: [word.origin.y, word.origin.y * 0.35, 0],
-                rotate: [word.origin.rotate, word.origin.rotate * 0.3, 0],
-                opacity: [0, 0.85, 0.95, 0],
-                scale: [
-                  word.depth === "foreground" ? 1.05 : 0.95,
-                  word.depth === "foreground" ? 1.0 : 0.9,
-                  0.45,
-                ],
-                filter: ["blur(0px)", "blur(0px)", "blur(3px)"],
+                x: [word.origin.x, word.origin.x * 0.3, 0],
+                y: [word.origin.y, word.origin.y * 0.3, 0],
+                rotate: [word.origin.rotate, 0],
+                opacity: [0, 0.7, 0],
               }}
               transition={{
-                duration: 1.45,
+                duration: 1.3,
                 delay: word.delay,
-                times: [0, 0.65, 1],
-                ease: [0.16, 1, 0.3, 1],
+                ease: "easeOut",
               }}
-              className={`absolute flex items-center justify-center whitespace-nowrap px-3 py-1.5 ${getDepthStyle(
-                word.depth,
-              )} ${getTypeColor(word.type)}`}
+              className="absolute font-mono text-xs uppercase tracking-widest text-neutral-400"
             >
               {word.text}
             </motion.div>
           ))}
-
-          {/* Central Magnetic Bloom Pulse */}
-          <motion.div
-            initial={{ scale: 0.3, opacity: 0 }}
-            animate={{
-              scale: [0.3, 1.4, 0.9],
-              opacity: [0, 0.8, 0],
-            }}
-            transition={{
-              duration: 0.6,
-              delay: 1.35,
-              ease: "easeOut",
-            }}
-            className="absolute h-40 w-40 rounded-full bg-radial from-indigo-500/30 via-sky-400/15 to-transparent blur-xl dark:from-[#3b71d9]/40 dark:via-[#b0c6ff]/20"
-          />
         </div>
       )}
 
-      {/* STAGE 6: FINAL UNIFIED MESSAGE */}
+      {/* Resolved Statement */}
       <AnimatePresence>
         {(phase === "resolved" || phase === "exiting") && (
           <motion.div
             key="final-message"
-            initial={{ opacity: 0, scale: 0.94, y: 8, filter: "blur(5px)" }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{
               opacity: phase === "exiting" ? 0 : 1,
-              scale: phase === "exiting" ? 0.98 : 1,
-              y: phase === "exiting" ? -6 : 0,
-              filter: phase === "exiting" ? "blur(2px)" : "blur(0px)",
+              y: phase === "exiting" ? -8 : 0,
             }}
-            exit={{ opacity: 0, scale: 0.98, y: -6 }}
-            transition={{
-              duration: phase === "exiting" ? 0.32 : 0.48,
-              ease: [0.22, 1, 0.36, 1],
-            }}
-            className="relative z-10 mx-auto max-w-xl px-6 text-center"
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="relative z-10 mx-auto max-w-2xl px-6 text-center"
           >
-            {/* Optional Personalized Greeting */}
-            {isStudent && resolvedName ? (
-              <motion.p
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, delay: 0.05 }}
-                className="mb-2.5 text-xs sm:text-sm font-semibold tracking-widest text-indigo-600 dark:text-[#b0c6ff] uppercase"
-              >
-                Welcome back, {resolvedName}
-              </motion.p>
-            ) : (
-              <motion.p
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, delay: 0.05 }}
-                className="mb-2.5 text-xs sm:text-sm font-semibold tracking-widest text-indigo-600 dark:text-[#b0c6ff] uppercase"
-              >
-                Welcome back
-              </motion.p>
-            )}
+            <p className="mb-3 font-mono text-xs uppercase tracking-widest text-neutral-400">
+              {isStudent && resolvedName ? `Welcome back, ${resolvedName}` : "Welcome back"}
+            </p>
 
-            {/* Primary Headline with Restrained Accent Emphasis */}
-            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-[#f1f0e8] leading-snug sm:leading-tight">
+            <h1
+              className="text-4xl sm:text-5xl md:text-6xl font-normal leading-[1.05] tracking-tight text-white"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
               {role === "student" ? (
                 <>
-                  Find <span className="text-[#4f46e5] dark:text-[#3b71d9] font-black drop-shadow-[0_0_16px_rgba(79,70,229,0.25)] dark:drop-shadow-[0_0_16px_rgba(59,113,217,0.5)]">opportunities</span> that fit you.
+                  Find <em className="not-italic text-neutral-400">opportunities</em> that fit you.
                 </>
               ) : role === "academician" ? (
                 <>
-                  Empower <span className="text-[#4f46e5] dark:text-[#3b71d9] font-black drop-shadow-[0_0_16px_rgba(79,70,229,0.25)] dark:drop-shadow-[0_0_16px_rgba(59,113,217,0.5)]">academic excellence</span>.
+                  Empower <em className="not-italic text-neutral-400">academic excellence</em>.
                 </>
               ) : role === "institution" ? (
                 <>
-                  Institutional <span className="text-[#4f46e5] dark:text-[#3b71d9] font-black drop-shadow-[0_0_16px_rgba(79,70,229,0.25)] dark:drop-shadow-[0_0_16px_rgba(59,113,217,0.5)]">intelligence</span>.
+                  Institutional <em className="not-italic text-neutral-400">intelligence</em>.
                 </>
               ) : (
                 <>
-                  Find <span className="text-[#4f46e5] dark:text-[#3b71d9] font-black drop-shadow-[0_0_16px_rgba(79,70,229,0.25)] dark:drop-shadow-[0_0_16px_rgba(59,113,217,0.5)]">talent</span> that fits.
+                  Find <em className="not-italic text-neutral-400">talent</em> that fits.
                 </>
               )}
             </h1>
 
-            {/* Supporting Subtitle with Source Serif 4 italic */}
-            <p className="mt-3 text-xs sm:text-sm font-medium text-slate-600 dark:text-[#98a4b3] leading-relaxed max-w-md mx-auto">
+            <p className="mt-4 text-sm font-normal text-neutral-300 leading-relaxed max-w-md mx-auto">
               {role === "student"
                 ? "Your verified skills are ready to work for you."
                 : role === "academician"
@@ -362,21 +229,20 @@ export function PostLoginTransition({
                 : "Discover candidates through evidence-backed skills."}
             </p>
 
-            {/* Subtle verification badge indicator */}
-            <div className="mt-5 flex items-center justify-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-[#dedbc8]">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>Verifiable match engine active</span>
+            <div className="mt-8 inline-flex items-center gap-2 border border-white/10 px-3 py-1 rounded-sm font-mono text-[11px] uppercase tracking-wider text-neutral-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+              <span>Verifiable compute engine active</span>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Subtle Skip button in bottom corner */}
-      <div className="absolute bottom-5 right-5 z-20">
+      {/* Skip action */}
+      <div className="absolute bottom-6 right-6 z-20">
         <button
           type="button"
           onClick={() => onComplete()}
-          className="rounded-lg px-3 py-1.5 text-[11px] font-medium text-slate-600 hover:text-slate-900 bg-white/80 hover:bg-white border border-slate-200/80 shadow-xs dark:text-[#98a4b3] dark:hover:text-[#f1f0e8] dark:bg-[#151e29]/60 dark:hover:bg-[#151e29] dark:border-white/[0.08] transition-all cursor-pointer backdrop-blur-xs"
+          className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 font-mono text-xs text-neutral-400 hover:text-white hover:border-white/20 transition-colors cursor-pointer"
         >
           Skip (Esc)
         </button>

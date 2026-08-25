@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { Briefcase, Users, PlusCircle, Search } from "lucide-react";
+import { Briefcase, Users, PlusCircle, Search, Edit3, Trash2 } from "lucide-react";
 import { ApiError, api } from "../api";
 import type { CandidateMatch, Internship, InternshipRequirementInput, MatchExplanation, Skill } from "../api";
 import { EmptyState, ErrorState, LoadingState } from "../components/AsyncState";
@@ -9,6 +9,7 @@ import { TypewriterText } from "../components/TypewriterText";
 import { TypewriterReveal } from "../components/TypewriterReveal";
 import { diagonalPageVariants, reducedMotionVariants, pageAssemblyItemVariants } from "../theme/motion";
 import type { RecruiterTab } from "../App";
+import { LiquidGlassButton } from "../components/ui/EditorialPrimitives";
 
 const recruiterHeaderMap: Record<RecruiterTab, { title: string; subtitle: string }> = {
   overview: {
@@ -117,7 +118,7 @@ export function RecruiterDashboard({
   const showAll = activeTab === "overview";
 
   return (
-    <div className="relative w-full min-h-[calc(100vh-8rem)]">
+    <div className="relative w-full min-h-[calc(100vh-8rem)] text-white font-sans">
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.div
           key={activeTab}
@@ -126,239 +127,233 @@ export function RecruiterDashboard({
           animate="animate"
           exit="exit"
           style={{ transformOrigin: "50% 30vh" }}
-          className="w-full relative space-y-8 text-slate-900 dark:text-slate-100"
+          className="w-full relative space-y-8"
         >
-        {/* Header */}
-        <motion.header variants={prefersReducedMotion ? undefined : pageAssemblyItemVariants} className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-            <Briefcase className="h-3.5 w-3.5" />
-            <span>Recruiter Workspace</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 capitalize">
-            <TypewriterText
-              key={`${activeTab}-rec-title`}
-              text={recruiterHeaderMap[activeTab]?.title || "Evidence-Backed Candidate Matching"}
-              speed={16}
-              delay={0.02}
-            />
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            <TypewriterText
-              key={`${activeTab}-rec-sub`}
-              text={recruiterHeaderMap[activeTab]?.subtitle || "Candidate rankings expose only authorized, persisted match records with zero demographic bias."}
-              speed={12}
-              delay={0.08}
-            />
-          </p>
-        </motion.header>
+          {/* Header */}
+          <motion.header variants={prefersReducedMotion ? undefined : pageAssemblyItemVariants} className="space-y-1">
+            <div className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+              <Briefcase className="h-3.5 w-3.5 text-white/80" />
+              <span>Recruiter Workstation</span>
+            </div>
+            <h1 className="text-3xl font-normal text-white" style={{ fontFamily: "var(--font-display)" }}>
+              <TypewriterText
+                key={`${activeTab}-rec-title`}
+                text={recruiterHeaderMap[activeTab]?.title || "Evidence-Backed Candidate Matching"}
+                speed={16}
+                delay={0.02}
+              />
+            </h1>
+            <p className="text-xs text-neutral-400">
+              <TypewriterText
+                key={`${activeTab}-rec-sub`}
+                text={recruiterHeaderMap[activeTab]?.subtitle || "Candidate rankings expose only authorized, persisted match records with zero demographic bias."}
+                speed={12}
+                delay={0.08}
+              />
+            </p>
+          </motion.header>
 
-        {error && <ErrorState message={error} onRetry={() => void loadInternships()} />}
+          {error && <ErrorState message={error} onRetry={() => void loadInternships()} />}
 
-        {/* Main Grid: Form + List */}
-        <motion.div variants={prefersReducedMotion ? undefined : pageAssemblyItemVariants} className="grid gap-6 xl:grid-cols-[.9fr_1.1fr]">
-          {(showAll || activeTab === "post_job") && (
-            <InternshipForm token={token} onCreated={() => void loadInternships()} />
-          )}
+          {/* Main Grid: Form + List */}
+          <motion.div variants={prefersReducedMotion ? undefined : pageAssemblyItemVariants} className="grid gap-6 xl:grid-cols-[.9fr_1.1fr]">
+            {(showAll || activeTab === "post_job") && (
+              <InternshipForm token={token} onCreated={() => void loadInternships()} />
+            )}
 
-          {/* Internships List */}
-          {(showAll || activeTab === "internships" || activeTab === "candidates") && (
-            <TypewriterReveal delay={0.12} duration={0.52} className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-5 sm:p-6 shadow-lg flex flex-col text-slate-900 dark:text-[#f1f0e8]">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3.5">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] flex items-center gap-2 font-sans">
-                    <Briefcase className="h-4 w-4 text-[#3b71d9] dark:text-[#b0c6ff]" />
-                    <span>Your Internships</span>
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-[#98a4b3] font-sans">Select an opportunity to inspect ranked candidates</p>
+            {/* Internships List */}
+            {(showAll || activeTab === "internships" || activeTab === "candidates") && (
+              <TypewriterReveal delay={0.12} duration={0.52} className="border border-white/10 bg-[#061524] p-6 rounded-md flex flex-col text-white">
+                <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                  <div>
+                    <h2 className="text-xl font-normal text-white flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
+                      <Briefcase className="h-4 w-4 text-white/80" />
+                      <span>Your Posted Internships</span>
+                    </h2>
+                    <p className="text-xs text-neutral-400 mt-0.5">Select an opportunity to inspect ranked candidate pools</p>
+                  </div>
+                  <span className="font-mono text-xs text-neutral-300 border border-white/15 px-2.5 py-0.5 rounded-xs">
+                    {internships.length} listings
+                  </span>
                 </div>
-                <span className="rounded-full bg-slate-100/80 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] px-2.5 py-0.5 text-xs font-bold text-slate-700 dark:text-[#dedbc8] backdrop-blur-xs">
-                  {internships.length} listings
-                </span>
-              </div>
 
-              <div className="mt-4 flex-1">
-                {internships.length ? (
-                  <>
-                    <ul className="space-y-2.5">
-                      {internships.map((internship) => {
-                        const isSelected = selected?.id === internship.id;
-                        return (
-                          <li
-                            key={internship.id}
-                            className={`rounded-2xl border p-4 transition-all backdrop-blur-md ${
-                              isSelected
-                                ? "border-[#3b71d9] dark:border-[#3b71d9] bg-blue-50/60 dark:bg-[#3b71d9]/20 shadow-xs ring-1 ring-[#3b71d9]/30"
-                                : "border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] hover:border-slate-300 dark:hover:border-white/[0.16]"
-                            }`}
-                          >
-                            <button
-                              type="button"
-                              onClick={() => void selectInternship(internship)}
-                              className="w-full text-left cursor-pointer"
+                <div className="mt-4 flex-1">
+                  {internships.length ? (
+                    <>
+                      <ul className="space-y-3">
+                        {internships.map((internship) => {
+                          const isSelected = selected?.id === internship.id;
+                          return (
+                            <li
+                              key={internship.id}
+                              className={`border p-4 rounded-sm transition-colors ${
+                                isSelected
+                                  ? "border-white bg-white/5"
+                                  : "border-white/10 bg-white/[0.02] hover:border-white/20"
+                              }`}
                             >
-                              <div className="flex items-start justify-between gap-2">
-                                <span
-                                  className={`font-bold text-sm sm:text-base font-sans ${
-                                    isSelected
-                                      ? "text-blue-950 dark:text-[#dedbc8]"
-                                      : "text-slate-900 dark:text-[#f1f0e8]"
-                                  }`}
-                                >
-                                  {internship.title}
-                                </span>
-                                {isSelected && (
-                                  <span className="rounded-full bg-[#3b71d9] text-white text-[10px] font-bold px-2 py-0.5 shrink-0">
-                                    Active View
+                              <button
+                                type="button"
+                                onClick={() => void selectInternship(internship)}
+                                className="w-full text-left cursor-pointer"
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <span className="text-base font-normal text-white" style={{ fontFamily: "var(--font-display)" }}>
+                                    {internship.title}
                                   </span>
-                                )}
-                              </div>
-                              <span className="mt-1 block text-xs text-slate-600 dark:text-[#98a4b3] line-clamp-2 leading-relaxed font-sans">
-                                {internship.description}
-                              </span>
-                            </button>
+                                  {isSelected && (
+                                    <span className="font-mono text-[9px] uppercase tracking-wider text-black bg-white px-2 py-0.5 rounded-xs font-semibold">
+                                      Active View
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="mt-1 block text-xs text-neutral-400 line-clamp-2 leading-relaxed font-sans">
+                                  {internship.description}
+                                </span>
+                              </button>
 
-                            <div className="mt-3 flex items-center justify-between border-t border-slate-100/80 dark:border-white/[0.08] pt-2.5">
-                              <span className="text-[11px] font-medium text-slate-500 dark:text-[#98a4b3] font-sans">
-                                {internship.requirements.length} required skill
-                                {internship.requirements.length === 1 ? "" : "s"}
-                              </span>
-                              <div className="flex items-center gap-3 text-xs font-semibold">
-                                <button
-                                  type="button"
-                                  onClick={() => void editInternship(internship)}
-                                  className="text-[#3b71d9] dark:text-[#b0c6ff] hover:text-blue-800 dark:hover:text-white transition-colors cursor-pointer font-sans"
-                                >
-                                  Edit
-                                </button>
-                                <span className="text-slate-300 dark:text-slate-700">·</span>
-                                <button
-                                  type="button"
-                                  onClick={() => void removeInternship(internship)}
-                                  className="text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 transition-colors cursor-pointer font-sans"
-                                >
-                                  Delete
-                                </button>
+                              <div className="mt-3 flex items-center justify-between border-t border-white/10 pt-2.5 font-mono text-xs">
+                                <span className="text-[11px] text-neutral-400">
+                                  {internship.requirements.length} required skill{internship.requirements.length === 1 ? "" : "s"}
+                                </span>
+                                <div className="flex items-center gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => void editInternship(internship)}
+                                    className="text-neutral-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                                  >
+                                    <Edit3 className="h-3 w-3" />
+                                    <span>Edit</span>
+                                  </button>
+                                  <span className="text-white/20">·</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => void removeInternship(internship)}
+                                    className="text-neutral-400 hover:text-red-400 transition-colors cursor-pointer flex items-center gap-1"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                    <span>Delete</span>
+                                  </button>
+                                </div>
                               </div>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
+                            </li>
+                          );
+                        })}
+                      </ul>
 
-                    {internshipTotal > 20 && (
-                      <div className="mt-4 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3 text-xs font-semibold">
-                        <button
-                          disabled={internshipPage === 1}
-                          onClick={() => setInternshipPage((page) => page - 1)}
-                          className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-3 py-1.5 text-slate-700 dark:text-slate-300 disabled:opacity-40 cursor-pointer"
-                        >
-                          Previous
-                        </button>
-                        <span className="text-slate-500 dark:text-slate-400">Page {internshipPage}</span>
-                        <button
-                          disabled={internshipPage * 20 >= internshipTotal}
-                          onClick={() => setInternshipPage((page) => page + 1)}
-                          className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-3 py-1.5 text-slate-700 dark:text-slate-300 disabled:opacity-40 cursor-pointer"
-                        >
-                          Next
-                        </button>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <EmptyState title="No internships yet">
-                    Create your first internship posting to begin deterministic candidate matching.
-                  </EmptyState>
-                )}
+                      {internshipTotal > 20 && (
+                        <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3 font-mono text-xs">
+                          <button
+                            disabled={internshipPage === 1}
+                            onClick={() => setInternshipPage((page) => page - 1)}
+                            className="rounded-full border border-white/15 px-3 py-1 text-neutral-300 disabled:opacity-30 cursor-pointer"
+                          >
+                            Previous
+                          </button>
+                          <span className="text-neutral-400">Page {internshipPage}</span>
+                          <button
+                            disabled={internshipPage * 20 >= internshipTotal}
+                            onClick={() => setInternshipPage((page) => page + 1)}
+                            className="rounded-full border border-white/15 px-3 py-1 text-neutral-300 disabled:opacity-30 cursor-pointer"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <EmptyState title="No internships yet">
+                      Create your first internship posting to begin deterministic candidate matching.
+                    </EmptyState>
+                  )}
+                </div>
+              </TypewriterReveal>
+            )}
+          </motion.div>
+
+          {/* Selected Internship Candidate Matches */}
+          {(showAll || activeTab === "candidates") && selected && (
+            <TypewriterReveal
+              delay={0.18}
+              duration={0.52}
+              className="border border-white/10 bg-[#061524] p-6 rounded-md space-y-4 text-white"
+            >
+              <div className="flex items-baseline justify-between border-b border-white/10 pb-4">
+                <div>
+                  <h2 className="text-xl font-normal text-white flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
+                    <Users className="h-4 w-4 text-white/80" />
+                    <span>
+                      Ranked Candidates for <span className="underline underline-offset-4">{selected.title}</span>
+                    </span>
+                  </h2>
+                  <p className="text-xs text-neutral-400 mt-0.5">
+                    Candidates ordered purely by verifiable skill overlap, embeddings, and evidence depth.
+                  </p>
+                </div>
               </div>
+
+              {!matches ? (
+                <LoadingState label="Computing persisted candidate matches" />
+              ) : matches.length ? (
+                <ol className="space-y-3">
+                  {matches.map((match, index) => (
+                    <li
+                      key={match.id}
+                      className="flex flex-wrap items-center justify-between gap-4 border border-white/10 bg-white/[0.02] p-4.5 rounded-sm hover:border-white/20 transition-colors"
+                    >
+                      <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs text-neutral-400">
+                            #{index + 1}
+                          </span>
+                          <h3 className="text-base font-normal text-white" style={{ fontFamily: "var(--font-display)" }}>
+                            {match.candidate_label}
+                          </h3>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
+                          <span className="border border-white/10 bg-white/[0.02] px-2 py-0.5 text-neutral-300 rounded-xs">
+                            Exact: {Math.round(match.deterministic_score * 100)}%
+                          </span>
+                          <span className="border border-white/10 bg-white/[0.02] px-2 py-0.5 text-neutral-300 rounded-xs">
+                            Semantic: {Math.round(match.semantic_score * 100)}%
+                          </span>
+                          <span className="border border-white/15 bg-white/5 px-2 py-0.5 text-white rounded-xs">
+                            Verified Bonus: +{Math.round(match.verification_bonus * 100)}%
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        <div className="text-right font-mono">
+                          <strong className="text-2xl font-normal text-white block leading-none" style={{ fontFamily: "var(--font-display)" }}>
+                            {Math.round(match.final_score * 100)}%
+                          </strong>
+                          <span className="text-[10px] uppercase text-neutral-400">
+                            Fit Score
+                          </span>
+                        </div>
+                        <LiquidGlassButton
+                          onClick={() => void showExplanation(match)}
+                          size="sm"
+                        >
+                          View Breakdown
+                        </LiquidGlassButton>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <EmptyState title="No candidate matches yet">
+                  No candidate profiles match the current requirement criteria.
+                </EmptyState>
+              )}
             </TypewriterReveal>
           )}
+
+          {/* Match Explanation Modal */}
+          {explanation && <MatchExplanationPanel explanation={explanation} onClose={() => setExplanation(null)} />}
         </motion.div>
-
-        {/* Selected Internship Candidate Matches */}
-        {(showAll || activeTab === "candidates") && selected && (
-          <TypewriterReveal
-            delay={0.18}
-            duration={0.52}
-            className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-5 sm:p-6 shadow-lg space-y-4 text-slate-900 dark:text-[#f1f0e8]"
-          >
-            <div className="flex items-baseline justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3.5">
-              <div>
-                <h2 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] flex items-center gap-2 font-sans">
-                  <Users className="h-4 w-4 text-[#3b71d9] dark:text-[#b0c6ff]" />
-                  <span>
-                    Ranked Candidates for <span className="text-[#3b71d9] dark:text-[#b0c6ff]">{selected.title}</span>
-                  </span>
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-0.5 font-sans">
-                  Candidates ordered purely by verifiable skill overlap, embeddings, and evidence depth.
-                </p>
-              </div>
-            </div>
-
-            {!matches ? (
-              <LoadingState label="Computing persisted candidate matches" />
-            ) : matches.length ? (
-              <ol className="space-y-3">
-                {matches.map((match, index) => (
-                  <li
-                    key={match.id}
-                    className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/40 dark:bg-white/[0.03] backdrop-blur-md p-4.5 hover:border-[#3b71d9]/50 dark:hover:border-blue-500/50 transition-all text-slate-900 dark:text-[#f1f0e8]"
-                  >
-                    <div className="space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="inline-flex h-5 items-center justify-center rounded bg-blue-100 dark:bg-[#3b71d9]/25 border border-blue-200/60 dark:border-blue-500/30 px-1.5 text-[11px] font-extrabold text-[#3b71d9] dark:text-[#b0c6ff]">
-                          #{index + 1}
-                        </span>
-                        <h3 className="font-bold text-slate-900 dark:text-[#f1f0e8] text-sm sm:text-base font-sans">
-                          {match.candidate_label}
-                        </h3>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 text-xs">
-                        <span className="rounded bg-slate-100/80 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/10 px-2 py-0.5 font-medium text-slate-700 dark:text-[#f1f0e8] backdrop-blur-xs">
-                          Exact: {Math.round(match.deterministic_score * 100)}%
-                        </span>
-                        <span className="rounded bg-slate-100/80 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/10 px-2 py-0.5 font-medium text-slate-700 dark:text-[#f1f0e8] backdrop-blur-xs">
-                          Semantic: {Math.round(match.semantic_score * 100)}%
-                        </span>
-                        <span className="rounded bg-emerald-50/80 dark:bg-emerald-950/60 border border-emerald-200/60 dark:border-emerald-800/60 px-2 py-0.5 font-medium text-emerald-700 dark:text-emerald-300 backdrop-blur-xs">
-                          Verified Bonus: +{Math.round(match.verification_bonus * 100)}%
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <strong className="text-2xl font-black text-[#3b71d9] dark:text-[#b0c6ff] block leading-none font-sans">
-                          {Math.round(match.final_score * 100)}%
-                        </strong>
-                        <span className="text-[10px] font-semibold text-slate-400 dark:text-[#98a4b3] uppercase tracking-wider font-sans">
-                          Fit Score
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => void showExplanation(match)}
-                        className="rounded-lg border border-[#3b71d9] dark:border-blue-500 bg-blue-50/50 dark:bg-[#3b71d9]/20 px-3.5 py-2 text-xs font-bold text-[#3b71d9] dark:text-[#b0c6ff] hover:bg-[#3b71d9] hover:text-white transition-colors cursor-pointer font-sans"
-                      >
-                        View Breakdown
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <EmptyState title="No candidate matches yet">
-                No candidate profiles match the current requirement criteria.
-              </EmptyState>
-            )}
-          </TypewriterReveal>
-        )}
-
-        {/* Match Explanation Modal / Drawer */}
-        {explanation && <MatchExplanationPanel explanation={explanation} />}
-      </motion.div>
-    </AnimatePresence>
+      </AnimatePresence>
     </div>
   );
 }
@@ -418,63 +413,68 @@ function InternshipForm({ token, onCreated }: { token: string; onCreated: () => 
   }
 
   return (
-    <section className="rounded-3xl border border-slate-200/70 dark:border-white/[0.08] bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl p-5 sm:p-6 shadow-lg text-slate-900 dark:text-[#f1f0e8]">
-      <div className="border-b border-slate-100 dark:border-white/[0.08] pb-3.5">
-        <h2 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] flex items-center gap-2 font-sans">
-          <PlusCircle className="h-4 w-4 text-[#3b71d9] dark:text-[#b0c6ff]" />
+    <section className="border border-white/10 bg-[#061524] p-6 rounded-md text-white font-sans space-y-4">
+      <div className="border-b border-white/10 pb-4">
+        <h2 className="text-xl font-normal text-white flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
+          <PlusCircle className="h-4 w-4 text-white/80" />
           <span>Post New Internship</span>
         </h2>
-        <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-0.5 font-sans">Define criteria with canonical taxonomy skills</p>
+        <p className="text-xs text-neutral-400 mt-0.5">Define criteria with canonical taxonomy skills</p>
       </div>
 
-      <form onSubmit={submit} className="mt-4 space-y-3.5">
-        <label className="block text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] font-sans">
-          Job / Internship Title
+      <form onSubmit={submit} className="space-y-4">
+        <div>
+          <label className="block font-mono text-[10px] uppercase tracking-wider text-neutral-400 mb-1">
+            Job / Internship Title
+          </label>
           <input
             required
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             placeholder="e.g. Backend Platform Engineer Intern"
-            className="mt-1 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-3.5 py-2 text-xs text-slate-900 dark:text-[#f1f0e8] focus:border-[#3b71d9] focus:outline-none"
+            className="w-full rounded-md border border-white/15 bg-white/[0.03] px-3.5 py-2 text-xs text-white focus:border-white focus:outline-none"
           />
-        </label>
+        </div>
 
-        <label className="block text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] font-sans">
-          Role Description & Scope
+        <div>
+          <label className="block font-mono text-[10px] uppercase tracking-wider text-neutral-400 mb-1">
+            Role Description & Scope
+          </label>
           <textarea
             required
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             placeholder="Describe the internship responsibilities, stack, and project goals..."
-            className="mt-1 min-h-24 w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md px-3.5 py-2 text-xs text-slate-900 dark:text-[#f1f0e8] focus:border-[#3b71d9] focus:outline-none"
+            rows={3}
+            className="w-full rounded-md border border-white/15 bg-white/[0.03] px-3.5 py-2 text-xs text-white focus:border-white focus:outline-none"
           />
-        </label>
+        </div>
 
         <div className="relative">
-          <label className="block text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] font-sans">
+          <label className="block font-mono text-[10px] uppercase tracking-wider text-neutral-400 mb-1">
             Canonical Skill Requirement
-            <div className="relative mt-1">
-              <input
-                value={skillQuery}
-                onChange={(event) => void searchSkills(event.target.value)}
-                className="w-full rounded-lg border border-slate-300 dark:border-white/10 bg-white/80 dark:bg-white/[0.04] backdrop-blur-md pl-9 pr-3.5 py-2 text-xs text-slate-900 dark:text-[#f1f0e8] focus:border-[#3b71d9] focus:outline-none"
-                placeholder="Search taxonomy (e.g. Python, React, PostgreSQL)..."
-              />
-              <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
-            </div>
           </label>
+          <div className="relative">
+            <input
+              value={skillQuery}
+              onChange={(event) => void searchSkills(event.target.value)}
+              className="w-full rounded-md border border-white/15 bg-white/[0.03] pl-9 pr-3.5 py-2 text-xs text-white focus:border-white focus:outline-none"
+              placeholder="Search taxonomy (e.g. Python, React, PostgreSQL)..."
+            />
+            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-neutral-400 pointer-events-none" />
+          </div>
 
           {skills.length > 0 && (
-            <ul className="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#151e29] shadow-lg">
+            <ul className="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-md border border-white/15 bg-[#061524] shadow-xl">
               {skills.map((skill) => (
-                <li key={skill.id} className="border-b border-slate-50 dark:border-white/[0.04] last:border-0">
+                <li key={skill.id} className="border-b border-white/5 last:border-0">
                   <button
                     type="button"
                     onClick={() => addRequirement(skill)}
-                    className="flex w-full items-center justify-between px-3.5 py-2 text-left text-xs hover:bg-blue-50 dark:hover:bg-[#1a2430] transition-colors cursor-pointer"
+                    className="flex w-full items-center justify-between px-3.5 py-2 text-left text-xs hover:bg-white/5 transition-colors cursor-pointer"
                   >
-                    <span className="font-semibold text-slate-900 dark:text-[#f1f0e8]">{skill.canonical_name}</span>
-                    <span className="text-[11px] text-slate-400 dark:text-[#dedbc8] uppercase tracking-wider">{skill.category}</span>
+                    <span className="font-mono text-xs text-white">{skill.canonical_name}</span>
+                    <span className="font-mono text-[10px] text-neutral-400 uppercase tracking-wider">{skill.category}</span>
                   </button>
                 </li>
               ))}
@@ -484,15 +484,15 @@ function InternshipForm({ token, onCreated }: { token: string; onCreated: () => 
 
         {/* Selected Requirements Pills */}
         <div className="space-y-1.5">
-          <span className="text-[11px] font-semibold text-slate-500 dark:text-[#98a4b3] uppercase tracking-wider block font-sans">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400 block">
             Selected Requirements ({requirements.length})
           </span>
-          <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 rounded-xl border border-dashed border-slate-200 dark:border-white/10 bg-slate-50/40 dark:bg-white/[0.02]">
+          <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2.5 rounded-sm border border-dashed border-white/10 bg-white/[0.01]">
             {requirements.length ? (
               requirements.map((requirement) => (
                 <span
                   key={requirement.skill_id}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200/60 dark:border-blue-900/60 bg-blue-50 dark:bg-[#182337] px-2.5 py-1 text-xs font-semibold text-[#3b71d9] dark:text-[#b0c6ff]"
+                  className="inline-flex items-center gap-1.5 rounded-xs border border-white/20 bg-white/5 px-2.5 py-0.5 font-mono text-xs text-white"
                 >
                   {requirement.name}
                   <button
@@ -503,14 +503,14 @@ function InternshipForm({ token, onCreated }: { token: string; onCreated: () => 
                         current.filter((item) => item.skill_id !== requirement.skill_id)
                       )
                     }
-                    className="font-bold text-[#3b71d9] hover:text-blue-700 dark:hover:text-blue-200 cursor-pointer ml-0.5"
+                    className="text-neutral-400 hover:text-white cursor-pointer ml-1"
                   >
                     ×
                   </button>
                 </span>
               ))
             ) : (
-              <span className="text-xs text-slate-400 dark:text-slate-500 italic py-0.5 px-1 font-sans">
+              <span className="text-xs text-neutral-500 font-mono py-0.5 px-1">
                 No skills selected yet. Search above to add.
               </span>
             )}
@@ -518,18 +518,18 @@ function InternshipForm({ token, onCreated }: { token: string; onCreated: () => 
         </div>
 
         {error && (
-          <p role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">
+          <p role="alert" className="text-xs text-red-300 font-mono">
             {error}
           </p>
         )}
 
-        <button
+        <LiquidGlassButton
           type="submit"
           disabled={isSubmitting}
-          className="w-full rounded-lg bg-[#3b71d9] py-2.5 text-xs font-semibold text-white shadow-md shadow-[#3b71d9]/25 hover:bg-[#2563eb] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 transition-colors cursor-pointer font-sans"
+          className="w-full justify-center"
         >
           {isSubmitting ? "Posting Opportunity..." : "Publish Internship"}
-        </button>
+        </LiquidGlassButton>
       </form>
     </section>
   );

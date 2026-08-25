@@ -1,16 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import {
-  BookOpen,
-  CheckCircle2,
-  ExternalLink,
-  Star,
-  Clock,
-  PlayCircle,
-} from "lucide-react";
+import { ExternalLink, CheckCircle2 } from "lucide-react";
 import { api } from "../api/service";
 import { errorMessage } from "../api/client";
 import type { LearningCourse } from "../api/types";
 import { toast } from "sonner";
+import { EditorialButton, EditorialPageHeader, EditorialTextTabs } from "./ui/EditorialPrimitives";
 
 interface Props {
   token: string;
@@ -64,94 +58,91 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
     }
   }
 
-  const categories = ["All", "Backend", "Frontend", "AI", "DevOps"];
+  const categoryTabs = [
+    { id: "All", label: "All" },
+    { id: "Backend", label: "Backend" },
+    { id: "Frontend", label: "Frontend" },
+    { id: "AI", label: "AI & ML" },
+    { id: "DevOps", label: "DevOps & Cloud" },
+  ];
 
   return (
-    <div className="space-y-6">
-      {/* Header & Filter Card */}
-      <div className="bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/[0.08] shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <BookOpen className="h-5 w-5 text-[#3b71d9] dark:text-[#b0c6ff]" />
-            <h2 className="text-lg font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">Curated Learning Hub</h2>
-          </div>
-          <p className="text-sm text-slate-500 dark:text-[#98a4b3] font-sans">
-            Targeted coursework mapped directly to closed skill gaps and high-demand industry roles.
-          </p>
-        </div>
+    <div className="space-y-6 font-sans">
+      {/* Editorial Page Header */}
+      <EditorialPageHeader
+        category="STUDENT"
+        index="LEARNING"
+        title="Curated Learning Hub"
+        subtitle="Targeted coursework mapped directly to close verified skill gaps and meet requirements for high-demand opportunities."
+      />
 
-        <div className="flex flex-wrap gap-1.5 bg-slate-100/80 dark:bg-white/[0.04] p-1.5 rounded-2xl border border-slate-200/50 dark:border-white/[0.06] backdrop-blur-xs">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                selectedCategory === cat
-                  ? "bg-white dark:bg-[#3b71d9]/25 text-[#3b71d9] dark:text-[#b0c6ff] shadow-xs border border-slate-200/60 dark:border-blue-500/40"
-                  : "text-slate-600 dark:text-[#98a4b3] hover:text-slate-900 dark:hover:text-white"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Clean Category Text Tabs */}
+      <EditorialTextTabs
+        tabs={categoryTabs}
+        activeTab={selectedCategory}
+        onChange={setSelectedCategory}
+      />
 
-      {/* Courses Grid */}
+      {/* Courses List as Dark Editorial Records */}
       {loading ? (
-        <div className="p-8 text-center bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl border border-slate-200/70 dark:border-white/[0.08] shadow-lg">
-          <div className="inline-block animate-spin h-8 w-8 border-4 border-[#3b71d9] border-t-transparent rounded-full mb-3" />
-          <p className="text-sm text-slate-500 dark:text-[#98a4b3] font-sans">Loading recommended learning catalog...</p>
+        <div className="p-12 text-center border border-white/10 bg-[#071E2B] rounded-md">
+          <div className="inline-block animate-spin h-6 w-6 border-2 border-white/20 border-t-white rounded-full mb-3" />
+          <p className="font-mono text-xs text-[#8796A2]">Loading recommended coursework catalog...</p>
+        </div>
+      ) : courses.length === 0 ? (
+        <div className="p-12 text-center border border-white/10 bg-[#071E2B] rounded-md font-mono text-xs text-[#8796A2]">
+          No courses found for the selected category.
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {courses.map((course) => (
             <div
               key={course.id}
-              className="bg-white/60 dark:bg-[#0c121e]/45 backdrop-blur-xl rounded-3xl p-5 sm:p-6 border border-slate-200/70 dark:border-white/[0.08] shadow-lg flex flex-col justify-between space-y-4 hover:border-slate-300 dark:hover:border-white/[0.18] transition-all"
+              className="border border-white/10 bg-[#071E2B] p-6 rounded-md flex flex-col justify-between space-y-5 transition-colors hover:border-white/20"
             >
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-blue-50/80 dark:bg-blue-900/30 text-[#3b71d9] dark:text-[#b0c6ff] backdrop-blur-xs">
-                    {course.category} • {course.provider}
+              <div className="space-y-3">
+                {/* Category & Provider Eyebrow */}
+                <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-[#8796A2]">
+                  <span>
+                    {course.category} / {course.provider}
                   </span>
-                  <div className="flex items-center gap-1 text-xs font-bold text-amber-500">
-                    <Star className="h-3.5 w-3.5 fill-amber-500" />
-                    <span>{course.rating}</span>
-                  </div>
+                  <span className="text-[#9CC7D8]">★ {course.rating}</span>
                 </div>
 
-                <h3 className="text-base font-bold text-slate-900 dark:text-[#f1f0e8] font-sans">{course.title}</h3>
-                <p className="text-xs text-slate-500 dark:text-[#98a4b3] mt-1 line-clamp-2 font-sans">{course.description}</p>
+                {/* Course Title in Instrument Serif */}
+                <h3
+                  className="text-xl font-normal text-[#F7F8F8] leading-tight"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  {course.title}
+                </h3>
 
-                {/* Explainable recommendation badge */}
+                {/* Recommendation Reason */}
                 {course.recommendation_reason && (
-                  <div className="mt-2.5 p-2 rounded-xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/40 text-[11px] text-[#3b71d9] dark:text-[#b0c6ff] font-medium flex items-start gap-1.5 backdrop-blur-xs font-sans">
-                    <span className="shrink-0 font-bold">💡 Why:</span>
-                    <span>{course.recommendation_reason}</span>
-                  </div>
+                  <p className="text-xs text-[#9CC7D8] font-mono leading-relaxed">
+                    Recommended: {course.recommendation_reason}
+                  </p>
                 )}
 
-                {/* Skills tags */}
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  {course.skills.map((s) => (
-                    <span
-                      key={s}
-                      className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100/80 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300"
-                    >
-                      {s}
-                    </span>
-                  ))}
+                <p className="text-xs text-[#BEC8CF] leading-relaxed line-clamp-2">
+                  {course.description}
+                </p>
+
+                {/* Skills as Dot-Separated Text */}
+                <div className="pt-1">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-[#8796A2] block mb-1">
+                    Skills Covered
+                  </span>
+                  <p className="text-xs text-[#BEC8CF] font-mono">
+                    {course.skills.join(" · ")}
+                  </p>
                 </div>
               </div>
 
-              {/* Course footer / progress */}
-              <div className="pt-4 border-t border-slate-100 dark:border-white/[0.06] space-y-3">
-                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-[#98a4b3] font-sans">
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-3.5 w-3.5" />
-                    {course.duration_hours} hours total
-                  </span>
+              {/* Course Footer & Actions */}
+              <div className="pt-4 border-t border-white/10 space-y-3">
+                <div className="flex items-center justify-between text-xs font-mono text-[#8796A2]">
+                  <span>Duration: {course.duration_hours} Hours</span>
                   <a
                     href={course.url || "#"}
                     target={course.url && course.url !== "#" ? "_blank" : undefined}
@@ -162,7 +153,7 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
                         toast.info(`Curriculum Module: ${course.title} — ${course.description}`);
                       }
                     }}
-                    className="text-[#3b71d9] dark:text-[#b0c6ff] hover:underline flex items-center gap-1 cursor-pointer font-sans"
+                    className="text-[#9CC7D8] hover:text-[#F7F8F8] flex items-center gap-1 transition-colors cursor-pointer"
                   >
                     <span>Curriculum</span>
                     <ExternalLink className="h-3 w-3" />
@@ -170,36 +161,37 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
                 </div>
 
                 {course.is_enrolled ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs font-sans">
-                      <span className="font-semibold text-slate-700 dark:text-slate-300">
-                        {course.progress >= 100 ? "Completed" : `In Progress: ${course.progress}%`}
+                  <div className="space-y-2 pt-1">
+                    <div className="flex items-center justify-between text-xs font-mono">
+                      <span className="text-[#BEC8CF]">
+                        {course.progress >= 100 ? "Status: Completed" : `Progress: ${course.progress}%`}
                       </span>
                       {course.progress < 100 && (
                         <button
+                          type="button"
                           onClick={() => handleUpdateProgress(course.id, 100)}
-                          className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 cursor-pointer flex items-center gap-1 font-sans"
+                          className="text-[#9CC7D8] hover:text-[#F7F8F8] cursor-pointer flex items-center gap-1 transition-colors"
                         >
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                          Mark Completed
+                          <CheckCircle2 className="h-3 w-3" />
+                          <span>Mark Completed</span>
                         </button>
                       )}
                     </div>
-                    <div className="w-full bg-slate-100 dark:bg-white/[0.08] h-2 rounded-full overflow-hidden">
+                    <div className="w-full bg-white/5 h-1.5 rounded-xs overflow-hidden">
                       <div
-                        className="bg-emerald-500 h-full rounded-full transition-all duration-300"
+                        className="bg-[#9CC7D8] h-full rounded-xs transition-all duration-300"
                         style={{ width: `${course.progress}%` }}
                       />
                     </div>
                   </div>
                 ) : (
-                  <button
+                  <EditorialButton
+                    variant="primary"
                     onClick={() => handleEnroll(course.id)}
-                    className="w-full py-2 bg-[#3b71d9] hover:bg-[#2f5db3] text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs shadow-[#3b71d9]/20 font-sans"
+                    className="w-full justify-center"
                   >
-                    <PlayCircle className="h-4 w-4" />
                     Enroll in Course
-                  </button>
+                  </EditorialButton>
                 )}
               </div>
             </div>

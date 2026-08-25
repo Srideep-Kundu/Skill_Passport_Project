@@ -93,6 +93,38 @@ describe("ResumeIntelligence", () => {
     });
   });
 
+  it("does not activate a replacement while extraction jobs are still processing", async () => {
+    const uploadedResume: ResumeDocument = {
+      ...completedResume,
+      id: "replacement-resume",
+      is_active: false,
+      parse_status: "uploaded",
+      skills_status: "not_started",
+      parsed_summary: null,
+    };
+    const processingResume: ResumeDocument = {
+      ...uploadedResume,
+      parse_status: "processing_skills",
+      skills_status: "processing",
+      pending_jobs: 3,
+      total_jobs: 3,
+    };
+
+    vi.spyOn(api, "resumes")
+      .mockResolvedValueOnce({ page: 1, page_size: 20, total: 0, items: [] })
+      .mockResolvedValue({ page: 1, page_size: 20, total: 1, items: [processingResume] });
+    vi.spyOn(api, "uploadResume").mockResolvedValue(uploadedResume);
+    vi.spyOn(api, "parseResume").mockResolvedValue(processingResume);
+    const activate = vi.spyOn(api, "activateResume").mockResolvedValue(completedResume);
+
+    render(<ResumeIntelligence token="token" onChanged={vi.fn()} />);
+    const file = new File(["resume"], "replacement.pdf", { type: "application/pdf" });
+    fireEvent.change(await screen.findByLabelText("Resume file"), { target: { files: [file] } });
+
+    await waitFor(() => expect(api.parseResume).toHaveBeenCalledWith(uploadedResume.id, "token"));
+    expect(activate).not.toHaveBeenCalled();
+  });
+
   it("renders structured categorized skill chips and metrics without comma-separated text wall", async () => {
     vi.spyOn(api, "resumes").mockResolvedValue({
       page: 1,

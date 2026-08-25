@@ -257,22 +257,22 @@ def claims_from_parsed(parsed: ResumeParsedData, full_text: str = "") -> list[Ev
         claims.append(EvidenceClaim("skills", EvidenceType.coursework, "Resume technical skills", f"Explicit technical skills listed in resume: {skills}", skills))
 
     # 2. Key projects (top 4 high-impact project records)
-    for item in parsed.projects[:4]:
-        if not _looks_like_instruction(item.source_span):
-            claims.append(EvidenceClaim("projects", EvidenceType.project, item.title, item.description, item.source_span))
+    for project in parsed.projects[:4]:
+        if not _looks_like_instruction(project.source_span):
+            claims.append(EvidenceClaim("projects", EvidenceType.project, project.title, project.description, project.source_span))
 
     # 3. Work experience (top 3 key experience records)
-    for item in parsed.experience[:3]:
-        if not _looks_like_instruction(item.source_span):
-            claims.append(EvidenceClaim("experience", EvidenceType.project, item.title, item.description, item.source_span))
+    for experience in parsed.experience[:3]:
+        if not _looks_like_instruction(experience.source_span):
+            claims.append(EvidenceClaim("experience", EvidenceType.project, experience.title, experience.description, experience.source_span))
 
     # 4. Certifications & Achievements (top 2 each)
-    for item in parsed.certifications[:2]:
-        if not _looks_like_instruction(item.source_span):
-            claims.append(EvidenceClaim("certifications", EvidenceType.certification, item.name, item.detail, item.source_span))
-    for item in parsed.achievements[:2]:
-        if not _looks_like_instruction(item.source_span):
-            claims.append(EvidenceClaim("achievements", EvidenceType.competition, item.title, item.detail, item.source_span))
+    for certification in parsed.certifications[:2]:
+        if not _looks_like_instruction(certification.source_span):
+            claims.append(EvidenceClaim("certifications", EvidenceType.certification, certification.name, certification.detail, certification.source_span))
+    for achievement in parsed.achievements[:2]:
+        if not _looks_like_instruction(achievement.source_span):
+            claims.append(EvidenceClaim("achievements", EvidenceType.competition, achievement.title, achievement.detail, achievement.source_span))
 
     # Fallback claim if nothing parsed
     if not claims and full_text.strip():

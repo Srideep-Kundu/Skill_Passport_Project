@@ -1,22 +1,22 @@
 // Centralized Motion Design Tokens for Skill Passport
-// Hybrid Crossfade + Prominent Center-Collapse / Center-Expansion Page Transitions
+// Coordinated Cinematic Page Entry, Light Arriving, and Tab Transitions
 import type { Variants, Transition } from "framer-motion";
 
 export const MOTION_DURATIONS = {
-  micro: 0.18, // 180ms micro-interactions (press, hover, badges)
-  fast: 0.28, // 280ms small UI transitions
-  normal: 0.45, // 450ms panels & cards
-  page: 1.25, // 1.25s incoming center-expansion & fade-in (clearly visible to naked eye)
-  pageExit: 1.10, // 1.10s outgoing center-collapse & fade-out
-  sidebarIndicator: 0.45, // 450ms sidebar indicator glide
-  slow: 0.60, // 600ms charts
+  micro: 0.18,
+  fast: 0.28,
+  normal: 0.45,
+  slow: 0.60,
+  pageEntry: 0.55,
+  tabTransition: 0.32,
+  sidebarIndicator: 0.35,
+  metricCount: 0.65,
 } as const;
 
 export const MOTION_EASINGS = {
-  standard: [0.16, 1, 0.3, 1] as const, // Smooth cubic-bezier ease-out (gentle deceleration)
-  centerExpand: [0.16, 1, 0.3, 1] as const, // Smooth expansion from center to scale 1
-  centerCollapse: [0.4, 0, 0.2, 1] as const, // Controlled ease-in-out shrinkage to scale 0.94
-  springSmooth: { type: "spring", stiffness: 240, damping: 26, mass: 0.9 } as const,
+  standard: [0.16, 1, 0.3, 1] as const,
+  gentle: [0.22, 1, 0.36, 1] as const,
+  exit: [0.4, 0, 0.2, 1] as const,
 };
 
 // Synchronized sidebar navigation active indicator transition
@@ -26,80 +26,120 @@ export const sidebarIndicatorTransition: Transition = {
 };
 
 // ==================================================
-// 🌟 HYBRID CROSSFADE + CENTER-COLLAPSE / EXPANSION
-// Outgoing Page A:
-//   - Opacity: 1 → 0
-//   - Scale: 1 → 0.94 (gently shrinks toward main-content viewport center)
-//   - Blur: 0px → 2px
-//   - Duration: 1.10s, ease: [0.4, 0, 0.2, 1]
-// Incoming Page B:
-//   - Opacity: 0 → 1
-//   - Scale: 0.94 → 1 (gently expands outward from main-content viewport center)
-//   - Blur: 2px → 0px (micro depth resolution)
-//   - Delay: 0.06s, Duration: 1.25s, ease: [0.16, 1, 0.3, 1]
-// Total Sequence Duration: ~1.25s with prominent smooth crossfade overlap
+// 🌟 COORDINATED PAGE ENTRY SEQUENCE
+// Eyebrow -> Title -> Meta -> Content (stagger 60ms)
 // ==================================================
-export const hybridCenterVariants: Variants = {
+export const pageContainerVariants: Variants = {
   initial: {
-    transformOrigin: "50% 30vh",
     opacity: 0,
-    scale: 0.94,
-    filter: "blur(2px)",
-    x: 0,
-    y: 0,
   },
   animate: {
-    transformOrigin: "50% 30vh",
     opacity: 1,
-    scale: 1,
-    filter: "blur(0px)",
-    x: 0,
-    y: 0,
     transition: {
-      duration: 1.25,
-      delay: 0.06, // Smoothly overlaps right as outgoing begins collapsing
-      ease: [0.16, 1, 0.3, 1], // Gentle deceleration into clean final resting state
+      staggerChildren: 0.06,
+      delayChildren: 0.02,
     },
   },
   exit: {
-    transformOrigin: "50% 30vh",
     opacity: 0,
-    scale: 0.94,
-    filter: "blur(2px)",
-    x: 0,
-    y: 0,
+    y: -6,
     transition: {
-      duration: 1.10,
-      ease: [0.4, 0, 0.2, 1], // Controlled shrink toward center
+      duration: 0.24,
+      ease: [0.4, 0, 0.2, 1],
     },
   },
 };
 
-// Universal aliases ensuring all navigation components use the hybrid center transition
-export const crossfadePageVariants: Variants = hybridCenterVariants;
-export const diagonalPageVariants: Variants = hybridCenterVariants;
-export const spatialPageVariants: Variants = hybridCenterVariants;
-export const pageCollapseFormVariants: Variants = hybridCenterVariants;
+export const pageEyebrowVariants: Variants = {
+  initial: { opacity: 0, y: 14, filter: "brightness(0.92)" },
+  animate: {
+    opacity: 1,
+    y: 0,
+    filter: "brightness(1)",
+    transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] },
+  },
+};
 
-// Accessibility Reduced Motion (Immediate gentle fade without scale)
-export const reducedMotionVariants: Variants = {
+export const pageTitleVariants: Variants = {
+  initial: { opacity: 0, y: 18, filter: "brightness(0.90)" },
+  animate: {
+    opacity: 1,
+    y: 0,
+    filter: "brightness(1)",
+    transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] },
+  },
+};
+
+export const pageMetaVariants: Variants = {
+  initial: { opacity: 0, y: 14, filter: "brightness(0.92)" },
+  animate: {
+    opacity: 1,
+    y: 0,
+    filter: "brightness(1)",
+    transition: { duration: 0.48, ease: [0.16, 1, 0.3, 1] },
+  },
+};
+
+export const pageContentVariants: Variants = {
+  initial: { opacity: 0, y: 20, filter: "brightness(0.92)" },
+  animate: {
+    opacity: 1,
+    y: 0,
+    filter: "brightness(1)",
+    transition: { duration: 0.60, ease: [0.16, 1, 0.3, 1] },
+  },
+};
+
+// ==================================================
+// 🌟 TAB / ROUTE LIGHT-ARRIVING TRANSITION
+// ==================================================
+export const tabContentVariants: Variants = {
   initial: {
     opacity: 0,
-    scale: 0.99,
+    y: 14,
+    filter: "brightness(0.92)",
   },
   animate: {
     opacity: 1,
-    scale: 1,
+    y: 0,
+    filter: "brightness(1)",
     transition: {
-      duration: 0.18,
+      duration: 0.32,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -6,
+    transition: {
+      duration: 0.22,
+      ease: [0.4, 0, 0.2, 1],
+    },
+  },
+};
+
+export const hybridCenterVariants: Variants = tabContentVariants;
+export const crossfadePageVariants: Variants = tabContentVariants;
+export const diagonalPageVariants: Variants = tabContentVariants;
+export const spatialPageVariants: Variants = tabContentVariants;
+export const pageCollapseFormVariants: Variants = tabContentVariants;
+
+// Accessibility Reduced Motion (Immediate gentle fade without translate/brightness)
+export const reducedMotionVariants: Variants = {
+  initial: {
+    opacity: 0,
+  },
+  animate: {
+    opacity: 1,
+    transition: {
+      duration: 0.12,
       ease: "easeOut",
     },
   },
   exit: {
     opacity: 0,
-    scale: 0.99,
     transition: {
-      duration: 0.12,
+      duration: 0.10,
       ease: "easeIn",
     },
   },
@@ -108,17 +148,19 @@ export const reducedMotionVariants: Variants = {
 export const pageAssemblyItemVariants: Variants = {
   initial: {
     opacity: 0,
+    y: 12,
   },
   animate: {
     opacity: 1,
+    y: 0,
     transition: {
-      duration: 0.24,
+      duration: 0.38,
       ease: [0.16, 1, 0.3, 1],
     },
   },
   exit: {
     opacity: 0,
-    transition: { duration: 0.1 },
+    transition: { duration: 0.15 },
   },
 };
 
@@ -130,8 +172,8 @@ export const containerStaggerVariants: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.03,
-      delayChildren: 0.01,
+      staggerChildren: 0.04,
+      delayChildren: 0.02,
     },
   },
 };
@@ -139,20 +181,20 @@ export const containerStaggerVariants: Variants = {
 export const cardItemVariants: Variants = typewriterItemVariants;
 
 export const modalVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.97, filter: "blur(2px)" },
+  hidden: { opacity: 0, scale: 0.98, y: 8 },
   visible: {
     opacity: 1,
     scale: 1,
-    filter: "blur(0px)",
+    y: 0,
     transition: {
-      duration: 0.24,
+      duration: 0.26,
       ease: [0.16, 1, 0.3, 1],
     },
   },
   exit: {
     opacity: 0,
-    scale: 0.97,
-    filter: "blur(2px)",
+    scale: 0.98,
+    y: 6,
     transition: {
       duration: 0.18,
       ease: [0.4, 0, 1, 1],

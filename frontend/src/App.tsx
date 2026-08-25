@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Toaster } from "sonner";
 import {
   LayoutDashboard,
@@ -10,8 +10,6 @@ import {
   PlusCircle,
   MoreHorizontal,
   X,
-  Sun,
-  Moon,
   LogOut,
   Menu,
   Search,
@@ -37,8 +35,7 @@ import { useAuth } from "./auth/AuthContext";
 import { CommandPalette } from "./components/CommandPalette";
 import { SkillPassportCopilot } from "./components/SkillPassportCopilot";
 import { PostLoginTransition } from "./components/PostLoginTransition";
-import { LuminaAmbientHorizon } from "./components/LuminaAmbientHorizon";
-import { sidebarIndicatorTransition } from "./theme/motion";
+import { AuthBackground } from "./components/AuthBackground";
 
 const RecruiterDashboard = lazy(async () => ({
   default: (await import("./pages/RecruiterDashboard")).RecruiterDashboard,
@@ -53,7 +50,19 @@ const InstitutionDashboard = lazy(async () => ({
   default: (await import("./pages/InstitutionDashboard")).InstitutionDashboard,
 }));
 
-export type StudentTab = "overview" | "passport" | "evidence" | "gaps" | "assessments" | "learning" | "placements" | "collaborations" | "github" | "matches" | "discovery" | "teams";
+export type StudentTab =
+  | "overview"
+  | "passport"
+  | "evidence"
+  | "gaps"
+  | "assessments"
+  | "learning"
+  | "placements"
+  | "collaborations"
+  | "github"
+  | "matches"
+  | "discovery"
+  | "teams";
 export type RecruiterTab = "overview" | "internships" | "post_job" | "candidates";
 export type AcademicianTab =
   | "opportunities"
@@ -80,6 +89,7 @@ export type InstitutionTab =
 
 export function App() {
   const { session, signOut, justLoggedIn, completePostLoginTransition } = useAuth();
+  const prefersReduced = useReducedMotion();
   const [studentTab, setStudentTab] = useState<StudentTab>("overview");
   const [recruiterTab, setRecruiterTab] = useState<RecruiterTab>("overview");
   const [academicianTab, setAcademicianTab] = useState<AcademicianTab>("opportunities");
@@ -88,23 +98,9 @@ export function App() {
   const [cmdOpen, setCmdOpen] = useState(false);
   const [copilotOpen, setCopilotOpen] = useState(false);
 
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    const saved = localStorage.getItem("skill-passport.theme");
-    return saved ? saved === "dark" : false;
-  });
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     return localStorage.getItem("skill_passport_sidebar_collapsed") === "true";
   });
-
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("skill-passport.theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("skill-passport.theme", "light");
-    }
-  }, [isDarkMode]);
 
   useEffect(() => {
     localStorage.setItem("skill_passport_sidebar_collapsed", String(isCollapsed));
@@ -125,12 +121,8 @@ export function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  function toggleTheme() {
-    setIsDarkMode((prev) => !prev);
-  }
-
   if (!session) {
-    return <LandingPage isDarkMode={isDarkMode} onToggleTheme={toggleTheme} />;
+    return <LandingPage />;
   }
 
   if (justLoggedIn) {
@@ -204,97 +196,98 @@ export function App() {
     { id: "reports", label: "Institutional Reports", icon: <Download className="h-4 w-4 shrink-0" aria-hidden="true" /> },
   ];
 
+  const currentTabName = isStudent
+    ? studentTab
+    : isRecruiter
+    ? recruiterTab
+    : isAcademician
+    ? academicianTab
+    : institutionTab;
+
   return (
-    <div className="min-h-screen bg-transparent flex font-sans text-slate-900 dark:text-[#f1f0e8] relative">
-      {/* Dynamic Ambient Horizon Background Animation */}
-      <LuminaAmbientHorizon />
+    <div className="dark auth-background-shell min-h-screen bg-[#021522] flex text-white relative font-sans selection:bg-white/20 selection:text-white">
+      <AuthBackground />
 
-      {/* Sonner Toast Notifications Container */}
-      <Toaster position="bottom-right" richColors closeButton />
+      {/* Toast Notifications */}
+      <Toaster position="bottom-right" theme="dark" closeButton />
 
-      {/* Cmd+K Command Palette Modal */}
-      <CommandPalette
-        open={cmdOpen}
-        onOpenChange={setCmdOpen}
-        role={session.role}
-        onSelectStudentTab={setStudentTab}
-        onSelectRecruiterTab={setRecruiterTab}
-        onSelectAcademicianTab={setAcademicianTab}
-        onSelectInstitutionTab={setInstitutionTab}
-        onOpenCopilot={() => setCopilotOpen(true)}
-      />
+      {/* Command Palette */}
+      {(isStudent || isRecruiter) && (
+        <CommandPalette
+          open={cmdOpen}
+          onOpenChange={setCmdOpen}
+          role={isStudent ? "student" : "recruiter"}
+          onSelectStudentTab={setStudentTab}
+          onSelectRecruiterTab={setRecruiterTab}
+          onOpenCopilot={() => setCopilotOpen(true)}
+        />
+      )}
 
-      {/* Mobile Backdrop */}
+      {/* Mobile Overlay */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-xs md:hidden"
+          className="fixed inset-0 z-40 bg-[#031322]/80 backdrop-blur-xs md:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
-      {/* Sticky Left Sidebar (Pinned to top on desktop with ultra-transparent frosted glass) */}
+      {/* Left Rail / Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 h-screen md:sticky md:top-0 bg-white/20 dark:bg-black/25 backdrop-blur-md border-r border-slate-200/40 dark:border-white/[0.05] flex flex-col justify-between transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] motion-reduce:transition-none md:translate-x-0 shrink-0 shadow-lg shadow-black/10 ${
-          isCollapsed ? "md:w-20" : "md:w-72"
-        } w-72 ${mobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-40 h-screen md:sticky md:top-0 bg-[#061524] border-r border-white/10 flex flex-col justify-between transition-all duration-200 md:translate-x-0 shrink-0 ${
+          isCollapsed ? "md:w-20" : "md:w-64"
+        } w-64 ${mobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}
       >
-        {/* Top Header & Scrollable Menu (Scrollbar hidden when collapsed) */}
-        <div
-          className={`space-y-4 flex-1 min-h-0 transition-all duration-300 ${isCollapsed
-              ? "p-3 overflow-hidden [&::-webkit-scrollbar]:hidden [scrollbar-width:none]"
-              : "p-4 sm:p-5 overflow-y-auto"
-            }`}
-        >
-          {/* Logo & Brand Header with Three-Dot Sidebar Toggle Button */}
-          <div className={`flex items-center ${isCollapsed ? "flex-col gap-3" : "justify-between"} pt-1`}>
-            <a href="/" className="flex items-center gap-3 text-slate-900 dark:text-[#f1f0e8] group min-w-0">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#4338ca] to-[#6366f1] font-black text-white shadow-md shadow-indigo-500/20 text-sm tracking-wider font-sans">
+        {/* Top Header & Nav Items */}
+        <div className={`flex-1 min-h-0 ${isCollapsed ? "p-3 overflow-hidden" : "p-5 overflow-y-auto no-scrollbar"}`}>
+          {/* Logo */}
+          <div className={`flex items-center ${isCollapsed ? "flex-col gap-3" : "justify-between"} pb-6 border-b border-white/10 mb-4`}>
+            <a href="/" className="flex items-center gap-2.5 text-white min-w-0">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-white/20 bg-white/10 font-mono text-xs text-white">
                 SP
               </span>
-              <div
-                className={`whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${isCollapsed ? "max-w-0 opacity-0 pointer-events-none" : "max-w-xs opacity-100"
-                  }`}
-              >
-                <span className="font-extrabold tracking-tight text-slate-900 dark:text-white block leading-tight text-base font-sans">
-                  Skill Passport
-                </span>
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-[#8ea2c6] block leading-tight mt-0.5 truncate font-sans">
-                  Verifiable Match Engine
-                </span>
-              </div>
+              {!isCollapsed && (
+                <div className="overflow-hidden whitespace-nowrap">
+                  <span
+                    className="text-lg font-normal tracking-tight block leading-none text-white"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    Skill Passport<sup className="text-[10px] ml-0.5 opacity-70">®</sup>
+                  </span>
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 block mt-1">
+                    {session.role}
+                  </span>
+                </div>
+              )}
             </a>
 
-            {/* THREE-DOT SIDEBAR TOGGLE BUTTON */}
+            {/* Sidebar Collapse Toggle */}
             <button
               type="button"
               onClick={() => setIsCollapsed((prev) => !prev)}
               aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              aria-expanded={!isCollapsed}
-              title={isCollapsed ? "Expand sidebar (Ctrl+B)" : "Collapse sidebar (Ctrl+B)"}
-              className="hidden md:flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-slate-200/60 dark:border-white/[0.06] bg-white/40 dark:bg-[#151e29]/40 backdrop-blur-md text-slate-500 dark:text-[#98a4b3] hover:bg-white/70 dark:hover:bg-[#1a2430]/70 hover:text-[#4f46e5] dark:hover:text-white active:scale-95 transition-all duration-200 cursor-pointer"
+              className="hidden md:flex h-7 w-7 shrink-0 items-center justify-center rounded-sm border border-white/10 bg-white/[0.02] text-neutral-400 hover:text-white hover:border-white/20 transition-colors cursor-pointer"
             >
-              <MoreHorizontal className={`h-4 w-4 transition-transform duration-200 ${isCollapsed ? "rotate-90" : "rotate-0"}`} />
+              <MoreHorizontal className={`h-3.5 w-3.5 transition-transform ${isCollapsed ? "rotate-90" : ""}`} />
             </button>
 
             {/* Mobile Close Button */}
             <button
               type="button"
-              className="md:hidden text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+              className="md:hidden text-neutral-400 hover:text-white p-1"
               onClick={() => setMobileMenuOpen(false)}
               aria-label="Close menu"
             >
-              <X className="h-4 w-4" aria-hidden="true" />
+              <X className="h-4 w-4" />
             </button>
           </div>
 
           {/* Navigation Links */}
-          <div className="space-y-1 pt-1">
-            <p
-              className={`text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3 mb-2 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out ${isCollapsed ? "max-h-0 opacity-0 mb-0" : "max-h-6 opacity-100"
-                }`}
-            >
-              Navigation Menu
-            </p>
+          <nav className="space-y-1">
+            {!isCollapsed && (
+              <div className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 px-3 py-1.5 mb-1">
+                Workspace
+              </div>
+            )}
 
             {isStudent &&
               studentNavItems.map((item) => {
@@ -308,30 +301,16 @@ export function App() {
                       setMobileMenuOpen(false);
                     }}
                     title={isCollapsed ? item.label : undefined}
-                    className={`relative w-full flex items-center rounded-xl text-xs font-semibold transition-colors duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#4f46e5] focus-visible:outline-none ${isCollapsed ? "justify-center px-0 py-3" : "px-3.5 py-2.5 gap-3"
-                      } ${isActive
-                        ? "text-white font-bold"
-                        : "text-slate-600 dark:text-[#8ea2c6] hover:bg-slate-100/80 dark:hover:bg-[#151e29] hover:text-slate-900 dark:hover:text-[#f1f0e8]"
-                      }`}
+                    className={`w-full flex items-center rounded-sm text-xs transition-colors cursor-pointer ${
+                      isCollapsed ? "justify-center p-2.5" : "px-3 py-2 gap-3"
+                    } ${
+                      isActive
+                        ? "bg-white/10 text-white font-medium border-l-2 border-white"
+                        : "text-neutral-400 hover:bg-white/[0.03] hover:text-neutral-200"
+                    }`}
                   >
-                    {isActive && (
-                      <motion.div
-                        layoutId="active-student-nav"
-                        className="absolute inset-0 rounded-xl bg-[#4f46e5] dark:bg-[#182337] dark:border dark:border-[#38bdf8]/30 shadow-md shadow-indigo-500/25 dark:shadow-[0_0_15px_rgba(56,189,248,0.15)] z-0 overflow-hidden"
-                        transition={sidebarIndicatorTransition}
-                      >
-                        <div className="hidden dark:block absolute left-0 top-2 bottom-2 w-1 rounded-r bg-[#38bdf8] shadow-[0_0_8px_#38bdf8]" />
-                      </motion.div>
-                    )}
-                    <span className={`relative z-10 text-base shrink-0 flex items-center justify-center w-5 h-5 ${isActive ? "text-white dark:text-[#38bdf8]" : "text-slate-500 dark:text-[#8ea2c6]"}`}>
-                      {item.icon}
-                    </span>
-                    <span
-                      className={`relative z-10 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out font-sans ${isCollapsed ? "max-w-0 opacity-0" : "max-w-xs opacity-100"
-                        }`}
-                    >
-                      {item.label}
-                    </span>
+                    <span className="shrink-0">{item.icon}</span>
+                    {!isCollapsed && <span className="truncate">{item.label}</span>}
                   </button>
                 );
               })}
@@ -348,30 +327,16 @@ export function App() {
                       setMobileMenuOpen(false);
                     }}
                     title={isCollapsed ? item.label : undefined}
-                    className={`relative w-full flex items-center rounded-xl text-xs font-semibold transition-colors duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#4f46e5] focus-visible:outline-none ${isCollapsed ? "justify-center px-0 py-3" : "px-3.5 py-2.5 gap-3"
-                      } ${isActive
-                        ? "text-white font-bold"
-                        : "text-slate-600 dark:text-[#8ea2c6] hover:bg-slate-100/80 dark:hover:bg-[#151e29] hover:text-slate-900 dark:hover:text-[#f1f0e8]"
-                      }`}
+                    className={`w-full flex items-center rounded-sm text-xs transition-colors cursor-pointer ${
+                      isCollapsed ? "justify-center p-2.5" : "px-3 py-2 gap-3"
+                    } ${
+                      isActive
+                        ? "bg-white/10 text-white font-medium border-l-2 border-white"
+                        : "text-neutral-400 hover:bg-white/[0.03] hover:text-neutral-200"
+                    }`}
                   >
-                    {isActive && (
-                      <motion.div
-                        layoutId="active-recruiter-nav"
-                        className="absolute inset-0 rounded-xl bg-[#4f46e5] dark:bg-[#182337] dark:border dark:border-[#38bdf8]/30 shadow-md shadow-indigo-500/25 dark:shadow-[0_0_15px_rgba(56,189,248,0.15)] z-0 overflow-hidden"
-                        transition={sidebarIndicatorTransition}
-                      >
-                        <div className="hidden dark:block absolute left-0 top-2 bottom-2 w-1 rounded-r bg-[#38bdf8] shadow-[0_0_8px_#38bdf8]" />
-                      </motion.div>
-                    )}
-                    <span className={`relative z-10 text-base shrink-0 flex items-center justify-center w-5 h-5 ${isActive ? "text-white dark:text-[#38bdf8]" : "text-slate-500 dark:text-[#8ea2c6]"}`}>
-                      {item.icon}
-                    </span>
-                    <span
-                      className={`relative z-10 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out font-sans ${isCollapsed ? "max-w-0 opacity-0" : "max-w-xs opacity-100"
-                        }`}
-                    >
-                      {item.label}
-                    </span>
+                    <span className="shrink-0">{item.icon}</span>
+                    {!isCollapsed && <span className="truncate">{item.label}</span>}
                   </button>
                 );
               })}
@@ -388,30 +353,16 @@ export function App() {
                       setMobileMenuOpen(false);
                     }}
                     title={isCollapsed ? item.label : undefined}
-                    className={`relative w-full flex items-center rounded-xl text-xs font-semibold transition-colors duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#4f46e5] focus-visible:outline-none ${isCollapsed ? "justify-center px-0 py-3" : "px-3.5 py-2.5 gap-3"
-                      } ${isActive
-                        ? "text-white font-bold"
-                        : "text-slate-600 dark:text-[#8ea2c6] hover:bg-slate-100/80 dark:hover:bg-[#151e29] hover:text-slate-900 dark:hover:text-[#f1f0e8]"
-                      }`}
+                    className={`w-full flex items-center rounded-sm text-xs transition-colors cursor-pointer ${
+                      isCollapsed ? "justify-center p-2.5" : "px-3 py-2 gap-3"
+                    } ${
+                      isActive
+                        ? "bg-white/10 text-white font-medium border-l-2 border-white"
+                        : "text-neutral-400 hover:bg-white/[0.03] hover:text-neutral-200"
+                    }`}
                   >
-                    {isActive && (
-                      <motion.div
-                        layoutId="active-academician-nav"
-                        className="absolute inset-0 rounded-xl bg-[#4f46e5] dark:bg-[#182337] dark:border dark:border-[#38bdf8]/30 shadow-md shadow-indigo-500/25 dark:shadow-[0_0_15px_rgba(56,189,248,0.15)] z-0 overflow-hidden"
-                        transition={sidebarIndicatorTransition}
-                      >
-                        <div className="hidden dark:block absolute left-0 top-2 bottom-2 w-1 rounded-r bg-[#38bdf8] shadow-[0_0_8px_#38bdf8]" />
-                      </motion.div>
-                    )}
-                    <span className={`relative z-10 text-base shrink-0 flex items-center justify-center w-5 h-5 ${isActive ? "text-white dark:text-[#38bdf8]" : "text-slate-500 dark:text-[#8ea2c6]"}`}>
-                      {item.icon}
-                    </span>
-                    <span
-                      className={`relative z-10 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out font-sans ${isCollapsed ? "max-w-0 opacity-0" : "max-w-xs opacity-100"
-                        }`}
-                    >
-                      {item.label}
-                    </span>
+                    <span className="shrink-0">{item.icon}</span>
+                    {!isCollapsed && <span className="truncate">{item.label}</span>}
                   </button>
                 );
               })}
@@ -428,224 +379,189 @@ export function App() {
                       setMobileMenuOpen(false);
                     }}
                     title={isCollapsed ? item.label : undefined}
-                    className={`relative w-full flex items-center rounded-xl text-xs font-semibold transition-colors duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#4f46e5] focus-visible:outline-none ${isCollapsed ? "justify-center px-0 py-3" : "px-3.5 py-2.5 gap-3"
-                      } ${isActive
-                        ? "text-white font-bold"
-                        : "text-slate-600 dark:text-[#8ea2c6] hover:bg-slate-100/80 dark:hover:bg-[#151e29] hover:text-slate-900 dark:hover:text-[#f1f0e8]"
-                      }`}
+                    className={`w-full flex items-center rounded-sm text-xs transition-colors cursor-pointer ${
+                      isCollapsed ? "justify-center p-2.5" : "px-3 py-2 gap-3"
+                    } ${
+                      isActive
+                        ? "bg-white/10 text-white font-medium border-l-2 border-white"
+                        : "text-neutral-400 hover:bg-white/[0.03] hover:text-neutral-200"
+                    }`}
                   >
-                    {isActive && (
-                      <motion.div
-                        layoutId="active-institution-nav"
-                        className="absolute inset-0 rounded-xl bg-[#4f46e5] dark:bg-[#182337] dark:border dark:border-[#38bdf8]/30 shadow-md shadow-indigo-500/25 dark:shadow-[0_0_15px_rgba(56,189,248,0.15)] z-0 overflow-hidden"
-                        transition={sidebarIndicatorTransition}
-                      >
-                        <div className="hidden dark:block absolute left-0 top-2 bottom-2 w-1 rounded-r bg-[#38bdf8] shadow-[0_0_8px_#38bdf8]" />
-                      </motion.div>
-                    )}
-                    <span className={`relative z-10 text-base shrink-0 flex items-center justify-center w-5 h-5 ${isActive ? "text-white dark:text-[#38bdf8]" : "text-slate-500 dark:text-[#8ea2c6]"}`}>
-                      {item.icon}
-                    </span>
-                    <span
-                      className={`relative z-10 whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out font-sans ${isCollapsed ? "max-w-0 opacity-0" : "max-w-xs opacity-100"
-                        }`}
-                    >
-                      {item.label}
-                    </span>
+                    <span className="shrink-0">{item.icon}</span>
+                    {!isCollapsed && <span className="truncate">{item.label}</span>}
                   </button>
                 );
               })}
-          </div>
+          </nav>
         </div>
 
-        {/* ALWAYS VISIBLE FOOTER (Account Card + Dark Theme Toggle + Sign Out with Frosted Glass) */}
-        <div className={`shrink-0 border-t border-slate-200/60 dark:border-white/[0.06] bg-white/40 dark:bg-[#0b0e13]/40 backdrop-blur-2xl space-y-2.5 sticky bottom-0 z-20 shadow-md transition-all duration-300 ${isCollapsed ? "p-2" : "p-3.5"}`}>
-          {/* User Profile Card */}
-          {isCollapsed ? (
-            <div
-              className="flex h-10 w-10 mx-auto items-center justify-center rounded-xl bg-blue-50/70 dark:bg-[#151e29]/70 backdrop-blur-md font-bold text-[#3b71d9] dark:text-[#b0c6ff] text-xs shadow-xs border border-blue-200/60 dark:border-white/[0.08]"
-              title={`${session.email} (${session.role})`}
-            >
-              {session.email[0].toUpperCase()}
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 rounded-xl border border-slate-200/60 dark:border-white/[0.06] bg-slate-50/50 dark:bg-[#111821]/50 backdrop-blur-md p-2.5 min-w-0">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100/80 dark:bg-[#151e29]/80 font-bold text-[#3b71d9] dark:text-[#b0c6ff] text-xs border border-blue-200/60 dark:border-blue-400/20 shadow-xs">
-                {session.email[0].toUpperCase()}
+        {/* Footer / User Profile & Logout */}
+        <div className={`border-t border-white/10 bg-[#061524] p-3.5 space-y-2`}>
+          {!isCollapsed ? (
+            <div className="flex items-center justify-between gap-2 p-2 rounded-sm border border-white/10 bg-white/[0.02]">
+              <div className="min-w-0 flex-1">
+                <div className="text-xs text-white truncate font-medium">{session.email}</div>
+                <div className="font-mono text-[10px] uppercase text-neutral-400 mt-0.5">{session.role}</div>
               </div>
-              <div className="min-w-0 flex-1 whitespace-nowrap overflow-hidden">
-                <p className="text-xs font-bold text-slate-900 dark:text-[#f1f0e8] truncate">{session.email}</p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#3b71d9] dark:text-[#b0c6ff]">
-                    {session.role}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Theme Toggle & Sign Out Buttons */}
-          {isCollapsed ? (
-            <div className="flex flex-col gap-1.5 pt-0.5">
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className="flex h-9 w-full items-center justify-center rounded-xl border border-slate-200/60 dark:border-white/[0.06] bg-white/40 dark:bg-[#111821]/40 backdrop-blur-md text-xs text-slate-700 dark:text-[#f1f0e8] hover:bg-white/70 dark:hover:bg-[#151e29]/70 transition-colors cursor-pointer"
-                title={`Switch to ${isDarkMode ? "Light" : "Dark"} Mode`}
-                aria-label={`Switch to ${isDarkMode ? "Light" : "Dark"} Mode`}
-              >
-                {isDarkMode ? <Sun className="h-4 w-4" aria-hidden="true" /> : <Moon className="h-4 w-4" aria-hidden="true" />}
-              </button>
-
               <button
                 type="button"
                 onClick={signOut}
-                className="flex h-9 w-full items-center justify-center rounded-xl border border-slate-200/60 dark:border-white/[0.06] bg-white/40 dark:bg-[#111821]/40 backdrop-blur-md text-xs text-slate-700 dark:text-[#f1f0e8] hover:bg-rose-50/80 hover:text-rose-700 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition-colors cursor-pointer"
                 title="Sign out"
                 aria-label="Sign out"
+                className="p-1 text-neutral-400 hover:text-red-300 transition-colors cursor-pointer"
               >
-                <LogOut className="h-4 w-4" aria-hidden="true" />
+                <LogOut className="h-3.5 w-3.5" />
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2 pt-0.5">
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200/60 dark:border-white/[0.06] bg-white/40 dark:bg-[#111821]/40 backdrop-blur-md py-2 text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] hover:bg-white/70 dark:hover:bg-[#151e29]/70 transition-colors cursor-pointer"
-                title="Toggle Dark / Light Mode"
-              >
-                {isDarkMode ? <Sun className="h-3.5 w-3.5" aria-hidden="true" /> : <Moon className="h-3.5 w-3.5" aria-hidden="true" />}
-                <span>{isDarkMode ? "Light" : "Dark"}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={signOut}
-                className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-200/60 dark:border-white/[0.06] bg-white/40 dark:bg-[#111821]/40 backdrop-blur-md py-2 text-xs font-semibold text-slate-700 dark:text-[#f1f0e8] hover:bg-rose-50/80 hover:text-rose-700 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition-colors cursor-pointer"
-              >
-                <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>Sign out</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={signOut}
+              title="Sign out"
+              aria-label="Sign out"
+              className="flex h-9 w-full items-center justify-center rounded-sm border border-white/10 text-neutral-400 hover:text-red-300 transition-colors cursor-pointer"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           )}
         </div>
       </aside>
 
-      {/* Main Right Content Panel */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile Header Bar */}
-        <header className="md:hidden sticky top-0 z-30 border-b border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+      {/* Main Content Area */}
+      <div className="relative z-10 flex-1 flex flex-col min-w-0 bg-transparent">
+        {/* Desktop Top Status Bar */}
+        <header className="sticky top-0 z-30 border-b border-white/10 bg-[#031322]/90 backdrop-blur-md px-6 py-3.5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
               aria-label="Open sidebar menu"
+              className="md:hidden p-1.5 rounded-sm border border-white/10 text-neutral-400 hover:text-white"
             >
-              <Menu className="h-4 w-4" aria-hidden="true" />
+              <Menu className="h-4 w-4" />
             </button>
-            <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">Lumina Intel</span>
+            <div className="font-mono text-xs text-neutral-400 uppercase tracking-wider hidden sm:block">
+              {session.role} / <span className="text-white">{currentTabName}</span>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setCmdOpen(true)}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800"
-              aria-label="Open quick navigation search"
-            >
-              <Search className="h-4 w-4" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800"
-              aria-label="Toggle theme mode"
-            >
-              {isDarkMode ? <Sun className="h-4 w-4" aria-hidden="true" /> : <Moon className="h-4 w-4" aria-hidden="true" />}
-            </button>
+          <div className="flex items-center gap-3">
+            {(isStudent || isRecruiter) && (
+              <button
+                type="button"
+                onClick={() => setCmdOpen(true)}
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1 text-xs text-neutral-400 hover:text-white hover:border-white/20 transition-colors cursor-pointer"
+              >
+                <Search className="h-3.5 w-3.5" />
+                <span>Search actions</span>
+                <kbd className="font-mono text-[10px] text-neutral-400 border border-white/10 px-1 py-0.5 rounded-xs">
+                  ⌘K
+                </kbd>
+              </button>
+            )}
+
+            {(isStudent || isRecruiter) && (
+              <button
+                type="button"
+                onClick={() => setCopilotOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-xs font-medium text-white hover:bg-white/15 transition-colors cursor-pointer"
+              >
+                <span>Copilot</span>
+                <kbd className="font-mono text-[10px] text-neutral-400 border border-white/10 px-1 py-0.5 rounded-xs">
+                  ⌘J
+                </kbd>
+              </button>
+            )}
           </div>
         </header>
 
         {/* Content Body */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full max-w-full 2xl:max-w-[1700px] mx-auto overflow-x-clip transition-all duration-300">
-          {isStudent ? (
-            <Suspense
-              fallback={
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b71d9] border-t-transparent mb-3"></div>
-                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading student passport dashboard...</p>
-                </div>
-              }
+        <main className="flex-1 p-6 sm:p-8 lg:p-10 w-full max-w-7xl mx-auto animate-fade-rise">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentTabName}
+              initial={prefersReduced ? { opacity: 1 } : { opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={prefersReduced ? { opacity: 1 } : { opacity: 0, y: -8 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
             >
-              <StudentDashboard token={session.access_token} activeTab={studentTab} onNavigateTab={setStudentTab} />
-            </Suspense>
-          ) : isRecruiter ? (
-            <Suspense
-              fallback={
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b71d9] border-t-transparent mb-3"></div>
-                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading recruiter workspace...</p>
-                </div>
-              }
-            >
-              <RecruiterDashboard token={session.access_token} activeTab={recruiterTab} />
-            </Suspense>
-          ) : isAcademician ? (
-            <Suspense
-              fallback={
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b71d9] border-t-transparent mb-3"></div>
-                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading academician portal...</p>
-                </div>
-              }
-            >
-              <AcademicianDashboard
-                token={session.access_token}
-                activeTab={academicianTab}
-                onTabChange={setAcademicianTab}
-              />
-            </Suspense>
-          ) : isInstitution ? (
-            <Suspense
-              fallback={
-                <div className="flex flex-col items-center justify-center py-20 text-center">
-                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#3b71d9] border-t-transparent mb-3"></div>
-                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading university intelligence...</p>
-                </div>
-              }
-            >
-              <InstitutionDashboard
-                token={session.access_token}
-                activeTab={institutionTab}
-                onTabChange={setInstitutionTab}
-              />
-            </Suspense>
-          ) : (
-            <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-8 shadow-sm">
-              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Administrator Access</h1>
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
-                Administrative taxonomy and fairness controls remain server-authorized endpoints.
-              </p>
-            </section>
-          )}
+              {isStudent ? (
+                <Suspense
+                  fallback={
+                    <div className="flex flex-col items-center justify-center py-24 text-center font-mono text-xs text-neutral-400">
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent mb-3" />
+                      Loading Student Dossier...
+                    </div>
+                  }
+                >
+                  <StudentDashboard token={session.access_token} activeTab={studentTab} onNavigateTab={setStudentTab} />
+                </Suspense>
+              ) : isRecruiter ? (
+                <Suspense
+                  fallback={
+                    <div className="flex flex-col items-center justify-center py-24 text-center font-mono text-xs text-neutral-400">
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent mb-3" />
+                      Loading Recruiter Workspace...
+                    </div>
+                  }
+                >
+                  <RecruiterDashboard token={session.access_token} activeTab={recruiterTab} />
+                </Suspense>
+              ) : isAcademician ? (
+                <Suspense
+                  fallback={
+                    <div className="flex flex-col items-center justify-center py-24 text-center font-mono text-xs text-neutral-400">
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent mb-3" />
+                      Loading Academician Portal...
+                    </div>
+                  }
+                >
+                  <AcademicianDashboard
+                    token={session.access_token}
+                    activeTab={academicianTab}
+                    onTabChange={setAcademicianTab}
+                  />
+                </Suspense>
+              ) : isInstitution ? (
+                <Suspense
+                  fallback={
+                    <div className="flex flex-col items-center justify-center py-24 text-center font-mono text-xs text-neutral-400">
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent mb-3" />
+                      Loading University Intelligence...
+                    </div>
+                  }
+                >
+                  <InstitutionDashboard
+                    token={session.access_token}
+                    activeTab={institutionTab}
+                    onTabChange={setInstitutionTab}
+                  />
+                </Suspense>
+              ) : (
+                <section className="border border-white/10 bg-[#061524] p-8 rounded-md">
+                  <h1 className="text-2xl font-normal text-white" style={{ fontFamily: "var(--font-display)" }}>
+                    Administrator Access
+                  </h1>
+                  <p className="mt-2 text-xs text-neutral-400 font-sans">
+                    Administrative taxonomy and fairness controls remain server-authorized endpoints.
+                  </p>
+                </section>
+              )}
+            </motion.div>
+          </AnimatePresence>
         </main>
       </div>
 
-      {(isStudent || isRecruiter || isAcademician || isInstitution) && (
+      {/* Copilot Drawer */}
+      {(isStudent || isRecruiter) && (
         <SkillPassportCopilot
           token={session.access_token}
-          role={session.role}
           isOpen={copilotOpen}
           onOpen={() => setCopilotOpen(true)}
           onClose={() => setCopilotOpen(false)}
           onNavigate={(tab) => {
             if (isStudent) setStudentTab(tab as StudentTab);
             else if (isRecruiter) setRecruiterTab(tab as RecruiterTab);
-            else if (isAcademician) setAcademicianTab(tab as AcademicianTab);
-            else if (isInstitution) setInstitutionTab(tab as InstitutionTab);
           }}
         />
       )}
