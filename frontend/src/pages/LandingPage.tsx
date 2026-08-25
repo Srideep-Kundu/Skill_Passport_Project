@@ -30,23 +30,23 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
   }, [authModalOpen]);
 
   return (
-    <div className="relative flex min-h-dvh w-full min-w-0 select-none flex-col overflow-x-clip bg-[#070a10] font-sans text-white">
+    <div className="relative flex min-h-dvh w-full min-w-0 select-none flex-col overflow-x-clip bg-slate-50 font-sans text-slate-900 transition-colors duration-200 dark:bg-[#070a10] dark:text-white">
       {/* Lumina Horizon Animated Wave Canvas */}
       <LuminaAmbientHorizon className="opacity-90" />
 
       {/* Grid Overlay & Glow */}
-      <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:28px_28px] opacity-15" />
-      <div className="pointer-events-none absolute -top-36 left-1/2 z-0 h-[350px] w-[700px] -translate-x-1/2 rounded-full bg-gradient-to-b from-indigo-500/20 via-cyan-500/10 to-transparent blur-3xl" />
+      <div className="pointer-events-none absolute inset-0 z-0 bg-[radial-gradient(#94a3b8_1px,transparent_1px)] [background-size:28px_28px] opacity-25 dark:bg-[radial-gradient(#38bdf8_1px,transparent_1px)] dark:opacity-15" />
+      <div className="pointer-events-none absolute -top-36 left-1/2 z-0 h-[350px] w-[700px] -translate-x-1/2 rounded-full bg-gradient-to-b from-indigo-300/30 via-sky-200/20 to-transparent blur-3xl dark:from-indigo-500/20 dark:via-cyan-500/10" />
 
       {/* Header Bar */}
       <header className="relative z-20 mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
         <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#3b71d9] to-[#6366f1] text-white shadow-md shadow-indigo-500/30">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#3b71d9] to-[#6366f1] text-white shadow-md shadow-indigo-500/25">
             <span className="text-sm font-black tracking-wider">SP</span>
           </div>
           <div className="flex min-w-0 items-center">
-            <span className="whitespace-nowrap text-xs font-bold tracking-tight text-white sm:text-sm">Skill Passport</span>
-            <span className="ml-2 hidden whitespace-nowrap rounded-full border border-cyan-800/50 bg-cyan-950/80 px-2 py-0.5 text-[10px] font-bold text-cyan-300 md:inline-block">
+            <span className="whitespace-nowrap text-xs font-bold tracking-tight text-slate-900 sm:text-sm dark:text-white">Skill Passport</span>
+            <span className="ml-2 hidden whitespace-nowrap rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-700 md:inline-block dark:border-cyan-800/50 dark:bg-cyan-950/80 dark:text-cyan-300">
               Verifiable Engine
             </span>
           </div>
@@ -56,17 +56,17 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
           <button
             type="button"
             onClick={onToggleTheme}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200/80 bg-white/70 text-slate-600 shadow-xs backdrop-blur-md transition-colors hover:bg-slate-100 hover:text-slate-900 cursor-pointer dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
             title="Toggle theme"
             aria-label="Toggle theme"
           >
-            {isDarkMode ? <Sun className="h-4 w-4 text-amber-300" /> : <Moon className="h-4 w-4 text-slate-300" />}
+            {isDarkMode ? <Sun className="h-4 w-4 text-amber-300" /> : <Moon className="h-4 w-4 text-slate-600" />}
           </button>
 
           <button
             type="button"
             onClick={() => setAuthModalOpen(true)}
-            className="inline-flex min-h-9 items-center gap-1 rounded-xl border border-cyan-400/30 bg-cyan-950/40 px-3 py-2 text-[11px] font-bold text-cyan-200 shadow-xs backdrop-blur-md transition-all hover:bg-cyan-900/60 sm:gap-1.5 sm:px-4 sm:text-xs cursor-pointer"
+            className="inline-flex min-h-9 items-center gap-1 rounded-xl border border-sky-200/80 bg-white/80 px-3 py-2 text-[11px] font-bold text-indigo-600 shadow-xs backdrop-blur-md transition-all hover:bg-sky-50 sm:gap-1.5 sm:px-4 sm:text-xs cursor-pointer dark:border-cyan-400/30 dark:bg-cyan-950/40 dark:text-cyan-200 dark:hover:bg-cyan-900/60"
           >
             <span>Sign In</span>
             <ArrowRight className="h-3.5 w-3.5" />
@@ -79,9 +79,9 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
         <motion.div
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-4 inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-cyan-300/25 bg-slate-950/70 px-3 py-1.5 text-[10px] font-semibold leading-4 text-cyan-100 shadow-sm backdrop-blur-xl sm:px-4 sm:text-xs"
+          className="mb-4 inline-flex max-w-full items-center justify-center gap-2 rounded-full border border-sky-200/80 bg-white/80 px-3 py-1.5 text-[10px] font-semibold leading-4 text-sky-800 shadow-sm backdrop-blur-xl sm:px-4 sm:text-xs dark:border-cyan-300/25 dark:bg-slate-950/70 dark:text-cyan-100"
         >
-          <Sparkles className="h-3.5 w-3.5 text-cyan-300 animate-pulse" aria-hidden="true" />
+          <Sparkles className="h-3.5 w-3.5 text-sky-600 animate-pulse dark:text-cyan-300" aria-hidden="true" />
           <span>Verifiable Skill Passport & Multi-Persona Ecosystem</span>
         </motion.div>
 
@@ -99,7 +99,7 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.18 }}
-          className="mt-3 max-w-2xl px-1 text-xs leading-5 text-slate-300 sm:px-0 sm:text-sm sm:leading-6 lg:text-base"
+          className="mt-3 max-w-2xl px-1 text-xs leading-5 text-slate-600 sm:px-0 sm:text-sm sm:leading-6 lg:text-base dark:text-slate-300"
         >
           Students construct evidence-backed skill graphs. Recruiters, academicians, and institutions receive auditable, deterministic matching without black-box bias.
         </motion.p>
@@ -114,14 +114,12 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
           <button
             type="button"
             onClick={() => setAuthModalOpen(true)}
-            className="group relative isolate inline-flex min-h-12 w-full max-w-xs cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl border border-cyan-100/25 bg-slate-950/20 bg-gradient-to-r from-cyan-300/15 via-sky-400/20 to-indigo-400/25 px-6 py-3 text-sm font-bold text-cyan-50 shadow-[0_8px_28px_rgba(14,165,233,0.14),inset_0_1px_0_rgba(255,255,255,0.18)] ring-1 ring-inset ring-white/15 backdrop-blur-2xl backdrop-saturate-150 transition-all duration-200 before:pointer-events-none before:absolute before:inset-x-3 before:top-px before:h-px before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent hover:-translate-y-0.5 hover:border-cyan-100/45 hover:from-cyan-300/25 hover:via-sky-400/30 hover:to-indigo-400/35 hover:shadow-[0_10px_32px_rgba(34,211,238,0.22),0_0_20px_rgba(99,102,241,0.14),inset_0_1px_0_rgba(255,255,255,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/70 active:translate-y-0 active:scale-[0.985] active:border-cyan-200/35 active:brightness-95 sm:w-auto sm:px-7 sm:py-3.5"
+            className="group relative isolate inline-flex min-h-12 w-full max-w-xs cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-xl border border-indigo-200/80 bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-600 px-6 py-3 text-sm font-bold text-white shadow-[0_8px_24px_rgba(79,70,229,0.25)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(79,70,229,0.35)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 active:translate-y-0 active:scale-[0.985] sm:w-auto sm:px-7 sm:py-3.5 dark:border-cyan-100/25 dark:bg-slate-950/20 dark:bg-gradient-to-r dark:from-cyan-300/15 dark:via-sky-400/20 dark:to-indigo-400/25 dark:text-cyan-50 dark:shadow-[0_8px_28px_rgba(14,165,233,0.14),inset_0_1px_0_rgba(255,255,255,0.18)] dark:ring-1 dark:ring-inset dark:ring-white/15 dark:backdrop-blur-2xl dark:backdrop-saturate-150 dark:before:pointer-events-none dark:before:absolute dark:before:inset-x-3 dark:before:top-px dark:before:h-px dark:before:bg-gradient-to-r dark:before:from-transparent dark:before:via-white/60 dark:before:to-transparent dark:hover:border-cyan-100/45 dark:hover:from-cyan-300/25 dark:hover:via-sky-400/30 dark:hover:to-indigo-400/35 dark:hover:shadow-[0_10px_32px_rgba(34,211,238,0.22),0_0_20px_rgba(99,102,241,0.14),inset_0_1px_0_rgba(255,255,255,0.24)] dark:focus-visible:ring-cyan-200/70"
           >
-            <span className="relative z-10 drop-shadow-[0_1px_4px_rgba(8,47,73,0.8)]">Get Started</span>
-            <ArrowRight className="relative z-10 h-4 w-4 text-cyan-50 drop-shadow-[0_1px_4px_rgba(8,47,73,0.8)] transition-transform group-hover:translate-x-1" aria-hidden="true" />
+            <span className="relative z-10 font-bold">Get Started</span>
+            <ArrowRight className="relative z-10 h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
           </button>
         </motion.div>
-
-
 
         {/* 3 Value Pillars */}
         <motion.div
@@ -131,12 +129,12 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
           className="mt-8 grid w-full min-w-0 grid-cols-1 gap-4 text-left lg:grid-cols-3"
         >
           {capabilities.map(({ icon: Icon, title, text }) => (
-            <article key={title} className="min-w-0 rounded-2xl border border-white/10 bg-slate-950/50 p-4 backdrop-blur-xl transition-transform hover:-translate-y-1 sm:p-5">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-950/60 border border-cyan-800/50 text-cyan-300 mb-3 shadow-xs">
+            <article key={title} className="min-w-0 rounded-2xl border border-slate-200/80 bg-white/70 p-4 shadow-lg shadow-slate-100/80 backdrop-blur-xl transition-all hover:-translate-y-1 hover:shadow-xl hover:border-slate-300 sm:p-5 dark:border-white/10 dark:bg-slate-950/50 dark:shadow-none dark:hover:border-white/20">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 border border-sky-200 text-sky-700 mb-3 shadow-xs dark:bg-cyan-950/60 dark:border-cyan-800/50 dark:text-cyan-300">
                 <Icon className="h-5 w-5" aria-hidden="true" />
               </div>
-              <h2 className="text-sm font-bold text-white">{title}</h2>
-              <p className="mt-1.5 text-xs leading-5 text-slate-400">{text}</p>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white">{title}</h2>
+              <p className="mt-1.5 text-xs leading-5 text-slate-600 dark:text-slate-400">{text}</p>
             </article>
           ))}
         </motion.div>
@@ -152,7 +150,7 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setAuthModalOpen(false)}
-              className="fixed inset-0 bg-slate-950/80 backdrop-blur-md"
+              className="fixed inset-0 bg-slate-950/40 backdrop-blur-md dark:bg-slate-950/80"
               aria-hidden="true"
             />
 
@@ -164,7 +162,7 @@ export function LandingPage({ isDarkMode, onToggleTheme, defaultAuthOpen = false
               transition={{ type: "spring", stiffness: 380, damping: 30 }}
               role="dialog"
               aria-modal="true"
-              className="relative z-10 w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl border border-white/15 bg-[#0b0f19] shadow-2xl p-4 sm:p-6 text-white no-scrollbar"
+              className="relative z-10 w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-3xl border border-slate-200 bg-white/95 text-slate-900 shadow-2xl p-4 sm:p-6 no-scrollbar dark:border-white/15 dark:bg-[#0b0f19] dark:text-white"
             >
               <AuthPage isModal onClose={() => setAuthModalOpen(false)} />
             </motion.div>

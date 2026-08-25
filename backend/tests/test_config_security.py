@@ -11,6 +11,7 @@ def production_settings(**overrides: object) -> Settings:
         "redis_url": "redis://redis:6379/0",
         "cors_origins": ["https://app.example.test"],
         "google_client_id": "public-web-client-id.apps.googleusercontent.com",
+        "embedding_provider": "disabled",
     }
     values.update(overrides)
     return Settings(**values)

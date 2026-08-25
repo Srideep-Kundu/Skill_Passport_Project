@@ -216,9 +216,11 @@ export function App() {
       <CommandPalette
         open={cmdOpen}
         onOpenChange={setCmdOpen}
-        role={session.role as "student" | "recruiter"}
+        role={session.role}
         onSelectStudentTab={setStudentTab}
         onSelectRecruiterTab={setRecruiterTab}
+        onSelectAcademicianTab={setAcademicianTab}
+        onSelectInstitutionTab={setInstitutionTab}
         onOpenCopilot={() => setCopilotOpen(true)}
       />
 
@@ -632,15 +634,18 @@ export function App() {
         </main>
       </div>
 
-      {(isStudent || isRecruiter) && (
+      {(isStudent || isRecruiter || isAcademician || isInstitution) && (
         <SkillPassportCopilot
           token={session.access_token}
+          role={session.role}
           isOpen={copilotOpen}
           onOpen={() => setCopilotOpen(true)}
           onClose={() => setCopilotOpen(false)}
           onNavigate={(tab) => {
             if (isStudent) setStudentTab(tab as StudentTab);
             else if (isRecruiter) setRecruiterTab(tab as RecruiterTab);
+            else if (isAcademician) setAcademicianTab(tab as AcademicianTab);
+            else if (isInstitution) setInstitutionTab(tab as InstitutionTab);
           }}
         />
       )}

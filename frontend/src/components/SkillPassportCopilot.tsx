@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef, useEffect } from "react";
+import { useCallback, useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
@@ -11,11 +11,12 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { api } from "../api/service";
-import type { CopilotAction, CopilotResponse } from "../api/types";
+import type { CopilotAction, CopilotResponse, Role } from "../api/types";
 import { toast } from "sonner";
 
 interface Props {
   token: string;
+  role?: Role | string;
   isOpen?: boolean;
   onOpen?: () => void;
   onClose?: () => void;
@@ -30,7 +31,7 @@ interface Message {
   actions?: CopilotAction[];
 }
 
-const QUICK_PROMPTS = [
+const STUDENT_PROMPTS = [
   "What is my role readiness score?",
   "Why is Python partially verified?",
   "What should I learn next?",
@@ -38,8 +39,33 @@ const QUICK_PROMPTS = [
   "What is my placement status?",
 ];
 
+const RECRUITER_PROMPTS = [
+  "Show top matched candidates",
+  "Which candidates have verified Python?",
+  "Explain deterministic match score",
+  "Post a new internship",
+  "Review applicant pipelines",
+];
+
+const ACADEMICIAN_PROMPTS = [
+  "Find research grant opportunities",
+  "Check industrial sabbatical openings",
+  "View student mentorship requests",
+  "Review faculty research proposals",
+  "Industrial training linkages",
+];
+
+const INSTITUTION_PROMPTS = [
+  "What is our university placement rate?",
+  "Which student cohorts are at-risk?",
+  "Analyze curriculum skill gaps",
+  "View corporate partner linkages",
+  "Download institutional reports",
+];
+
 export function SkillPassportCopilot({
   token,
+  role = "student",
   isOpen: controlledIsOpen,
   onOpen,
   onClose,
@@ -81,8 +107,44 @@ export function SkillPassportCopilot({
 
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
+
+  const defaultWelcomeMessage = useMemo<Message>(() => {
+    if (role === "academician") {
+      return {
+        id: "welcome",
+        sender: "copilot",
+        text: "Welcome, Professor. I am your Faculty & Academic Copilot. Ask me about R&D grants, industrial sabbaticals, student advising, or mentorship events.",
+        actions: [
+          { label: "Explore Opportunities", target_tab: "opportunities", action_type: "navigate" },
+          { label: "R&D & Grants", target_tab: "proposals", action_type: "navigate" },
+          { label: "Mentorship & Events", target_tab: "mentorship_events", action_type: "navigate" },
+        ],
+      };
+    }
+    if (role === "institution") {
+      return {
+        id: "welcome",
+        sender: "copilot",
+        text: "Welcome to University Intelligence Copilot. Ask me about cohort placements, department analytics, curriculum skill gaps, or institutional reports.",
+        actions: [
+          { label: "Executive Overview", target_tab: "overview", action_type: "navigate" },
+          { label: "Cohorts & At-Risk", target_tab: "cohorts", action_type: "navigate" },
+          { label: "Curriculum Skill Gaps", target_tab: "skills", action_type: "navigate" },
+        ],
+      };
+    }
+    if (role === "recruiter") {
+      return {
+        id: "welcome",
+        sender: "copilot",
+        text: "Hello! I am your Talent Acquisition Copilot. Ask me about candidate skill distributions, verified code proof, or internship matches.",
+        actions: [
+          { label: "Ranked Candidates", target_tab: "candidates", action_type: "navigate" },
+          { label: "Post New Internship", target_tab: "post_job", action_type: "navigate" },
+        ],
+      };
+    }
+    return {
       id: "welcome",
       sender: "copilot",
       text: "Hello! I am your Skill Passport Copilot. Ask me about your verified skills, role readiness, recommended courses, or placement status.",
@@ -90,8 +152,28 @@ export function SkillPassportCopilot({
         { label: "Analyze Skill Gaps", target_tab: "gaps", action_type: "navigate" },
         { label: "View Passport", target_tab: "passport", action_type: "navigate" },
       ],
-    },
-  ]);
+    };
+  }, [role]);
+
+  const [messages, setMessages] = useState<Message[]>([defaultWelcomeMessage]);
+
+  useEffect(() => {
+    setMessages([defaultWelcomeMessage]);
+  }, [defaultWelcomeMessage]);
+
+  const quickPrompts = useMemo(() => {
+    if (role === "academician") return ACADEMICIAN_PROMPTS;
+    if (role === "institution") return INSTITUTION_PROMPTS;
+    if (role === "recruiter") return RECRUITER_PROMPTS;
+    return STUDENT_PROMPTS;
+  }, [role]);
+
+  const inputPlaceholder = useMemo(() => {
+    if (role === "academician") return "Ask about grants, sabbaticals, research proposals, advising...";
+    if (role === "institution") return "Ask about cohorts, placements, curriculum gaps, departments...";
+    if (role === "recruiter") return "Ask about candidates, required skills, internships...";
+    return "Ask Copilot about skills, readiness, jobs...";
+  }, [role]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -305,7 +387,7 @@ export function SkillPassportCopilot({
 
               {/* Quick Prompts Carousel */}
               <div className="px-4 py-2 bg-slate-50/80 dark:bg-white/[0.03] backdrop-blur-md border-t border-slate-200/80 dark:border-white/[0.06] flex gap-1.5 overflow-x-auto no-scrollbar text-[10px] shrink-0 font-sans">
-                {QUICK_PROMPTS.map((qp, idx) => (
+                {quickPrompts.map((qp, idx) => (
                   <button
                     key={idx}
                     onClick={() => void handleSend(qp)}
@@ -329,7 +411,7 @@ export function SkillPassportCopilot({
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Ask Copilot about skills, readiness, jobs..."
+                    placeholder={inputPlaceholder}
                     className="flex-1 px-3.5 py-2 bg-slate-100/80 dark:bg-white/[0.04] backdrop-blur-md border border-slate-200 dark:border-white/10 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:border-[#3b71d9]"
                   />
                   <button

@@ -93,8 +93,8 @@ export function DotMatrixWord({
                     key={`${rowIdx}-${bit}`}
                     className={`rounded-[1px] transition-all duration-300 ${
                       isActive
-                        ? "bg-white shadow-[0_0_8px_rgba(56,189,248,0.9),0_0_16px_rgba(99,102,241,0.5)]"
-                        : "bg-white/[0.06]"
+                        ? "bg-slate-900 shadow-[0_0_8px_rgba(59,113,217,0.35)] dark:bg-white dark:shadow-[0_0_8px_rgba(56,189,248,0.9),0_0_16px_rgba(99,102,241,0.5)]"
+                        : "bg-slate-300/60 dark:bg-white/[0.06]"
                     }`}
                     style={{ width: "var(--dot-size)", height: "var(--dot-size)" }}
                   />

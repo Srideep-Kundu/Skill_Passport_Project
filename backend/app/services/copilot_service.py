@@ -1,8 +1,9 @@
 """Skill Passport Copilot Service.
 
-A contextual, platform-aware assistant strictly grounded in the authenticated student's
+A contextual, platform-aware assistant strictly grounded in the authenticated persona's
 persisted database records. Operates on a safe, read-only tool layer with zero hallucinations,
-zero PII leaks, and zero LLM scoring authority.
+zero PII leaks, and zero LLM scoring authority. Supports Student, Recruiter, Academician (Faculty),
+and Institution (University Intelligence) portals.
 """
 from typing import Any
 from uuid import UUID
@@ -15,10 +16,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.models import (
+    Academician,
+    Admin,
     Application,
+    Institution,
     Internship,
     Match,
     PlacementRegistration,
+    Recruiter,
     ResumeDocument,
     Student,
 )
@@ -47,7 +52,76 @@ async def query_gemini_copilot(query: str, ctx: dict[str, Any]) -> CopilotRespon
     if not settings.gemini_api_key:
         return None
 
-    prompt = f"""You are the AI Career & Skill Copilot for Skill Passport (an evidence-backed verifiable skill platform).
+    role = ctx.get("role", "student")
+
+    if role == "academician":
+        prompt = f"""You are the AI Academic & Faculty Research Copilot for Skill Passport.
+You are assisting Faculty Member: {ctx.get('faculty_name', 'Professor')} ({ctx.get('designation', 'Professor')}, Department of {ctx.get('department', 'Engineering')}, {ctx.get('institution_name', 'University')}).
+
+Verified Faculty Snapshot:
+- Department: {ctx.get('department')}
+- Designation: {ctx.get('designation')}
+- Research Areas: {', '.join(ctx.get('research_areas', [])) or 'Computer Science, AI, Distributed Systems'}
+- Technical Skills: {', '.join(ctx.get('skills', [])) or 'General'}
+- Years Experience: {ctx.get('years_experience', 5)} years
+
+Guidelines:
+1. Provide concise, expert academic guidance regarding research proposals, grants, industrial sabbatical opportunities, student project advising, or faculty development programs.
+2. Recommend concrete platform actions where applicable.
+3. Keep response under 3 clean paragraphs.
+
+Faculty Query: {query}"""
+
+        default_actions = [
+            CopilotAction(label="Explore Opportunities", target_tab="opportunities"),
+            CopilotAction(label="R&D Proposals & Grants", target_tab="proposals"),
+            CopilotAction(label="Mentorship & Events", target_tab="mentorship_events"),
+        ]
+        source_label = "Gemini Academic Intelligence Engine"
+
+    elif role == "institution":
+        prompt = f"""You are the AI University & Institutional Intelligence Copilot for Skill Passport.
+You are assisting University Leadership: {ctx.get('institution_name', 'Institution')} (Code: {ctx.get('institution_code', 'UNIV')}, State: {ctx.get('state', 'National')}).
+
+Verified Institutional Snapshot:
+- Institution Name: {ctx.get('institution_name')}
+- Code: {ctx.get('institution_code')}
+- Departments: {', '.join(ctx.get('departments', [])) or 'Computer Science, Information Technology, Data Science'}
+
+Guidelines:
+1. Provide strategic institutional insights on university placement analytics, student cohort readiness, curriculum skill gaps, corporate partner linkages, and accreditation reports.
+2. Recommend concrete platform actions where applicable.
+3. Keep response under 3 clean paragraphs.
+
+Institutional Query: {query}"""
+
+        default_actions = [
+            CopilotAction(label="Executive Overview", target_tab="overview"),
+            CopilotAction(label="Cohorts & At-Risk", target_tab="cohorts"),
+            CopilotAction(label="Skill & Curriculum Gap", target_tab="skills"),
+            CopilotAction(label="Placement Outcomes", target_tab="placements"),
+        ]
+        source_label = "Gemini Institutional Intelligence Engine"
+
+    elif role == "recruiter":
+        prompt = f"""You are the AI Talent Acquisition Copilot for Skill Passport.
+You are assisting Recruiter at: {ctx.get('company_name', 'Company')}.
+
+Guidelines:
+1. Provide guidance on ranked candidate pipelines, verified skill provenance, deterministic matching formulas, or posting new internships.
+2. Keep response under 3 clean paragraphs.
+
+Recruiter Query: {query}"""
+
+        default_actions = [
+            CopilotAction(label="Ranked Candidates", target_tab="candidates"),
+            CopilotAction(label="Your Internships", target_tab="internships"),
+            CopilotAction(label="Post New Internship", target_tab="post_job"),
+        ]
+        source_label = "Gemini Talent Acquisition Engine"
+
+    else:
+        prompt = f"""You are the AI Career & Skill Copilot for Skill Passport (an evidence-backed verifiable skill platform).
 You are assisting the student: {ctx.get('student_name', 'Student')}.
 
 Verified Platform Snapshot:
@@ -66,8 +140,22 @@ Guidelines:
 
 Student Query: {query}"""
 
+        default_actions = [
+            CopilotAction(label="View Skill Passport", target_tab="passport"),
+            CopilotAction(label="Analyze Skill Gaps", target_tab="gaps"),
+            CopilotAction(label="Browse Internships", target_tab="internships"),
+        ]
+        source_label = "Gemini AI Career Engine"
+
+    model_candidates = list(dict.fromkeys([
+        settings.extraction_model or "gemini-3.5-flash",
+        "gemini-3.5-flash",
+        "gemini-3.7-flash",
+        "gemini-3.6-flash",
+    ]))
+
     async with httpx.AsyncClient(timeout=6.0) as client:
-        for model_name in ["gemini-3.5-flash", "gemini-3.7-flash", "gemini-3.6-flash"]:
+        for model_name in model_candidates:
             try:
                 resp = await client.post(
                     f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent",
@@ -87,13 +175,9 @@ Student Query: {query}"""
             if isinstance(text, str) and text.strip():
                 return CopilotResponse(
                     message=text.strip(),
-                    sources=["Gemini AI Career Engine", "Skill Passport Grounding Context"],
-                    actions=[
-                        CopilotAction(label="View Skill Passport", target_tab="passport"),
-                        CopilotAction(label="Analyze Skill Gaps", target_tab="gaps"),
-                        CopilotAction(label="Browse Internships", target_tab="internships"),
-                    ],
-                    grounding_data={"ai_model": model_name},
+                    sources=[source_label, "Skill Passport Grounding Context"],
+                    actions=default_actions,
+                    grounding_data={"ai_model": model_name, "role": role},
                 )
     return None
 
@@ -102,11 +186,10 @@ async def get_student_context(session: AsyncSession, student_id: UUID) -> dict[s
     """Retrieve full, read-only platform snapshot for the authenticated student."""
     student = await session.get(Student, student_id)
     if not student:
-        return {}
+        return {"role": "student"}
 
     profile = await build_candidate_profile(session, student)
     
-    # Skills from already-loaded profile
     verified_skills = [
         s.canonical_name for s in profile.skills
         if s.verification_summary == "verified"
@@ -116,18 +199,14 @@ async def get_student_context(session: AsyncSession, student_id: UUID) -> dict[s
         if s.verification_summary == "partially_verified"
     ]
 
-    # Career goal
     career_goals = await get_student_career_goals(session, student_id)
     target_role = career_goals.target_roles[0] if career_goals.target_roles else "Backend Engineer"
 
-
-    # Guidance
     try:
         guidance = await generate_career_guidance(session, student_id)
     except (SQLAlchemyError, ValueError):
         guidance = None
 
-    # Matches with joined internship title
     matches_rows = (await session.execute(
         select(Match, Internship.title)
         .outerjoin(Internship, Match.internship_id == Internship.id)
@@ -136,19 +215,17 @@ async def get_student_context(session: AsyncSession, student_id: UUID) -> dict[s
         .limit(5)
     )).all()
 
-    # Applications
     applications = (await session.scalars(select(Application).where(Application.student_id == student_id))).all()
 
-    # Placements
     registrations = (await session.scalars(
         select(PlacementRegistration)
         .where(PlacementRegistration.student_id == student_id)
     )).all()
 
-    # Resume & GitHub
     active_resume = (await session.scalars(select(ResumeDocument).where(ResumeDocument.student_id == student_id, ResumeDocument.is_active.is_(True)))).first()
 
     return {
+        "role": "student",
         "student_name": student.full_name,
         "email": student.email,
         "github_connected": bool(student.github_username),
@@ -180,8 +257,213 @@ async def get_student_context(session: AsyncSession, student_id: UUID) -> dict[s
     }
 
 
-async def answer_copilot_query(session: AsyncSession, student_id: UUID, query: str) -> CopilotResponse:
-    """Analyze query and route to grounded platform data with exact navigation actions."""
+async def answer_academician_copilot(
+    session: AsyncSession, academician: Academician, query: str
+) -> CopilotResponse:
+    """Handle Academician/Faculty Copilot queries."""
+    ctx = {
+        "role": "academician",
+        "faculty_name": academician.full_name,
+        "department": academician.department,
+        "designation": academician.designation,
+        "institution_name": academician.institution_name,
+        "research_areas": academician.research_areas,
+        "skills": academician.technical_skills,
+        "years_experience": academician.years_experience,
+    }
+
+    gemini_resp = await query_gemini_copilot(query, ctx)
+    if gemini_resp:
+        return gemini_resp
+
+    q = query.lower().strip()
+
+    if any(k in q for k in ["grant", "proposal", "r&d", "funding", "dst", "serb", "research"]):
+        return CopilotResponse(
+            message=(
+                f"As a faculty member in {academician.department}, you can manage sponsored research proposals, "
+                f"DST/SERB/Govt funding calls, and corporate co-funded R&D grants in the R&D Proposals portal."
+            ),
+            sources=["Faculty Research DB", "Grant Opportunities Matrix"],
+            actions=[CopilotAction(label="R&D Proposals & Grants", target_tab="proposals")],
+            grounding_data={"research_areas": academician.research_areas},
+        )
+
+    if any(k in q for k in ["sabbatical", "industrial", "training", "immersion", "corporate", "opportunity"]):
+        return CopilotResponse(
+            message=(
+                f"Explore verified industrial sabbatical positions and faculty training opportunities. "
+                f"Partner companies offer corporate immersion in AI, Cloud, and VLSI engineering."
+            ),
+            sources=["Industrial Immersion Catalog", "Corporate Linkages DB"],
+            actions=[
+                CopilotAction(label="Explore Opportunities", target_tab="opportunities"),
+                CopilotAction(label="Industrial Training", target_tab="internships"),
+            ],
+            grounding_data={},
+        )
+
+    if any(k in q for k in ["mentor", "advising", "event", "student", "hackathon", "capstone"]):
+        return CopilotResponse(
+            message=(
+                f"Review student project advising requests, capstone mentorship slots, and faculty-led hackathons. "
+                f"You can review student skill portfolios before approving advising sessions."
+            ),
+            sources=["Mentorship & Advising DB"],
+            actions=[
+                CopilotAction(label="Mentorship & Events", target_tab="mentorship_events"),
+                CopilotAction(label="Project Advising", target_tab="advising"),
+            ],
+            grounding_data={},
+        )
+
+    return CopilotResponse(
+        message=(
+            f"Welcome Professor {academician.full_name}! I can assist you with research grant proposals, "
+            f"industrial sabbaticals in {academician.department}, student advising, or your Academic Passport."
+        ),
+        sources=["Faculty Platform Registry"],
+        actions=[
+            CopilotAction(label="Explore Opportunities", target_tab="opportunities"),
+            CopilotAction(label="R&D Proposals & Grants", target_tab="proposals"),
+            CopilotAction(label="Academic Passport", target_tab="passport"),
+        ],
+        grounding_data={},
+    )
+
+
+async def answer_institution_copilot(
+    session: AsyncSession, institution: Institution, query: str
+) -> CopilotResponse:
+    """Handle University/Institution Intelligence Copilot queries."""
+    ctx = {
+        "role": "institution",
+        "institution_name": institution.institution_name,
+        "institution_code": institution.institution_code,
+        "state": institution.state,
+        "departments": institution.departments,
+    }
+
+    gemini_resp = await query_gemini_copilot(query, ctx)
+    if gemini_resp:
+        return gemini_resp
+
+    q = query.lower().strip()
+
+    if any(k in q for k in ["placement", "rate", "package", "outcome", "hired", "offer"]):
+        return CopilotResponse(
+            message=(
+                f"Executive Placement Analytics for {institution.institution_name}: Track campus placement rates, "
+                f"median packages, and active recruitment drives across departments ({', '.join(institution.departments[:3]) or 'All'})."
+            ),
+            sources=["Placement Intelligence DB", "Institutional Outcomes Matrix"],
+            actions=[
+                CopilotAction(label="Placement Outcomes", target_tab="placements"),
+                CopilotAction(label="Executive Overview", target_tab="overview"),
+            ],
+            grounding_data={},
+        )
+
+    if any(k in q for k in ["cohort", "risk", "at-risk", "student", "readiness"]):
+        return CopilotResponse(
+            message=(
+                f"Cohort Intelligence: Identify at-risk student cohorts requiring skill interventions before "
+                f"placement drives. Automated interventions include targeted diagnostic bootcamps and faculty advising."
+            ),
+            sources=["Student Cohort Analytics Engine"],
+            actions=[
+                CopilotAction(label="Cohorts & At-Risk", target_tab="cohorts"),
+                CopilotAction(label="Action Plans", target_tab="interventions"),
+            ],
+            grounding_data={},
+        )
+
+    if any(k in q for k in ["skill", "curriculum", "gap", "industry", "demand"]):
+        return CopilotResponse(
+            message=(
+                f"Curriculum Gap Analysis: Benchmark your institutional curriculum against verified industry demand "
+                f"to update course modules and boost student employability."
+            ),
+            sources=["Curriculum Alignment Matrix", "Market Demand Taxonomy"],
+            actions=[CopilotAction(label="Skill & Curriculum Gap", target_tab="skills")],
+            grounding_data={},
+        )
+
+    if any(k in q for k in ["report", "naac", "nirf", "accreditation", "export", "download"]):
+        return CopilotResponse(
+            message=(
+                f"Accreditation & Institutional Reports: Generate and export NAAC/NIRF-ready reports "
+                f"with verified evidence provenance and campus placement statistics."
+            ),
+            sources=["Institutional Reporting Engine"],
+            actions=[CopilotAction(label="Institutional Reports", target_tab="reports")],
+            grounding_data={},
+        )
+
+    return CopilotResponse(
+        message=(
+            f"Welcome to Institutional Intelligence for {institution.institution_name}. "
+            f"I can assist with executive placement analytics, department drill-downs, cohort tracking, "
+            f"curriculum skill gaps, or accreditation reports."
+        ),
+        sources=["University Intelligence Registry"],
+        actions=[
+            CopilotAction(label="Executive Overview", target_tab="overview"),
+            CopilotAction(label="Cohorts & At-Risk", target_tab="cohorts"),
+            CopilotAction(label="Placement Outcomes", target_tab="placements"),
+            CopilotAction(label="Institutional Reports", target_tab="reports"),
+        ],
+        grounding_data={},
+    )
+
+
+async def answer_recruiter_copilot(
+    session: AsyncSession, recruiter: Recruiter, query: str
+) -> CopilotResponse:
+    """Handle Recruiter Copilot queries."""
+    ctx = {
+        "role": "recruiter",
+        "company_name": recruiter.company_name,
+    }
+
+    gemini_resp = await query_gemini_copilot(query, ctx)
+    if gemini_resp:
+        return gemini_resp
+
+    return CopilotResponse(
+        message=(
+            f"Welcome to Talent Acquisition for {recruiter.company_name}. "
+            f"Candidate matching uses auditable deterministic formulas (0.65×Overlap + 0.25×Semantic + 0.10×Verification) "
+            f"grounded in verified GitHub code and technical evidence."
+        ),
+        sources=["Deterministic Matching View", "Recruiter Intelligence"],
+        actions=[
+            CopilotAction(label="Ranked Candidates", target_tab="candidates"),
+            CopilotAction(label="Your Internships", target_tab="internships"),
+            CopilotAction(label="Post New Internship", target_tab="post_job"),
+        ],
+        grounding_data={},
+    )
+
+
+async def answer_copilot_query(
+    session: AsyncSession,
+    principal: Student | Recruiter | Academician | Institution | Admin | UUID,
+    query: str,
+) -> CopilotResponse:
+    """Analyze query and route to grounded platform data with exact navigation actions for any persona."""
+    if isinstance(principal, Academician) or getattr(principal, "role", None) == "academician":
+        return await answer_academician_copilot(session, principal, query)  # type: ignore[arg-type]
+
+    if isinstance(principal, Institution) or getattr(principal, "role", None) == "institution":
+        return await answer_institution_copilot(session, principal, query)  # type: ignore[arg-type]
+
+    if isinstance(principal, Recruiter) or getattr(principal, "role", None) == "recruiter":
+        return await answer_recruiter_copilot(session, principal, query)  # type: ignore[arg-type]
+
+    # Student ID or Student instance
+    student_id = principal if isinstance(principal, UUID) else principal.id  # type: ignore[union-attr]
+
     ctx = await get_student_context(session, student_id)
     q = query.lower().strip()
 
@@ -190,8 +472,7 @@ async def answer_copilot_query(session: AsyncSession, student_id: UUID, query: s
     if gemini_resp:
         return gemini_resp
 
-    # Fallback: Deterministic Keyword Router
-    # A. Assessments & Diagnostics
+    # Fallback: Deterministic Keyword Router for Students
     if any(k in q for k in ["assessment", "test", "quiz", "aptitude", "soft skill", "diagnostic"]):
         return CopilotResponse(
             message=(
@@ -201,17 +482,16 @@ async def answer_copilot_query(session: AsyncSession, student_id: UUID, query: s
             ),
             sources=["Assessment Attempts DB", "Skill Provenance Policy"],
             actions=[CopilotAction(label="Open Skill Assessments", target_tab="assessments")],
-            grounding_data={"verified_count": len(ctx["verified_skills"]), "partial_count": len(ctx["partially_verified_skills"])},
+            grounding_data={"verified_count": len(ctx.get("verified_skills", [])), "partial_count": len(ctx.get("partially_verified_skills", []))},
         )
 
-    # 2. Skill Passport & Verification
     if any(k in q for k in ["passport", "evidence", "verify", "verification", "provenance", "partially", "unverified", "tier", "python"]):
         return CopilotResponse(
             message=(
-                f"Your Skill Passport contains {ctx['total_skills']} evidence-backed skills. "
+                f"Your Skill Passport contains {ctx.get('total_skills', 0)} evidence-backed skills. "
                 f"Skills are categorized into 3 provenance tiers:\n"
-                f"• **Verified (1.00x)**: External cryptographic code or GitHub proofs ({len(ctx['verified_skills'])} skills, e.g., {', '.join(ctx['verified_skills'][:3]) or 'None'}).\n"
-                f"• **Partially Verified (0.85x)**: Validated via diagnostic assessments or verified course certifications ({len(ctx['partially_verified_skills'])} skills).\n"
+                f"• **Verified (1.00x)**: External cryptographic code or GitHub proofs ({len(ctx.get('verified_skills', []))} skills, e.g., {', '.join(ctx.get('verified_skills', [])[:3]) or 'None'}).\n"
+                f"• **Partially Verified (0.85x)**: Validated via diagnostic assessments or verified course certifications ({len(ctx.get('partially_verified_skills', []))} skills).\n"
                 f"• **Unverified (0.65x)**: Self-reported claims awaiting code proof.\n\n"
                 f"To upgrade partially verified skills like Python to fully verified, link your GitHub repositories in GitHub Verification."
             ),
@@ -220,10 +500,9 @@ async def answer_copilot_query(session: AsyncSession, student_id: UUID, query: s
                 CopilotAction(label="View Skill Passport", target_tab="passport"),
                 CopilotAction(label="Verify GitHub Projects", target_tab="github"),
             ],
-            grounding_data={"verified": ctx["verified_skills"], "partial": ctx["partially_verified_skills"]},
+            grounding_data={"verified": ctx.get("verified_skills", []), "partial": ctx.get("partially_verified_skills", [])},
         )
 
-    # 3. Role Readiness & Skill Gaps
     if any(k in q for k in ["gap", "readiness", "ready", "role", "career goal", "why am i", "score"]):
         target = ctx.get("target_career_role", "Backend Engineer")
         guidance = ctx.get("guidance")
@@ -246,7 +525,6 @@ async def answer_copilot_query(session: AsyncSession, student_id: UUID, query: s
             grounding_data={"target": target, "readiness_score": readiness_pct, "ready_roles": ready_roles, "next_roles": next_roles},
         )
 
-    # 4. Learning & Courses
     if any(k in q for k in ["learn", "course", "curriculum", "improve", "study", "recommend"]):
         return CopilotResponse(
             message=(
@@ -259,7 +537,6 @@ async def answer_copilot_query(session: AsyncSession, student_id: UUID, query: s
             grounding_data={},
         )
 
-    # 5. Internships & Apprenticeships
     if any(k in q for k in ["internship", "apprenticeship", "job", "opportunity", "acme"]):
         top_matches = ctx.get("top_matches", [])
         top_desc = ", ".join([f"{m['internship_title']} ({m['score']}%)" for m in top_matches[:2]]) or "Software Intern (85%)"
@@ -276,7 +553,6 @@ async def answer_copilot_query(session: AsyncSession, student_id: UUID, query: s
             grounding_data={"top_matches": top_matches},
         )
 
-    # 6. Placements & Campus Drives
     if any(k in q for k in ["placement", "campus", "drive", "interview", "offer"]):
         regs = ctx.get("placement_registrations", [])
         return CopilotResponse(
@@ -290,10 +566,9 @@ async def answer_copilot_query(session: AsyncSession, student_id: UUID, query: s
             grounding_data={"registrations": regs},
         )
 
-    # 7. GitHub & Resume Status
     if any(k in q for k in ["github", "resume", "cv", "upload"]):
-        gh = f"GitHub is connected (@{ctx['github_username']})" if ctx["github_connected"] else "GitHub is not yet connected"
-        res = f"Active resume: {ctx['active_resume']}" if ctx["active_resume"] else "No active resume uploaded"
+        gh = f"GitHub is connected (@{ctx.get('github_username')})" if ctx.get("github_connected") else "GitHub is not yet connected"
+        res = f"Active resume: {ctx.get('active_resume')}" if ctx.get("active_resume") else "No active resume uploaded"
         return CopilotResponse(
             message=(
                 f"Profile documents status:\n- {gh}\n- {res}\n\n"
@@ -308,7 +583,6 @@ async def answer_copilot_query(session: AsyncSession, student_id: UUID, query: s
             grounding_data={"github": gh, "resume": res},
         )
 
-    # 8. Team Collaboration & Mentorship
     if any(k in q for k in ["team", "mentor", "hackathon", "challenge", "collaborat"]):
         return CopilotResponse(
             message=(
@@ -323,16 +597,10 @@ async def answer_copilot_query(session: AsyncSession, student_id: UUID, query: s
             grounding_data={},
         )
 
-    # 9. Query Gemini Generative AI if key is present
-    gemini_resp = await query_gemini_copilot(query, ctx)
-    if gemini_resp:
-        return gemini_resp
-
-    # Default overview guidance
     return CopilotResponse(
         message=(
             f"Hello {ctx.get('student_name', 'there')}! I am your Skill Passport Copilot. "
-            f"I can help you navigate your passport ({ctx['total_skills']} skills), check your role readiness "
+            f"I can help you navigate your passport ({ctx.get('total_skills', 0)} skills), check your role readiness "
             f"for {ctx.get('target_career_role', 'Backend Engineer')}, review internship matches, "
             f"track placement drives, or guide your learning path."
         ),

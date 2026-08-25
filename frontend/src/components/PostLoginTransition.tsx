@@ -92,13 +92,13 @@ function getDepthStyle(depth: WordItem["depth"]) {
 function getTypeColor(type: WordItem["type"]) {
   switch (type) {
     case "indigo":
-      return "text-[#b0c6ff] drop-shadow-[0_0_12px_rgba(59,113,217,0.5)]";
+      return "text-indigo-600 drop-shadow-[0_0_12px_rgba(79,70,229,0.35)] dark:text-[#b0c6ff] dark:drop-shadow-[0_0_12px_rgba(59,113,217,0.5)]";
     case "cyan":
-      return "text-[#38bdf8] drop-shadow-[0_0_10px_rgba(56,189,248,0.4)]";
+      return "text-sky-600 drop-shadow-[0_0_10px_rgba(2,132,199,0.35)] dark:text-[#38bdf8] dark:drop-shadow-[0_0_10px_rgba(56,189,248,0.4)]";
     case "text":
-      return "text-[#f1f0e8]";
+      return "text-slate-800 dark:text-[#f1f0e8]";
     case "muted":
-      return "text-[#98a4b3]";
+      return "text-slate-500 dark:text-[#98a4b3]";
   }
 }
 
@@ -168,10 +168,10 @@ export function PostLoginTransition({
     <div
       role="region"
       aria-label="Post login transition"
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[#101319] text-[#f1f0e8] select-none font-sans"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-slate-50 text-slate-900 select-none font-sans dark:bg-[#101319] dark:text-[#f1f0e8]"
     >
-      {/* BACKGROUND LAYER: Lumina Intel Dark Midnight Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0b0e13] via-[#101319] to-[#151e29]" />
+      {/* BACKGROUND LAYER: Lumina Fresh Horizon Gradient or Dark Midnight */}
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-50 via-sky-50/50 to-indigo-50/40 dark:from-[#0b0e13] dark:via-[#101319] dark:to-[#151e29]" />
 
       {/* LUMINA WAVE ANIMATION FLOW */}
       {!prefersReduced && (
@@ -186,7 +186,7 @@ export function PostLoginTransition({
           scale: phase === "resolved" ? 1.15 : 1,
         }}
         transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
-        className="pointer-events-none absolute h-[540px] w-[540px] rounded-full bg-radial from-[#3b71d9]/25 via-[#b0c6ff]/10 to-transparent blur-3xl"
+        className="pointer-events-none absolute h-[540px] w-[540px] rounded-full bg-radial from-indigo-400/20 via-sky-300/10 to-transparent blur-3xl dark:from-[#3b71d9]/25 dark:via-[#b0c6ff]/10"
       />
 
       {/* Secondary subtle cyan/teal atmospheric aura */}
@@ -194,7 +194,7 @@ export function PostLoginTransition({
         initial={{ opacity: 0.15 }}
         animate={{ opacity: phase === "resolved" ? 0.4 : 0.2 }}
         transition={{ duration: 1.6, ease: "easeInOut" }}
-        className="pointer-events-none absolute -top-12 h-96 w-96 rounded-full bg-radial from-[#38bdf8]/15 via-[#3b71d9]/5 to-transparent blur-3xl"
+        className="pointer-events-none absolute -top-12 h-96 w-96 rounded-full bg-radial from-sky-400/15 via-indigo-300/5 to-transparent blur-3xl dark:from-[#38bdf8]/15 dark:via-[#3b71d9]/5"
       />
 
       {/* Ambient Micro-Particles */}
@@ -228,7 +228,7 @@ export function PostLoginTransition({
                 repeat: Infinity,
                 ease: "easeInOut",
               }}
-              className="absolute rounded-full bg-[#b0c6ff]"
+              className="absolute rounded-full bg-indigo-500/40 dark:bg-[#b0c6ff]"
             />
           ))}
         </div>
@@ -285,7 +285,7 @@ export function PostLoginTransition({
               delay: 1.35,
               ease: "easeOut",
             }}
-            className="absolute h-40 w-40 rounded-full bg-radial from-[#3b71d9]/40 via-[#b0c6ff]/20 to-transparent blur-xl"
+            className="absolute h-40 w-40 rounded-full bg-radial from-indigo-500/30 via-sky-400/15 to-transparent blur-xl dark:from-[#3b71d9]/40 dark:via-[#b0c6ff]/20"
           />
         </div>
       )}
@@ -315,7 +315,7 @@ export function PostLoginTransition({
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35, delay: 0.05 }}
-                className="mb-2.5 text-xs sm:text-sm font-semibold tracking-widest text-[#b0c6ff] uppercase"
+                className="mb-2.5 text-xs sm:text-sm font-semibold tracking-widest text-indigo-600 dark:text-[#b0c6ff] uppercase"
               >
                 Welcome back, {resolvedName}
               </motion.p>
@@ -324,35 +324,35 @@ export function PostLoginTransition({
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.35, delay: 0.05 }}
-                className="mb-2.5 text-xs sm:text-sm font-semibold tracking-widest text-[#b0c6ff] uppercase"
+                className="mb-2.5 text-xs sm:text-sm font-semibold tracking-widest text-indigo-600 dark:text-[#b0c6ff] uppercase"
               >
                 Welcome back
               </motion.p>
             )}
 
             {/* Primary Headline with Restrained Accent Emphasis */}
-            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-[#f1f0e8] leading-snug sm:leading-tight">
+            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-[#f1f0e8] leading-snug sm:leading-tight">
               {role === "student" ? (
                 <>
-                  Find <span className="text-[#3b71d9] font-black drop-shadow-[0_0_16px_rgba(59,113,217,0.5)]">opportunities</span> that fit you.
+                  Find <span className="text-[#4f46e5] dark:text-[#3b71d9] font-black drop-shadow-[0_0_16px_rgba(79,70,229,0.25)] dark:drop-shadow-[0_0_16px_rgba(59,113,217,0.5)]">opportunities</span> that fit you.
                 </>
               ) : role === "academician" ? (
                 <>
-                  Empower <span className="text-[#3b71d9] font-black drop-shadow-[0_0_16px_rgba(59,113,217,0.5)]">academic excellence</span>.
+                  Empower <span className="text-[#4f46e5] dark:text-[#3b71d9] font-black drop-shadow-[0_0_16px_rgba(79,70,229,0.25)] dark:drop-shadow-[0_0_16px_rgba(59,113,217,0.5)]">academic excellence</span>.
                 </>
               ) : role === "institution" ? (
                 <>
-                  Institutional <span className="text-[#3b71d9] font-black drop-shadow-[0_0_16px_rgba(59,113,217,0.5)]">intelligence</span>.
+                  Institutional <span className="text-[#4f46e5] dark:text-[#3b71d9] font-black drop-shadow-[0_0_16px_rgba(79,70,229,0.25)] dark:drop-shadow-[0_0_16px_rgba(59,113,217,0.5)]">intelligence</span>.
                 </>
               ) : (
                 <>
-                  Find <span className="text-[#3b71d9] font-black drop-shadow-[0_0_16px_rgba(59,113,217,0.5)]">talent</span> that fits.
+                  Find <span className="text-[#4f46e5] dark:text-[#3b71d9] font-black drop-shadow-[0_0_16px_rgba(79,70,229,0.25)] dark:drop-shadow-[0_0_16px_rgba(59,113,217,0.5)]">talent</span> that fits.
                 </>
               )}
             </h1>
 
             {/* Supporting Subtitle with Source Serif 4 italic */}
-            <p className="mt-3 text-xs sm:text-sm font-medium text-[#98a4b3] leading-relaxed max-w-md mx-auto">
+            <p className="mt-3 text-xs sm:text-sm font-medium text-slate-600 dark:text-[#98a4b3] leading-relaxed max-w-md mx-auto">
               {role === "student"
                 ? "Your verified skills are ready to work for you."
                 : role === "academician"
@@ -363,8 +363,8 @@ export function PostLoginTransition({
             </p>
 
             {/* Subtle verification badge indicator */}
-            <div className="mt-5 flex items-center justify-center gap-1.5 text-[11px] font-semibold text-[#dedbc8]">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#dedbc8] animate-pulse"></span>
+            <div className="mt-5 flex items-center justify-center gap-1.5 text-[11px] font-semibold text-slate-600 dark:text-[#dedbc8]">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               <span>Verifiable match engine active</span>
             </div>
           </motion.div>
@@ -376,7 +376,7 @@ export function PostLoginTransition({
         <button
           type="button"
           onClick={() => onComplete()}
-          className="rounded-lg px-3 py-1.5 text-[11px] font-medium text-[#98a4b3] hover:text-[#f1f0e8] bg-[#151e29]/60 hover:bg-[#151e29] border border-white/[0.08] transition-all cursor-pointer backdrop-blur-xs"
+          className="rounded-lg px-3 py-1.5 text-[11px] font-medium text-slate-600 hover:text-slate-900 bg-white/80 hover:bg-white border border-slate-200/80 shadow-xs dark:text-[#98a4b3] dark:hover:text-[#f1f0e8] dark:bg-[#151e29]/60 dark:hover:bg-[#151e29] dark:border-white/[0.08] transition-all cursor-pointer backdrop-blur-xs"
         >
           Skip (Esc)
         </button>
