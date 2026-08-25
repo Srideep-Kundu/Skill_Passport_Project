@@ -107,123 +107,29 @@ h1, h2, h3, .font-display, .font-serif-display {
   z-index: 0;
   overflow: hidden;
   pointer-events: none;
-  background:
-    linear-gradient(180deg, #021522 0%, #031927 48%, #061a25 100%);
+  background: #031322;
 }
 
-.auth-bg__stars {
-  position: absolute;
-  top: 8%;
-  left: 10%;
-  width: 1px;
-  height: 1px;
-  border-radius: 50%;
-  background: rgba(247, 248, 248, 0.55);
-  opacity: 0.94;
-}
-
-.auth-bg__stars--a {
-  box-shadow: 9vw 8vh rgba(247,248,248,.42), 18vw 31vh rgba(156,199,216,.34), 29vw 14vh rgba(247,248,248,.28), 43vw 39vh rgba(247,248,248,.38), 57vw 10vh rgba(156,199,216,.3), 66vw 28vh rgba(247,248,248,.26), 78vw 18vh rgba(247,248,248,.4), 86vw 46vh rgba(156,199,216,.28);
-  animation: star-drift-a 34s linear infinite alternate;
-}
-
-.auth-bg__stars--b {
-  top: 20%;
-  left: 5%;
-  opacity: 0.76;
-  box-shadow: 8vw 43vh rgba(247,248,248,.36), 22vw 7vh rgba(247,248,248,.25), 34vw 51vh rgba(156,199,216,.3), 49vw 18vh rgba(247,248,248,.34), 61vw 54vh rgba(247,248,248,.23), 73vw 34vh rgba(156,199,216,.3), 90vw 12vh rgba(247,248,248,.3);
-  animation: star-drift-b 42s linear infinite alternate;
-}
-
-.auth-bg__stars--c {
-  top: 4%;
-  left: 2%;
-  width: 2px;
-  height: 2px;
-  opacity: 0.64;
-  box-shadow: 15vw 62vh rgba(247,248,248,.28), 38vw 24vh rgba(156,199,216,.24), 53vw 66vh rgba(247,248,248,.24), 71vw 8vh rgba(247,248,248,.26), 94vw 57vh rgba(156,199,216,.22);
-  animation: star-drift-c 50s linear infinite alternate;
-}
-
-.auth-bg__warmlight,
-.auth-bg__bloom {
+.auth-bg__video,
+.auth-bg__lighting {
   position: absolute;
   inset: 0;
 }
 
-.auth-bg__warmlight {
-  background: linear-gradient(315deg, rgba(177, 132, 85, 0.36) 0%, rgba(177, 132, 85, 0.15) 28%, transparent 58%);
+.auth-bg__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
 
-.auth-bg__bloom {
-  background: linear-gradient(180deg, rgba(156, 199, 216, 0.13) 0%, rgba(156, 199, 216, 0.035) 44%, transparent 68%);
+.auth-bg__lighting {
+  background:
+    linear-gradient(180deg, rgba(3, 19, 34, 0.46) 0%, rgba(3, 19, 34, 0.24) 42%, rgba(3, 19, 34, 0.7) 100%),
+    linear-gradient(90deg, rgba(3, 19, 34, 0.32) 0%, transparent 34%, transparent 72%, rgba(3, 19, 34, 0.2) 100%);
 }
-
-.auth-bg__plant {
-  position: absolute;
-  bottom: 0;
-  width: clamp(150px, 18vw, 260px);
-  height: min(68vh, 620px);
-  opacity: 1;
-  filter: saturate(1.3) brightness(2);
-}
-
-.auth-bg__plant--left { left: clamp(15.5rem, 20vw, 19rem); }
-.auth-bg__plant--right { right: 1.5vw; }
-
-.auth-bg__shelf {
-  position: absolute;
-  right: clamp(4rem, 9vw, 9rem);
-  bottom: clamp(3.25rem, 7vh, 5rem);
-  width: clamp(240px, 30vw, 440px);
-  height: 144px;
-  border-bottom: 2px solid rgba(177, 132, 85, 0.58);
-  opacity: 1;
-}
-
-.auth-bg__book {
-  position: absolute;
-  bottom: 1px;
-  display: block;
-  border: 1px solid rgba(201, 160, 112, 0.62);
-  background: rgba(91, 70, 50, 0.64);
-  box-shadow: inset 0 1px rgba(247, 248, 248, 0.08);
-}
-
-.auth-bg__book--one { right: 8px; width: 148px; height: 20px; }
-.auth-bg__book--two { right: 18px; bottom: 23px; width: 126px; height: 19px; }
-.auth-bg__book--three { right: 5px; bottom: 45px; width: 158px; height: 18px; }
-.auth-bg__book--four { right: 180px; width: 28px; height: 104px; transform: rotate(-4deg); }
-
-@media (max-width: 640px) {
-  .auth-bg__plant {
-    width: 112px;
-    height: 44vh;
-    opacity: 0.72;
-  }
-
-  .auth-bg__plant--left { left: 0; }
-  .auth-bg__plant--right { right: 0; }
-
-  .auth-bg__shelf {
-    right: 1rem;
-    width: 180px;
-    opacity: 0.7;
-    transform: scale(0.78);
-    transform-origin: right bottom;
-  }
-}
-
-@keyframes star-drift-a { to { transform: translate3d(1.2vw, -1vh, 0); } }
-@keyframes star-drift-b { to { transform: translate3d(-1vw, 1.2vh, 0); } }
-@keyframes star-drift-c { to { transform: translate3d(.7vw, .6vh, 0); } }
 
 @media (prefers-reduced-motion: reduce) {
-  .auth-bg__stars {
-    animation: none !important;
-    transform: none !important;
-  }
-
   .animate-fade-rise,
   .animate-light-arrive,
   .signature-accent-line {

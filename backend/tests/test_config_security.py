@@ -1,6 +1,12 @@
+import json
+
 import pytest
+from fastapi.middleware.cors import CORSMiddleware
+from starlette.requests import Request
 
 from app.core.config import Settings
+from app.main import app, safe_unhandled_exception
+from app.main import settings as app_settings
 
 
 def production_settings(**overrides: object) -> Settings:
@@ -47,6 +53,38 @@ def test_production_settings_reject_unsafe_or_missing_configuration(overrides: d
 
 def test_development_settings_allow_local_defaults() -> None:
     Settings().validate_for_runtime()
+
+
+def test_cors_middleware_uses_validated_configured_origins() -> None:
+    middleware = next(item for item in app.user_middleware if item.cls is CORSMiddleware)
+
+    assert middleware.kwargs["allow_origins"] == app_settings.cors_origins
+
+
+@pytest.mark.asyncio
+async def test_unhandled_errors_do_not_expose_exception_details() -> None:
+    request = Request(
+        {
+            "type": "http",
+            "http_version": "1.1",
+            "method": "GET",
+            "scheme": "http",
+            "path": "/failure",
+            "raw_path": b"/failure",
+            "query_string": b"",
+            "headers": [],
+            "client": ("127.0.0.1", 1),
+            "server": ("test", 80),
+            "root_path": "",
+        }
+    )
+
+    response = await safe_unhandled_exception(request, RuntimeError("provider-secret-detail"))
+    payload = json.loads(response.body)
+
+    assert response.status_code == 500
+    assert payload["detail"] == "Internal server error"
+    assert "provider-secret-detail" not in response.body.decode()
 
 
 def test_costly_operation_rate_limits_accept_documented_environment_aliases() -> None:

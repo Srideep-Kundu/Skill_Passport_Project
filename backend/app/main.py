@@ -86,7 +86,7 @@ settings = get_settings()
 app = FastAPI(title="Skill Passport API", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -174,7 +174,7 @@ async def safe_unhandled_exception(request: Request, exc: Exception) -> JSONResp
     )
     return JSONResponse(
         status_code=500,
-        content={"detail": f"Internal server error: {exc}", "request_id": request_id_context.get()},
+        content={"detail": "Internal server error", "request_id": request_id_context.get()},
     )
 
 

@@ -292,8 +292,8 @@ async def answer_academician_copilot(
     if any(k in q for k in ["sabbatical", "industrial", "training", "immersion", "corporate", "opportunity"]):
         return CopilotResponse(
             message=(
-                f"Explore verified industrial sabbatical positions and faculty training opportunities. "
-                f"Partner companies offer corporate immersion in AI, Cloud, and VLSI engineering."
+                "Explore verified industrial sabbatical positions and faculty training opportunities. "
+                "Partner companies offer corporate immersion in AI, Cloud, and VLSI engineering."
             ),
             sources=["Industrial Immersion Catalog", "Corporate Linkages DB"],
             actions=[
@@ -306,8 +306,8 @@ async def answer_academician_copilot(
     if any(k in q for k in ["mentor", "advising", "event", "student", "hackathon", "capstone"]):
         return CopilotResponse(
             message=(
-                f"Review student project advising requests, capstone mentorship slots, and faculty-led hackathons. "
-                f"You can review student skill portfolios before approving advising sessions."
+                "Review student project advising requests, capstone mentorship slots, and faculty-led hackathons. "
+                "You can review student skill portfolios before approving advising sessions."
             ),
             sources=["Mentorship & Advising DB"],
             actions=[
@@ -367,8 +367,8 @@ async def answer_institution_copilot(
     if any(k in q for k in ["cohort", "risk", "at-risk", "student", "readiness"]):
         return CopilotResponse(
             message=(
-                f"Cohort Intelligence: Identify at-risk student cohorts requiring skill interventions before "
-                f"placement drives. Automated interventions include targeted diagnostic bootcamps and faculty advising."
+                "Cohort Intelligence: Identify at-risk student cohorts requiring skill interventions before "
+                "placement drives. Automated interventions include targeted diagnostic bootcamps and faculty advising."
             ),
             sources=["Student Cohort Analytics Engine"],
             actions=[
@@ -381,8 +381,8 @@ async def answer_institution_copilot(
     if any(k in q for k in ["skill", "curriculum", "gap", "industry", "demand"]):
         return CopilotResponse(
             message=(
-                f"Curriculum Gap Analysis: Benchmark your institutional curriculum against verified industry demand "
-                f"to update course modules and boost student employability."
+                "Curriculum Gap Analysis: Benchmark your institutional curriculum against verified industry demand "
+                "to update course modules and boost student employability."
             ),
             sources=["Curriculum Alignment Matrix", "Market Demand Taxonomy"],
             actions=[CopilotAction(label="Skill & Curriculum Gap", target_tab="skills")],
@@ -392,8 +392,8 @@ async def answer_institution_copilot(
     if any(k in q for k in ["report", "naac", "nirf", "accreditation", "export", "download"]):
         return CopilotResponse(
             message=(
-                f"Accreditation & Institutional Reports: Generate and export NAAC/NIRF-ready reports "
-                f"with verified evidence provenance and campus placement statistics."
+                "Accreditation & Institutional Reports: Generate and export NAAC/NIRF-ready reports "
+                "with verified evidence provenance and campus placement statistics."
             ),
             sources=["Institutional Reporting Engine"],
             actions=[CopilotAction(label="Institutional Reports", target_tab="reports")],
