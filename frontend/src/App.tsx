@@ -430,7 +430,7 @@ export function App() {
       {/* Main Content Area */}
       <div className="relative z-10 flex-1 flex flex-col min-w-0 bg-transparent">
         {/* Desktop Top Status Bar */}
-        <header className="sticky top-0 z-30 border-b border-white/10 bg-[#031322]/90 backdrop-blur-md px-6 py-3.5 flex items-center justify-between">
+        <header className="sticky top-0 z-30 border-b border-white/10 bg-[#031322]/[0.92] backdrop-blur-[2px] px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               type="button"
