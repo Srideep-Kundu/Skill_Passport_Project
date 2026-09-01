@@ -210,7 +210,7 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
         api.getCollaborationRelationships(token),
       ]);
 
-      if (overviewRes.status === "fulfilled" && overviewRes.value) {
+      if (overviewRes.status === "fulfilled" && overviewRes.value && overviewRes.value.total_students > 0) {
         setAnalytics(overviewRes.value);
       } else {
         setAnalytics(DUMMY_ANALYTICS_OVERVIEW);
@@ -222,7 +222,7 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
         setAlerts(DUMMY_ALERTS);
       }
 
-      if (cohortsRes.status === "fulfilled" && cohortsRes.value?.cohorts?.length) {
+      if (cohortsRes.status === "fulfilled" && cohortsRes.value?.cohorts?.length && cohortsRes.value.total_students_monitored > 0) {
         setCohortData(cohortsRes.value);
       } else {
         setCohortData(DUMMY_COHORTS);
@@ -246,19 +246,19 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
         setActionPlans(DUMMY_ACTION_PLANS);
       }
 
-      if (internRes.status === "fulfilled" && internRes.value) {
+      if (internRes.status === "fulfilled" && internRes.value && (internRes.value.eligible_students > 0 || internRes.value.active_internships > 0)) {
         setInternshipData(internRes.value);
       } else {
         setInternshipData(DUMMY_INTERNSHIP_MONITORING);
       }
 
-      if (placeRes.status === "fulfilled" && placeRes.value) {
+      if (placeRes.status === "fulfilled" && placeRes.value && (placeRes.value.eligible_students > 0 || placeRes.value.placements_secured > 0)) {
         setPlacementData(placeRes.value);
       } else {
         setPlacementData(DUMMY_PLACEMENT_MONITORING);
       }
 
-      if (facRes.status === "fulfilled" && facRes.value) {
+      if (facRes.status === "fulfilled" && facRes.value && facRes.value.total_participating_faculty > 0) {
         setFacultyData(facRes.value);
       } else {
         setFacultyData(DUMMY_FACULTY_ENGAGEMENT);
@@ -270,25 +270,25 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
         setCurriculumRecs(DUMMY_CURRICULUM_RECS);
       }
 
-      if (partRes.status === "fulfilled" && partRes.value) {
+      if (partRes.status === "fulfilled" && partRes.value && partRes.value.total_partners > 0) {
         setPartnershipData(partRes.value);
       } else {
         setPartnershipData(DUMMY_PARTNERSHIP_OVERVIEW);
       }
 
-      if (learnRes.status === "fulfilled" && learnRes.value) {
+      if (learnRes.status === "fulfilled" && learnRes.value && learnRes.value.total_enrolled > 0) {
         setLearningData(learnRes.value);
       } else {
         setLearningData(DUMMY_LEARNING_DATA);
       }
 
-      if (riskRes.status === "fulfilled" && riskRes.value) {
+      if (riskRes.status === "fulfilled" && riskRes.value && riskRes.value.total_at_risk_students > 0) {
         setAtRiskData(riskRes.value);
       } else {
         setAtRiskData(DUMMY_AT_RISK_SUMMARY);
       }
 
-      if (relRes.status === "fulfilled" && relRes.value) {
+      if (relRes.status === "fulfilled" && relRes.value && relRes.value.total_collaborations > 0) {
         setRelationshipsData(relRes.value);
       } else {
         setRelationshipsData(DUMMY_COLLABORATIONS);
@@ -317,7 +317,7 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
     try {
       setDeptLoading(true);
       const data = await api.getDepartmentDetail(deptName, token);
-      if (data) {
+      if (data && data.total_students > 0 && data.top_verified_skills?.length > 0) {
         setDeptDetail(data);
       } else {
         setDeptDetail(DUMMY_DEPT_DETAILS[deptName] || DUMMY_DEPT_DETAILS["Computer Science & Engineering"]);
@@ -336,7 +336,7 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
         graduation_year: cohortYearFilter !== "All" ? cohortYearFilter : undefined,
         readiness_band: cohortReadinessFilter !== "All" ? cohortReadinessFilter : undefined,
       });
-      if (data?.cohorts?.length) {
+      if (data?.cohorts?.length && data.total_students_monitored > 0) {
         setCohortData(data);
       } else {
         setCohortData(DUMMY_COHORTS);
@@ -350,7 +350,7 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
     try {
       setReportLoading(true);
       const data = await api.getInstitutionReport(rtype, token);
-      if (data) {
+      if (data && data.rows?.length > 0) {
         setReportData(data);
       } else {
         setReportData(DUMMY_REPORT_DATA);
