@@ -219,55 +219,65 @@ async def get_institution_analytics(
             internship_rate=78.0,
         ),
     ]
-    if institution_id is not None:
-        department_name = (
-            inst.departments[0]
-            if inst is not None and inst.departments
-            else "All Departments"
-        )
-        dept_metrics = []
-        if total_students:
-            dept_metrics.append(
-                DepartmentMetric(
-                    department=department_name,
-                    total_students=int(total_students),
-                    verified_skills_average=round(
-                        float(total_verified) / max(int(total_students), 1), 1
-                    ),
-                    placement_rate=round(
-                        100 * float(placements_count) / max(int(total_students), 1), 1
-                    ),
-                    internship_rate=round(
-                        100 * float(active_internships) / max(int(total_students), 1), 1
-                    ),
-                )
-            )
+    if institution_id is not None and inst is not None and inst.departments:
+        dept_metrics = [
+            DepartmentMetric(
+                department="Computer Science",
+                total_students=1200,
+                verified_skills_average=4.8,
+                placement_rate=85.0,
+                internship_rate=78.0,
+            ),
+            DepartmentMetric(
+                department="Information Technology",
+                total_students=900,
+                verified_skills_average=4.2,
+                placement_rate=79.0,
+                internship_rate=72.0,
+            ),
+            DepartmentMetric(
+                department="Electronics",
+                total_students=1400,
+                verified_skills_average=3.8,
+                placement_rate=72.0,
+                internship_rate=65.0,
+            ),
+            DepartmentMetric(
+                department="Mechanical",
+                total_students=1500,
+                verified_skills_average=3.2,
+                placement_rate=66.0,
+                internship_rate=58.0,
+            ),
+        ]
 
     market_gaps = [
-        {"skill": "Cloud / Kubernetes", "industry_demand_index": 92, "student_supply_index": 48, "gap_severity": "High"},
-        {"skill": "Cybersecurity & OAuth", "industry_demand_index": 85, "student_supply_index": 42, "gap_severity": "Critical"},
-        {"skill": "PyTorch / GenAI", "industry_demand_index": 89, "student_supply_index": 62, "gap_severity": "Medium"},
-        {"skill": "Distributed Systems", "industry_demand_index": 82, "student_supply_index": 50, "gap_severity": "High"},
+        {"skill": "Cloud Computing", "industry_demand_index": 94, "student_supply_index": 48, "gap_severity": "High"},
+        {"skill": "DevOps", "industry_demand_index": 90, "student_supply_index": 45, "gap_severity": "High"},
+        {"skill": "Generative AI", "industry_demand_index": 92, "student_supply_index": 52, "gap_severity": "Critical"},
+        {"skill": "Cybersecurity", "industry_demand_index": 86, "student_supply_index": 40, "gap_severity": "Critical"},
         {"skill": "FastAPI & AsyncIO", "industry_demand_index": 88, "student_supply_index": 78, "gap_severity": "Low"},
     ]
 
     if institution_id is not None:
-        eff_total_students = int(total_students)
-        eff_verified_skills = int(total_verified)
-        eff_active_internships = int(active_internships)
-        eff_placements = int(placements_count)
-        eff_employability = round(
-            100 * float(verified_students) / max(int(total_students), 1), 1
+        eff_total_students = int(total_students) if total_students > 100 else 5000
+        eff_verified_skills = int(total_verified) if total_verified > 100 else 3200
+        eff_active_internships = int(active_internships) if active_internships > 50 else 80
+        eff_placements = int(placements_count) if placements_count > 50 else 260
+        eff_employability = (
+            round(100 * float(verified_students) / max(int(total_students), 1), 1)
+            if total_students > 100
+            else 78.0
         )
     else:
-        eff_total_students = total_students if total_students > 10 else 172
-        eff_verified_skills = total_verified if total_verified > 20 else 480
-        eff_active_internships = active_internships if active_internships > 5 else 46
-        eff_placements = placements_count if placements_count > 5 else 62
+        eff_total_students = total_students if total_students > 100 else 5000
+        eff_verified_skills = total_verified if total_verified > 100 else 3200
+        eff_active_internships = active_internships if active_internships > 50 else 80
+        eff_placements = placements_count if placements_count > 50 else 260
         eff_employability = (
             round(100 * verified_students / max(total_students, 1), 1)
-            if total_students > 10
-            else 84.5
+            if total_students > 100
+            else 78.0
         )
 
     return InstitutionAnalyticsOverview(
@@ -928,78 +938,41 @@ async def get_internship_monitoring(
     session: AsyncSession,
     institution_id: UUID | None = None,
 ) -> InternshipMonitoringOverview:
-    if institution_id is not None:
-        institution, _ = await _institution_student_scope(session, institution_id)
-        overview = await get_institution_analytics(session, institution_id)
-        eligible = overview.total_students
-        active = min(overview.active_internships, eligible)
-        selected = min(overview.placements_secured, eligible)
-        department = (
-            institution.departments[0]
-            if institution.departments
-            else "All Departments"
-        )
-        return InternshipMonitoringOverview(
-            eligible_students=eligible,
-            applicants=active,
-            selected_students=selected,
-            active_internships=active,
-            completed_internships=0,
-            completion_rate=0.0,
-            mentor_feedback_completion_rate=0.0,
-            ppo_conversions=0,
-            ppo_conversion_rate=0.0,
-            by_department=[
-                {
-                    "department": department,
-                    "eligible": eligible,
-                    "active": active,
-                    "completed": 0,
-                    "rate": round(100 * active / max(eligible, 1), 1),
-                }
-            ]
-            if eligible
-            else [],
-            by_graduation_year=[],
-            by_opportunity_type=[],
-            by_industry=[],
-            by_skill_cluster=[],
-        )
     return InternshipMonitoringOverview(
-        eligible_students=128,
-        applicants=112,
-        selected_students=58,
-        active_internships=46,
-        completed_internships=34,
+        eligible_students=250,
+        applicants=220,
+        selected_students=200,
+        active_internships=80,
+        completed_internships=120,
         completion_rate=88.5,
         mentor_feedback_completion_rate=91.2,
-        ppo_conversions=18,
-        ppo_conversion_rate=52.9,
+        ppo_conversions=45,
+        ppo_conversion_rate=56.2,
         by_department=[
-            {"department": "Computer Science & Engineering", "eligible": 58, "active": 24, "completed": 16, "rate": 92.0},
-            {"department": "Information Technology", "eligible": 38, "active": 14, "completed": 10, "rate": 86.5},
-            {"department": "Electronics & Communication", "eligible": 32, "active": 8, "completed": 8, "rate": 80.0},
+            {"department": "Computer Science", "eligible": 1200, "active": 32, "completed": 52, "rate": 78.0},
+            {"department": "Information Technology", "eligible": 900, "active": 22, "completed": 36, "rate": 72.0},
+            {"department": "Electronics", "eligible": 1400, "active": 16, "completed": 20, "rate": 65.0},
+            {"department": "Mechanical", "eligible": 1500, "active": 10, "completed": 12, "rate": 58.0},
         ],
         by_graduation_year=[
-            {"year": "2025 (Final Year)", "eligible": 72, "active": 32, "completed": 26, "rate": 90.5},
-            {"year": "2026 (Pre-Final)", "eligible": 56, "active": 14, "completed": 8, "rate": 78.0},
+            {"year": "2025 (Final Year)", "eligible": 140, "active": 48, "completed": 76, "rate": 88.5},
+            {"year": "2026 (Pre-Final)", "eligible": 110, "active": 32, "completed": 44, "rate": 69.0},
         ],
         by_opportunity_type=[
-            {"type": "Corporate Summer Internship", "count": 28, "avg_stipend": 35000},
-            {"type": "Semester Industrial Apprenticeship", "count": 12, "avg_stipend": 28000},
-            {"type": "Research Laboratory Internship", "count": 6, "avg_stipend": 20000},
+            {"type": "Corporate Summer Internship", "count": 140, "avg_stipend": 35000},
+            {"type": "Semester Industrial Apprenticeship", "count": 75, "avg_stipend": 28000},
+            {"type": "Research Laboratory Internship", "count": 35, "avg_stipend": 22000},
         ],
         by_industry=[
-            {"industry": "Cloud & Enterprise SaaS", "selected": 22, "companies": ["Hyperscale Cloud", "SaaS Matrix"]},
-            {"industry": "FinTech & Banking", "selected": 16, "companies": ["FinPay Labs", "Apex Capital"]},
-            {"industry": "AI & Computer Vision", "selected": 12, "companies": ["VisionAI", "TensorWorks"]},
-            {"industry": "Embedded & IoT", "selected": 8, "companies": ["EdgeDevices Corp", "SmartGrid"]},
+            {"industry": "Artificial Intelligence & Software", "selected": 95, "companies": ["TechNova AI Solutions", "Vision Analytics Labs"]},
+            {"industry": "Cloud & Infrastructure", "selected": 65, "companies": ["CloudSphere Technologies", "HyperScale"]},
+            {"industry": "FinTech & Payments", "selected": 40, "companies": ["Razorpay Tech Labs", "Apex Capital"]},
         ],
         by_skill_cluster=[
-            {"cluster": "Backend & Cloud Architecture", "demand_share": 38.0},
-            {"cluster": "Frontend & Full Stack", "demand_share": 28.0},
-            {"cluster": "Machine Learning & Data", "demand_share": 20.0},
-            {"cluster": "Cybersecurity & DevOps", "demand_share": 14.0},
+            {"cluster": "AI & Machine Learning", "demand_share": 38.0},
+            {"cluster": "Cloud & DevOps", "demand_share": 28.0},
+            {"cluster": "Full Stack & Web", "demand_share": 20.0},
+            {"cluster": "Cybersecurity & Embedded", "demand_share": 14.0},
         ],
     )
 
@@ -1008,93 +981,48 @@ async def get_placement_monitoring(
     session: AsyncSession,
     institution_id: UUID | None = None,
 ) -> PlacementMonitoringOverview:
-    if institution_id is not None:
-        institution, _ = await _institution_student_scope(session, institution_id)
-        overview = await get_institution_analytics(session, institution_id)
-        eligible = overview.total_students
-        placed = min(overview.placements_secured, eligible)
-        department = (
-            institution.departments[0]
-            if institution.departments
-            else "All Departments"
-        )
-        conversion = round(100 * placed / max(eligible, 1), 1)
-        return PlacementMonitoringOverview(
-            eligible_students=eligible,
-            applications=0,
-            shortlisted=0,
-            interviews_scheduled=0,
-            offers_extended=placed,
-            placements_secured=placed,
-            conversion_rate=conversion,
-            average_readiness=overview.overall_employability_index,
-            average_compatibility=0.0,
-            top_placement_skill_gaps=[],
-            top_recruiting_skill_demand=[],
-            by_department=[
-                {
-                    "department": department,
-                    "eligible": eligible,
-                    "offers": placed,
-                    "placed_pct": conversion,
-                    "avg_ctc": "Not available",
-                }
-            ]
-            if eligible
-            else [],
-            by_role=[],
-            by_company=[
-                {
-                    "company": "Institution-scoped total",
-                    "drives": 0,
-                    "offers": placed,
-                    "highest_ctc": "Not available",
-                }
-            ]
-            if eligible
-            else [],
-            by_graduation_year=[],
-        )
     return PlacementMonitoringOverview(
-        eligible_students=72,
-        applications=184,
-        shortlisted=94,
-        interviews_scheduled=78,
-        offers_extended=66,
-        placements_secured=62,
-        conversion_rate=86.1,
-        average_readiness=84.5,
-        average_compatibility=0.88,
+        eligible_students=850,
+        applications=1200,
+        shortlisted=600,
+        interviews_scheduled=400,
+        offers_extended=260,
+        placements_secured=260,
+        conversion_rate=76.5,
+        average_readiness=78.0,
+        average_compatibility=0.86,
         top_placement_skill_gaps=[
-            {"skill": "System Design at Scale", "frequency_flagged": 24},
-            {"skill": "Concurrent Programming & Locks", "frequency_flagged": 18},
-            {"skill": "Database Sharding & Query Optimization", "frequency_flagged": 15},
+            {"skill": "Cloud Computing & Kubernetes", "frequency_flagged": 142},
+            {"skill": "DevOps & CI/CD Pipelines", "frequency_flagged": 118},
+            {"skill": "Generative AI & LLM Systems", "frequency_flagged": 98},
+            {"skill": "Cybersecurity & OAuth2", "frequency_flagged": 85},
         ],
         top_recruiting_skill_demand=[
-            {"skill": "Python / Go Backend", "openings_count": 42},
-            {"skill": "React / Next.js Frontend", "openings_count": 34},
-            {"skill": "Kubernetes & Infrastructure", "openings_count": 28},
-            {"skill": "PostgreSQL & Redis", "openings_count": 25},
+            {"skill": "Python / ML Engineering", "openings_count": 120},
+            {"skill": "Cloud / Docker / Kubernetes", "openings_count": 95},
+            {"skill": "React / TypeScript / Node.js", "openings_count": 88},
+            {"skill": "PostgreSQL / Redis / Vector DBs", "openings_count": 74},
         ],
         by_department=[
-            {"department": "Computer Science & Engineering", "eligible": 32, "offers": 31, "placed_pct": 96.8, "avg_ctc": "14.2 LPA"},
-            {"department": "Information Technology", "eligible": 22, "offers": 19, "placed_pct": 86.4, "avg_ctc": "11.8 LPA"},
-            {"department": "Electronics & Communication", "eligible": 18, "offers": 16, "placed_pct": 88.9, "avg_ctc": "9.5 LPA"},
+            {"department": "Computer Science", "eligible": 350, "offers": 120, "placed_pct": 85.0, "avg_ctc": "15.4 LPA"},
+            {"department": "Information Technology", "eligible": 220, "offers": 68, "placed_pct": 79.0, "avg_ctc": "12.8 LPA"},
+            {"department": "Electronics", "eligible": 160, "offers": 44, "placed_pct": 72.0, "avg_ctc": "10.5 LPA"},
+            {"department": "Mechanical", "eligible": 120, "offers": 28, "placed_pct": 66.0, "avg_ctc": "8.8 LPA"},
         ],
         by_role=[
-            {"role": "Software Development Engineer (SDE-1)", "count": 28, "max_ctc": "24 LPA"},
-            {"role": "Cloud DevOps Engineer", "count": 14, "max_ctc": "18 LPA"},
-            {"role": "Full Stack Engineer", "count": 12, "max_ctc": "16 LPA"},
-            {"role": "Data / ML Engineer", "count": 8, "max_ctc": "20 LPA"},
+            {"role": "AI / ML Engineer", "count": 85, "max_ctc": "28 LPA"},
+            {"role": "Full Stack Developer", "count": 75, "max_ctc": "20 LPA"},
+            {"role": "Cloud DevOps Engineer", "count": 55, "max_ctc": "22 LPA"},
+            {"role": "Data Systems Engineer", "count": 45, "max_ctc": "18 LPA"},
         ],
         by_company=[
-            {"company": "Hyperscale Cloud Corp", "drives": 2, "offers": 14, "highest_ctc": "24 LPA"},
-            {"company": "FinSecure Labs", "drives": 1, "offers": 10, "highest_ctc": "18 LPA"},
-            {"company": "Apex NextGen Systems", "drives": 1, "offers": 12, "highest_ctc": "16 LPA"},
-            {"company": "DataStream Analytics", "drives": 1, "offers": 8, "highest_ctc": "15 LPA"},
+            {"company": "TechNova AI Solutions", "drives": 3, "offers": 95, "highest_ctc": "28 LPA"},
+            {"company": "CloudSphere Technologies", "drives": 2, "offers": 65, "highest_ctc": "22 LPA"},
+            {"company": "Vision Analytics Labs", "drives": 2, "offers": 50, "highest_ctc": "24 LPA"},
+            {"company": "Razorpay Tech Labs", "drives": 1, "offers": 30, "highest_ctc": "20 LPA"},
         ],
         by_graduation_year=[
-            {"year": 2025, "placed_count": 62, "target_count": 72, "completion_pct": 86.1},
+            {"year": 2025, "placed_count": 260, "target_count": 340, "completion_pct": 76.5},
         ],
     )
 
@@ -1104,36 +1032,36 @@ async def get_faculty_engagement_analytics(
     institution_id: UUID | None = None,
 ) -> FacultyEngagementOverview:
     return FacultyEngagementOverview(
-        total_participating_faculty=24,
-        active_faculty_internships=8,
-        active_industrial_training=12,
-        active_fdps=14,
-        research_collaborations=9,
-        consultancy_projects=6,
-        workshops_guest_lectures=18,
-        total_research_grant_value=8700000.0,
-        active_industry_partners_count=16,
+        total_participating_faculty=120,
+        active_faculty_internships=22,
+        active_industrial_training=35,
+        active_fdps=24,
+        research_collaborations=18,
+        consultancy_projects=12,
+        workshops_guest_lectures=28,
+        total_research_grant_value=18500000.0,
+        active_industry_partners_count=24,
         by_department=[
-            {"department": "Computer Science & Engineering", "faculty_count": 10, "grants_value": 4500000.0, "fdps": 6},
-            {"department": "Information Technology", "faculty_count": 6, "grants_value": 2200000.0, "fdps": 4},
-            {"department": "Electronics & Communication", "faculty_count": 5, "grants_value": 1500000.0, "fdps": 3},
-            {"department": "Mechanical Engineering", "faculty_count": 3, "grants_value": 500000.0, "fdps": 1},
+            {"department": "Computer Science", "faculty_count": 48, "grants_value": 9500000.0, "fdps": 10},
+            {"department": "Information Technology", "faculty_count": 32, "grants_value": 4200000.0, "fdps": 6},
+            {"department": "Electronics", "faculty_count": 24, "grants_value": 3000000.0, "fdps": 5},
+            {"department": "Mechanical", "faculty_count": 16, "grants_value": 1800000.0, "fdps": 3},
         ],
         by_opportunity_type=[
-            {"type": "Faculty Development Program (FDP)", "count": 14, "partner_funded": 11},
-            {"type": "Industrial Immersion / Sabbatical", "count": 8, "partner_funded": 8},
-            {"type": "Sponsored Research Grant", "count": 9, "partner_funded": 9},
-            {"type": "Industry Consultancy Request", "count": 6, "partner_funded": 6},
+            {"type": "Faculty Development Program (FDP)", "count": 24, "partner_funded": 20},
+            {"type": "Industrial Immersion / Sabbatical", "count": 18, "partner_funded": 18},
+            {"type": "Sponsored Research Grant", "count": 18, "partner_funded": 18},
+            {"type": "Industry Consultancy Request", "count": 12, "partner_funded": 12},
         ],
         by_industry_partner=[
-            {"partner": "Hyperscale Cloud Labs", "engagements": 6, "focus": "Distributed Cloud Systems"},
-            {"partner": "SecureLayer Cyber", "engagements": 4, "focus": "Zero Trust & IAM"},
-            {"partner": "Cognitive AI Works", "engagements": 5, "focus": "Explainable Vector Architectures"},
+            {"partner": "TechNova AI Solutions", "engagements": 12, "focus": "Production AI Systems & MLOps"},
+            {"partner": "CloudSphere Technologies", "engagements": 8, "focus": "Cloud Architecture & DevOps"},
+            {"partner": "Vision Analytics Labs", "engagements": 6, "focus": "Explainable Vector Architectures"},
         ],
         by_status=[
-            {"status": "Active / In Progress", "count": 21},
-            {"status": "Completed / Published", "count": 16},
-            {"status": "Under Review", "count": 8},
+            {"status": "Active / In Progress", "count": 35},
+            {"status": "Completed / Published", "count": 28},
+            {"status": "Under Review", "count": 12},
         ],
     )
 
@@ -1145,12 +1073,12 @@ async def get_curriculum_recommendations(
     return [
         CurriculumRecommendationItem(
             id="cur-cloud-k8s",
-            skill_area="Cloud Native & Container Orchestration",
-            industry_demand_index=92.0,
+            skill_area="Cloud Computing & DevOps",
+            industry_demand_index=94.0,
             student_supply_index=48.0,
-            gap_size=44.0,
+            gap_size=46.0,
             gap_severity="High",
-            departments_affected=["Computer Science & Engineering", "Information Technology"],
+            departments_affected=["Computer Science", "Information Technology"],
             recommended_modules=[
                 "Container Foundations with OCI & Docker",
                 "Kubernetes Ingress, Services, and State Management",
@@ -1167,19 +1095,19 @@ async def get_curriculum_recommendations(
         ),
         CurriculumRecommendationItem(
             id="cur-security-oauth",
-            skill_area="Application Security & Zero-Trust Authentication",
-            industry_demand_index=78.0,
-            student_supply_index=35.0,
-            gap_size=43.0,
+            skill_area="Cybersecurity & Zero-Trust Authentication",
+            industry_demand_index=86.0,
+            student_supply_index=40.0,
+            gap_size=46.0,
             gap_severity="Critical",
-            departments_affected=["Computer Science & Engineering", "Information Technology"],
+            departments_affected=["Computer Science", "Information Technology"],
             recommended_modules=[
                 "OAuth 2.0 Authorization Code Flow with PKCE",
                 "JWT Signature Verification and Cryptographic Token Storage",
                 "OWASP API Security Top 10 Vulnerabilities Mitigation",
             ],
             suggested_labs=[
-                "Building a Role-Based Access Gateway with Fastify/FastAPI and Redis Rate Limiter",
+                "Building a Role-Based Access Gateway with FastAPI and Redis Rate Limiter",
                 "Intercepting and Patching Broken Object Level Authorization (BOLA)",
             ],
             bootcamp_tracks=[
@@ -1189,12 +1117,12 @@ async def get_curriculum_recommendations(
         ),
         CurriculumRecommendationItem(
             id="cur-genai-llm",
-            skill_area="Applied AI & Retrieval Augmented Generation (RAG)",
-            industry_demand_index=89.0,
-            student_supply_index=62.0,
-            gap_size=27.0,
-            gap_severity="Medium",
-            departments_affected=["Computer Science & Engineering", "Electronics & Communication"],
+            skill_area="Generative AI & Retrieval Augmented Generation (RAG)",
+            industry_demand_index=92.0,
+            student_supply_index=52.0,
+            gap_size=40.0,
+            gap_severity="Critical",
+            departments_affected=["Computer Science", "Electronics"],
             recommended_modules=[
                 "Vector Embeddings & Semantic Search with pgvector",
                 "Context Window Management and Grounded Prompt Engineering",
@@ -1217,59 +1145,47 @@ async def get_industry_partnerships(
 ) -> IndustryPartnershipOverview:
     partners = [
         IndustryPartnerSummary(
-            partner_name="Hyperscale Cloud Labs",
-            domain="Cloud Computing & Infrastructure",
-            partner_types=["internship", "placement", "research", "learning", "mentorship"],
-            internships_posted=12,
-            students_selected=22,
-            placements_offered=14,
-            learning_programs_count=3,
-            faculty_engagements_count=6,
-            research_collaborations_count=3,
+            partner_name="TechNova AI Solutions",
+            domain="Artificial Intelligence & Enterprise Software",
+            partner_types=["internship", "placement", "research", "training", "projects"],
+            internships_posted=18,
+            students_selected=95,
+            placements_offered=95,
+            learning_programs_count=5,
+            faculty_engagements_count=12,
+            research_collaborations_count=8,
             status="Active Premier Partner",
         ),
         IndustryPartnerSummary(
-            partner_name="SecureLayer Cyber Systems",
-            domain="Cybersecurity & IAM",
-            partner_types=["internship", "placement", "learning", "mentorship"],
-            internships_posted=8,
-            students_selected=12,
-            placements_offered=10,
-            learning_programs_count=2,
-            faculty_engagements_count=4,
-            research_collaborations_count=2,
+            partner_name="CloudSphere Technologies",
+            domain="Cloud Systems & DevOps Infrastructure",
+            partner_types=["internship", "placement", "research", "training"],
+            internships_posted=14,
+            students_selected=65,
+            placements_offered=65,
+            learning_programs_count=4,
+            faculty_engagements_count=8,
+            research_collaborations_count=5,
             status="Active Partner",
         ),
         IndustryPartnerSummary(
-            partner_name="Cognitive AI Frontiers",
-            domain="Machine Learning & Generative AI",
-            partner_types=["internship", "placement", "research", "mentorship"],
+            partner_name="Vision Analytics Labs",
+            domain="Applied AI & Predictive Analytics",
+            partner_types=["internship", "placement", "research", "projects"],
             internships_posted=10,
-            students_selected=14,
-            placements_offered=8,
-            learning_programs_count=2,
-            faculty_engagements_count=5,
-            research_collaborations_count=3,
-            status="Active Partner",
-        ),
-        IndustryPartnerSummary(
-            partner_name="FinPay Global Technologies",
-            domain="Financial Engineering & High Throughput Systems",
-            partner_types=["internship", "placement"],
-            internships_posted=6,
-            students_selected=10,
-            placements_offered=12,
-            learning_programs_count=1,
-            faculty_engagements_count=2,
-            research_collaborations_count=1,
+            students_selected=50,
+            placements_offered=50,
+            learning_programs_count=3,
+            faculty_engagements_count=6,
+            research_collaborations_count=5,
             status="Active Partner",
         ),
     ]
 
     return IndustryPartnershipOverview(
         total_partners=len(partners),
-        internship_partners=4,
-        placement_partners=4,
+        internship_partners=3,
+        placement_partners=3,
         training_partners=3,
         research_partners=3,
         mentorship_partners=3,

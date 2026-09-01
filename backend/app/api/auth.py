@@ -10,7 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.db import get_session
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.security import (
+    create_access_token,
+    current_principal,
+    hash_password,
+    verify_password,
+)
 from app.models import (
     Academician,
     AccountEmail,
@@ -307,4 +312,29 @@ async def login_with_google(
             await session.rollback()
             raise HTTPException(status.HTTP_409_CONFLICT, "Account registration conflict") from error
         return TokenResponse(access_token=create_access_token(new_student.id, Role.student), role="student")
+
+
+@router.get("/me")
+async def get_me(
+    principal: Annotated[Student | Recruiter | Admin | Academician | Institution, Depends(current_principal)],
+) -> dict[str, Any]:
+    role_val = principal.role if hasattr(principal, "role") else "unknown"
+    data: dict[str, Any] = {
+        "id": str(principal.id),
+        "email": principal.email,
+        "role": role_val,
+    }
+    if hasattr(principal, "full_name"):
+        data["full_name"] = principal.full_name
+    if hasattr(principal, "company_name"):
+        data["company_name"] = principal.company_name
+    if hasattr(principal, "institution_name"):
+        data["institution_name"] = principal.institution_name
+    if hasattr(principal, "department"):
+        data["department"] = principal.department
+    if hasattr(principal, "designation"):
+        data["designation"] = principal.designation
+    if hasattr(principal, "university"):
+        data["university"] = principal.university
+    return data
 

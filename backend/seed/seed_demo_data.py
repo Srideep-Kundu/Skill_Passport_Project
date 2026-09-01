@@ -135,50 +135,85 @@ async def seed_demo_data() -> None:
             skill.embedding_provider, skill.embedding_model, skill.embedding_dimension = _EMBEDDING_SPEC.provider, _EMBEDDING_SPEC.model, _EMBEDDING_SPEC.dimension
             skill.embedding_fingerprint = embedding_fingerprint("deep learning neural network", _EMBEDDING_SPEC)
             skill.embedding_generated_at = _NOW
-        recruiter = Recruiter(email="recruiter@example.demo", password_hash=hash_password(DEMO_PASSWORD), company_name="Skill Passport Demo Labs")
+        recruiter = Recruiter(email="recruiter@example.demo", password_hash=hash_password(DEMO_PASSWORD), company_name="TechNova AI Solutions")
+        recruiter_technova = Recruiter(email="recruiter.demo@technova.com", password_hash=hash_password(DEMO_PASSWORD), company_name="TechNova AI Solutions")
         faculty = Academician(
             email="faculty@example.demo",
             password_hash=hash_password(DEMO_PASSWORD),
-            full_name="Dr. Arvind Rao",
-            institution_name="Harbor Polytechnic University",
-            department="Computer Science & Engineering",
-            designation="Professor & Placement Dean",
-            research_areas=["Distributed Systems", "Explainable AI", "Verification Systems"],
-            bio="Professor with 14+ years of academic research and industry consulting experience in scalable microservices, cryptographic verification pipelines, and explainable ML models.",
-            years_experience=14,
-            technical_skills=["Python", "FastAPI", "Distributed Systems", "PostgreSQL", "PyTorch", "Docker", "Explainable AI"],
+            full_name="Dr. Ananya Sharma",
+            institution_name="National Institute of Technology Demo University",
+            department="Computer Science and Engineering",
+            designation="Associate Professor",
+            research_areas=["Artificial Intelligence", "Machine Learning", "Data Analytics", "Software Engineering"],
+            bio="Associate Professor in Computer Science & Engineering with 8 years of academic and research experience. Focuses on Deep Learning, Explainable AI, Predictive Analytics, and industry-academic bridge programs.",
+            years_experience=8,
+            technical_skills=["Artificial Intelligence", "Machine Learning", "Data Analytics", "Software Engineering", "Python", "PyTorch", "MLOps", "Generative AI", "FastAPI"],
             certifications=[
-                {"name": "Google Cloud Professional Architect", "issuer": "Google Cloud", "year": "2024"},
-                {"name": "AICTE Advanced Industry Immersion Fellow", "issuer": "AICTE India", "year": "2023"},
+                {"name": "AWS Cloud Practitioner", "issuer": "Amazon Web Services", "year": "2024"},
+                {"name": "Machine Learning Specialization", "issuer": "DeepLearning.AI / Stanford", "year": "2023"},
+                {"name": "Cloud Computing", "issuer": "Google Cloud", "year": "2024"},
             ],
             publications=[
-                {"title": "Deterministic and Auditable Match Verification in Heterogeneous Workspaces", "journal_or_conf": "IEEE Trans. Services Computing", "year": "2025"},
-                {"title": "Zero-Demographic Bias Talent Pipelines via Cryptographic Competency Spans", "journal_or_conf": "ACM SIGKDD Workshop", "year": "2024"},
+                {"title": "Deep Learning Approaches for Predictive Analytics", "journal_or_conf": "International AI Research Journal", "year": "2025"},
+                {"title": "Industry-Academia Collaboration Models for Skill Development", "journal_or_conf": "Journal of Engineering Education & Industry Practice", "year": "2024"},
+                {"title": "Automated Skill Verification and Provenance Telemetry", "journal_or_conf": "IEEE Trans. Learning Technologies", "year": "2025"},
+                {"title": "Explainable Vector Embeddings for Student Competency Mapping", "journal_or_conf": "ACM SIGCSE", "year": "2024"},
+                {"title": "Zero-Demographic Bias Talent Pipelines", "journal_or_conf": "ACM KDD Workshop", "year": "2023"},
             ],
             patents=[
                 {"title": "System and Method for Provable Skill Provenance Verification", "patent_number": "IN-2024-99881", "status": "Granted", "year": "2024"},
+                {"title": "Deterministic Competency Graph Generator for Multi-Tenant Workspaces", "patent_number": "IN-2025-10293", "status": "Published", "year": "2025"},
             ],
             past_industry_experience=[
-                {"company": "Intel India R&D", "role": "Visiting Research Scientist", "duration_years": 2, "description": "Researched low-latency vector indexing acceleration on multi-core clusters."},
+                {"company": "TechNova AI Solutions", "role": "AI Consulting Lead", "duration_years": 2, "description": "Consulted on production ML pipeline optimization and explainability toolkits."},
+                {"company": "Vision Analytics Labs", "role": "Research Collaboration Advisor", "duration_years": 3, "description": "Directed joint industry R&D on predictive student skill analytics."},
+                {"company": "CloudSphere Technologies", "role": "Industry Mentorship Director", "duration_years": 3, "description": "Mentored university cohorts and industrial training modules."},
             ],
             completed_fdps=[
-                {"title": "National FDP on Explainable Artificial Intelligence", "organizer": "IIT Bombay", "year": "2024"},
+                {"title": "Cloud Architecture FDP", "organizer": "CloudSphere Technologies", "year": "2025", "mode": "5-day Hybrid"},
+                {"title": "National FDP on Explainable Artificial Intelligence", "organizer": "IIT Bombay & AICTE", "year": "2024"},
             ],
             completed_trainings=[
-                {"title": "Cloud-Native Infrastructure Immersion", "company": "Microsoft India", "duration_weeks": 4, "year": "2023"},
+                {"title": "Industry 4.0 Faculty Training", "company": "TechNova", "duration_weeks": 3, "year": "2025", "skills": ["AI Systems", "Cloud Architecture", "DevOps"]},
+                {"title": "AI Faculty Immersion Program", "company": "TechNova AI Solutions", "duration_weeks": 4, "year": "2026", "skills": ["Machine Learning", "MLOps", "Generative AI"]},
             ],
             collaboration_availability="available",
             phone="+91 98765 43210",
-            linkedin_url="https://linkedin.com/in/demo-dr-arvind-rao",
-            google_scholar_url="https://scholar.google.com/citations?user=demo_arvind_rao",
+            linkedin_url="https://linkedin.com/in/demo-dr-ananya-sharma",
+            google_scholar_url="https://scholar.google.com/citations?user=demo_ananya_sharma",
+        )
+        faculty_demo = Academician(
+            email="faculty.demo@example.com",
+            password_hash=hash_password(DEMO_PASSWORD),
+            full_name="Dr. Ananya Sharma",
+            institution_name="National Institute of Technology Demo University",
+            department="Computer Science and Engineering",
+            designation="Associate Professor",
+            years_experience=8,
+            research_areas=["Artificial Intelligence", "Machine Learning", "Data Analytics", "Software Engineering"],
+            technical_skills=["Artificial Intelligence", "Machine Learning", "Data Analytics", "Software Engineering", "Python", "PyTorch", "MLOps", "Generative AI", "FastAPI"],
+            certifications=faculty.certifications,
+            publications=faculty.publications,
+            patents=faculty.patents,
+            past_industry_experience=faculty.past_industry_experience,
+            completed_fdps=faculty.completed_fdps,
+            completed_trainings=faculty.completed_trainings,
         )
         institution = Institution(
             email="dean@example.demo",
             password_hash=hash_password(DEMO_PASSWORD),
-            institution_name="Harbor Polytechnic University",
+            institution_name="National Institute of Technology Demo University",
             institution_code="HPU-DEMO",
-            state="Maharashtra",
-            departments=["Computer Science", "Information Technology", "Electronics"],
+            state="Karnataka",
+            departments=["Computer Science", "Information Technology", "Electronics", "Mechanical"],
+        )
+        institution_demo = Institution(
+            email="institution.demo@example.com",
+            password_hash=hash_password(DEMO_PASSWORD),
+            institution_name="National Institute of Technology Demo University",
+            institution_code="NIT-DEMO-2026",
+            state="Karnataka",
+            departments=["Computer Science", "Information Technology", "Electronics", "Mechanical"],
         )
         students = {
             "maya": Student(email=DEMO_STUDENT_EMAIL, password_hash=hash_password(DEMO_PASSWORD), full_name="Maya Rivera", university="Harbor Polytechnic University", recruiter_evidence_consent=True),
@@ -186,7 +221,7 @@ async def seed_demo_data() -> None:
             "aria": Student(email="aria@example.demo", password_hash=hash_password(DEMO_PASSWORD), full_name="Aria Patel", university="Eastlake College", recruiter_evidence_consent=True),
             "blake": Student(email="blake@example.demo", password_hash=hash_password(DEMO_PASSWORD), full_name="Blake Morgan", university="Summit University", recruiter_evidence_consent=True),
         }
-        session.add_all([recruiter, faculty, institution, *students.values()])
+        session.add_all([recruiter, recruiter_technova, faculty, faculty_demo, institution, institution_demo, *students.values()])
         await session.flush()
 
         faculty_opportunities = [

@@ -92,7 +92,7 @@ const emailSchema = z
 
 const loginSchema = z.object({
   email: emailSchema,
-  password: z.string().min(8, "Password must be at least 8 characters"),
+  password: z.string().min(1, "Password is required"),
 });
 
 const registerStudentSchema = z.object({
@@ -394,55 +394,118 @@ export function AuthPage({
 
           {/* LOGIN VIEW */}
           {mode === "login" && (
-            <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4">
-              <div>
-                <label htmlFor="login-email" className="block text-xs font-mono uppercase tracking-wider text-[#475569] mb-1.5">
-                  Email Address
-                </label>
-                <input
-                  id="login-email"
-                  {...loginForm.register("email")}
-                  type="email"
-                  placeholder="user@example.com"
-                  className="w-full rounded-lg border border-[#E5E1D8] bg-[#FFFFFF] px-3.5 py-2.5 text-sm text-[#111827] placeholder:text-[#64748B] transition-colors"
-                />
-                {loginForm.formState.errors.email && (
-                  <span className="text-xs text-[#B4534B] mt-1 block">{loginForm.formState.errors.email.message}</span>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="login-password" className="block text-xs font-mono uppercase tracking-wider text-[#475569] mb-1.5">
-                  Password
-                </label>
-                <input
-                  id="login-password"
-                  {...loginForm.register("password")}
-                  type="password"
-                  placeholder="••••••••"
-                  className="w-full rounded-lg border border-[#E5E1D8] bg-[#FFFFFF] px-3.5 py-2.5 text-sm text-[#111827] placeholder:text-[#64748B] transition-colors"
-                />
-                {loginForm.formState.errors.password && (
-                  <span className="text-xs text-[#B4534B] mt-1 block">{loginForm.formState.errors.password.message}</span>
-                )}
-              </div>
-
-              {error && (
-                <div role="alert" className="rounded-lg border border-[#B4534B]/30 bg-[rgba(180,83,75,0.10)] p-3 text-xs text-[#B4534B]">
-                  {error}
+            <div className="space-y-5">
+              {/* Quick Demo Credentials Panel for Hackathon Judges */}
+              <div className="rounded-xl border border-[#B08D57]/30 bg-[#B08D57]/5 p-3.5">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-[#B08D57] font-bold flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[#B08D57] animate-pulse" />
+                    Hackathon Demo Accounts (1-Click Fill)
+                  </span>
+                  <span className="font-mono text-[10px] text-[#64748B]">pwd: demo123</span>
                 </div>
-              )}
-
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="pill-btn w-full py-3.5 shadow-md hover:shadow-lg transition-all"
-                >
-                  {isSubmitting ? "Authenticating..." : "Sign In to Workspace"}
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      loginForm.setValue("email", "recruiter.demo@technova.com");
+                      loginForm.setValue("password", "demo123");
+                      setError(null);
+                    }}
+                    className="flex flex-col items-start p-2 rounded-lg border border-[#E5E1D8] bg-[#FFFFFF] hover:border-[#111827] hover:shadow-xs transition-all text-left cursor-pointer"
+                  >
+                    <span className="text-[11px] font-semibold text-[#111827]">Recruiter</span>
+                    <span className="text-[9px] font-mono text-[#64748B] truncate max-w-full">Arjun Mehta · TechNova</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      loginForm.setValue("email", "faculty.demo@example.com");
+                      loginForm.setValue("password", "demo123");
+                      setError(null);
+                    }}
+                    className="flex flex-col items-start p-2 rounded-lg border border-[#E5E1D8] bg-[#FFFFFF] hover:border-[#111827] hover:shadow-xs transition-all text-left cursor-pointer"
+                  >
+                    <span className="text-[11px] font-semibold text-[#111827]">Faculty / Academic</span>
+                    <span className="text-[9px] font-mono text-[#64748B] truncate max-w-full">Dr. Ananya Sharma · NIT</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      loginForm.setValue("email", "institution.demo@example.com");
+                      loginForm.setValue("password", "demo123");
+                      setError(null);
+                    }}
+                    className="flex flex-col items-start p-2 rounded-lg border border-[#E5E1D8] bg-[#FFFFFF] hover:border-[#111827] hover:shadow-xs transition-all text-left cursor-pointer"
+                  >
+                    <span className="text-[11px] font-semibold text-[#111827]">Institution / Univ</span>
+                    <span className="text-[9px] font-mono text-[#64748B] truncate max-w-full">Dr. Vikram Rao · NIT Univ</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      loginForm.setValue("email", "maya@example.demo");
+                      loginForm.setValue("password", "demo123");
+                      setError(null);
+                    }}
+                    className="flex flex-col items-start p-2 rounded-lg border border-[#E5E1D8] bg-[#FFFFFF] hover:border-[#111827] hover:shadow-xs transition-all text-left cursor-pointer"
+                  >
+                    <span className="text-[11px] font-semibold text-[#111827]">Student Candidate</span>
+                    <span className="text-[9px] font-mono text-[#64748B] truncate max-w-full">Maya Rivera · Passport</span>
+                  </button>
+                </div>
               </div>
-            </form>
+
+              <form onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4">
+                <div>
+                  <label htmlFor="login-email" className="block text-xs font-mono uppercase tracking-wider text-[#475569] mb-1.5">
+                    Email Address
+                  </label>
+                  <input
+                    id="login-email"
+                    {...loginForm.register("email")}
+                    type="email"
+                    placeholder="user@example.com"
+                    className="w-full rounded-lg border border-[#E5E1D8] bg-[#FFFFFF] px-3.5 py-2.5 text-sm text-[#111827] placeholder:text-[#64748B] transition-colors"
+                  />
+                  {loginForm.formState.errors.email && (
+                    <span className="text-xs text-[#B4534B] mt-1 block">{loginForm.formState.errors.email.message}</span>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="login-password" className="block text-xs font-mono uppercase tracking-wider text-[#475569] mb-1.5">
+                    Password
+                  </label>
+                  <input
+                    id="login-password"
+                    {...loginForm.register("password")}
+                    type="password"
+                    placeholder="••••••••"
+                    className="w-full rounded-lg border border-[#E5E1D8] bg-[#FFFFFF] px-3.5 py-2.5 text-sm text-[#111827] placeholder:text-[#64748B] transition-colors"
+                  />
+                  {loginForm.formState.errors.password && (
+                    <span className="text-xs text-[#B4534B] mt-1 block">{loginForm.formState.errors.password.message}</span>
+                  )}
+                </div>
+
+                {error && (
+                  <div role="alert" className="rounded-lg border border-[#B4534B]/30 bg-[rgba(180,83,75,0.10)] p-3 text-xs text-[#B4534B]">
+                    {error}
+                  </div>
+                )}
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="pill-btn w-full py-3.5 shadow-md hover:shadow-lg transition-all"
+                  >
+                    {isSubmitting ? "Authenticating..." : "Sign In to Workspace"}
+                  </button>
+                </div>
+              </form>
+            </div>
           )}
 
           {/* REGISTER VIEW */}

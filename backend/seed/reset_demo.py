@@ -8,6 +8,7 @@ from app import models  # noqa: F401
 from app.core.config import get_settings
 from app.core.db import Base, engine
 from seed.seed_demo_data import seed_demo_data
+from seed.seed_sih_ecosystem import seed_sih_ecosystem
 
 
 def assert_demo_reset_is_allowed() -> None:
@@ -27,6 +28,7 @@ async def reset_demo() -> None:
     async with engine.begin() as connection:
         await connection.execute(text(f"TRUNCATE TABLE {table_names} RESTART IDENTITY CASCADE"))
     await seed_demo_data()
+    await seed_sih_ecosystem()
 
 
 async def main() -> None:
