@@ -13,22 +13,32 @@ from app.models import (
     Assessment,
     AssessmentQuestion,
     CollaborationWorkspace,
+    Evidence,
+    EvidenceType,
     FacultyApplication,
     FacultyEventRegistration,
     FacultyNotification,
     FacultyOpportunity,
     InnovationChallenge,
     Institution,
+    Internship,
+    InternshipRequirement,
     LearningCourse,
     MentorshipSession,
     PlacementDrive,
+    ProjectApplication,
     Recruiter,
     Role,
+    Skill,
     Student,
+    StudentSkill,
+    UserDocument,
+    VerificationTier,
 )
+from app.services.matching_service import recompute_matches_for_internship
 
 _NOW = datetime.now(UTC)
-DEMO_PASSWORD_HASH = hash_password("password123")
+DEMO_PASSWORD_HASH = hash_password("demo123")
 
 
 async def seed_sih_ecosystem():
@@ -374,6 +384,54 @@ async def seed_sih_ecosystem():
         if not existing_faculty_opp:
             session.add_all([
                 FacultyOpportunity(
+                    title="Advanced AI Engineering Faculty Immersion Program",
+                    opportunity_type="industrial_immersion",
+                    organization_name="TechNova AI Labs",
+                    description="4-week industrial immersion program for engineering faculty to collaborate directly with industrial AI architects on production Generative AI, MLOps, and scalable model inference pipelines.",
+                    domain="Machine Learning & MLOps",
+                    stipend_or_grant=180000.0,
+                    duration_weeks=4,
+                    deadline=_NOW + timedelta(days=30),
+                    status="open",
+                    required_expertise=["Machine Learning", "MLOps", "Generative AI", "Python"],
+                ),
+                FacultyOpportunity(
+                    title="Cloud Computing and Modern Software Architecture FDP",
+                    opportunity_type="fdp",
+                    organization_name="CloudSphere Technologies",
+                    description="Comprehensive 5-day hybrid Faculty Development Program covering modern microservices design, container orchestration, event-driven architectures, and curriculum modernization.",
+                    domain="Cloud & Distributed Systems",
+                    stipend_or_grant=35000.0,
+                    duration_weeks=1,
+                    deadline=_NOW + timedelta(days=25),
+                    status="open",
+                    required_expertise=["Cloud Architecture", "Distributed Systems", "Docker", "DevOps"],
+                ),
+                FacultyOpportunity(
+                    title="Applied AI Research Partnership",
+                    opportunity_type="research_grant",
+                    organization_name="Vision Analytics Labs",
+                    description="Sponsored research grant supporting faculty teams developing predictive analytics frameworks, student skill progression trajectories, and automated competency evaluation systems.",
+                    domain="Applied Artificial Intelligence",
+                    stipend_or_grant=1500000.0,
+                    duration_weeks=24,
+                    deadline=_NOW + timedelta(days=60),
+                    status="open",
+                    required_expertise=["Artificial Intelligence", "Predictive Analytics", "Deep Learning", "FastAPI"],
+                ),
+                FacultyOpportunity(
+                    title="Industrial Consultancy Request: High-Concurrency Vector Index Optimization",
+                    opportunity_type="consultancy_request",
+                    organization_name="HyperScale Technologies",
+                    description="Seeking senior faculty / domain experts to evaluate and optimize high-dimensional vector search indexing on PostgreSQL pgvector with HNSW similarity benchmarking.",
+                    domain="Database & Search Architectures",
+                    stipend_or_grant=300000.0,
+                    duration_weeks=12,
+                    deadline=_NOW + timedelta(days=30),
+                    status="open",
+                    required_expertise=["PostgreSQL", "pgvector", "System Design", "Algorithms"],
+                ),
+                FacultyOpportunity(
                     title="AICTE-Industry Immersion Sabbatical: Cloud Distributed Systems",
                     opportunity_type="industrial_immersion",
                     organization_name="Intel Research Laboratories",
@@ -383,6 +441,7 @@ async def seed_sih_ecosystem():
                     duration_weeks=6,
                     deadline=_NOW + timedelta(days=45),
                     status="open",
+                    required_expertise=["Distributed Systems", "Python", "Linux"],
                 ),
                 FacultyOpportunity(
                     title="National Faculty Development Program (FDP) on Explainable AI",
@@ -394,28 +453,7 @@ async def seed_sih_ecosystem():
                     duration_weeks=2,
                     deadline=_NOW + timedelta(days=20),
                     status="open",
-                ),
-                FacultyOpportunity(
-                    title="Industrial Consultancy Request: Real-Time Vector Search Optimization",
-                    opportunity_type="consultancy_request",
-                    organization_name="HyperScale Technologies",
-                    description="Seeking senior faculty / domain experts to evaluate and optimize high-dimensional vector search indexing on PostgreSQL pgvector.",
-                    domain="Database & Search Architectures",
-                    stipend_or_grant=300000.0,
-                    duration_weeks=12,
-                    deadline=_NOW + timedelta(days=30),
-                    status="open",
-                ),
-                FacultyOpportunity(
-                    title="Applied R&D Grant: Verifiable Educational Credential Architectures",
-                    opportunity_type="research_grant",
-                    organization_name="Ministry of Education & Industry Consortium",
-                    description="Research grant supporting faculty teams developing tamper-proof, cryptographic verification algorithms for national academic credits.",
-                    domain="Educational Technology & Security",
-                    stipend_or_grant=750000.0,
-                    duration_weeks=24,
-                    deadline=_NOW + timedelta(days=60),
-                    status="open",
+                    required_expertise=["Machine Learning", "Explainable AI"],
                 ),
             ])
 
@@ -505,196 +543,549 @@ async def seed_sih_ecosystem():
                 ),
             ])
 
-        # 7. Seed Demo Accounts for 4 Personas
-        # Student
+        # 7. Seed Demo Accounts & 8 Candidate Profiles for Hackathon Judging
+
+        # Skill taxonomy lookup
+        all_skills_list = (await session.scalars(select(Skill))).all()
+        skill_map = {s.canonical_name: s for s in all_skills_list}
+
+        # Ensure required skills exist in DB
+        required_taxa = [
+            ("Python", "Programming Language"),
+            ("Machine Learning", "AI & ML"),
+            ("FastAPI", "Backend"),
+            ("SQL", "Programming Language"),
+            ("Data Processing", "Data"),
+            ("React", "Frontend"),
+            ("TypeScript", "Programming Language"),
+            ("Node.js", "Backend"),
+            ("PostgreSQL", "Data"),
+            ("AWS", "Cloud & DevOps"),
+            ("Docker", "Cloud & DevOps"),
+            ("Kubernetes", "Cloud & DevOps"),
+            ("PyTorch", "AI & ML"),
+            ("TensorFlow", "AI & ML"),
+            ("Redis", "Backend"),
+            ("Cybersecurity", "Security"),
+            ("OAuth", "Security"),
+            ("Generative AI", "AI & ML"),
+            ("NLP", "AI & ML"),
+            ("Distributed Systems", "Engineering"),
+            ("CI/CD", "Engineering"),
+            ("Linux", "Cloud & DevOps"),
+        ]
+        for name, category in required_taxa:
+            if name not in skill_map:
+                sk = Skill(canonical_name=name, category=category)
+                session.add(sk)
+                await session.flush()
+                skill_map[name] = sk
+
+        # Seed 8 Candidate Profiles
+        candidate_definitions = [
+            {
+                "email": "rahul.sharma@demo.student",
+                "full_name": "Rahul Sharma",
+                "university": "National Institute of Technology Demo University",
+                "role": "AI Engineer Intern",
+                "github": "rahul-sharma-ml",
+                "skills": [
+                    ("Python", VerificationTier.verified, 0.95),
+                    ("Machine Learning", VerificationTier.verified, 0.92),
+                    ("TensorFlow", VerificationTier.verified, 0.90),
+                    ("SQL", VerificationTier.verified, 0.88),
+                    ("Data Processing", VerificationTier.verified, 0.85),
+                ],
+                "evidence": [
+                    ("Medical Image Classification System", "Deep Learning pipeline for CT/X-ray multi-class pathology classification.", EvidenceType.project),
+                    ("GitHub ML Repositories (3 repos)", "Over 180 commits across 3 reproducible machine learning model pipelines.", EvidenceType.project),
+                    ("Proctored Machine Learning Assessment", "Proctored ML benchmark score: 91% (Passed with Distinction).", EvidenceType.certification),
+                ],
+            },
+            {
+                "email": "maya@example.demo",
+                "full_name": "Maya Rivera",
+                "university": "Harbor Polytechnic University",
+                "role": "Full-Stack & Distributed Systems",
+                "github": "demo-maya",
+                "skills": [
+                    ("Python", VerificationTier.verified, 0.96),
+                    ("FastAPI", VerificationTier.verified, 0.94),
+                    ("PostgreSQL", VerificationTier.verified, 0.92),
+                    ("React", VerificationTier.verified, 0.90),
+                    ("Docker", VerificationTier.verified, 0.88),
+                    ("Machine Learning", VerificationTier.verified, 0.86),
+                ],
+                "evidence": [
+                    ("Reliable Microservices Platform", "Async REST APIs with sub-10ms response times and deterministic schemas.", EvidenceType.project),
+                    ("Video AI Analytics Engine", "Computer vision pipeline streaming frames with YOLO and TensorRT.", EvidenceType.project),
+                    ("Advanced Python & AsyncIO Assessment", "Score: 96% (96/100 pts) · Proctored Sandbox Execution.", EvidenceType.certification),
+                ],
+            },
+            {
+                "email": "noah@example.demo",
+                "full_name": "Noah Chen",
+                "university": "Northwind Institute",
+                "role": "Backend & Distributed Systems",
+                "github": "noah-chen-backend",
+                "skills": [
+                    ("Python", VerificationTier.verified, 0.90),
+                    ("FastAPI", VerificationTier.verified, 0.91),
+                    ("PostgreSQL", VerificationTier.verified, 0.89),
+                    ("Redis", VerificationTier.verified, 0.88),
+                    ("Distributed Systems", VerificationTier.verified, 0.86),
+                ],
+                "evidence": [
+                    ("Distributed Stream Engine", "High-throughput pub/sub cluster with partition rebalancing.", EvidenceType.project),
+                    ("Backend Concurrency Benchmark", "Score: 88% on concurrent load testing and transactional integrity.", EvidenceType.certification),
+                ],
+            },
+            {
+                "email": "aria@example.demo",
+                "full_name": "Aria Patel",
+                "university": "Eastlake College",
+                "role": "Cloud Infrastructure & DevOps",
+                "github": "aria-patel-cloud",
+                "skills": [
+                    ("AWS", VerificationTier.verified, 0.94),
+                    ("Docker", VerificationTier.verified, 0.92),
+                    ("Kubernetes", VerificationTier.verified, 0.90),
+                    ("CI/CD", VerificationTier.verified, 0.88),
+                    ("Linux", VerificationTier.verified, 0.86),
+                ],
+                "evidence": [
+                    ("Multi-Cluster Kubernetes CI/CD", "GitOps deployment pipelines with automated canary rollouts.", EvidenceType.project),
+                    ("Cloud Architecture Proctored Exam", "Score: 92% · Validated container orchestration and security.", EvidenceType.certification),
+                ],
+            },
+            {
+                "email": "priya.sharma@demo.student",
+                "full_name": "Priya Sharma",
+                "university": "National Institute of Technology Demo University",
+                "role": "Frontend & Design Systems",
+                "github": "priya-ui-dev",
+                "skills": [
+                    ("React", VerificationTier.verified, 0.94),
+                    ("TypeScript", VerificationTier.verified, 0.92),
+                    ("Node.js", VerificationTier.verified, 0.88),
+                    ("SQL", VerificationTier.verified, 0.80),
+                ],
+                "evidence": [
+                    ("Accessible Component Library", "Design system with 100% WCAG 2.1 AA accessibility compliance.", EvidenceType.project),
+                    ("Frontend Engineering Assessment", "Score: 89% on state management, bundle optimization, and DOM performance.", EvidenceType.certification),
+                ],
+            },
+            {
+                "email": "blake@example.demo",
+                "full_name": "Blake Morgan",
+                "university": "Summit University",
+                "role": "Data Engineering & Pipelines",
+                "github": "blake-morgan-data",
+                "skills": [
+                    ("SQL", VerificationTier.verified, 0.92),
+                    ("PostgreSQL", VerificationTier.verified, 0.90),
+                    ("Python", VerificationTier.verified, 0.86),
+                    ("Data Processing", VerificationTier.verified, 0.88),
+                ],
+                "evidence": [
+                    ("Real-Time Telemetry ETL", "Streaming pipeline processing 50k events/sec with fault tolerance.", EvidenceType.project),
+                    ("Data Processing Benchmark", "Score: 85% on window functions, indexing, and query plan optimization.", EvidenceType.certification),
+                ],
+            },
+            {
+                "email": "vikram.reddy@demo.student",
+                "full_name": "Vikram Reddy",
+                "university": "National Institute of Technology Demo University",
+                "role": "Cybersecurity & Systems Security",
+                "github": "vikram-reddy-sec",
+                "skills": [
+                    ("Cybersecurity", VerificationTier.verified, 0.93),
+                    ("OAuth", VerificationTier.verified, 0.90),
+                    ("Linux", VerificationTier.verified, 0.88),
+                    ("Python", VerificationTier.verified, 0.84),
+                    ("Docker", VerificationTier.verified, 0.82),
+                ],
+                "evidence": [
+                    ("Zero-Trust PKI Audit Engine", "Cryptographic authorization gateway with mutual TLS and JWT validation.", EvidenceType.project),
+                    ("Application Security Assessment", "Score: 86% on OWASP Top 10 mitigation and cryptographic defense.", EvidenceType.certification),
+                ],
+            },
+            {
+                "email": "elena.rostova@demo.student",
+                "full_name": "Elena Rostova",
+                "university": "National Institute of Technology Demo University",
+                "role": "Generative AI & NLP Engineer",
+                "github": "elena-rostova-ai",
+                "skills": [
+                    ("Python", VerificationTier.verified, 0.95),
+                    ("Machine Learning", VerificationTier.verified, 0.94),
+                    ("Generative AI", VerificationTier.verified, 0.92),
+                    ("PyTorch", VerificationTier.verified, 0.90),
+                    ("FastAPI", VerificationTier.verified, 0.88),
+                ],
+                "evidence": [
+                    ("RAG Vector Search & Evaluation", "Production retrieval-augmented generation engine with grounded hallucination checks.", EvidenceType.project),
+                    ("Applied NLP Assessment", "Score: 93% on transformer fine-tuning, vector embeddings, and semantic search.", EvidenceType.certification),
+                ],
+            },
+        ]
+
+        seeded_students = []
+        for cand in candidate_definitions:
+            st = (await session.scalars(select(Student).where(Student.email == cand["email"]))).first()
+            if not st:
+                st = Student(
+                    email=cand["email"],
+                    password_hash=DEMO_PASSWORD_HASH,
+                    full_name=cand["full_name"],
+                    university=cand["university"],
+                    github_username=cand["github"],
+                    recruiter_evidence_consent=True,
+                    career_goals={"target_roles": [cand["role"]]},
+                )
+                session.add(st)
+                await session.flush()
+                session.add(AccountEmail(email=st.email, account_id=st.id, role=Role.student))
+            else:
+                st.full_name = cand["full_name"]
+                st.university = cand["university"]
+                st.recruiter_evidence_consent = True
+                await session.flush()
+
+            seeded_students.append(st)
+
+            # Seed evidence and student skills
+            for ev_title, ev_desc, ev_type in cand["evidence"]:
+                existing_ev = (await session.scalars(select(Evidence).where(Evidence.student_id == st.id, Evidence.title == ev_title))).first()
+                if not existing_ev:
+                    session.add(
+                        Evidence(
+                            student_id=st.id,
+                            evidence_type=ev_type,
+                            title=ev_title,
+                            description=ev_desc,
+                        )
+                    )
+            await session.flush()
+
+            # Seed student skills
+            for s_name, s_tier, s_conf in cand["skills"]:
+                if s_name in skill_map:
+                    s_obj = skill_map[s_name]
+                    existing_ss = (await session.scalars(select(StudentSkill).where(StudentSkill.student_id == st.id, StudentSkill.skill_id == s_obj.id))).first()
+                    if not existing_ss:
+                        ev_rec = (await session.scalars(select(Evidence).where(Evidence.student_id == st.id))).first()
+                        if ev_rec:
+                            session.add(
+                                StudentSkill(
+                                    student_id=st.id,
+                                    skill_id=s_obj.id,
+                                    source_evidence_id=ev_rec.id,
+                                    verification_tier=s_tier,
+                                    extraction_confidence=s_conf,
+                                    proficiency_hint="advanced",
+                                    evidence_span=f"Demonstrated proficiency in {s_name} with {int(s_conf * 100)}% verified benchmark score.",
+                                )
+                            )
+            await session.flush()
+
+        # Maya Rivera student alias
         if not await session.scalar(select(Student.id).where(Student.email == "maya@poly.demo")):
-            st = Student(
+            st_poly = Student(
                 email="maya@poly.demo",
                 password_hash=DEMO_PASSWORD_HASH,
                 full_name="Maya Rivera",
-                university="Harbor Polytechnic",
+                university="Harbor Polytechnic University",
                 github_username="demo-maya",
                 recruiter_evidence_consent=True,
-                career_goals={"target_roles": ["Full Stack Developer", "Backend Engineer"], "target_industries": ["FinTech", "Cloud Systems"]},
             )
-            session.add(st)
+            session.add(st_poly)
             await session.flush()
-            session.add(AccountEmail(email=st.email, account_id=st.id, role=Role.student))
+            session.add(AccountEmail(email=st_poly.email, account_id=st_poly.id, role=Role.student))
 
-        # Recruiter
-        if not await session.scalar(select(Recruiter.id).where(Recruiter.email == "recruiter@techcorp.demo")):
-            rec = Recruiter(
-                email="recruiter@techcorp.demo",
+        # 1. RECRUITER DEMO ACCOUNT: Arjun Mehta (recruiter.demo@technova.com / demo123)
+        rec_demo = (await session.scalars(select(Recruiter).where(Recruiter.email == "recruiter.demo@technova.com"))).first()
+        if not rec_demo:
+            rec_demo = Recruiter(
+                email="recruiter.demo@technova.com",
                 password_hash=DEMO_PASSWORD_HASH,
-                company_name="TechCorp India Labs",
+                company_name="TechNova AI Solutions",
             )
-            session.add(rec)
+            session.add(rec_demo)
             await session.flush()
-            session.add(AccountEmail(email=rec.email, account_id=rec.id, role=Role.recruiter))
+            session.add(AccountEmail(email=rec_demo.email, account_id=rec_demo.id, role=Role.recruiter))
+        else:
+            rec_demo.company_name = "TechNova AI Solutions"
+            await session.flush()
 
-        # Academician / Faculty (Canonical SIH & Demo)
-        fac_demo = (await session.scalars(select(Academician).where(Academician.email == "faculty@example.demo"))).first()
+        if not await session.scalar(select(Recruiter.id).where(Recruiter.email == "recruiter@example.demo")):
+            rec_ex = Recruiter(
+                email="recruiter@example.demo",
+                password_hash=DEMO_PASSWORD_HASH,
+                company_name="TechNova AI Solutions",
+            )
+            session.add(rec_ex)
+            await session.flush()
+            session.add(AccountEmail(email=rec_ex.email, account_id=rec_ex.id, role=Role.recruiter))
+
+        # Seed TechNova Internships
+        existing_internships = (await session.scalars(select(Internship).where(Internship.recruiter_id == rec_demo.id))).all()
+        if not existing_internships:
+            ai_intern = Internship(
+                recruiter_id=rec_demo.id,
+                title="AI Engineering Intern",
+                description="Design production AI microservices, train predictive neural networks, and deploy high-performance FastAPI backends with PostgreSQL and vector embeddings.",
+                opportunity_type="internship",
+                mode="hybrid",
+                stipend_amount=35000.0,
+                duration_weeks=24,
+                location="Bangalore, India",
+                is_published=True,
+            )
+            fs_intern = Internship(
+                recruiter_id=rec_demo.id,
+                title="Full Stack Developer Intern",
+                description="Build scalable client dashboards, real-time collaboration canvas, and performant backend services with React, TypeScript, Node.js, and PostgreSQL.",
+                opportunity_type="internship",
+                mode="hybrid",
+                stipend_amount=30000.0,
+                duration_weeks=24,
+                location="Bangalore, India",
+                is_published=True,
+            )
+            cloud_intern = Internship(
+                recruiter_id=rec_demo.id,
+                title="Cloud Engineering Trainee",
+                description="Manage Kubernetes container clusters, automate CI/CD pipelines, and optimize AWS cloud resources.",
+                opportunity_type="internship",
+                mode="hybrid",
+                stipend_amount=28000.0,
+                duration_weeks=24,
+                location="Bangalore, India",
+                is_published=True,
+            )
+            session.add_all([ai_intern, fs_intern, cloud_intern])
+            await session.flush()
+
+            # Requirements
+            for internship, req_list in [
+                (ai_intern, [("Python", True, 1.0), ("Machine Learning", True, 1.0), ("FastAPI", True, 1.0), ("SQL", False, 0.8), ("Data Processing", False, 0.8)]),
+                (fs_intern, [("React", True, 1.0), ("TypeScript", True, 1.0), ("Node.js", True, 1.0), ("PostgreSQL", False, 0.8)]),
+                (cloud_intern, [("AWS", True, 1.0), ("Docker", True, 1.0), ("Kubernetes", True, 1.0)]),
+            ]:
+                for s_name, is_req, wt in req_list:
+                    if s_name in skill_map:
+                        session.add(
+                            InternshipRequirement(
+                                internship_id=internship.id,
+                                skill_id=skill_map[s_name].id,
+                                is_required=is_req,
+                                weight=wt,
+                            )
+                        )
+            await session.flush()
+
+            for intern in (ai_intern, fs_intern, cloud_intern):
+                await recompute_matches_for_internship(session, intern.id)
+
+        # 2. FACULTY DEMO ACCOUNT: Dr. Ananya Sharma (faculty.demo@example.com / demo123)
+        fac_demo = (await session.scalars(select(Academician).where(Academician.email == "faculty.demo@example.com"))).first()
         if not fac_demo:
             fac_demo = Academician(
-                email="faculty@example.demo",
-                password_hash=hash_password("DemoPassword123"),
-                full_name="Dr. Arvind Rao",
-                institution_name="Harbor Polytechnic University",
-                department="Computer Science & Engineering",
-                designation="Professor & Placement Dean",
-                research_areas=["Distributed Systems", "Explainable AI", "Verification Systems"],
-                bio="Professor with 14+ years of academic research and industry consulting experience in scalable microservices, cryptographic verification pipelines, and explainable ML models. Senior IEEE Member and Dean of Industry Partnerships.",
-                years_experience=14,
-                technical_skills=["Python", "FastAPI", "Distributed Systems", "PostgreSQL", "PyTorch", "Docker", "Explainable AI"],
+                email="faculty.demo@example.com",
+                password_hash=DEMO_PASSWORD_HASH,
+                full_name="Dr. Ananya Sharma",
+                institution_name="National Institute of Technology Demo University",
+                department="Computer Science Engineering",
+                designation="Associate Professor",
+                research_areas=["Artificial Intelligence", "Machine Learning", "Data Analytics", "Software Engineering"],
+                bio="Associate Professor in Computer Science & Engineering with 8 years of academic and research experience. Focuses on Deep Learning, Explainable AI, Predictive Analytics, and industry-academic bridge programs. Active mentor for student capstone teams and PI on AI skill mapping research initiatives.",
+                years_experience=8,
+                technical_skills=["Artificial Intelligence", "Machine Learning", "Data Analytics", "Software Engineering", "Python", "PyTorch", "MLOps", "Generative AI", "FastAPI"],
                 certifications=[
-                    {"name": "Google Cloud Professional Architect", "issuer": "Google Cloud", "year": "2024"},
-                    {"name": "AICTE Advanced Industry Immersion Fellow", "issuer": "AICTE India", "year": "2023"},
+                    {"name": "AWS Cloud Practitioner", "issuer": "Amazon Web Services", "year": "2024"},
+                    {"name": "Machine Learning Specialization", "issuer": "DeepLearning.AI / Stanford", "year": "2023"},
+                    {"name": "Cloud Computing", "issuer": "Google Cloud", "year": "2024"},
                 ],
                 publications=[
-                    {"title": "Deterministic and Auditable Match Verification in Heterogeneous Workspaces", "journal_or_conf": "IEEE Trans. Services Computing", "year": "2025"},
-                    {"title": "Zero-Demographic Bias Talent Pipelines via Cryptographic Competency Spans", "journal_or_conf": "ACM SIGKDD Workshop", "year": "2024"},
+                    {"title": "Deep Learning Approaches for Predictive Analytics", "journal_or_conf": "International AI Research Journal", "year": "2025"},
+                    {"title": "Industry-Academia Collaboration Models for Skill Development", "journal_or_conf": "Journal of Engineering Education & Industry Practice", "year": "2024"},
+                    {"title": "Automated Skill Verification and Provenance Telemetry", "journal_or_conf": "IEEE Trans. Learning Technologies", "year": "2025"},
+                    {"title": "Explainable Vector Embeddings for Student Competency Mapping", "journal_or_conf": "ACM SIGCSE", "year": "2024"},
+                    {"title": "Zero-Demographic Bias Talent Pipelines", "journal_or_conf": "ACM KDD Workshop", "year": "2023"},
                 ],
                 patents=[
                     {"title": "System and Method for Provable Skill Provenance Verification", "patent_number": "IN-2024-99881", "status": "Granted", "year": "2024"},
+                    {"title": "Deterministic Competency Graph Generator for Multi-Tenant Workspaces", "patent_number": "IN-2025-10293", "status": "Published", "year": "2025"},
                 ],
                 past_industry_experience=[
-                    {"company": "Intel India R&D", "role": "Visiting Research Scientist", "duration_years": 2, "description": "Researched low-latency vector indexing acceleration on multi-core clusters."},
+                    {"company": "TechNova AI Solutions", "role": "AI Consulting Lead", "duration_years": 2, "description": "Consulted on production ML pipeline optimization and explainability toolkits."},
+                    {"company": "Vision Analytics Labs", "role": "Research Collaboration Advisor", "duration_years": 3, "description": "Directed joint industry R&D on predictive student skill analytics."},
+                    {"company": "CloudSphere Technologies", "role": "Industry Mentorship Director", "duration_years": 3, "description": "Mentored university cohorts and industrial training modules."},
                 ],
                 completed_fdps=[
-                    {"title": "National FDP on Explainable Artificial Intelligence", "organizer": "IIT Bombay", "year": "2024"},
+                    {"title": "Cloud Architecture FDP", "organizer": "CloudSphere Technologies", "year": "2025", "mode": "5-day Hybrid"},
+                    {"title": "National FDP on Explainable Artificial Intelligence", "organizer": "IIT Bombay & AICTE", "year": "2024"},
                 ],
                 completed_trainings=[
-                    {"title": "Cloud-Native Infrastructure Immersion", "company": "Microsoft India", "duration_weeks": 4, "year": "2023"},
+                    {"title": "Industry 4.0 Faculty Training", "company": "TechNova", "duration_weeks": 3, "year": "2025", "skills": ["AI Systems", "Cloud Architecture", "DevOps"]},
+                    {"title": "AI Faculty Immersion Program", "company": "TechNova AI Solutions", "duration_weeks": 4, "year": "2026", "skills": ["Machine Learning", "MLOps", "Generative AI"]},
                 ],
                 collaboration_availability="available",
                 phone="+91 98765 43210",
-                linkedin_url="https://linkedin.com/in/demo-dr-arvind-rao",
-                google_scholar_url="https://scholar.google.com/citations?user=demo_arvind_rao",
+                linkedin_url="https://linkedin.com/in/demo-dr-ananya-sharma",
+                google_scholar_url="https://scholar.google.com/citations?user=demo_ananya_sharma",
             )
             session.add(fac_demo)
             await session.flush()
             session.add(AccountEmail(email=fac_demo.email, account_id=fac_demo.id, role=Role.academician))
-        else:
-            if not fac_demo.technical_skills:
-                fac_demo.technical_skills = ["Python", "FastAPI", "Distributed Systems", "PostgreSQL", "PyTorch", "Docker", "Explainable AI"]
-                fac_demo.bio = "Professor with 14+ years of academic research and industry consulting experience in scalable microservices, cryptographic verification pipelines, and explainable ML models."
-                fac_demo.years_experience = 14
-                fac_demo.certifications = [{"name": "Google Cloud Professional Architect", "issuer": "Google Cloud", "year": "2024"}]
-                fac_demo.publications = [{"title": "Deterministic and Auditable Match Verification", "journal_or_conf": "IEEE TSC", "year": "2025"}]
-                fac_demo.patents = [{"title": "System and Method for Provable Skill Provenance", "patent_number": "IN-2024-99881", "status": "Granted", "year": "2024"}]
-                fac_demo.collaboration_availability = "available"
-                await session.flush()
+            session.add(AccountEmail(email="faculty@example.demo", account_id=fac_demo.id, role=Role.academician))
+            session.add(AccountEmail(email="faculty.advisor@university.demo", account_id=fac_demo.id, role=Role.academician))
+
+        fac_ex = (await session.scalars(select(Academician).where(Academician.email == "faculty@example.demo"))).first()
+        if not fac_ex:
+            fac_ex = Academician(
+                email="faculty@example.demo",
+                password_hash=DEMO_PASSWORD_HASH,
+                full_name="Dr. Ananya Sharma",
+                institution_name="National Institute of Technology Demo University",
+                department="Computer Science Engineering",
+                designation="Associate Professor",
+                years_experience=8,
+                research_areas=["Artificial Intelligence", "Machine Learning", "Data Analytics", "Software Engineering"],
+                technical_skills=["Artificial Intelligence", "Machine Learning", "Data Analytics", "Software Engineering", "Python", "PyTorch", "MLOps", "Generative AI", "FastAPI"],
+                certifications=fac_demo.certifications,
+                publications=fac_demo.publications,
+                patents=fac_demo.patents,
+                past_industry_experience=fac_demo.past_industry_experience,
+                completed_fdps=fac_demo.completed_fdps,
+                completed_trainings=fac_demo.completed_trainings,
+            )
+            session.add(fac_ex)
+            await session.flush()
 
         # Seed Faculty Applications and Workspaces if not present
         existing_apps = (await session.scalars(select(FacultyApplication).where(FacultyApplication.faculty_id == fac_demo.id))).all()
         if not existing_apps:
             opps = (await session.scalars(select(FacultyOpportunity))).all()
-            opp_by_type = {o.opportunity_type: o for o in opps}
 
             # 1. Accepted Research Grant -> Spawns Collaboration Workspace
-            if "research_grant" in opp_by_type:
-                grant_opp = opp_by_type["research_grant"]
+            grant_opp = next((o for o in opps if o.opportunity_type == "research_grant"), None)
+            if grant_opp:
                 grant_app = FacultyApplication(
                     faculty_id=fac_demo.id,
                     opportunity_id=grant_opp.id,
                     status="accepted",
                     application_type="research_grant",
-                    proposal_title="Cryptographic Verification Engine for National Academic Passports",
-                    proposal_text="A deterministic, privacy-preserving microservices framework to mathematically verify student skill provenance across heterogeneous assessment registries without transmitting raw demographic identifiers.",
-                    problem_statement="Centralized credentialing systems either compromise candidate privacy or lack verifiable source evidence spans.",
-                    methodology="Implement async FastAPI microservices tied to PostgreSQL pgvector and cryptographic evidence fingerprints.",
-                    deliverables=["Core Verification Engine", "PostgreSQL pgvector Schema", "Audit & Explanation Benchmark Suite"],
+                    proposal_title="AI Based Student Skill Prediction Model",
+                    proposal_text="A machine learning and predictive analytics research framework to model student competency trajectories, forecast skill readiness for high-demand technical roles, and generate early-intervention pedagogy recommendations for faculty advisors.",
+                    problem_statement="Traditional academic evaluation relies on static semester examinations which fail to capture continuous skill progression or project-based telemetry.",
+                    methodology="Implement async FastAPI predictive microservices leveraging PostgreSQL pgvector embeddings and transformer-based skill progression models.",
+                    deliverables=["AI Skill Prediction Model", "Validation Benchmark Suite", "Interactive Faculty Advising Dashboard"],
                     milestones=[
-                        {"id": "m1", "title": "Protocol Specification & Threat Modeling", "status": "completed", "due_date": "Month 1"},
-                        {"id": "m2", "title": "Engine Implementation & pgvector Sandbox", "status": "completed", "due_date": "Month 3"},
-                        {"id": "m3", "title": "Live Pilot Integration & Stress Testing", "status": "in_progress", "due_date": "Month 5"},
-                        {"id": "m4", "title": "Final Technical Report & Open Standard Release", "status": "pending", "due_date": "Month 6"},
+                        {"id": "m1", "title": "Literature Review & Problem Formulation", "status": "completed", "due_date": "Month 1"},
+                        {"id": "m2", "title": "Dataset Preparation & Anonymization Pipeline", "status": "completed", "due_date": "Month 2"},
+                        {"id": "m3", "title": "Model Development & Predictive Benchmarking", "status": "in_progress", "due_date": "Month 4"},
+                        {"id": "m4", "title": "Pilot Validation & Industrial Dissemination", "status": "pending", "due_date": "Month 6"},
                     ],
                     timeline_weeks=24,
-                    budget_requested=750000.0,
-                    industry_mentor_name="Dr. Vikram Sethi (Principal Architect)",
-                    industry_mentor_email="vikram.sethi@consortium.demo",
+                    budget_requested=1500000.0,
+                    industry_mentor_name="Vikram Sethi (Senior AI Architect)",
+                    industry_mentor_email="vikram.sethi@technova.demo",
                     engagement_status="active",
                     start_date=_NOW - timedelta(days=60),
                 )
                 session.add(grant_app)
                 await session.flush()
 
-                # Create active workspace
                 grant_ws = CollaborationWorkspace(
                     application_id=grant_app.id,
-                    title="Cryptographic Verification Engine R&D Workspace",
+                    title="AI Skill Mapping Research Project",
                     collaboration_type="research_collaboration",
                     organization_name=grant_opp.organization_name,
                     faculty_lead_id=fac_demo.id,
-                    industry_lead_name="Dr. Vikram Sethi",
-                    industry_lead_email="vikram.sethi@consortium.demo",
+                    industry_lead_name="Vikram Sethi",
+                    industry_lead_email="vikram.sethi@technova.demo",
                     status="active",
-                    progress_percentage=50,
+                    progress_percentage=72,
                     objectives=grant_app.deliverables,
                     participants=[
-                        {"id": str(fac_demo.id), "name": fac_demo.full_name, "role": "Principal Investigator", "department": fac_demo.department},
-                        {"name": "Dr. Vikram Sethi", "role": "Industry Research Lead", "company": grant_opp.organization_name},
+                        {"id": str(fac_demo.id), "name": fac_demo.full_name, "role": "Principal Investigator & Faculty Lead", "department": fac_demo.department},
+                        {"name": "Vikram Sethi", "role": "Industry Research Lead & Mentor", "company": grant_opp.organization_name},
+                        {"name": "Maya Rivera", "role": "Student Researcher (ML Pipeline)", "department": "Computer Science"},
+                        {"name": "Noah Chen", "role": "Student Researcher (Backend & Vector DB)", "department": "Information Technology"},
                     ],
                     milestones=grant_app.milestones,
                     tasks=[
-                        {"id": "t1", "title": "Benchmark cryptographic hash verification latency", "assigned_to": "Dr. Arvind Rao", "status": "done", "priority": "high"},
-                        {"id": "t2", "title": "Deploy pgvector index tuning in sandbox", "assigned_to": "Research Team", "status": "in_progress", "priority": "medium"},
+                        {"id": "t1", "title": "Literature review on skill telemetry graph models", "assigned_to": "Dr. Ananya Sharma", "status": "done", "priority": "high"},
+                        {"id": "t2", "title": "Synthesize benchmarking datasets across student cohorts", "assigned_to": "Maya Rivera", "status": "done", "priority": "high"},
+                        {"id": "t3", "title": "Train baseline transformer model for competency prediction", "assigned_to": "Noah Chen", "status": "in_progress", "priority": "high"},
+                        {"id": "t4", "title": "Draft interim research findings report", "assigned_to": "Dr. Ananya Sharma", "status": "in_progress", "priority": "medium"},
                     ],
                     meetings=[
-                        {"id": "mt1", "title": "Weekly Research Progress Review", "date": "Every Tuesday 4:00 PM IST", "link": "https://meet.google.com/verif-r-d"},
+                        {"id": "mt1", "title": "Weekly R&D Sync with TechNova AI Labs", "date": "Every Wednesday 3:30 PM IST", "link": "https://meet.google.com/demo-ai-skill-map"},
                     ],
                     discussion_posts=[
                         {
                             "id": "dp1",
-                            "author_name": "Dr. Vikram Sethi",
+                            "author_name": "Vikram Sethi",
                             "author_role": "industry_mentor",
-                            "content": "Preliminary benchmarks on pgvector cosine similarity show 8x throughput improvements. Proceeding with milestone 3.",
+                            "content": "The dataset anonymization pipeline passed compliance review. Preliminary ROC-AUC is 0.89 on the validation cohort. Outstanding work on milestone 2.",
+                            "created_at": (_NOW - timedelta(days=5)).isoformat(),
+                        },
+                        {
+                            "id": "dp2",
+                            "author_name": "Dr. Ananya Sharma",
+                            "author_role": "faculty_lead",
+                            "content": "Thank you Vikram. Maya and Noah have integrated the vector similarity metrics. We are now running the transformer fine-tuning loop.",
                             "created_at": (_NOW - timedelta(days=2)).isoformat(),
-                        }
+                        },
                     ],
                     deliverables=[
-                        {"id": "d1", "title": "Architecture Specification Document", "deliverable_type": "paper", "url_or_key": "https://docs.example.demo/arch-v1.pdf", "submitted_at": (_NOW - timedelta(days=30)).isoformat()}
+                        {"id": "d1", "title": "Dataset Preparation and Anonymization Protocol", "deliverable_type": "technical_report", "url_or_key": "https://docs.example.demo/dataset-protocol-v1.pdf", "submitted_at": (_NOW - timedelta(days=30)).isoformat()},
+                        {"id": "d2", "title": "Model Architecture & Benchmark Specification", "deliverable_type": "code_repo", "url_or_key": "https://github.com/demo-ananya/ai-skill-prediction-model", "submitted_at": (_NOW - timedelta(days=10)).isoformat()},
                     ],
                     feedback=[
-                        {"author_name": "Dr. Vikram Sethi", "author_role": "industry_mentor", "rating": 5, "comments": "Outstanding technical execution and rigorous cryptographic design.", "created_at": (_NOW - timedelta(days=10)).isoformat()}
+                        {"author_name": "Vikram Sethi", "author_role": "industry_mentor", "rating": 5, "comments": "Exceptional rigor and seamless student mentorship. The predictive skill models exceed initial accuracy targets.", "created_at": (_NOW - timedelta(days=3)).isoformat()}
                     ],
                     start_date=_NOW - timedelta(days=60),
                 )
                 session.add(grant_ws)
 
-            # 2. Submitted Industrial Immersion Application
-            if "industrial_immersion" in opp_by_type:
-                imm_opp = opp_by_type["industrial_immersion"]
+            # 2. Accepted Industrial Immersion Application
+            imm_opp = next((o for o in opps if o.opportunity_type == "industrial_immersion"), None)
+            if imm_opp:
                 session.add(
                     FacultyApplication(
                         faculty_id=fac_demo.id,
                         opportunity_id=imm_opp.id,
-                        status="submitted",
+                        status="accepted",
                         application_type="industrial_immersion",
-                        proposal_title="Low-Latency Distributed Stream Processing Immersion",
-                        proposal_text="Hands-on 6-week sabbatical to collaborate with Intel systems architects on optimizing lock-free ring buffers and async I/O drivers.",
-                        timeline_weeks=6,
-                        budget_requested=150000.0,
+                        proposal_title="Advanced AI Faculty Immersion Program",
+                        proposal_text="Hands-on 4-week industrial immersion participating in production Generative AI deployments, automated MLOps evaluation frameworks, and high-throughput vector index fine-tuning.",
+                        timeline_weeks=4,
+                        budget_requested=180000.0,
+                        engagement_status="active",
+                        start_date=_NOW - timedelta(days=20),
                     )
                 )
 
-            # 3. Completed FDP / Workshop
-            if "fdp" in opp_by_type:
-                fdp_opp = opp_by_type["fdp"]
+            # 3. Completed FDP
+            fdp_opp = next((o for o in opps if o.opportunity_type == "fdp"), None)
+            if fdp_opp:
                 session.add(
                     FacultyApplication(
                         faculty_id=fac_demo.id,
                         opportunity_id=fdp_opp.id,
                         status="completed",
                         application_type="fdp",
-                        proposal_title="Curriculum Alignment on Explainable AI and Fairness Metrics",
-                        proposal_text="Completed national faculty development program with certified curriculum module adoption.",
-                        timeline_weeks=2,
+                        proposal_title="Cloud Architecture FDP",
+                        proposal_text="Completed national 5-day hybrid faculty development program on modern cloud distributed architectures and microservices design.",
+                        timeline_weeks=1,
                         engagement_status="completed",
-                        completion_report="Successfully completed all hands-on labs and integrated deterministic fairness scoring modules into departmental coursework.",
-                        start_date=_NOW - timedelta(days=90),
-                        end_date=_NOW - timedelta(days=76),
+                        completion_report="Successfully completed all hands-on labs and integrated cloud distributed computing modules into university curriculum.",
+                        start_date=_NOW - timedelta(days=120),
+                        end_date=_NOW - timedelta(days=115),
                     )
                 )
 
@@ -702,22 +1093,40 @@ async def seed_sih_ecosystem():
             session.add_all([
                 FacultyNotification(
                     faculty_id=fac_demo.id,
-                    title="Research Grant Proposal Accepted 🎉",
-                    message="Your proposal 'Cryptographic Verification Engine' has been accepted by the Ministry of Education & Industry Consortium. Collaboration workspace activated.",
+                    title="R&D Grant Proposal Accepted (₹15 Lakhs) 🎉",
+                    message="Your research proposal 'AI Based Student Skill Prediction Model' has been accepted by Vision Analytics Labs & Consortium. Collaboration workspace activated.",
                     category="application",
                     is_read=True,
                 ),
                 FacultyNotification(
                     faculty_id=fac_demo.id,
-                    title="Milestone 2 Verified by Industry Lead",
-                    message="Dr. Vikram Sethi endorsed Milestone 2: Engine Implementation & pgvector Sandbox.",
+                    title="Milestone 2 Endorsed by TechNova AI Solutions",
+                    message="Vikram Sethi endorsed Milestone 2: Dataset Preparation & Anonymization Pipeline (ROC-AUC 0.89).",
                     category="workspace",
+                    is_read=False,
+                ),
+                FacultyNotification(
+                    faculty_id=fac_demo.id,
+                    title="Upcoming Industry Guest Lecture",
+                    message="Industry Expert Guest Lecture on 'Building Production AI Systems' is scheduled for next week.",
+                    category="general",
                     is_read=False,
                 ),
             ])
 
-            # Event Registrations
-            session.add(
+            # Event Registrations & Mentorship Events
+            session.add_all([
+                FacultyEventRegistration(
+                    faculty_id=fac_demo.id,
+                    event_id=uuid.uuid4(),
+                    event_type="guest_lecture",
+                    event_title="Industry Expert Guest Lecture: Production AI Systems",
+                    host_organization="TechNova AI Solutions",
+                    role="organizer",
+                    status="upcoming",
+                    feedback="Guest lecture featuring Senior AI Architect Vikram Sethi on LLM orchestration and vector search latency.",
+                    scheduled_at=_NOW + timedelta(days=5),
+                ),
                 FacultyEventRegistration(
                     faculty_id=fac_demo.id,
                     event_id=uuid.uuid4(),
@@ -726,50 +1135,125 @@ async def seed_sih_ecosystem():
                     host_organization="Postgres Enterprise Guild",
                     role="speaker",
                     status="completed",
-                    feedback="Delivered keynote on Deterministic Skill Embeddings and Cosine Distance Thresholding.",
+                    feedback="Delivered keynote lecture on High-Dimensional Vector Search and Academic Credit Verification.",
                     scheduled_at=_NOW - timedelta(days=14),
-                )
-            )
+                ),
+            ])
 
-        if not await session.scalar(select(Academician.id).where(Academician.email == "faculty@poly.demo")):
-            fac = Academician(
-                email="faculty@poly.demo",
-                password_hash=DEMO_PASSWORD_HASH,
-                full_name="Dr. Aris Thorne",
-                institution_name="Harbor Polytechnic",
-                department="Computer Science & Engineering",
-                designation="Associate Professor & Placement Chair",
-                research_areas=["Distributed Systems", "AI & Knowledge Graphs", "Deterministic Verification"],
-            )
-            session.add(fac)
-            await session.flush()
-            session.add(AccountEmail(email=fac.email, account_id=fac.id, role=Role.academician))
+            # Seed Student Project Applications for Advising Tab
+            challenges = (await session.scalars(select(InnovationChallenge))).all()
+            if challenges:
+                c1 = challenges[0]
+                student_maya = (await session.scalars(select(Student).where(Student.email == "maya@example.demo"))).first()
+                if student_maya:
+                    session.add(
+                        ProjectApplication(
+                            challenge_id=c1.id,
+                            student_id=student_maya.id,
+                            team_members=["Maya Rivera", "Noah Chen", "Aria Patel"],
+                            status="submitted",
+                            submission_url="https://github.com/demo-maya/ai-resume-intel-engine",
+                            feedback="[Academic Advisor Feedback by Dr. Ananya Sharma]: Strong architectural foundation with robust zero-PII data sanitization and deterministic vector search metrics.",
+                            score_or_grade="A+ (Outstanding)",
+                        )
+                    )
+                if len(challenges) > 1:
+                    c2 = challenges[1]
+                    session.add(
+                        ProjectApplication(
+                            challenge_id=c2.id,
+                            student_id=student_maya.id,
+                            team_members=["Rahul Sharma", "Priya Sharma", "Elena Rostova", "Vikram Reddy"],
+                            status="completed",
+                            submission_url="https://github.com/demo-rahul/smart-skill-recommender",
+                            feedback="[Academic Advisor Feedback by Dr. Ananya Sharma]: Completed project demonstrating real-time caching and recommendation inference.",
+                            score_or_grade="A (Excellent)",
+                        )
+                    )
 
-        # Institution (Canonical SIH & Demo)
-        if not await session.scalar(select(Institution.id).where(Institution.email == "dean@example.demo")):
+            # Seed Document Vault entries for Dr. Ananya Sharma
+            session.add_all([
+                UserDocument(
+                    user_id=fac_demo.id,
+                    user_role="academician",
+                    document_type="certificate",
+                    title="FDP Certificate - Cloud Architecture FDP",
+                    file_name="CloudArchitecture_FDP_Certificate.pdf",
+                    file_size_bytes=198000,
+                    mime_type="application/pdf",
+                    file_url="https://credentials.technova.demo/certs/fdp-cert-2025.pdf",
+                    verification_status="verified",
+                    metadata_payload={"issuer": "CloudSphere Technologies", "mode": "Hybrid", "year": "2025"},
+                ),
+                UserDocument(
+                    user_id=fac_demo.id,
+                    user_role="academician",
+                    document_type="research_document",
+                    title="Research Proposal - AI Based Student Skill Prediction Model",
+                    file_name="AI_Skill_Prediction_Grant_Proposal_Approved.pdf",
+                    file_size_bytes=890000,
+                    mime_type="application/pdf",
+                    file_url="https://research.nit.demo/proposals/ai-skill-predict-grant-2026.pdf",
+                    verification_status="verified",
+                    metadata_payload={"grant_amount_inr": 1500000.0, "grantor": "Vision Analytics Labs", "status": "Approved"},
+                ),
+                UserDocument(
+                    user_id=fac_demo.id,
+                    user_role="academician",
+                    document_type="collaboration_agreement",
+                    title="Industry Collaboration Agreement - TechNova AI Solutions",
+                    file_name="MoU_TechNova_NIT_2026.pdf",
+                    file_size_bytes=420000,
+                    mime_type="application/pdf",
+                    file_url="https://contracts.nit.demo/agreements/technova-mou-2026.pdf",
+                    verification_status="verified",
+                    metadata_payload={"partner": "TechNova AI Solutions", "agreement_type": "MoU R&D Partnership"},
+                ),
+                UserDocument(
+                    user_id=fac_demo.id,
+                    user_role="academician",
+                    document_type="publication",
+                    title="Publication Record - Deep Learning Approaches for Predictive Analytics",
+                    file_name="Deep_Learning_Predictive_Analytics_Preprint.pdf",
+                    file_size_bytes=640000,
+                    mime_type="application/pdf",
+                    file_url="https://doi.org/10.1016/j.aij.2025.04.019",
+                    verification_status="verified",
+                    metadata_payload={"journal": "International AI Research Journal", "year": "2025", "peer_reviewed": True},
+                ),
+            ])
+
+        # 3. INSTITUTION DEMO ACCOUNT: Dr. Vikram Rao (institution.demo@example.com / demo123)
+        inst_demo = (await session.scalars(select(Institution).where(Institution.email == "institution.demo@example.com"))).first()
+        if not inst_demo:
             inst_demo = Institution(
-                email="dean@example.demo",
-                password_hash=hash_password("DemoPassword123"),
-                institution_name="Harbor Polytechnic University",
-                institution_code="HPU-DEMO",
-                state="Maharashtra",
-                departments=["Computer Science", "Information Technology", "Electronics"],
+                email="institution.demo@example.com",
+                password_hash=DEMO_PASSWORD_HASH,
+                institution_name="National Institute of Technology Demo University",
+                institution_code="NIT-DEMO-2026",
+                state="Karnataka",
+                departments=["Computer Science", "Information Technology", "Electronics", "Mechanical"],
             )
             session.add(inst_demo)
             await session.flush()
             session.add(AccountEmail(email=inst_demo.email, account_id=inst_demo.id, role=Role.institution))
-
-        if not await session.scalar(select(Institution.id).where(Institution.email == "admin@poly.demo")):
-            inst = Institution(
-                email="admin@poly.demo",
-                password_hash=DEMO_PASSWORD_HASH,
-                institution_name="Harbor Polytechnic University",
-                institution_code="HP-2026",
-                state="Maharashtra",
-            )
-            session.add(inst)
+        else:
+            inst_demo.institution_name = "National Institute of Technology Demo University"
+            inst_demo.departments = ["Computer Science", "Information Technology", "Electronics", "Mechanical"]
             await session.flush()
-            session.add(AccountEmail(email=inst.email, account_id=inst.id, role=Role.institution))
+
+        if not await session.scalar(select(Institution.id).where(Institution.email == "dean@example.demo")):
+            inst_dean = Institution(
+                email="dean@example.demo",
+                password_hash=DEMO_PASSWORD_HASH,
+                institution_name="National Institute of Technology Demo University",
+                institution_code="HPU-DEMO",
+                state="Karnataka",
+                departments=["Computer Science", "Information Technology", "Electronics", "Mechanical"],
+            )
+            session.add(inst_dean)
+            await session.flush()
+            session.add(AccountEmail(email=inst_dean.email, account_id=inst_dean.id, role=Role.institution))
 
         await session.commit()
         print("SIH Ecosystem seed completed successfully.")
