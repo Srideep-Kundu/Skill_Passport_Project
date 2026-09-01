@@ -9,7 +9,7 @@ import { api } from "../api/service";
 import { errorMessage } from "../api/client";
 import type { InnovationChallenge, MentorshipSession } from "../api/types";
 import { toast } from "sonner";
-import { EditorialButton, EditorialPageHeader, EditorialTextTabs } from "./ui/EditorialPrimitives";
+import { EditorialButton, EditorialTextTabs } from "./ui/EditorialPrimitives";
 
 interface Props {
   token: string;
@@ -76,13 +76,6 @@ export function CollaborationHub({ token }: Props) {
 
   return (
     <div className="space-y-6 font-sans">
-      <EditorialPageHeader
-        category="STUDENT"
-        index="COLLABORATION"
-        title="Academia-Industry Collaboration Hub"
-        subtitle="Connect with verified corporate mentors for 1-on-1 technical advisory and participate in industry-sponsored innovation hackathons."
-      />
-
       <EditorialTextTabs
         tabs={tabs}
         activeTab={activeTab}
@@ -90,9 +83,9 @@ export function CollaborationHub({ token }: Props) {
       />
 
       {loading ? (
-        <div className="p-12 text-center border border-white/10 bg-[#071E2B] rounded-md">
-          <div className="inline-block animate-spin h-6 w-6 border-2 border-white/20 border-t-white rounded-full mb-3" />
-          <p className="font-mono text-xs text-[#8796A2]">Loading collaboration network...</p>
+        <div className="p-12 text-center border border-[#E5E1D8] bg-[#FFFFFF] rounded-md">
+          <div className="inline-block animate-spin h-6 w-6 border-2 border-[#E5E1D8] border-t-white rounded-full mb-3" />
+          <p className="font-mono text-xs text-[#64748B]">Loading collaboration network...</p>
         </div>
       ) : activeTab === "mentorship" ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -101,33 +94,33 @@ export function CollaborationHub({ token }: Props) {
             return (
               <div
                 key={s.id}
-                className="border border-white/10 bg-[#071E2B] p-6 rounded-md flex flex-col justify-between space-y-5 hover:border-white/20 transition-colors"
+                className="border border-[#E5E1D8] bg-[#FFFFFF] p-6 rounded-md flex flex-col justify-between space-y-5 hover:border-[#E5E1D8] transition-colors"
               >
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between font-mono text-xs text-[#8796A2]">
-                    <span className="border border-white/10 px-2 py-0.5 rounded-xs uppercase">{s.domain}</span>
-                    <span className="text-[#9CC7D8]">
+                  <div className="flex items-center justify-between font-mono text-xs text-[#64748B]">
+                    <span className="border border-[#E5E1D8] px-2 py-0.5 rounded-xs uppercase">{s.domain}</span>
+                    <span className="text-[#B08D57]">
                       {isBooked ? "Confirmed" : `Max ${s.max_participants} seats`}
                     </span>
                   </div>
 
                   <h3
-                    className="text-xl font-normal text-[#F7F8F8]"
+                    className="text-xl font-normal text-[#111827]"
                     style={{ fontFamily: "var(--font-display)" }}
                   >
                     1-on-1 Mentorship with {s.mentor_name}
                   </h3>
 
                   <div className="space-y-1 pt-1">
-                    <p className="text-sm font-semibold text-[#F7F8F8]">{s.mentor_name}</p>
-                    <p className="font-mono text-xs text-[#8796A2]">
-                      {s.mentor_role} · <span className="text-[#9CC7D8]">{s.mentor_company}</span>
+                    <p className="text-sm font-semibold text-[#111827]">{s.mentor_name}</p>
+                    <p className="font-mono text-xs text-[#64748B]">
+                      {s.mentor_role} · <span className="text-[#B08D57]">{s.mentor_company}</span>
                     </p>
                   </div>
 
-                  <p className="text-xs text-[#BEC8CF] leading-relaxed line-clamp-2">{s.description}</p>
+                  <p className="text-xs text-[#475569] leading-relaxed line-clamp-2">{s.description}</p>
 
-                  <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-xs text-[#8796A2]">
+                  <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-xs text-[#64748B]">
                     <div className="flex items-center gap-1.5">
                       <Calendar className="h-3.5 w-3.5" />
                       <span>{new Date(s.scheduled_at).toLocaleDateString()}</span>
@@ -139,11 +132,11 @@ export function CollaborationHub({ token }: Props) {
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-white/10">
+                <div className="pt-4 border-t border-[#E5E1D8]">
                   {isBooked ? (
-                    <div className="p-3 rounded-sm border border-white/15 bg-white/5 flex items-center justify-between font-mono text-xs text-[#F7F8F8]">
+                    <div className="p-3 rounded-sm border border-[#E5E1D8] bg-[#F7F5F0] flex items-center justify-between font-mono text-xs text-[#111827]">
                       <span className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                        <CheckCircle2 className="h-4 w-4 text-[#4F6F5A]" />
                         Confirmed Seat
                       </span>
                       {s.meeting_link ? (
@@ -151,13 +144,13 @@ export function CollaborationHub({ token }: Props) {
                           href={s.meeting_link}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-[#9CC7D8] hover:text-[#F7F8F8] flex items-center gap-1"
+                          className="text-[#B08D57] hover:text-[#111827] flex items-center gap-1"
                         >
                           <Video className="h-3 w-3" />
                           <span>Join Call</span>
                         </a>
                       ) : (
-                        <span className="text-[#8796A2]">Link pending</span>
+                        <span className="text-[#64748B]">Link pending</span>
                       )}
                     </div>
                   ) : (
@@ -181,44 +174,44 @@ export function CollaborationHub({ token }: Props) {
             return (
               <div
                 key={ch.id}
-                className="border border-white/10 bg-[#071E2B] p-6 rounded-md flex flex-col justify-between space-y-5 hover:border-white/20 transition-colors"
+                className="border border-[#E5E1D8] bg-[#FFFFFF] p-6 rounded-md flex flex-col justify-between space-y-5 hover:border-[#E5E1D8] transition-colors"
               >
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between font-mono text-xs text-[#8796A2]">
-                    <span className="text-[#9CC7D8] font-bold">{ch.host_company}</span>
-                    <span className="text-[#F7F8F8] border border-white/15 px-2 py-0.5 rounded-xs">
+                  <div className="flex items-center justify-between font-mono text-xs text-[#64748B]">
+                    <span className="text-[#B08D57] font-bold">{ch.host_company}</span>
+                    <span className="text-[#111827] border border-[#E5E1D8] px-2 py-0.5 rounded-xs">
                       Prize: {ch.prize_pool}
                     </span>
                   </div>
 
                   <h3
-                    className="text-xl font-normal text-[#F7F8F8]"
+                    className="text-xl font-normal text-[#111827]"
                     style={{ fontFamily: "var(--font-display)" }}
                   >
                     {ch.title}
                   </h3>
 
-                  <p className="text-xs text-[#BEC8CF] leading-relaxed line-clamp-3">{ch.problem_statement}</p>
+                  <p className="text-xs text-[#475569] leading-relaxed line-clamp-3">{ch.problem_statement}</p>
 
-                  <div className="pt-1 font-mono text-xs text-[#8796A2]">
+                  <div className="pt-1 font-mono text-xs text-[#64748B]">
                     <span>Tags: </span>
-                    <span className="text-[#BEC8CF]">{ch.tags?.join(" · ") || "Industry Challenge"}</span>
+                    <span className="text-[#475569]">{ch.tags?.join(" · ") || "Industry Challenge"}</span>
                   </div>
 
-                  <div className="font-mono text-xs text-[#8796A2]">
+                  <div className="font-mono text-xs text-[#64748B]">
                     <span>Submission Deadline: </span>
-                    <span className="text-[#F7F8F8]">{new Date(ch.deadline).toLocaleDateString()}</span>
+                    <span className="text-[#111827]">{new Date(ch.deadline).toLocaleDateString()}</span>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-white/10">
+                <div className="pt-4 border-t border-[#E5E1D8]">
                   {isRegistered ? (
-                    <div className="p-3 rounded-sm border border-white/15 bg-white/5 flex items-center justify-between font-mono text-xs text-[#F7F8F8]">
+                    <div className="p-3 rounded-sm border border-[#E5E1D8] bg-[#F7F5F0] flex items-center justify-between font-mono text-xs text-[#111827]">
                       <span className="flex items-center gap-1.5">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                        <CheckCircle2 className="h-4 w-4 text-[#4F6F5A]" />
                         Team Registered
                       </span>
-                      <span className="text-[#9CC7D8] text-[10px]">Active Track</span>
+                      <span className="text-[#B08D57] text-[10px]">Active Track</span>
                     </div>
                   ) : (
                     <EditorialButton

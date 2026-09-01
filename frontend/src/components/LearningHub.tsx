@@ -4,7 +4,7 @@ import { api } from "../api/service";
 import { errorMessage } from "../api/client";
 import type { LearningCourse } from "../api/types";
 import { toast } from "sonner";
-import { EditorialButton, EditorialPageHeader, EditorialTextTabs } from "./ui/EditorialPrimitives";
+import { EditorialButton, EditorialTextTabs } from "./ui/EditorialPrimitives";
 
 interface Props {
   token: string;
@@ -47,7 +47,7 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
     try {
       await api.updateCourseProgress(courseId, newProgress, token);
       if (newProgress >= 100) {
-        toast.success("Course Completed! Certified coursework evidence added to your Skill Passport.");
+        toast.success("Course Completed! Certified coursework evidence added to your Lumina Intel.");
         if (onCourseCompleted) onCourseCompleted();
       } else {
         toast.info(`Course progress updated to ${newProgress}%`);
@@ -68,14 +68,6 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
 
   return (
     <div className="space-y-6 font-sans">
-      {/* Editorial Page Header */}
-      <EditorialPageHeader
-        category="STUDENT"
-        index="LEARNING"
-        title="Curated Learning Hub"
-        subtitle="Targeted coursework mapped directly to close verified skill gaps and meet requirements for high-demand opportunities."
-      />
-
       {/* Clean Category Text Tabs */}
       <EditorialTextTabs
         tabs={categoryTabs}
@@ -85,12 +77,12 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
 
       {/* Courses List as Dark Editorial Records */}
       {loading ? (
-        <div className="p-12 text-center border border-white/10 bg-[#071E2B] rounded-md">
-          <div className="inline-block animate-spin h-6 w-6 border-2 border-white/20 border-t-white rounded-full mb-3" />
-          <p className="font-mono text-xs text-[#8796A2]">Loading recommended coursework catalog...</p>
+        <div className="p-12 text-center border border-[#E5E1D8] bg-[#FFFFFF] rounded-md">
+          <div className="inline-block animate-spin h-6 w-6 border-2 border-[#E5E1D8] border-t-white rounded-full mb-3" />
+          <p className="font-mono text-xs text-[#64748B]">Loading recommended coursework catalog...</p>
         </div>
       ) : courses.length === 0 ? (
-        <div className="p-12 text-center border border-white/10 bg-[#071E2B] rounded-md font-mono text-xs text-[#8796A2]">
+        <div className="p-12 text-center border border-[#E5E1D8] bg-[#FFFFFF] rounded-md font-mono text-xs text-[#64748B]">
           No courses found for the selected category.
         </div>
       ) : (
@@ -98,20 +90,20 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
           {courses.map((course) => (
             <div
               key={course.id}
-              className="border border-white/10 bg-[#071E2B] p-6 rounded-md flex flex-col justify-between space-y-5 transition-colors hover:border-white/20"
+              className="border border-[#E5E1D8] bg-[#FFFFFF] p-6 rounded-md flex flex-col justify-between space-y-5 transition-colors hover:border-[#E5E1D8]"
             >
               <div className="space-y-3">
                 {/* Category & Provider Eyebrow */}
-                <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-[#8796A2]">
+                <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-[#64748B]">
                   <span>
                     {course.category} / {course.provider}
                   </span>
-                  <span className="text-[#9CC7D8]">★ {course.rating}</span>
+                  <span className="text-[#B08D57]">★ {course.rating}</span>
                 </div>
 
                 {/* Course Title in Instrument Serif */}
                 <h3
-                  className="text-xl font-normal text-[#F7F8F8] leading-tight"
+                  className="text-xl font-normal text-[#111827] leading-tight"
                   style={{ fontFamily: "var(--font-display)" }}
                 >
                   {course.title}
@@ -119,29 +111,29 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
 
                 {/* Recommendation Reason */}
                 {course.recommendation_reason && (
-                  <p className="text-xs text-[#9CC7D8] font-mono leading-relaxed">
+                  <p className="text-xs text-[#B08D57] font-mono leading-relaxed">
                     Recommended: {course.recommendation_reason}
                   </p>
                 )}
 
-                <p className="text-xs text-[#BEC8CF] leading-relaxed line-clamp-2">
+                <p className="text-xs text-[#475569] leading-relaxed line-clamp-2">
                   {course.description}
                 </p>
 
                 {/* Skills as Dot-Separated Text */}
                 <div className="pt-1">
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-[#8796A2] block mb-1">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-[#64748B] block mb-1">
                     Skills Covered
                   </span>
-                  <p className="text-xs text-[#BEC8CF] font-mono">
+                  <p className="text-xs text-[#475569] font-mono">
                     {course.skills.join(" · ")}
                   </p>
                 </div>
               </div>
 
               {/* Course Footer & Actions */}
-              <div className="pt-4 border-t border-white/10 space-y-3">
-                <div className="flex items-center justify-between text-xs font-mono text-[#8796A2]">
+              <div className="pt-4 border-t border-[#E5E1D8] space-y-3">
+                <div className="flex items-center justify-between text-xs font-mono text-[#64748B]">
                   <span>Duration: {course.duration_hours} Hours</span>
                   <a
                     href={course.url || "#"}
@@ -153,7 +145,7 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
                         toast.info(`Curriculum Module: ${course.title} — ${course.description}`);
                       }
                     }}
-                    className="text-[#9CC7D8] hover:text-[#F7F8F8] flex items-center gap-1 transition-colors cursor-pointer"
+                    className="text-[#B08D57] hover:text-[#111827] flex items-center gap-1 transition-colors cursor-pointer"
                   >
                     <span>Curriculum</span>
                     <ExternalLink className="h-3 w-3" />
@@ -163,21 +155,21 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
                 {course.is_enrolled ? (
                   <div className="space-y-2 pt-1">
                     <div className="flex items-center justify-between text-xs font-mono">
-                      <span className="text-[#BEC8CF]">
+                      <span className="text-[#475569]">
                         {course.progress >= 100 ? "Status: Completed" : `Progress: ${course.progress}%`}
                       </span>
                       {course.progress < 100 && (
                         <button
                           type="button"
                           onClick={() => handleUpdateProgress(course.id, 100)}
-                          className="text-[#9CC7D8] hover:text-[#F7F8F8] cursor-pointer flex items-center gap-1 transition-colors"
+                          className="text-[#B08D57] hover:text-[#111827] cursor-pointer flex items-center gap-1 transition-colors"
                         >
                           <CheckCircle2 className="h-3 w-3" />
                           <span>Mark Completed</span>
                         </button>
                       )}
                     </div>
-                    <div className="w-full bg-white/5 h-1.5 rounded-xs overflow-hidden">
+                    <div className="w-full bg-[#F7F5F0] h-1.5 rounded-xs overflow-hidden">
                       <div
                         className="bg-[#9CC7D8] h-full rounded-xs transition-all duration-300"
                         style={{ width: `${course.progress}%` }}

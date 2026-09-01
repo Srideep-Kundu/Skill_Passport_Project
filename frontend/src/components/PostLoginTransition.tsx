@@ -142,14 +142,28 @@ export function PostLoginTransition({
     <div
       role="region"
       aria-label="Post login transition"
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[#031322] text-white select-none"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[#F7F5F0] text-[#111827] select-none"
     >
-      {/* Background Subtle Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#031322] via-[#061524] to-[#031322]" />
+      {/* Full-bleed Background Video Layer (High Visibility & Vivid Landscape) */}
+      {!prefersReduced ? (
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 h-full w-full object-cover z-0 opacity-100"
+          src="https://designerstephen.github.io/public-assets/videos/serene-art-hero.mp4"
+        />
+      ) : (
+        <div className="absolute inset-0 bg-[#F7F5F0] z-0" />
+      )}
+
+      {/* Subtle Non-Obtrusive Legibility Overlay (Maximizes Video Visibility) */}
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-white/30 via-transparent to-white/30" />
 
       {/* Floating incoming terms with subtle motion */}
       {!prefersReduced && phase === "converging" && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
           {words.map((word) => (
             <motion.div
               key={word.id}
@@ -170,7 +184,9 @@ export function PostLoginTransition({
                 delay: word.delay,
                 ease: "easeOut",
               }}
-              className="absolute font-mono text-xs uppercase tracking-widest text-neutral-400"
+              className={`absolute font-mono text-xs uppercase tracking-widest ${
+                word.type === "cyan" || word.type === "indigo" ? "text-[#B08D57] font-semibold" : "text-[#64748B]"
+              }`}
             >
               {word.text}
             </motion.div>
@@ -190,36 +206,36 @@ export function PostLoginTransition({
             }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="relative z-10 mx-auto max-w-2xl px-6 text-center"
+            className="relative z-10 mx-auto max-w-2xl px-8 py-10 rounded-2xl border border-[#E5E1D8] bg-[#FFFFFF]/90 backdrop-blur-md shadow-[0_12px_40px_rgba(17,24,39,0.08)] text-center mx-4"
           >
-            <p className="mb-3 font-mono text-xs uppercase tracking-widest text-neutral-400">
+            <p className="mb-3 font-mono text-xs uppercase tracking-widest text-[#B08D57] font-semibold">
               {isStudent && resolvedName ? `Welcome back, ${resolvedName}` : "Welcome back"}
             </p>
 
             <h1
-              className="text-4xl sm:text-5xl md:text-6xl font-normal leading-[1.05] tracking-tight text-white"
+              className="text-4xl sm:text-5xl md:text-6xl font-normal leading-[1.05] tracking-tight text-[#111827]"
               style={{ fontFamily: "var(--font-display)" }}
             >
               {role === "student" ? (
                 <>
-                  Find <em className="not-italic text-neutral-400">opportunities</em> that fit you.
+                  Find <em className="not-italic text-[#B08D57]">opportunities</em> that fit you.
                 </>
               ) : role === "academician" ? (
                 <>
-                  Empower <em className="not-italic text-neutral-400">academic excellence</em>.
+                  Empower <em className="not-italic text-[#B08D57]">academic excellence</em>.
                 </>
               ) : role === "institution" ? (
                 <>
-                  Institutional <em className="not-italic text-neutral-400">intelligence</em>.
+                  Institutional <em className="not-italic text-[#B08D57]">intelligence</em>.
                 </>
               ) : (
                 <>
-                  Find <em className="not-italic text-neutral-400">talent</em> that fits.
+                  Find <em className="not-italic text-[#B08D57]">talent</em> that fits.
                 </>
               )}
             </h1>
 
-            <p className="mt-4 text-sm font-normal text-neutral-300 leading-relaxed max-w-md mx-auto">
+            <p className="mt-4 text-sm font-normal text-[#475569] leading-relaxed max-w-md mx-auto">
               {role === "student"
                 ? "Your verified skills are ready to work for you."
                 : role === "academician"
@@ -229,8 +245,8 @@ export function PostLoginTransition({
                 : "Discover candidates through evidence-backed skills."}
             </p>
 
-            <div className="mt-8 inline-flex items-center gap-2 border border-white/10 px-3 py-1 rounded-sm font-mono text-[11px] uppercase tracking-wider text-neutral-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+            <div className="mt-8 inline-flex items-center gap-2 border border-[#E5E1D8] bg-[#FFFFFF] px-4 py-1.5 rounded-full font-mono text-[11px] uppercase tracking-wider text-[#64748B] shadow-2xs">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#B08D57] animate-pulse" />
               <span>Verifiable compute engine active</span>
             </div>
           </motion.div>
@@ -242,7 +258,7 @@ export function PostLoginTransition({
         <button
           type="button"
           onClick={() => onComplete()}
-          className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 font-mono text-xs text-neutral-400 hover:text-white hover:border-white/20 transition-colors cursor-pointer"
+          className="pill-btn-outline px-4 py-1.5 font-mono text-xs text-[#64748B] hover:text-[#111827] bg-[#FFFFFF] shadow-2xs cursor-pointer transition-all"
         >
           Skip (Esc)
         </button>

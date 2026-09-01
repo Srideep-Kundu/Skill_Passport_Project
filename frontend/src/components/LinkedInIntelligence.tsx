@@ -81,7 +81,7 @@ export function LinkedInIntelligence({
     setIsSavingProfile(true);
     try {
       await api.saveLinkedInProfile(previewProfile, token);
-      toast.success("LinkedIn profile & skills saved to Skill Passport!");
+      toast.success("LinkedIn profile & skills saved to Lumina Intel!");
       setPreviewProfile(null);
       onChanged();
     } catch (caught) {
@@ -162,17 +162,21 @@ export function LinkedInIntelligence({
   }
 
   return (
-    <section className="border border-white/10 bg-[#061524] p-6 rounded-md text-white font-sans space-y-6">
-      <div className="border-b border-white/10 pb-4 flex flex-wrap items-center justify-between gap-3">
+    <section className="border border-[#E5E1D8] bg-[#FFFFFF] p-6 sm:p-8 rounded-[16px] text-[#111827] font-sans space-y-6 shadow-[0_8px_30px_rgba(17,24,39,0.04)]">
+      <div className="border-b border-[#E5E1D8] pb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-normal text-white flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
-            <FileArchive className="h-4 w-4 text-white/80" />
+          <div className="font-mono text-[11px] uppercase tracking-widest text-[#B08D57] font-semibold mb-1 flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#B08D57]" />
+            <span>LINKEDIN PROVENANCE AUDIT</span>
+          </div>
+          <h2 className="text-2xl font-normal text-[#111827] flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
+            <FileArchive className="h-5 w-5 text-[#B08D57]" />
             <span>LinkedIn Intelligence</span>
-            <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-300 border border-white/15 px-2 py-0.5 rounded-xs">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-[#64748B] border border-[#E5E1D8] bg-[#F7F5F0] px-2.5 py-0.5 rounded-full">
               USER-PROVIDED EXPORT · NOT SCRAPED
             </span>
           </h2>
-          <p className="text-xs text-neutral-400 mt-0.5">
+          <p className="text-xs text-[#475569] mt-0.5">
             Deterministic parser for student-downloaded LinkedIn data archives (.zip). Never scraped.
           </p>
         </div>
@@ -180,7 +184,7 @@ export function LinkedInIntelligence({
         <button
           type="button"
           onClick={() => setShowGuide((prev) => !prev)}
-          className="font-mono text-xs text-neutral-400 hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
+          className="font-mono text-xs text-[#B08D57] hover:text-[#111827] flex items-center gap-1 cursor-pointer transition-colors"
         >
           <Info className="h-3.5 w-3.5" />
           <span>{showGuide ? "Hide instructions" : "How to export LinkedIn data"}</span>
@@ -188,12 +192,12 @@ export function LinkedInIntelligence({
       </div>
 
       {showGuide && (
-        <div className="border border-white/10 bg-white/[0.02] p-4 rounded-sm text-xs text-neutral-300 space-y-2 font-mono">
-          <p className="text-white font-medium flex items-center gap-1.5">
-            <Sparkles className="h-3.5 w-3.5 text-white/80" />
+        <div className="border border-[#E5E1D8] bg-[#F7F5F0] p-4 rounded-[14px] text-xs text-[#475569] space-y-2 font-mono">
+          <p className="text-[#111827] font-medium flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5 text-[#B08D57]" />
             <span>How to download your LinkedIn Data Export (.zip):</span>
           </p>
-          <ol className="list-decimal list-inside space-y-1 text-[11px] text-neutral-400">
+          <ol className="list-decimal list-inside space-y-1 text-[11px] text-[#64748B]">
             <li>Open LinkedIn &rarr; Click your profile icon &rarr; <strong>Settings & Privacy</strong></li>
             <li>Select <strong>Data Privacy</strong> on the left navigation</li>
             <li>Click <strong>Get a copy of your data</strong> &rarr; Request the archive (positions, projects, skills, education)</li>
@@ -203,14 +207,14 @@ export function LinkedInIntelligence({
       )}
 
       {/* Mode Switcher */}
-      <div className="flex border-b border-white/10 w-fit">
+      <div className="flex border-b border-[#E5E1D8] w-fit">
         <button
           type="button"
           onClick={() => setMode("url")}
           className={`pb-2 px-3 font-mono text-xs uppercase tracking-wider transition-colors cursor-pointer ${
             mode === "url"
-              ? "text-white border-b-2 border-white font-semibold"
-              : "text-neutral-400 hover:text-neutral-200"
+              ? "text-[#111827] border-b-2 border-[#111827] font-semibold"
+              : "text-[#64748B] hover:text-[#111827]"
           }`}
         >
           Simulated URL Preview
@@ -220,11 +224,11 @@ export function LinkedInIntelligence({
           onClick={() => setMode("archive")}
           className={`pb-2 px-3 font-mono text-xs uppercase tracking-wider transition-colors cursor-pointer ${
             mode === "archive"
-              ? "text-white border-b-2 border-white font-semibold"
-              : "text-neutral-400 hover:text-neutral-200"
+              ? "text-[#111827] border-b-2 border-[#111827] font-semibold"
+              : "text-[#64748B] hover:text-[#111827]"
           }`}
         >
-          Export Archive (.zip)
+          ZIP Archive Upload
         </button>
       </div>
 
@@ -238,7 +242,7 @@ export function LinkedInIntelligence({
                 value={profileUrl}
                 onChange={(e) => setProfileUrl(e.target.value)}
                 placeholder="https://www.linkedin.com/in/your-profile"
-                className="flex-1 rounded-md border border-white/15 bg-white/[0.03] px-3 py-2 text-xs text-white focus:border-white focus:outline-none"
+                className="flex-1 rounded-md border border-[#E5E1D8] bg-[#FFFFFF] px-3 py-2 text-xs text-[#111827] focus:border-[#B08D57] focus:outline-none"
               />
               <LiquidGlassButton
                 disabled={isImportingUrl || !profileUrl.trim()}
@@ -250,24 +254,24 @@ export function LinkedInIntelligence({
               </LiquidGlassButton>
             </div>
 
-            <p className="font-mono text-[11px] text-neutral-400">
+            <p className="font-mono text-[11px] text-[#64748B]">
               LinkedIn URL access is not connected. This produces a clearly labeled simulated preview only;
               upload your LinkedIn data export to create evidence-backed passport records.
             </p>
 
             {/* Preview Card */}
             {previewProfile && (
-              <div className="border border-white/15 bg-white/[0.02] p-5 rounded-sm space-y-4">
+              <div className="border border-[#E5E1D8] bg-[#F7F5F0] p-5 rounded-sm space-y-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="text-base font-normal text-white flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
+                    <h3 className="text-base font-normal text-[#111827] flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
                       <span>{previewProfile.full_name}</span>
-                      <span className="font-mono text-[10px] uppercase border border-white/20 px-2 py-0.5 rounded-xs text-neutral-300">
+                      <span className="font-mono text-[10px] uppercase border border-[#E5E1D8] px-2 py-0.5 rounded-xs text-[#475569]">
                         Demo fixture — not verified
                       </span>
                     </h3>
-                    <p className="text-xs text-neutral-300 mt-0.5">{previewProfile.headline}</p>
-                    <p className="text-[11px] text-neutral-400 mt-1 italic">{previewProfile.summary}</p>
+                    <p className="text-xs text-[#475569] mt-0.5">{previewProfile.headline}</p>
+                    <p className="text-[11px] text-[#64748B] mt-1 italic">{previewProfile.summary}</p>
                   </div>
                   <LiquidGlassButton
                     disabled={isSavingProfile || !previewProfile.persistable}
@@ -275,23 +279,23 @@ export function LinkedInIntelligence({
                     size="sm"
                   >
                     {isSavingProfile ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                    <span>{previewProfile.persistable ? "Save to Skill Passport" : "Preview only"}</span>
+                    <span>{previewProfile.persistable ? "Save to Lumina Intel" : "Preview only"}</span>
                   </LiquidGlassButton>
                 </div>
 
-                <div className="font-mono text-[11px] text-neutral-400 border border-white/10 p-2.5 rounded-sm">
+                <div className="font-mono text-[11px] text-[#64748B] border border-[#E5E1D8] p-2.5 rounded-sm">
                   {previewProfile.disclaimer}
                 </div>
 
                 <div>
-                  <h4 className="font-mono text-[10px] uppercase tracking-wider text-neutral-400 mb-1.5">
+                  <h4 className="font-mono text-[10px] uppercase tracking-wider text-[#64748B] mb-1.5">
                     Extracted Skills ({previewProfile.skills.length})
                   </h4>
                   <div className="flex flex-wrap gap-1.5">
                     {previewProfile.skills.map((s: string, idx: number) => (
                       <span
                         key={idx}
-                        className="font-mono text-xs border border-white/15 bg-white/5 px-2 py-0.5 rounded-xs text-white"
+                        className="font-mono text-xs border border-[#E5E1D8] bg-[#FFFFFF] px-2 py-0.5 rounded-xs text-[#111827]"
                       >
                         {s}
                       </span>
@@ -300,22 +304,22 @@ export function LinkedInIntelligence({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                  <div className="p-3 border border-white/10 bg-white/[0.02] rounded-sm">
-                    <p className="font-mono text-[10px] uppercase text-neutral-400 flex items-center gap-1.5 mb-1.5">
-                      <Briefcase className="h-3.5 w-3.5 text-white/80" /> Experience ({previewProfile.experiences.length})
+                  <div className="p-3 border border-[#E5E1D8] bg-[#FFFFFF] rounded-sm">
+                    <p className="font-mono text-[10px] uppercase text-[#64748B] flex items-center gap-1.5 mb-1.5 font-semibold">
+                      <Briefcase className="h-3.5 w-3.5 text-[#B08D57]" /> Experience ({previewProfile.experiences.length})
                     </p>
                     {previewProfile.experiences.map((exp, i) => (
-                      <p key={i} className="text-[11px] text-neutral-300">
+                      <p key={i} className="text-[11px] text-[#475569]">
                         • <strong>{exp.title}</strong> at {exp.company}
                       </p>
                     ))}
                   </div>
-                  <div className="p-3 border border-white/10 bg-white/[0.02] rounded-sm">
-                    <p className="font-mono text-[10px] uppercase text-neutral-400 flex items-center gap-1.5 mb-1.5">
-                      <GraduationCap className="h-3.5 w-3.5 text-white/80" /> Education ({previewProfile.education.length})
+                  <div className="p-3 border border-[#E5E1D8] bg-[#FFFFFF] rounded-sm">
+                    <p className="font-mono text-[10px] uppercase text-[#64748B] flex items-center gap-1.5 mb-1.5 font-semibold">
+                      <GraduationCap className="h-3.5 w-3.5 text-[#B08D57]" /> Education ({previewProfile.education.length})
                     </p>
                     {previewProfile.education.map((edu, i) => (
-                      <p key={i} className="text-[11px] text-neutral-300">
+                      <p key={i} className="text-[11px] text-[#475569]">
                         • <strong>{edu.degree}</strong> ({edu.institution})
                       </p>
                     ))}
@@ -331,7 +335,7 @@ export function LinkedInIntelligence({
               type="file"
               accept=".zip,application/zip,application/x-zip-compressed"
               onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-              className="flex-1 rounded-md border border-white/15 bg-white/[0.03] px-3 py-1.5 text-xs text-white file:mr-2 file:py-1 file:px-2 file:rounded-xs file:border-0 file:text-xs file:font-mono file:bg-white/10 file:text-white hover:file:bg-white/20"
+              className="flex-1 rounded-md border border-[#E5E1D8] bg-[#FFFFFF] px-3 py-1.5 text-xs text-[#111827] file:mr-2 file:py-1 file:px-2 file:rounded-xs file:border file:border-[#E5E1D8] file:text-xs file:font-mono file:bg-[#F7F5F0] file:text-[#111827] hover:file:bg-[#E5E1D8]"
             />
             <LiquidGlassButton
               disabled={!file}
@@ -347,7 +351,7 @@ export function LinkedInIntelligence({
         {message && (
           <p
             role="status"
-            className="text-xs font-mono text-neutral-300 p-2.5 rounded-sm border border-white/10 bg-white/[0.02]"
+            className="text-xs font-mono text-[#475569] p-2.5 rounded-sm border border-[#E5E1D8] bg-[#F7F5F0]"
           >
             {message}
           </p>
@@ -364,20 +368,20 @@ export function LinkedInIntelligence({
               return (
                 <li
                   key={item.id}
-                  className="border border-white/10 bg-white/[0.02] p-4 rounded-sm space-y-3"
+                  className="border border-[#E5E1D8] bg-[#FFFFFF] p-4 rounded-sm space-y-3 shadow-2xs"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
-                      <p className="font-medium text-sm text-white flex items-center gap-2">
+                      <p className="font-medium text-sm text-[#111827] flex items-center gap-2">
                         <span>{item.original_filename}</span>
                         {item.is_active && (
-                          <span className="font-mono text-[10px] uppercase tracking-wider text-white border border-white/20 px-2 py-0.5 rounded-xs flex items-center gap-1">
+                          <span className="font-mono text-[10px] uppercase tracking-wider text-[#4F6F5A] border border-[#4F6F5A]/30 bg-[rgba(79,111,90,0.10)] px-2 py-0.5 rounded-xs flex items-center gap-1 font-semibold">
                             <CheckCircle2 className="h-3 w-3" /> Active LinkedIn Import
                           </span>
                         )}
                       </p>
-                      <p className="font-mono text-[11px] text-neutral-400 mt-0.5">
-                        Status: <span className="text-white">{item.parse_status}</span> · Generated Evidence: <span className="text-white">{item.generated_evidence_count}</span> · Skills Extraction: <span className="text-white">{item.skills_status}</span>
+                      <p className="font-mono text-[11px] text-[#64748B] mt-0.5">
+                        Status: <span className="text-[#111827] font-semibold">{item.parse_status}</span> · Generated Evidence: <span className="text-[#111827] font-semibold">{item.generated_evidence_count}</span> · Skills Extraction: <span className="text-[#111827] font-semibold">{item.skills_status}</span>
                       </p>
                     </div>
 
@@ -386,24 +390,24 @@ export function LinkedInIntelligence({
                         type="button"
                         onClick={() => void parse(item.id)}
                         disabled={item.parse_status === "unsupported" || isParsingId === item.id}
-                        className="text-neutral-300 hover:text-white disabled:opacity-40 cursor-pointer inline-flex items-center gap-1"
+                        className="text-[#0f172a] hover:text-[#000000] disabled:opacity-40 cursor-pointer inline-flex items-center gap-1 font-semibold"
                       >
                         {isParsingId === item.id && <Loader2 className="h-3 w-3 animate-spin" />}
                         <span>Parse & Extract</span>
                       </button>
-                      <span className="text-white/20">·</span>
+                      <span className="text-[#CBD5E1]">·</span>
                       <button
                         type="button"
                         onClick={() => void activate(item.id)}
-                        className="text-neutral-300 hover:text-white cursor-pointer"
+                        className="text-[#0f172a] hover:text-[#000000] cursor-pointer font-semibold"
                       >
                         Set Active
                       </button>
-                      <span className="text-white/20">·</span>
+                      <span className="text-[#CBD5E1]">·</span>
                       <button
                         type="button"
                         onClick={() => void remove(item)}
-                        className="text-neutral-400 hover:text-red-400 cursor-pointer inline-flex items-center gap-1"
+                        className="text-[#64748B] hover:text-red-600 cursor-pointer inline-flex items-center gap-1"
                       >
                         <Trash2 className="h-3 w-3" />
                         <span>Delete</span>
@@ -412,8 +416,8 @@ export function LinkedInIntelligence({
                   </div>
 
                   {/* WORKFLOW STEPPER */}
-                  <div className="pt-2 border-t border-white/10">
-                    <ol className="grid grid-cols-4 gap-2 font-mono text-[10px] text-neutral-400">
+                  <div className="pt-2 border-t border-[#E5E1D8]">
+                    <ol className="grid grid-cols-4 gap-2 font-mono text-[10px] text-[#64748B]">
                       {WORKFLOW_STEPS.map((stepName, idx) => {
                         const stepNum = idx + 1;
                         const isDone = currentStep >= stepNum;
@@ -424,13 +428,13 @@ export function LinkedInIntelligence({
                             <div
                               className={`h-0.5 w-full rounded-full transition-colors ${
                                 isDone
-                                  ? "bg-white"
+                                  ? "bg-[#B08D57]"
                                   : isCurrent
-                                  ? "bg-white/60 animate-pulse"
-                                  : "bg-white/10"
+                                  ? "bg-[#B08D57]/60 animate-pulse"
+                                  : "bg-[#E5E1D8]"
                               }`}
                             />
-                            <span className={isDone ? "text-white" : ""}>
+                            <span className={isDone ? "text-[#111827] font-semibold" : "text-[#64748B]"}>
                               {stepName}
                             </span>
                           </li>
@@ -440,46 +444,46 @@ export function LinkedInIntelligence({
                   </div>
 
                   {item.safe_error_message && (
-                    <p className="text-xs text-red-300 font-mono">
+                    <p className="text-xs text-[#B4534B] font-mono">
                       {item.safe_error_message}
                     </p>
                   )}
 
                   {summary && (
-                    <div className="pt-2 border-t border-white/10 space-y-2 font-mono">
+                    <div className="pt-2 border-t border-[#E5E1D8] space-y-2 font-mono">
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                        <div className="p-2.5 rounded-sm border border-white/10 bg-white/[0.02]">
-                          <p className="text-[10px] uppercase text-neutral-400">Positions</p>
-                          <p className="text-lg font-normal text-white mt-0.5" style={{ fontFamily: "var(--font-display)" }}>
+                        <div className="p-2.5 rounded-sm border border-[#E5E1D8] bg-[#F7F5F0]">
+                          <p className="text-[10px] uppercase text-[#64748B] font-semibold">Positions</p>
+                          <p className="text-lg font-normal text-[#111827] mt-0.5" style={{ fontFamily: "var(--font-display)" }}>
                             {summary.counts.positions}
                           </p>
                         </div>
-                        <div className="p-2.5 rounded-sm border border-white/10 bg-white/[0.02]">
-                          <p className="text-[10px] uppercase text-neutral-400">Projects</p>
-                          <p className="text-lg font-normal text-white mt-0.5" style={{ fontFamily: "var(--font-display)" }}>
+                        <div className="p-2.5 rounded-sm border border-[#E5E1D8] bg-[#F7F5F0]">
+                          <p className="text-[10px] uppercase text-[#64748B] font-semibold">Projects</p>
+                          <p className="text-lg font-normal text-[#111827] mt-0.5" style={{ fontFamily: "var(--font-display)" }}>
                             {summary.counts.projects}
                           </p>
                         </div>
-                        <div className="p-2.5 rounded-sm border border-white/10 bg-white/[0.02]">
-                          <p className="text-[10px] uppercase text-neutral-400">Certifications</p>
-                          <p className="text-lg font-normal text-white mt-0.5" style={{ fontFamily: "var(--font-display)" }}>
+                        <div className="p-2.5 rounded-sm border border-[#E5E1D8] bg-[#F7F5F0]">
+                          <p className="text-[10px] uppercase text-[#64748B] font-semibold">Certifications</p>
+                          <p className="text-lg font-normal text-[#111827] mt-0.5" style={{ fontFamily: "var(--font-display)" }}>
                             {summary.counts.certifications}
                           </p>
                         </div>
-                        <div className="p-2.5 rounded-sm border border-white/10 bg-white/[0.02]">
-                          <p className="text-[10px] uppercase text-neutral-400">Education</p>
-                          <p className="text-lg font-normal text-white mt-0.5" style={{ fontFamily: "var(--font-display)" }}>
+                        <div className="p-2.5 rounded-sm border border-[#E5E1D8] bg-[#F7F5F0]">
+                          <p className="text-[10px] uppercase text-[#64748B] font-semibold">Education</p>
+                          <p className="text-lg font-normal text-[#111827] mt-0.5" style={{ fontFamily: "var(--font-display)" }}>
                             {summary.counts.education}
                           </p>
                         </div>
                       </div>
 
                       {summary.discovered_skills.length > 0 && (
-                        <div className="text-xs text-neutral-300 pt-1">
-                          <span className="text-neutral-400">Discovered Skills: </span>
+                        <div className="text-xs text-[#475569] pt-1">
+                          <span className="text-[#64748B]">Discovered Skills: </span>
                           <span>{summary.discovered_skills.slice(0, 10).join(", ")}</span>
                           {summary.discovered_skills.length > 10 && (
-                            <span className="text-neutral-400"> +{summary.discovered_skills.length - 10} more</span>
+                            <span className="text-[#64748B]"> +{summary.discovered_skills.length - 10} more</span>
                           )}
                         </div>
                       )}

@@ -46,18 +46,17 @@ export function CircularReadinessGauge({
           cy={center}
           r={outerRadius}
           fill="transparent"
-          stroke="currentColor"
+          stroke="#E5E1D8"
           strokeWidth={strokeWidth}
-          className="text-slate-200 dark:text-[#1d2025]"
         />
 
-        {/* Outer Dynamic Ring (Lumina Primary Cobalt) */}
+        {/* Outer Dynamic Ring (Warm Luxury Gold) */}
         <motion.circle
           cx={center}
           cy={center}
           r={outerRadius}
           fill="transparent"
-          stroke="url(#outerCobaltGradient)"
+          stroke="url(#warmGoldGaugeGradient)"
           strokeWidth={strokeWidth}
           strokeDasharray={outerCircumference}
           initial={{ strokeDashoffset: outerCircumference }}
@@ -68,9 +67,9 @@ export function CircularReadinessGauge({
 
         {/* Gradient */}
         <defs>
-          <linearGradient id="outerCobaltGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#b0c6ff" />
-            <stop offset="100%" stopColor="#3b71d9" />
+          <linearGradient id="warmGoldGaugeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#D4AF37" />
+            <stop offset="100%" stopColor="#B08D57" />
           </linearGradient>
         </defs>
       </svg>
@@ -84,13 +83,13 @@ export function CircularReadinessGauge({
           className="flex min-w-0 flex-col items-center justify-center gap-[clamp(0.125rem,2cqi,0.25rem)] text-center"
         >
           <span
-            className="block whitespace-nowrap font-sans font-black leading-none tracking-tight text-slate-900 dark:text-[#f1f0e8]"
-            style={{ fontSize: metricFontSize }}
+            className="block whitespace-nowrap font-normal leading-none tracking-tight text-[#111827]"
+            style={{ fontSize: metricFontSize, fontFamily: "var(--font-display)" }}
           >
             {scoreText}
           </span>
           <span
-            className="block max-w-full truncate whitespace-nowrap text-center font-bold uppercase leading-none tracking-[0.18em] text-slate-500 dark:text-[#98a4b3]"
+            className="block max-w-full truncate whitespace-nowrap text-center font-mono font-semibold uppercase leading-none tracking-[0.18em] text-[#B08D57]"
             style={{ fontSize: "clamp(0.5rem, 7cqi, 0.625rem)" }}
             title={label}
           >

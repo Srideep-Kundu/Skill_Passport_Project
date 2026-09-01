@@ -344,7 +344,7 @@ export const api = {
   // Recruiter / Industry Skill Demand Analytics
   getRecruiterAnalytics: (token: string) => request<RecruiterAnalyticsOverview>("/recruiter-analytics/me", {}, token),
 
-  // Skill Passport Copilot
+  // Lumina Intel Copilot
   queryCopilot: (query: string, token: string) => request<CopilotResponse>("/copilot/query", { method: "POST", body: JSON.stringify({ query }) }, token),
 
   // LinkedIn Direct URL Import

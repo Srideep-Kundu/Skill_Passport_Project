@@ -10,7 +10,7 @@ import { api } from "../api/service";
 import { errorMessage } from "../api/client";
 import type { PlacementDrive } from "../api/types";
 import { toast } from "sonner";
-import { EditorialButton, EditorialPageHeader } from "./ui/EditorialPrimitives";
+import { EditorialButton } from "./ui/EditorialPrimitives";
 
 interface Props {
   token: string;
@@ -56,76 +56,69 @@ export function PlacementDrives({ token }: Props) {
 
   return (
     <div className="space-y-6 font-sans">
-      <EditorialPageHeader
-        category="STUDENT"
-        index="CAMPUS"
-        title="Campus Placement & Job Drives"
-        subtitle="Verified institutional placement drives. Apply directly with your Skill Passport verified profile and portfolio."
-      />
-
       {loading ? (
-        <div className="p-12 text-center border border-white/10 bg-[#071E2B] rounded-md">
-          <div className="inline-block animate-spin h-6 w-6 border-2 border-white/20 border-t-white rounded-full mb-3" />
-          <p className="font-mono text-xs text-[#8796A2]">Loading placement schedule...</p>
+        <div className="p-12 text-center border border-[#E5E1D8] bg-[#FFFFFF] rounded-md">
+          <div className="inline-block animate-spin h-6 w-6 border-2 border-[#E5E1D8] border-t-white rounded-full mb-3" />
+          <p className="font-mono text-xs text-[#64748B]">Loading placement schedule...</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {drives.map((drive) => (
             <div
               key={drive.id}
-              className="border border-white/10 bg-[#071E2B] p-6 rounded-md flex flex-col justify-between space-y-5 hover:border-white/20 transition-colors"
+              className="border border-[#E5E1D8] bg-[#FFFFFF] p-6 rounded-md flex flex-col justify-between space-y-5 hover:border-[#E5E1D8] transition-colors"
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between font-mono text-xs">
-                  <span className="text-[#9CC7D8] flex items-center gap-1.5 font-bold">
+                  <span className="text-[#B08D57] flex items-center gap-1.5 font-bold">
                     <Building2 className="h-3.5 w-3.5" />
                     {drive.company_name}
                   </span>
-                  <span className="text-[#F7F8F8] border border-white/15 px-2 py-0.5 rounded-xs">
+                  <span className="text-[#111827] border border-[#E5E1D8] px-2 py-0.5 rounded-xs">
                     ₹{drive.ctc_lpa} LPA
                   </span>
                 </div>
 
                 <h3
-                  className="text-xl font-normal text-[#F7F8F8]"
+                  className="text-xl font-normal text-[#111827]"
                   style={{ fontFamily: "var(--font-display)" }}
                 >
                   {drive.title}
                 </h3>
-                <p className="text-xs text-[#BEC8CF] leading-relaxed line-clamp-2">{drive.description}</p>
+                <p className="text-xs text-[#475569] leading-relaxed line-clamp-2">{drive.description}</p>
 
                 {/* Eligibility & Info */}
-                <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-xs text-[#8796A2]">
+                <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-xs text-[#64748B]">
                   <div className="flex items-center gap-1.5">
                     <GraduationCap className="h-3.5 w-3.5" />
-                    <span>Min CGPA: <strong className="text-[#F7F8F8]">{drive.minimum_cgpa}</strong></span>
+                    <span>Min CGPA: <strong className="text-[#111827]">{drive.minimum_cgpa}</strong></span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Calendar className="h-3.5 w-3.5" />
-                    <span>Batch: <strong className="text-[#F7F8F8]">{drive.passing_year}</strong></span>
+                    <span>Batch: <strong className="text-[#111827]">{drive.passing_year}</strong></span>
                   </div>
                 </div>
 
                 {/* Required Skills as dots */}
                 <div className="pt-1">
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-[#8796A2] block mb-1">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-[#64748B] block mb-1">
                     Requirements
                   </span>
-                  <p className="font-mono text-xs text-[#BEC8CF]">
+                  <p className="font-mono text-xs text-[#475569]">
                     {drive.required_skills.join(" · ")}
                   </p>
                 </div>
               </div>
 
               {/* Action / Registration state */}
-              <div className="pt-4 border-t border-white/10">
+              <div className="pt-4 border-t border-[#E5E1D8]">
                 {drive.is_registered ? (
-                  <div className="p-3 rounded-sm border border-white/15 bg-white/5 flex items-center justify-between font-mono text-xs text-[#F7F8F8]">
+                  <div className="p-3 rounded-sm border border-[#E5E1D8] bg-[#F7F5F0] flex items-center justify-between font-mono text-xs text-[#111827]">
                     <span className="flex items-center gap-1.5">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                      <CheckCircle2 className="h-4 w-4 text-[#4F6F5A]" />
                       Registration Confirmed
                     </span>
-                    <span className="uppercase text-[10px] text-[#9CC7D8]">
+                    <span className="uppercase text-[10px] text-[#B08D57]">
                       {drive.registration_status || "Registered"}
                     </span>
                   </div>
@@ -138,13 +131,13 @@ export function PlacementDrives({ token }: Props) {
                           value={notes}
                           onChange={(e) => setNotes(e.target.value)}
                           rows={2}
-                          className="w-full text-xs p-3 rounded-md bg-white/[0.03] border border-white/15 text-[#F7F8F8] focus:outline-none focus:border-white"
+                          className="w-full text-xs p-3 rounded-md bg-[#F7F5F0] border border-[#E5E1D8] text-[#111827] focus:outline-none focus:border-[#B08D57]"
                         />
                         <div className="flex justify-end gap-2 font-mono text-xs">
                           <button
                             type="button"
                             onClick={() => setRegisteringId(null)}
-                            className="px-3 py-1.5 text-[#8796A2] hover:text-[#F7F8F8] cursor-pointer"
+                            className="px-3 py-1.5 text-[#64748B] hover:text-[#111827] cursor-pointer"
                           >
                             Cancel
                           </button>

@@ -125,79 +125,83 @@ export function EvidenceUpload({
     trackedEvidence?.extraction_status === "dead_lettered";
 
   return (
-    <section className="border border-white/10 bg-[#061524] p-6 rounded-md text-white space-y-4 font-sans">
-      <div className="border-b border-white/10 pb-3">
-        <h2 className="text-xl font-normal text-white" style={{ fontFamily: "var(--font-display)" }}>
+    <section className="border border-[#E5E1D8] bg-[#FFFFFF] p-6 sm:p-8 rounded-[16px] text-[#111827] space-y-5 font-sans shadow-[0_8px_30px_rgba(17,24,39,0.04)]">
+      <div className="border-b border-[#E5E1D8] pb-4">
+        <div className="font-mono text-[11px] uppercase tracking-widest text-[#B08D57] font-semibold mb-1 flex items-center gap-1.5">
+          <span className="h-1.5 w-1.5 rounded-full bg-[#B08D57]" />
+          <span>TECHNICAL ARTIFACT REGISTRATION</span>
+        </div>
+        <h2 className="text-2xl font-normal text-[#111827]" style={{ fontFamily: "var(--font-display)" }}>
           Add Technical Evidence
         </h2>
-        <p className="text-xs text-neutral-400 mt-0.5">
+        <p className="text-xs text-[#475569] mt-0.5">
           Projects and certifications are asynchronously parsed into verified skills
         </p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400">
+          <label className="block text-xs font-mono uppercase tracking-wider text-[#475569]">
             Evidence Type
             <select
               {...register("type")}
-              className="mt-1 w-full rounded-md border border-white/15 bg-white/[0.03] px-3 py-2 text-xs text-white focus:border-white focus:outline-none"
+              className="mt-1.5 w-full rounded-lg border border-[#E5E1D8] bg-[#FFFFFF] px-3.5 py-2.5 text-xs text-[#111827] focus:border-[#B08D57]"
             >
-              <option value="project" className="bg-[#061524]">Project Evidence</option>
-              <option value="certification" className="bg-[#061524]">Certification</option>
+              <option value="project">Project Evidence</option>
+              <option value="certification">Certification</option>
             </select>
           </label>
 
-          <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400">
+          <label className="block text-xs font-mono uppercase tracking-wider text-[#475569]">
             Title
             <input
               {...register("title")}
               placeholder="e.g. Distributed Task Queue"
-              className="mt-1 w-full rounded-md border border-white/15 bg-white/[0.03] px-3 py-2 text-xs text-white focus:border-white focus:outline-none"
+              className="mt-1.5 w-full rounded-lg border border-[#E5E1D8] bg-[#FFFFFF] px-3.5 py-2.5 text-xs text-[#111827] focus:border-[#B08D57]"
             />
-            {errors.title && <span className="text-[11px] text-red-400 mt-1 block">{errors.title.message}</span>}
+            {errors.title && <span className="text-[11px] text-[#B4534B] mt-1 block">{errors.title.message}</span>}
           </label>
         </div>
 
-        <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400">
+        <label className="block text-xs font-mono uppercase tracking-wider text-[#475569]">
           Technical Details & Description
           <textarea
             {...register("description")}
             maxLength={10000}
             rows={3}
             placeholder="Explain architecture, tools used, key algorithms, tests, or achievements..."
-            className="mt-1 w-full rounded-md border border-white/15 bg-white/[0.03] px-3 py-2 text-xs text-white focus:border-white focus:outline-none"
+            className="mt-1.5 w-full rounded-lg border border-[#E5E1D8] bg-[#FFFFFF] px-3.5 py-2.5 text-xs text-[#111827] focus:border-[#B08D57]"
           />
-          {errors.description && <span className="text-[11px] text-red-400 mt-1 block">{errors.description.message}</span>}
+          {errors.description && <span className="text-[11px] text-[#B4534B] mt-1 block">{errors.description.message}</span>}
         </label>
 
-        <label className="block text-xs font-mono uppercase tracking-wider text-neutral-400">
-          GitHub or Public URL <span className="text-neutral-500 lowercase">(optional)</span>
+        <label className="block text-xs font-mono uppercase tracking-wider text-[#475569]">
+          GitHub or Public URL <span className="text-[#64748B] lowercase">(optional)</span>
           <input
             {...register("externalUrl")}
             type="url"
             placeholder="https://github.com/username/repo"
-            className="mt-1 w-full rounded-md border border-white/15 bg-white/[0.03] px-3 py-2 text-xs text-white focus:border-white focus:outline-none"
+            className="mt-1.5 w-full rounded-lg border border-[#E5E1D8] bg-[#FFFFFF] px-3.5 py-2.5 text-xs text-[#111827] focus:border-[#B08D57]"
           />
-          {errors.externalUrl && <span className="text-[11px] text-red-400 mt-1 block">{errors.externalUrl.message}</span>}
+          {errors.externalUrl && <span className="text-[11px] text-[#B4534B] mt-1 block">{errors.externalUrl.message}</span>}
         </label>
 
         {error && (
-          <div role="alert" className="p-2.5 text-xs text-red-300 border border-red-500/30 bg-red-950/20 rounded-sm font-mono">
+          <div role="alert" className="p-2.5 text-xs text-[#B4534B] border border-[#B4534B]/30 bg-[#FFF5F5] rounded-sm font-mono">
             {error}
           </div>
         )}
 
         {status && (
-          <div role="status" className="p-2.5 text-xs font-mono text-neutral-300 border border-white/10 bg-white/[0.02] rounded-sm">
+          <div role="status" className="p-2.5 text-xs font-mono text-[#475569] border border-[#E5E1D8] bg-[#F8F9FA] rounded-sm">
             {status}
           </div>
         )}
 
         {trackedEvidence?.extraction_status === "extracted" && trackedEvidence.extracted_skills.length > 0 && (
-          <div className="p-3 text-xs font-mono border border-white/15 bg-white/5 rounded-sm">
-            <span className="text-neutral-400">Extracted skills: </span>
-            <span className="text-white">{trackedEvidence.extracted_skills.map((skill) => skill.canonical_name).join(", ")}</span>
+          <div className="p-3 text-xs font-mono border border-[#E5E1D8] bg-[#F7F5F0] rounded-sm">
+            <span className="text-[#64748B] font-semibold">Extracted skills: </span>
+            <span className="text-[#111827]">{trackedEvidence.extracted_skills.map((skill) => skill.canonical_name).join(", ")}</span>
           </div>
         )}
 
@@ -206,7 +210,7 @@ export function EvidenceUpload({
             <button
               type="button"
               onClick={() => void retry()}
-              className="rounded-full border border-white/20 bg-white/5 px-4 py-2 font-mono text-xs text-neutral-300 hover:text-white transition-colors cursor-pointer"
+              className="rounded-full border border-[#E5E1D8] bg-[#FFFFFF] px-4 py-2 font-mono text-xs text-[#0f172a] font-bold hover:bg-[#F7F5F0] hover:text-[#000000] transition-colors cursor-pointer shadow-2xs"
             >
               Retry Extraction
             </button>

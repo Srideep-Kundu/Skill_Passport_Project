@@ -2,7 +2,7 @@ import React from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 export interface LiquidGlassButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost";
+  variant?: "primary" | "secondary" | "ghost" | "gold";
   size?: "sm" | "md" | "lg";
   children: React.ReactNode;
 }
@@ -24,7 +24,7 @@ export function LiquidGlassButton({
     return (
       <button
         type="button"
-        className={`liquid-glass inline-flex items-center justify-center gap-2 rounded-md font-medium text-white transition-all duration-200 hover:border-white/40 active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:pointer-events-none ${sizeClasses} ${className}`}
+        className={`pill-btn font-medium transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none shadow-md ${sizeClasses} ${className}`}
         {...props}
       >
         {children}
@@ -36,7 +36,19 @@ export function LiquidGlassButton({
     return (
       <button
         type="button"
-        className={`inline-flex items-center justify-center gap-2 rounded-md border border-white/15 bg-white/[0.03] font-medium text-neutral-200 transition-colors duration-200 hover:bg-white/[0.06] hover:border-white/30 hover:text-white active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:pointer-events-none ${sizeClasses} ${className}`}
+        className={`pill-btn-secondary font-medium transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none ${sizeClasses} ${className}`}
+        {...props}
+      >
+        {children}
+      </button>
+    );
+  }
+
+  if (variant === "gold") {
+    return (
+      <button
+        type="button"
+        className={`pill-btn-gold font-medium transition-all duration-200 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none shadow-md ${sizeClasses} ${className}`}
         {...props}
       >
         {children}
@@ -47,7 +59,7 @@ export function LiquidGlassButton({
   return (
     <button
       type="button"
-      className={`inline-flex items-center justify-center gap-2 rounded-md font-medium text-neutral-400 transition-colors duration-200 hover:text-white active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:pointer-events-none ${sizeClasses} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-full font-medium text-[#475569] transition-colors duration-200 hover:text-[#111827] hover:bg-[#EFEBE3] active:scale-[0.98] cursor-pointer disabled:opacity-50 disabled:pointer-events-none ${sizeClasses} ${className}`}
       {...props}
     >
       {children}
@@ -69,21 +81,21 @@ export function EditorialButton({
   ...props
 }: EditorialButtonProps) {
   const sizeClasses = {
-    sm: "px-3.5 py-1.5 text-xs",
-    md: "px-5 py-2 text-sm",
+    sm: "px-4 py-1.5 text-xs",
+    md: "px-6 py-2 text-sm",
   }[size];
 
   const variantClasses = {
-    primary: "border border-white/20 bg-white/10 text-[#F7F8F8] hover:bg-white/15 hover:border-white/30",
-    secondary: "border border-white/10 bg-transparent text-[#BEC8CF] hover:text-[#F7F8F8] hover:border-white/20 hover:bg-white/[0.02]",
-    accent: "border border-[#9CC7D8]/40 bg-[#9CC7D8]/10 text-[#9CC7D8] hover:bg-[#9CC7D8]/20 hover:border-[#9CC7D8]/60",
-    ghost: "text-[#8796A2] hover:text-[#F7F8F8] hover:bg-white/[0.02]",
+    primary: "pill-btn shadow-xs",
+    secondary: "pill-btn-secondary",
+    accent: "pill-btn-gold shadow-xs",
+    ghost: "text-[#475569] hover:text-[#111827] hover:bg-[#EFEBE3] rounded-full",
   }[variant];
 
   return (
     <button
       type="button"
-      className={`inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:pointer-events-none ${sizeClasses} ${variantClasses} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 font-medium transition-all cursor-pointer disabled:opacity-50 disabled:pointer-events-none ${sizeClasses} ${variantClasses} ${className}`}
       {...props}
     >
       {children}
@@ -113,42 +125,43 @@ export function EditorialPageHeader({
   const prefersReducedMotion = useReducedMotion();
 
   return (
-    <header className={`mb-8 w-full border-b border-white/10 pb-6 ${className}`}>
+    <header className={`mb-8 w-full border-b border-[#E5E1D8] pb-6 ${className}`}>
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div className="space-y-2">
           {(category || index) && (
-            <div className="text-[11px] font-mono uppercase tracking-widest text-[#8796A2]">
-              {category} {index ? `/ ${index}` : ""}
+            <div className="text-[11px] font-mono uppercase tracking-widest text-[#B08D57] font-semibold flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#B08D57]" />
+              <span>{category} {index ? `/ ${index}` : ""}</span>
             </div>
           )}
           <h1
-            className="text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight text-[#F7F8F8]"
+            className="text-3xl sm:text-4xl md:text-5xl font-normal tracking-tight text-[#111827]"
             style={{ fontFamily: "var(--font-display)" }}
           >
             {title}
           </h1>
-          {/* Signature Accent Line */}
+          {/* Subtle Warm Gold Signature Line */}
           {!prefersReducedMotion ? (
             <motion.div
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
-              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
               style={{ originX: 0 }}
-              className="h-[1.5px] w-16 bg-[#9CC7D8]/60"
+              className="h-[1.5px] w-16 bg-[#B08D57]"
             />
           ) : (
-            <div className="h-[1.5px] w-16 bg-[#9CC7D8]/60" />
+            <div className="h-[1.5px] w-16 bg-[#B08D57]" />
           )}
           {subtitle && (
-            <p className="max-w-3xl text-sm leading-relaxed text-[#BEC8CF] pt-1">{subtitle}</p>
+            <p className="max-w-3xl text-sm leading-relaxed text-[#475569] pt-1">{subtitle}</p>
           )}
         </div>
 
         <div className="flex shrink-0 items-center gap-4">
           {lastUpdated && (
-            <div className="text-right font-mono text-[10px] uppercase tracking-wider text-[#8796A2]">
+            <div className="text-right font-mono text-[10px] uppercase tracking-wider text-[#64748B]">
               <div>Last Updated</div>
-              <div className="text-[#BEC8CF]">{lastUpdated}</div>
+              <div className="text-[#111827] font-medium">{lastUpdated}</div>
             </div>
           )}
           {action}
@@ -168,18 +181,18 @@ export interface MetricReadoutProps {
 
 export function MetricReadout({ label, value, subtext, trend, className = "" }: MetricReadoutProps) {
   return (
-    <div className={`p-4 sm:p-5 rounded-md border border-white/10 bg-[#071E2B] ${className}`}>
-      <div className="text-[11px] font-mono uppercase tracking-widest text-[#8796A2]">{label}</div>
+    <div className={`p-5 rounded-[16px] border border-[#E5E1D8] bg-[#FFFFFF] shadow-[0_8px_30px_rgba(17,24,39,0.04)] ${className}`}>
+      <div className="text-[11px] font-mono uppercase tracking-widest text-[#64748B] font-semibold">{label}</div>
       <div
-        className="mt-2 text-3xl sm:text-4xl font-normal text-[#F7F8F8]"
+        className="mt-2 text-3xl sm:text-4xl font-normal text-[#111827]"
         style={{ fontFamily: "var(--font-display)" }}
       >
         {value}
       </div>
       {(subtext || trend) && (
-        <div className="mt-2 flex items-center justify-between text-xs text-[#BEC8CF] font-sans">
+        <div className="mt-2 flex items-center justify-between text-xs text-[#475569] font-sans">
           {subtext && <span>{subtext}</span>}
-          {trend && <span className="font-mono text-[#9CC7D8]">{trend}</span>}
+          {trend && <span className="font-mono text-[#B08D57] font-medium">{trend}</span>}
         </div>
       )}
     </div>
@@ -187,7 +200,7 @@ export function MetricReadout({ label, value, subtext, trend, className = "" }: 
 }
 
 export function SectionRule({ className = "" }: { className?: string }) {
-  return <div className={`my-8 h-px w-full bg-white/10 ${className}`} />;
+  return <div className={`my-8 h-px w-full bg-[#E5E1D8] ${className}`} />;
 }
 
 export interface StatusTagProps {
@@ -204,17 +217,17 @@ export function StatusTag({ status, className = "" }: StatusTagProps) {
       case "active":
       case "ready":
       case "completed":
-        return "border-white/20 bg-white/10 text-[#F7F8F8]";
+        return "border-[rgba(79,111,90,0.25)] bg-[rgba(79,111,90,0.10)] text-[#4F6F5A]";
       case "partially_verified":
       case "in_progress":
       case "processing":
       case "extracting":
-        return "border-white/15 bg-white/5 text-[#BEC8CF]";
+        return "border-[rgba(166,124,58,0.25)] bg-[rgba(166,124,58,0.10)] text-[#A67C3A]";
       case "failed":
       case "rejected":
-        return "border-red-500/30 bg-red-950/20 text-red-300";
+        return "border-[rgba(180,83,75,0.25)] bg-[rgba(180,83,75,0.10)] text-[#B4534B]";
       default:
-        return "border-white/10 bg-white/[0.02] text-[#8796A2]";
+        return "border-[#E5E1D8] bg-[#EFEBE3] text-[#475569]";
     }
   };
 
@@ -233,9 +246,9 @@ export function StatusTag({ status, className = "" }: StatusTagProps) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-sm border px-2 py-0.5 font-mono text-[11px] tracking-wide ${getStyle()} ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[11px] tracking-wide font-medium ${getStyle()} ${className}`}
     >
-      <span className="h-1.5 w-1.5 rounded-full bg-current opacity-70" />
+      <span className="h-1.5 w-1.5 rounded-full bg-current opacity-80" />
       {getLabel()}
     </span>
   );
@@ -250,7 +263,7 @@ export interface EditorialTextTabsProps {
 
 export function EditorialTextTabs({ tabs, activeTab, onChange, className = "" }: EditorialTextTabsProps) {
   return (
-    <div className={`flex flex-wrap items-center gap-6 border-b border-white/10 pb-2 ${className}`}>
+    <div className={`flex flex-wrap items-center gap-6 border-b border-[#E5E1D8] pb-2 ${className}`}>
       {tabs.map((tab) => {
         const isActive = tab.id === activeTab;
         return (
@@ -259,19 +272,19 @@ export function EditorialTextTabs({ tabs, activeTab, onChange, className = "" }:
             type="button"
             onClick={() => onChange(tab.id)}
             className={`group relative pb-2 text-xs font-mono uppercase tracking-wider transition-colors cursor-pointer ${
-              isActive ? "text-[#F7F8F8] font-semibold" : "text-[#8796A2] hover:text-[#BEC8CF]"
+              isActive ? "text-[#111827] font-semibold" : "text-[#64748B] hover:text-[#111827]"
             }`}
           >
             <span className="flex items-center gap-1.5">
               <span>{tab.label}</span>
               {tab.count !== undefined && (
-                <span className={`text-[10px] ${isActive ? "text-[#9CC7D8]" : "text-[#8796A2]"}`}>
+                <span className={`text-[10px] ${isActive ? "text-[#B08D57] font-bold" : "text-[#64748B]"}`}>
                   ({tab.count})
                 </span>
               )}
             </span>
             {isActive && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#9CC7D8]" />
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#B08D57]" />
             )}
           </button>
         );

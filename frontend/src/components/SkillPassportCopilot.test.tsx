@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { SkillPassportCopilot } from "./SkillPassportCopilot";
+import { LuminaIntelCopilot } from "./SkillPassportCopilot";
 import { api } from "../api/service";
 
 vi.mock("../api/service", () => ({
@@ -17,15 +17,15 @@ vi.mock("sonner", () => ({
   },
 }));
 
-describe("SkillPassportCopilot Floating Launcher", () => {
+describe("LuminaIntelCopilot Floating Launcher", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("renders floating icon-only launcher without visible text label initially", () => {
-    render(<SkillPassportCopilot token="test-token" onNavigate={vi.fn()} />);
+    render(<LuminaIntelCopilot token="test-token" onNavigate={vi.fn()} />);
 
-    const launcher = screen.getByRole("button", { name: /open skill passport copilot/i });
+    const launcher = screen.getByRole("button", { name: /open lumina intel copilot/i });
     expect(launcher).toBeInTheDocument();
 
     // Verify it is icon-only and contains NO text content
@@ -37,27 +37,27 @@ describe("SkillPassportCopilot Floating Launcher", () => {
 
   it("opens copilot dialog when the floating launcher icon is clicked", async () => {
     const user = userEvent.setup();
-    render(<SkillPassportCopilot token="test-token" onNavigate={vi.fn()} />);
+    render(<LuminaIntelCopilot token="test-token" onNavigate={vi.fn()} />);
 
-    const launcher = screen.getByRole("button", { name: /open skill passport copilot/i });
+    const launcher = screen.getByRole("button", { name: /open lumina intel copilot/i });
     await user.click(launcher);
 
     expect(screen.getByText("Platform Copilot")).toBeInTheDocument();
     expect(
-      screen.getByText(/Hello! I am your Skill Passport Copilot/i)
+      screen.getByText(/Hello! I am your Lumina Intel Copilot/i)
     ).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Ask Copilot about skills, readiness, jobs...")).toBeInTheDocument();
 
     // Floating launcher button is hidden when dialog is open
-    expect(screen.queryByRole("button", { name: /open skill passport copilot/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /open lumina intel copilot/i })).not.toBeInTheDocument();
   });
 
   it("closes dialog and restores floating launcher when close button is clicked", async () => {
     const user = userEvent.setup();
-    render(<SkillPassportCopilot token="test-token" onNavigate={vi.fn()} />);
+    render(<LuminaIntelCopilot token="test-token" onNavigate={vi.fn()} />);
 
     // Open dialog
-    await user.click(screen.getByRole("button", { name: /open skill passport copilot/i }));
+    await user.click(screen.getByRole("button", { name: /open lumina intel copilot/i }));
     expect(screen.getByText("Platform Copilot")).toBeInTheDocument();
 
     // Close dialog
@@ -68,15 +68,15 @@ describe("SkillPassportCopilot Floating Launcher", () => {
     await waitFor(() => {
       expect(screen.queryByText("Platform Copilot")).not.toBeInTheDocument();
     });
-    expect(screen.getByRole("button", { name: /open skill passport copilot/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open lumina intel copilot/i })).toBeInTheDocument();
   });
 
   it("closes dialog and restores floating launcher when Escape key is pressed", async () => {
     const user = userEvent.setup();
-    render(<SkillPassportCopilot token="test-token" onNavigate={vi.fn()} />);
+    render(<LuminaIntelCopilot token="test-token" onNavigate={vi.fn()} />);
 
     // Open dialog
-    await user.click(screen.getByRole("button", { name: /open skill passport copilot/i }));
+    await user.click(screen.getByRole("button", { name: /open lumina intel copilot/i }));
     expect(screen.getByText("Platform Copilot")).toBeInTheDocument();
 
     // Press Escape
@@ -86,7 +86,7 @@ describe("SkillPassportCopilot Floating Launcher", () => {
     await waitFor(() => {
       expect(screen.queryByText("Platform Copilot")).not.toBeInTheDocument();
     });
-    expect(screen.getByRole("button", { name: /open skill passport copilot/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open lumina intel copilot/i })).toBeInTheDocument();
   });
 
   it("queries copilot API when user submits query", async () => {
@@ -98,10 +98,10 @@ describe("SkillPassportCopilot Floating Launcher", () => {
       grounding_data: { score: 95 },
     });
 
-    render(<SkillPassportCopilot token="test-token" onNavigate={vi.fn()} />);
+    render(<LuminaIntelCopilot token="test-token" onNavigate={vi.fn()} />);
 
     // Open dialog
-    await user.click(screen.getByRole("button", { name: /open skill passport copilot/i }));
+    await user.click(screen.getByRole("button", { name: /open lumina intel copilot/i }));
 
     const input = screen.getByPlaceholderText("Ask Copilot about skills, readiness, jobs...");
     await user.type(input, "What are my verified skills?");
@@ -125,10 +125,10 @@ describe("SkillPassportCopilot Floating Launcher", () => {
     const user = userEvent.setup();
     const handleNavigate = vi.fn();
 
-    render(<SkillPassportCopilot token="test-token" onNavigate={handleNavigate} />);
+    render(<LuminaIntelCopilot token="test-token" onNavigate={handleNavigate} />);
 
     // Open dialog
-    await user.click(screen.getByRole("button", { name: /open skill passport copilot/i }));
+    await user.click(screen.getByRole("button", { name: /open lumina intel copilot/i }));
 
     // Click "Analyze Skill Gaps" action
     const gapBtn = screen.getByRole("button", { name: /Analyze Skill Gaps/i });

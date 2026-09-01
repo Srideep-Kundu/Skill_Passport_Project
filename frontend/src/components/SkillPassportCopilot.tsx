@@ -84,7 +84,7 @@ export function SkillPassportCopilot({
     {
       id: "welcome",
       sender: "copilot",
-      text: "Hello! I am your Skill Passport Copilot. Ask me about your verified skills, role readiness, recommended courses, or placement status.",
+      text: "Hello! I am your Lumina Intel Copilot. Ask me about your verified skills, role readiness, recommended courses, or placement status.",
       actions: [
         { label: "Analyze Skill Gaps", target_tab: "gaps", action_type: "navigate" },
         { label: "View Passport", target_tab: "passport", action_type: "navigate" },
@@ -159,7 +159,7 @@ export function SkillPassportCopilot({
 
   const content = (
     <>
-      {/* Global Viewport-Fixed Floating Launcher */}
+      {/* Global Viewport-Fixed Floating Launcher in Bottom Right (Round Shape) */}
       {!isOpen && (
         <div className="fixed bottom-6 right-6 z-[9990] pointer-events-auto select-none">
           <motion.button
@@ -167,11 +167,11 @@ export function SkillPassportCopilot({
             initial={prefersReducedMotion ? false : { scale: 0.8, opacity: 0 }}
             animate={prefersReducedMotion ? false : { scale: 1, opacity: 1 }}
             onClick={handleToggle}
-            aria-label="Open Skill Passport Copilot"
-            title="Open Skill Passport Copilot"
-            className="h-12 w-12 rounded-full border border-white/20 bg-[#0B2634] text-white flex items-center justify-center cursor-pointer transition-colors hover:border-white/35"
+            aria-label="Open Lumina Intel Copilot"
+            title="Open Lumina Intel Copilot"
+            className="h-13 w-13 rounded-full border border-[#E5E1D8] bg-[#0B0B0A] text-[#FFFFFF] flex items-center justify-center cursor-pointer transition-all hover:scale-108 shadow-[0_10px_35px_rgba(17,24,39,0.25)] hover:border-[#B08D57]"
           >
-            <Bot className="h-5 w-5" aria-hidden="true" />
+            <Bot className="h-6 w-6 text-[#B08D57]" aria-hidden="true" />
           </motion.button>
         </div>
       )}
@@ -180,7 +180,7 @@ export function SkillPassportCopilot({
       <AnimatePresence>
         {isOpen && (
           <aside
-            aria-label="Skill Passport Copilot Assistant"
+            aria-label="Lumina Intel Copilot Assistant"
             className="fixed bottom-[88px] right-4 sm:right-6 z-[9999] w-[calc(100vw-2rem)] sm:w-[420px] max-w-[420px] h-[580px] max-h-[75vh] flex flex-col pointer-events-auto"
           >
             <motion.div
@@ -188,22 +188,22 @@ export function SkillPassportCopilot({
               animate={prefersReducedMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
               exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.96 }}
               transition={{ duration: 0.2 }}
-              className="w-full h-full bg-[#061524] border border-white/15 rounded-lg shadow-2xl flex flex-col overflow-hidden text-white font-sans"
+              className="w-full h-full bg-[#FFFFFF] border border-[#E5E1D8] rounded-[16px] shadow-[0_20px_50px_rgba(17,24,39,0.15)] flex flex-col overflow-hidden text-[#111827] font-sans"
             >
               {/* Header */}
-              <div className="p-4 border-b border-white/10 flex items-center justify-between shrink-0 bg-white/[0.02]">
+              <div className="p-4 border-b border-[#E5E1D8] flex items-center justify-between shrink-0 bg-[#F7F5F0]">
                 <div className="flex items-center gap-2.5">
-                  <div className="h-7 w-7 rounded-md border border-white/15 bg-white/5 flex items-center justify-center text-white">
+                  <div className="h-8 w-8 rounded-full border border-[#B08D57]/40 bg-[rgba(176,141,87,0.12)] flex items-center justify-center text-[#B08D57]">
                     <Bot className="h-4 w-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-normal text-white flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
+                    <h3 className="text-base font-normal text-[#111827] flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
                       <span>Platform Copilot</span>
-                      <span className="font-mono text-[9px] uppercase tracking-wider text-neutral-300 border border-white/15 px-1.5 py-0.2 rounded-xs">
+                      <span className="font-mono text-[9px] uppercase tracking-wider text-[#4F6F5A] border border-[#4F6F5A]/30 bg-[rgba(79,111,90,0.10)] px-2 py-0.5 rounded-full font-semibold">
                         Grounded
                       </span>
                     </h3>
-                    <p className="text-[10px] text-neutral-400 font-mono">
+                    <p className="text-[10px] text-[#64748B] font-mono">
                       Deterministic record grounding & audit assistance
                     </p>
                   </div>
@@ -212,14 +212,14 @@ export function SkillPassportCopilot({
                   type="button"
                   onClick={handleClose}
                   aria-label="Close Copilot"
-                  className="p-1 rounded-md text-neutral-400 hover:text-white cursor-pointer transition-colors"
+                  className="p-1.5 rounded-full text-[#64748B] hover:text-[#111827] hover:bg-[#EFEBE3] cursor-pointer transition-colors"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
 
               {/* Chat Body */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs font-sans">
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs font-sans bg-[#FFFFFF]">
                 {messages.map((m) => (
                   <div
                     key={m.id}
@@ -228,29 +228,29 @@ export function SkillPassportCopilot({
                     }`}
                   >
                     {m.sender === "copilot" && (
-                      <div className="h-6 w-6 rounded-md border border-white/10 bg-white/5 text-white flex items-center justify-center shrink-0 mt-0.5">
-                        <span className="font-mono text-[9px]" aria-hidden="true">SP</span>
+                      <div className="h-6 w-6 rounded-full border border-[#B08D57]/40 bg-[rgba(176,141,87,0.12)] text-[#B08D57] flex items-center justify-center shrink-0 mt-0.5 font-bold">
+                        <span className="font-mono text-[8px]" aria-hidden="true">SP</span>
                       </div>
                     )}
 
                     <div
-                      className={`max-w-[84%] rounded-sm p-3.5 space-y-2 leading-relaxed ${
+                      className={`max-w-[84%] rounded-[14px] p-3.5 space-y-2 leading-relaxed ${
                         m.sender === "user"
-                          ? "border border-white/20 bg-white/10 text-white font-medium"
-                          : "border border-white/10 bg-white/[0.02] text-neutral-200"
+                          ? "bg-[#0B0B0A] text-[#FFFFFF] font-medium"
+                          : "border border-[#E5E1D8] bg-[#F7F5F0] text-[#111827]"
                       }`}
                     >
                       <p className="whitespace-pre-line text-xs">{m.text}</p>
 
                       {/* Sources grounding badges */}
                       {m.sources && m.sources.length > 0 && (
-                        <div className="pt-2 border-t border-white/10 flex flex-wrap gap-1 font-mono">
+                        <div className="pt-2 border-t border-[#E5E1D8] flex flex-wrap gap-1 font-mono">
                           {m.sources.map((s, idx) => (
                             <span
                               key={idx}
-                              className="text-[9px] uppercase px-1.5 py-0.5 rounded-xs border border-white/15 bg-white/5 text-neutral-300 flex items-center gap-1"
+                              className="text-[9px] uppercase px-2 py-0.5 rounded-full border border-[#E5E1D8] bg-[#FFFFFF] text-[#64748B] flex items-center gap-1 font-semibold"
                             >
-                              <ShieldCheck className="h-2.5 w-2.5 text-white/80" />
+                              <ShieldCheck className="h-2.5 w-2.5 text-[#4F6F5A]" />
                               {s}
                             </span>
                           ))}
@@ -264,10 +264,10 @@ export function SkillPassportCopilot({
                             <button
                               key={idx}
                               onClick={() => handleActionClick(act)}
-                              className="text-[10px] px-2.5 py-1 rounded-full border border-white/20 bg-white/5 text-neutral-200 hover:text-white hover:border-white/40 transition-colors cursor-pointer flex items-center gap-1"
+                              className="text-[10px] px-3 py-1 rounded-full border border-[#E5E1D8] bg-[#FFFFFF] text-[#111827] hover:border-[#B08D57] transition-colors cursor-pointer flex items-center gap-1 font-medium shadow-2xs"
                             >
                               <span>{act.label}</span>
-                              <ArrowRight className="h-2.5 w-2.5" />
+                              <ArrowRight className="h-2.5 w-2.5 text-[#B08D57]" />
                             </button>
                           ))}
                         </div>
@@ -275,7 +275,7 @@ export function SkillPassportCopilot({
                     </div>
 
                     {m.sender === "user" && (
-                      <div className="h-6 w-6 rounded-md border border-white/10 bg-white/5 text-white flex items-center justify-center shrink-0 mt-0.5">
+                      <div className="h-6 w-6 rounded-full border border-[#E5E1D8] bg-[#0B0B0A] text-white flex items-center justify-center shrink-0 mt-0.5">
                         <User className="h-3 w-3" />
                       </div>
                     )}
@@ -283,8 +283,8 @@ export function SkillPassportCopilot({
                 ))}
 
                 {loading && (
-                  <div className="flex gap-2 items-center text-[#8796A2] text-xs font-mono">
-                    <div className="h-3.5 w-3.5 rounded-full border-2 border-white/20 border-t-white animate-spin" />
+                  <div className="flex gap-2 items-center text-[#64748B] text-xs font-mono">
+                    <div className="h-3.5 w-3.5 rounded-full border-2 border-[#B08D57] border-t-transparent animate-spin" />
                     <span>Retrieving verified records...</span>
                   </div>
                 )}
@@ -293,12 +293,12 @@ export function SkillPassportCopilot({
               </div>
 
               {/* Quick Prompts */}
-              <div className="px-4 py-2 border-t border-white/10 flex gap-1.5 overflow-x-auto text-[10px] font-mono shrink-0">
+              <div className="px-4 py-2.5 border-t border-[#E5E1D8] bg-[#F7F5F0] flex gap-1.5 overflow-x-auto text-[10px] font-mono shrink-0">
                 {QUICK_PROMPTS.map((qp, idx) => (
                   <button
                     key={idx}
                     onClick={() => void handleSend(qp)}
-                    className="whitespace-nowrap px-2.5 py-1 rounded-full border border-white/10 bg-white/[0.02] text-neutral-400 hover:text-white hover:border-white/25 transition-colors cursor-pointer shrink-0"
+                    className="whitespace-nowrap px-3 py-1 rounded-full border border-[#E5E1D8] bg-[#FFFFFF] text-[#475569] hover:text-[#111827] hover:border-[#B08D57] transition-all cursor-pointer shrink-0 shadow-2xs"
                   >
                     {qp}
                   </button>
@@ -306,7 +306,7 @@ export function SkillPassportCopilot({
               </div>
 
               {/* Input Bar */}
-              <div className="p-3 border-t border-white/10 shrink-0 bg-white/[0.02]">
+              <div className="p-3 border-t border-[#E5E1D8] shrink-0 bg-[#FFFFFF]">
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -316,17 +316,17 @@ export function SkillPassportCopilot({
                 >
                   <input
                     type="text"
-                    aria-label="Ask Skill Passport Copilot"
+                    aria-label="Ask Lumina Intel Copilot"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Ask Copilot about skills, readiness, jobs..."
-                    className="flex-1 px-3 py-2 bg-white/[0.03] border border-white/15 rounded-md text-xs text-white placeholder:text-neutral-500 focus:outline-none focus:border-white"
+                    className="flex-1 px-3.5 py-2 bg-[#F7F5F0] border border-[#E5E1D8] rounded-lg text-xs text-[#111827] placeholder:text-[#64748B] focus:outline-none focus:border-[#B08D57]"
                   />
                   <button
                     type="submit"
                     aria-label="Send message"
                     disabled={!input.trim() || loading}
-                    className="h-8 w-8 rounded-md border border-white/20 bg-white/10 hover:bg-white/20 disabled:opacity-30 text-white flex items-center justify-center shrink-0 cursor-pointer transition-colors"
+                    className="h-8 w-8 rounded-lg bg-[#0B0B0A] hover:bg-[#111827] disabled:opacity-40 text-white flex items-center justify-center shrink-0 cursor-pointer transition-colors"
                   >
                     <Send className="h-3.5 w-3.5" />
                   </button>
@@ -345,3 +345,5 @@ export function SkillPassportCopilot({
 
   return createPortal(content, document.body);
 }
+
+export { SkillPassportCopilot as LuminaIntelCopilot };

@@ -105,22 +105,22 @@ export function ApplicationTracking({
   return (
     <section
       aria-label="Application tracking timeline"
-      className="space-y-6 rounded-md border border-white/10 bg-[#071E2B] p-6 text-[#F7F8F8] font-sans"
+      className="space-y-6 rounded-md border border-[#E5E1D8] bg-[#FFFFFF] p-6 text-[#111827] font-sans"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 pb-4">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#E5E1D8] pb-4">
         <div>
           <h4
-            className="text-xl font-normal text-[#F7F8F8]"
+            className="text-xl font-normal text-[#111827]"
             style={{ fontFamily: "var(--font-display)" }}
           >
             {application.application_snapshot?.job?.title || "Application"}
           </h4>
-          <p className="font-mono text-xs text-[#8796A2] mt-0.5">
+          <p className="font-mono text-xs text-[#64748B] mt-0.5">
             {application.application_snapshot?.job?.company_name || "Unknown Company"} · Lifecycle: {label(application.status)}
           </p>
         </div>
 
-        <span className="font-mono text-xs uppercase px-2.5 py-0.5 border border-white/15 bg-white/5 text-[#F7F8F8] rounded-xs">
+        <span className="font-mono text-xs uppercase px-2.5 py-0.5 border border-[#E5E1D8] bg-[#F7F5F0] text-[#111827] rounded-xs">
           {application.status}
         </span>
       </div>
@@ -136,10 +136,10 @@ export function ApplicationTracking({
                 <div
                   className={`flex items-center gap-1.5 px-2 py-1 rounded-sm transition-colors ${
                     isCurrent
-                      ? "border border-[#9CC7D8]/40 bg-[#9CC7D8]/10 text-[#9CC7D8]"
+                      ? "border border-[#B08D57]/40 bg-[rgba(176,141,87,0.08)] text-[#B08D57]"
                       : isCompleted
-                      ? "text-emerald-400 font-semibold"
-                      : "text-[#8796A2]"
+                      ? "text-[#4F6F5A] font-semibold"
+                      : "text-[#64748B]"
                   }`}
                 >
                   <span
@@ -147,8 +147,8 @@ export function ApplicationTracking({
                       isCurrent
                         ? "bg-[#9CC7D8] text-[#021522] font-bold"
                         : isCompleted
-                        ? "bg-emerald-950 text-emerald-400 border border-emerald-800/40"
-                        : "bg-white/[0.03] text-[#8796A2] border border-white/10"
+                        ? "bg-emerald-950 text-[#4F6F5A] border border-[rgba(79,111,90,0.25)]"
+                        : "bg-[#F7F5F0] text-[#64748B] border border-[#E5E1D8]"
                     }`}
                   >
                     {isCompleted ? <Check className="h-2.5 w-2.5" aria-hidden="true" /> : idx + 1}
@@ -167,11 +167,11 @@ export function ApplicationTracking({
 
       {/* UNKNOWN SUBMISSION STATE WARNING BANNER */}
       {isUnknown && (
-        <div className="flex items-start gap-3 rounded-sm border border-[#9CC7D8]/30 bg-[#9CC7D8]/5 p-4 text-xs text-[#F7F8F8]">
-          <AlertTriangle className="h-4 w-4 text-[#9CC7D8] shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 rounded-sm border border-[#B08D57]/30 bg-[rgba(176,141,87,0.05)] p-4 text-xs text-[#111827]">
+          <AlertTriangle className="h-4 w-4 text-[#B08D57] shrink-0 mt-0.5" />
           <div className="space-y-1">
             <strong className="font-semibold block">Submission status could not be confirmed.</strong>
-            <p className="text-[#BEC8CF] leading-relaxed font-sans">
+            <p className="text-[#475569] leading-relaxed font-sans">
               This application intent will not be resubmitted automatically to avoid duplicate postings. You can check status again, record a manual confirmation reference below, or leave it unresolved.
             </p>
           </div>
@@ -180,8 +180,8 @@ export function ApplicationTracking({
 
       {/* MANUAL ACTIONS & RECONCILIATION */}
       {canRecordManual && (
-        <div className="rounded-sm border border-white/10 bg-white/[0.01] p-4 space-y-3">
-          <h5 className="font-mono text-[10px] uppercase tracking-wider text-[#8796A2]">
+        <div className="rounded-sm border border-[#E5E1D8] bg-[#F7F5F0] p-4 space-y-3">
+          <h5 className="font-mono text-[10px] uppercase tracking-wider text-[#64748B]">
             Manual Submission Confirmation
           </h5>
 
@@ -192,7 +192,7 @@ export function ApplicationTracking({
               onChange={(event) => setReference(event.target.value)}
               maxLength={255}
               placeholder="Optional confirmation reference (e.g. #GH-8921)"
-              className="flex-1 min-w-[200px] rounded-md border border-white/15 bg-white/[0.03] px-3 py-1.5 font-mono text-xs text-[#F7F8F8] focus:border-white focus:outline-none"
+              className="flex-1 min-w-[200px] rounded-md border border-[#E5E1D8] bg-[#F7F5F0] px-3 py-1.5 font-mono text-xs text-[#111827] focus:border-[#B08D57] focus:outline-none"
             />
             <EditorialButton
               variant="primary"
@@ -234,14 +234,14 @@ export function ApplicationTracking({
 
       {/* TIMELINE AUDIT EVENTS LIST */}
       <div className="space-y-3 pt-2">
-        <h5 className="font-mono text-[10px] uppercase tracking-wider text-[#8796A2]">
+        <h5 className="font-mono text-[10px] uppercase tracking-wider text-[#64748B]">
           Audit Timeline Events
         </h5>
 
         {!events ? (
-          <div className="p-4 text-center font-mono text-xs text-[#8796A2]">Loading timeline events...</div>
+          <div className="p-4 text-center font-mono text-xs text-[#64748B]">Loading timeline events...</div>
         ) : events.length === 0 ? (
-          <p className="font-mono text-xs text-[#8796A2] italic py-2">No lifecycle events recorded yet.</p>
+          <p className="font-mono text-xs text-[#64748B] italic py-2">No lifecycle events recorded yet.</p>
         ) : (
           <motion.ol
             variants={prefersReducedMotion ? undefined : containerStaggerVariants}
@@ -253,18 +253,18 @@ export function ApplicationTracking({
               <motion.li
                 key={event.id}
                 variants={prefersReducedMotion ? undefined : cardItemVariants}
-                className="flex items-center justify-between border border-white/10 bg-white/[0.01] p-3 rounded-sm font-mono text-xs"
+                className="flex items-center justify-between border border-[#E5E1D8] bg-[#F7F5F0] p-3 rounded-sm font-mono text-xs"
               >
                 <div>
-                  <span className="text-[#F7F8F8]">{label(event.event_type)}</span>
-                  <span className="text-[#8796A2] ml-2 font-sans">({event.source})</span>
+                  <span className="text-[#111827]">{label(event.event_type)}</span>
+                  <span className="text-[#64748B] ml-2 font-sans">({event.source})</span>
                   {event.status && (
-                    <span className="ml-2 border border-white/10 px-1.5 py-0.5 text-[10px] text-[#BEC8CF]">
+                    <span className="ml-2 border border-[#E5E1D8] px-1.5 py-0.5 text-[10px] text-[#475569]">
                       {label(event.status)}
                     </span>
                   )}
                 </div>
-                <time className="text-[11px] text-[#8796A2]">
+                <time className="text-[11px] text-[#64748B]">
                   {new Date(event.created_at).toLocaleString()}
                 </time>
               </motion.li>
@@ -274,7 +274,7 @@ export function ApplicationTracking({
       </div>
 
       {error && (
-        <div role="alert" className="p-3 text-xs text-red-300 font-mono border border-red-500/30 bg-red-950/20 rounded-sm">
+        <div role="alert" className="p-3 text-xs text-red-300 font-mono border border-[rgba(180,83,75,0.25)] bg-red-950/20 rounded-sm">
           {error}
         </div>
       )}

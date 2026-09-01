@@ -102,19 +102,19 @@ function getSkillCategory(skillName: string): string {
 function getCategoryIcon(category: string) {
   switch (category) {
     case "Languages":
-      return <Code2 className="h-3.5 w-3.5 text-white/70" />;
+      return <Code2 className="h-3.5 w-3.5 text-[#111827]/70" />;
     case "Frontend":
-      return <Layers className="h-3.5 w-3.5 text-white/70" />;
+      return <Layers className="h-3.5 w-3.5 text-[#111827]/70" />;
     case "Backend":
-      return <Terminal className="h-3.5 w-3.5 text-white/70" />;
+      return <Terminal className="h-3.5 w-3.5 text-[#111827]/70" />;
     case "Databases":
-      return <Database className="h-3.5 w-3.5 text-white/70" />;
+      return <Database className="h-3.5 w-3.5 text-[#111827]/70" />;
     case "Cloud & DevOps":
-      return <Cloud className="h-3.5 w-3.5 text-white/70" />;
+      return <Cloud className="h-3.5 w-3.5 text-[#111827]/70" />;
     case "AI & Machine Learning":
-      return <Cpu className="h-3.5 w-3.5 text-white/70" />;
+      return <Cpu className="h-3.5 w-3.5 text-[#111827]/70" />;
     default:
-      return <FileCheck className="h-3.5 w-3.5 text-white/70" />;
+      return <FileCheck className="h-3.5 w-3.5 text-[#111827]/70" />;
   }
 }
 
@@ -356,7 +356,7 @@ export function ResumeIntelligence({
       setActiveResume(activeDoc);
       setPhase("complete");
       setIsReplacing(false);
-      toast.success("Skill Passport successfully updated with verified resume claims!");
+      toast.success("Lumina Intel successfully updated with verified resume claims!");
       onChanged();
     } catch (caught) {
       setPhase("error");
@@ -536,22 +536,26 @@ export function ResumeIntelligence({
     phase === "building_passport";
 
   return (
-    <section className="border border-white/10 bg-[#061524] p-6 rounded-md text-white font-sans space-y-6">
+    <section className="border border-[#E5E1D8] bg-[#FFFFFF] p-6 sm:p-8 rounded-[16px] text-[#111827] font-sans space-y-6 shadow-[0_8px_30px_rgba(17,24,39,0.04)]">
       {/* Header Bar */}
-      <div className="border-b border-white/10 pb-4 flex items-start justify-between gap-4">
+      <div className="border-b border-[#E5E1D8] pb-4 flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl font-normal text-white flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
-            <FileText className="h-4 w-4 text-white/80" />
+          <div className="font-mono text-[11px] uppercase tracking-widest text-[#B08D57] font-semibold mb-1 flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#B08D57]" />
+            <span>SYNTACTIC RESUME PARSING</span>
+          </div>
+          <h2 className="text-2xl font-normal text-[#111827] flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
+            <FileText className="h-5 w-5 text-[#B08D57]" />
             <span>Resume Intelligence</span>
           </h2>
-          <p className="text-xs text-neutral-400 mt-0.5">
+          <p className="text-xs text-[#475569] mt-0.5">
             Turn your resume into evidence-backed skills with automatic cryptographic verification.
           </p>
         </div>
 
         {activeResume && phase === "complete" && !isReplacing && (
-          <span className="font-mono text-xs uppercase tracking-wider text-white border border-white/20 px-2.5 py-0.5 rounded-xs flex items-center gap-1.5">
-            <CheckCircle2 className="h-3 w-3 text-white" />
+          <span className="badge-success flex items-center gap-1.5">
+            <CheckCircle2 className="h-3 w-3" />
             <span>Active Resume</span>
           </span>
         )}
@@ -583,20 +587,20 @@ export function ResumeIntelligence({
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`border border-dashed p-8 rounded-md flex flex-col items-center justify-center text-center cursor-pointer transition-colors ${
+              className={`border border-dashed p-8 rounded-[16px] flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
                 isDragOver
-                  ? "border-white bg-white/5"
-                  : "border-white/20 bg-white/[0.02] hover:border-white/40 hover:bg-white/[0.04]"
+                  ? "border-[#B08D57] bg-[rgba(176,141,87,0.10)]"
+                  : "border-[#E5E1D8] bg-[#F7F5F0] hover:border-[#B08D57]/60 hover:bg-[#EFEBE3]"
               }`}
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-white mb-3">
-                <Upload className="h-4 w-4" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#E5E1D8] bg-[#FFFFFF] text-[#B08D57] mb-3 shadow-2xs">
+                <Upload className="h-5 w-5" />
               </div>
-              <p className="text-sm font-medium text-white">
-                Drag & drop your resume here, or <span className="underline underline-offset-4">choose a file</span>
+              <p className="text-sm font-medium text-[#111827]">
+                Drag & drop your resume here, or <span className="underline underline-offset-4 text-[#B08D57]">choose a file</span>
               </p>
-              <p className="text-xs text-neutral-400 mt-1">
-                Supports text-based <span className="text-neutral-300">PDF</span> and <span className="text-neutral-300">DOCX</span> documents (up to 10MB)
+              <p className="text-xs text-[#475569] mt-1">
+                Supports text-based <span className="text-[#111827] font-medium">PDF</span> and <span className="text-[#111827] font-medium">DOCX</span> documents (up to 10MB)
               </p>
 
               {isReplacing && activeResume && (
@@ -607,7 +611,7 @@ export function ResumeIntelligence({
                     setIsReplacing(false);
                     setPhase("complete");
                   }}
-                  className="mt-4 font-mono text-xs text-neutral-400 hover:text-white transition-colors"
+                  className="mt-4 font-mono text-xs text-[#64748B] hover:text-[#111827] transition-colors"
                 >
                   Cancel replace
                 </button>
@@ -623,34 +627,34 @@ export function ResumeIntelligence({
               animate={{ opacity: 1, scale: 1 }}
               exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}
               transition={{ duration: 0.3 }}
-              className="border border-white/15 bg-white/[0.03] p-6 rounded-md space-y-4 font-mono text-xs"
+              className="border border-[#E5E1D8] bg-[#F7F5F0] p-6 rounded-[16px] space-y-4 font-mono text-xs"
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 min-w-0">
-                  <FileText className="h-4 w-4 text-white" />
-                  <span className="text-white truncate">
+                  <FileText className="h-4 w-4 text-[#B08D57]" />
+                  <span className="text-[#111827] font-semibold truncate">
                     {currentFileName || activeResume?.original_filename || "Resume Document"}
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0 uppercase tracking-wider text-white">
-                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                <div className="flex items-center gap-1.5 shrink-0 uppercase tracking-wider text-[#B08D57] font-semibold">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#B08D57] animate-pulse" />
                   <span>Analyzing</span>
                 </div>
               </div>
 
-              <div className="space-y-1.5 text-neutral-300">
+              <div className="space-y-1.5 text-[#475569]">
                 <p>
                   {phase === "uploading" && "01 / Uploading document..."}
                   {phase === "reading" && "02 / Reading document structure..."}
                   {phase === "discovering" && "03 / Extracting technical claims and spans..."}
                   {phase === "categorizing" && "04 / Normalizing into canonical taxonomy..."}
-                  {phase === "building_passport" && "05 / Generating cryptographic Skill Passport..."}
+                  {phase === "building_passport" && "05 / Generating cryptographic Lumina Intel..."}
                 </p>
               </div>
 
-              <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">
+              <div className="w-full bg-[#E5E1D8] h-1.5 rounded-full overflow-hidden">
                 <motion.div
-                  className="bg-white h-full"
+                  className="bg-[#B08D57] h-full"
                   initial={{ width: "20%" }}
                   animate={{
                     width:
@@ -667,7 +671,7 @@ export function ResumeIntelligence({
               </div>
 
               {errorMessage && phase === "discovering" && (
-                <p className="text-red-400">{errorMessage}</p>
+                <p className="text-[#B4534B]">{errorMessage}</p>
               )}
             </motion.div>
           )}
@@ -679,26 +683,26 @@ export function ResumeIntelligence({
               initial={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
-              className="border border-white/15 bg-white/[0.03] p-5 rounded-md space-y-3 font-mono text-xs"
+              className="border border-[#B4534B]/30 bg-[rgba(180,83,75,0.08)] p-5 rounded-[16px] space-y-3 font-mono text-xs"
             >
               <div className="flex items-start gap-3">
-                <AlertCircle className="h-4 w-4 shrink-0 text-white mt-0.5" />
+                <AlertCircle className="h-4 w-4 shrink-0 text-[#B4534B] mt-0.5" />
                 <div className="space-y-1">
-                  <p className="text-sm font-medium text-white">Resume partially analyzed</p>
-                  <p className="text-neutral-300">
+                  <p className="text-sm font-semibold text-[#111827]">Resume partially analyzed</p>
+                  <p className="text-[#475569]">
                     {activeResume.completed_jobs} of {activeResume.total_jobs} evidence items processed successfully.
                   </p>
-                  <p className="text-neutral-400">
+                  <p className="text-[#64748B]">
                     {activeResume.failed_jobs} items could not be processed because the extraction service was temporarily unavailable.
                   </p>
-                  {errorMessage && <p className="text-red-400">{errorMessage}</p>}
+                  {errorMessage && <p className="text-[#B4534B]">{errorMessage}</p>}
                 </div>
               </div>
               <button
                 type="button"
                 disabled={isRetryingFailed}
                 onClick={() => void retryFailedItems()}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-white/20 bg-white/10 text-white font-mono text-xs transition-colors cursor-pointer disabled:opacity-50"
+                className="pill-btn-sm"
               >
                 <RefreshCw className={`h-3 w-3 ${isRetryingFailed ? "animate-spin" : ""}`} />
                 <span>{isRetryingFailed ? "Retrying..." : "Retry failed items"}</span>
@@ -717,14 +721,14 @@ export function ResumeIntelligence({
               className="space-y-4"
             >
               {/* Document Banner */}
-              <div className="border border-white/10 bg-white/[0.02] p-4 rounded-sm flex flex-wrap items-center justify-between gap-3">
+              <div className="border border-[#E5E1D8] bg-[#F7F5F0] p-4 rounded-[14px] flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <FileCheck className="h-5 w-5 text-white/80 shrink-0" />
+                  <FileCheck className="h-5 w-5 text-[#4F6F5A] shrink-0" />
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-white truncate">
+                    <p className="text-sm font-semibold text-[#111827] truncate">
                       {activeResume.original_filename}
                     </p>
-                    <p className="font-mono text-xs text-neutral-400 mt-0.5">
+                    <p className="font-mono text-xs text-[#64748B] mt-0.5">
                       {(activeResume.size_bytes / 1024).toFixed(1)} KB · Verified via {activeResume.parser_version}
                     </p>
                   </div>
@@ -734,7 +738,7 @@ export function ResumeIntelligence({
                   <button
                     type="button"
                     onClick={() => setIsReplacing(true)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/15 bg-white/[0.03] text-xs font-mono text-neutral-300 hover:text-white transition-colors cursor-pointer"
+                    className="pill-btn-outline px-3.5 py-1 text-xs font-mono text-[#475569] hover:text-[#111827]"
                   >
                     <Upload className="h-3 w-3" />
                     <span>Replace</span>
@@ -743,7 +747,7 @@ export function ResumeIntelligence({
                     type="button"
                     disabled={isDeleting}
                     onClick={() => void handleDeleteResume()}
-                    className="p-1.5 rounded-full border border-white/10 text-neutral-400 hover:text-red-400 hover:border-red-500/30 transition-colors cursor-pointer disabled:opacity-50"
+                    className="p-1.5 rounded-full border border-[#E5E1D8] text-[#64748B] hover:text-[#B4534B] hover:border-[#B4534B]/30 transition-colors cursor-pointer disabled:opacity-50"
                     title="Remove resume"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -753,29 +757,29 @@ export function ResumeIntelligence({
 
               {/* Metrics Row */}
               <div className="grid grid-cols-3 gap-3 font-mono">
-                <div className="border border-white/10 bg-white/[0.02] p-3 text-center rounded-sm">
-                  <p className="text-2xl font-normal text-white" style={{ fontFamily: "var(--font-display)" }}>
+                <div className="border border-[#E5E1D8] bg-[#F7F5F0] p-4 text-center rounded-[12px]">
+                  <p className="text-3xl font-normal text-[#111827]" style={{ fontFamily: "var(--font-display)" }}>
                     {allExtractedSkills.length}
                   </p>
-                  <p className="text-[10px] uppercase tracking-wider text-neutral-400 mt-0.5">
+                  <p className="text-[10px] uppercase tracking-wider text-[#64748B] mt-0.5 font-semibold">
                     Skills Extracted
                   </p>
                 </div>
 
-                <div className="border border-white/10 bg-white/[0.02] p-3 text-center rounded-sm">
-                  <p className="text-2xl font-normal text-white" style={{ fontFamily: "var(--font-display)" }}>
+                <div className="border border-[#E5E1D8] bg-[#F7F5F0] p-4 text-center rounded-[12px]">
+                  <p className="text-3xl font-normal text-[#111827]" style={{ fontFamily: "var(--font-display)" }}>
                     {activeResume.generated_evidence_count}
                   </p>
-                  <p className="text-[10px] uppercase tracking-wider text-neutral-400 mt-0.5">
+                  <p className="text-[10px] uppercase tracking-wider text-[#64748B] mt-0.5 font-semibold">
                     Evidence Records
                   </p>
                 </div>
 
-                <div className="border border-white/10 bg-white/[0.02] p-3 text-center rounded-sm">
-                  <p className="text-2xl font-normal text-white" style={{ fontFamily: "var(--font-display)" }}>
+                <div className="border border-[#E5E1D8] bg-[#F7F5F0] p-4 text-center rounded-[12px]">
+                  <p className="text-3xl font-normal text-[#111827]" style={{ fontFamily: "var(--font-display)" }}>
                     {Object.keys(categorizedSkills).length}
                   </p>
-                  <p className="text-[10px] uppercase tracking-wider text-neutral-400 mt-0.5">
+                  <p className="text-[10px] uppercase tracking-wider text-[#64748B] mt-0.5 font-semibold">
                     Categories
                   </p>
                 </div>
@@ -784,14 +788,14 @@ export function ResumeIntelligence({
               {/* Categorized Skills View */}
               <div className="space-y-2 pt-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-neutral-400">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-[#64748B] font-semibold">
                     Extracted Competencies
                   </span>
                   {allExtractedSkills.length > 8 && (
                     <button
                       type="button"
                       onClick={() => setShowAllSkills((prev) => !prev)}
-                      className="font-mono text-xs text-neutral-400 hover:text-white flex items-center gap-1 cursor-pointer"
+                      className="font-mono text-xs text-[#475569] hover:text-[#000000] flex items-center gap-1 cursor-pointer"
                     >
                       <span>{showAllSkills ? "Show top skills" : `View all (${allExtractedSkills.length})`}</span>
                       {showAllSkills ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
@@ -804,14 +808,14 @@ export function ResumeIntelligence({
                     {Object.entries(categorizedSkills).map(([catName, skills]) => (
                       <div
                         key={catName}
-                        className="border border-white/10 bg-white/[0.02] p-3 rounded-sm space-y-2"
+                        className="border border-[#E5E1D8] bg-[#F7F5F0] p-3 rounded-sm space-y-2"
                       >
-                        <div className="flex items-center justify-between text-xs font-mono text-neutral-300">
+                        <div className="flex items-center justify-between text-xs font-mono text-[#475569]">
                           <span className="flex items-center gap-1.5 uppercase tracking-wider">
                             {getCategoryIcon(catName)}
                             <span>{catName}</span>
                           </span>
-                          <span className="text-neutral-400">
+                          <span className="text-[#64748B]">
                             {skills.length} {skills.length === 1 ? "skill" : "skills"}
                           </span>
                         </div>
@@ -819,7 +823,7 @@ export function ResumeIntelligence({
                           {skills.map((skill) => (
                             <span
                               key={skill}
-                              className="font-mono text-xs border border-white/15 bg-white/5 px-2 py-0.5 rounded-xs text-white"
+                              className="font-mono text-xs border border-[#E5E1D8] bg-[#FFFFFF] px-2 py-0.5 rounded-xs text-[#111827]"
                             >
                               {skill}
                             </span>
@@ -833,7 +837,7 @@ export function ResumeIntelligence({
                     {topSkills.map((skill) => (
                       <span
                         key={skill}
-                        className="font-mono text-xs border border-white/15 bg-white/5 px-2 py-0.5 rounded-xs text-white"
+                        className="font-mono text-xs border border-[#E5E1D8] bg-[#FFFFFF] px-2 py-0.5 rounded-xs text-[#111827]"
                       >
                         {skill}
                       </span>
@@ -842,7 +846,7 @@ export function ResumeIntelligence({
                       <button
                         type="button"
                         onClick={() => setShowAllSkills(true)}
-                        className="font-mono text-xs border border-white/10 bg-white/[0.02] px-2 py-0.5 rounded-xs text-neutral-400 hover:text-white cursor-pointer"
+                        className="font-mono text-xs border border-[#E5E1D8] bg-[#F7F5F0] px-2 py-0.5 rounded-xs text-[#475569] hover:text-[#000000] cursor-pointer"
                       >
                         +{remainingSkillsCount} more
                       </button>
@@ -853,11 +857,11 @@ export function ResumeIntelligence({
 
               {/* Claims & Projects Accordion */}
               {(projectCount > 0 || certCount > 0 || achievementCount > 0) && (
-                <div className="border-t border-white/10 pt-3">
+                <div className="border-t border-[#E5E1D8] pt-3">
                   <button
                     type="button"
                     onClick={() => setShowExtractedDetails((prev) => !prev)}
-                    className="w-full flex items-center justify-between text-xs font-mono text-neutral-400 hover:text-white py-1 cursor-pointer"
+                    className="w-full flex items-center justify-between text-xs font-mono text-[#475569] hover:text-[#000000] py-1 cursor-pointer"
                   >
                     <span className="flex items-center gap-1.5 uppercase">
                       <Briefcase className="h-3.5 w-3.5" />
@@ -867,17 +871,17 @@ export function ResumeIntelligence({
                   </button>
 
                   {showExtractedDetails && parsedSummary && (
-                    <div className="space-y-2 pt-2 text-xs text-neutral-300 max-h-40 overflow-y-auto">
+                    <div className="space-y-2 pt-2 text-xs text-[#475569] max-h-40 overflow-y-auto">
                       {parsedSummary.projects?.map((proj, i) => (
-                        <div key={i} className="border border-white/5 bg-white/[0.02] p-2.5 rounded-sm">
-                          <p className="font-medium text-white">{proj.title}</p>
-                          <p className="text-[11px] text-neutral-400 mt-0.5 line-clamp-2">{proj.description}</p>
+                        <div key={i} className="border border-[#E5E1D8] bg-[#FFFFFF] p-2.5 rounded-sm">
+                          <p className="font-medium text-[#111827]">{proj.title}</p>
+                          <p className="text-[11px] text-[#64748B] mt-0.5 line-clamp-2">{proj.description}</p>
                         </div>
                       ))}
                       {parsedSummary.certifications?.map((cert, i) => (
-                        <div key={i} className="border border-white/5 bg-white/[0.02] p-2.5 rounded-sm">
-                          <p className="font-medium text-white">{cert.name}</p>
-                          <p className="text-[11px] text-neutral-400 mt-0.5">{cert.detail}</p>
+                        <div key={i} className="border border-[#E5E1D8] bg-[#FFFFFF] p-2.5 rounded-sm">
+                          <p className="font-medium text-[#111827]">{cert.name}</p>
+                          <p className="text-[11px] text-[#64748B] mt-0.5">{cert.detail}</p>
                         </div>
                       ))}
                     </div>
@@ -900,11 +904,11 @@ export function ResumeIntelligence({
                 <AlertCircle className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm font-medium text-white">
+                <p className="text-sm font-medium text-[#111827]">
                   {errorType === "upload" && "Resume upload failed"}
                   {errorType === "parse" && "We couldn't fully analyze this resume"}
                   {errorType === "extraction" && "We couldn't finish analyzing your resume"}
-                  {errorType === "activate" && "Skill Passport update pending"}
+                  {errorType === "activate" && "Lumina Intel update pending"}
                   {!errorType && "Resume analysis notice"}
                 </p>
                 <p className="text-xs text-red-300 mt-1 max-w-md mx-auto">
@@ -917,7 +921,7 @@ export function ResumeIntelligence({
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-red-500/40 bg-red-900/30 text-white text-xs font-mono transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-red-500/40 bg-red-900/30 text-[#111827] text-xs font-mono transition-colors cursor-pointer"
                   >
                     <RefreshCw className="h-3.5 w-3.5" />
                     <span>Retry Upload</span>
@@ -930,7 +934,7 @@ export function ResumeIntelligence({
                       type="button"
                       disabled={isReanalyzing}
                       onClick={() => void retryAnalysis()}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-white/20 bg-white/10 text-white text-xs font-mono transition-colors cursor-pointer disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-white/20 bg-white/10 text-[#111827] text-xs font-mono transition-colors cursor-pointer disabled:opacity-50"
                     >
                       <RefreshCw className={`h-3.5 w-3.5 ${isReanalyzing ? "animate-spin" : ""}`} />
                       <span>{isReanalyzing ? "Analyzing..." : "Retry Analysis"}</span>
@@ -938,7 +942,7 @@ export function ResumeIntelligence({
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-white/10 bg-white/[0.02] text-xs font-mono text-neutral-300 hover:text-white transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full border border-[#E5E1D8] bg-[#F7F5F0] text-xs font-mono text-[#0f172a] hover:text-[#000000] transition-colors cursor-pointer"
                     >
                       <span>Upload different file</span>
                     </button>
@@ -950,7 +954,7 @@ export function ResumeIntelligence({
                     type="button"
                     disabled={isRetryingFailed}
                     onClick={() => void retryFailedItems()}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-white/20 bg-white/10 text-white text-xs font-mono transition-colors cursor-pointer disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-white/20 bg-white/10 text-[#111827] text-xs font-mono transition-colors cursor-pointer disabled:opacity-50"
                   >
                     <RefreshCw className={`h-3.5 w-3.5 ${isRetryingFailed ? "animate-spin" : ""}`} />
                     <span>{isRetryingFailed ? "Retrying..." : "Retry analysis"}</span>
@@ -961,7 +965,7 @@ export function ResumeIntelligence({
                   <button
                     type="button"
                     onClick={() => void retryPassportUpdate()}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-white/20 bg-white/10 text-white text-xs font-mono transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-white/20 bg-white/10 text-[#111827] text-xs font-mono transition-colors cursor-pointer"
                   >
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     <span>Retry Passport Update</span>
@@ -973,9 +977,9 @@ export function ResumeIntelligence({
         </AnimatePresence>
       </div>
 
-      <div className="border-t border-white/10 pt-3 flex items-center justify-between font-mono text-[10px] text-neutral-400">
+      <div className="border-t border-[#E5E1D8] pt-3 flex items-center justify-between font-mono text-[10px] text-[#64748B]">
         <span className="flex items-center gap-1.5">
-          <ShieldCheck className="h-3.5 w-3.5 text-white/80" />
+          <ShieldCheck className="h-3.5 w-3.5 text-[#111827]/80" />
           <span>Deterministic provenance · Protected attributes never extracted</span>
         </span>
       </div>

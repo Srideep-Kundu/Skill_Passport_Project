@@ -73,22 +73,22 @@ export function EvidenceLifecycle({
   }
 
   return (
-    <section className="rounded-md border border-white/10 bg-[#071E2B] p-6 text-[#F7F8F8] flex flex-col justify-between font-sans">
-      <div className="border-b border-white/10 pb-4">
+    <section className="rounded-md border border-[#E5E1D8] bg-[#FFFFFF] p-6 text-[#111827] flex flex-col justify-between font-sans">
+      <div className="border-b border-[#E5E1D8] pb-4">
         <h2
-          className="text-xl font-normal text-[#F7F8F8]"
+          className="text-xl font-normal text-[#111827]"
           style={{ fontFamily: "var(--font-display)" }}
         >
           Evidence Lifecycle & Extraction
         </h2>
-        <p className="font-mono text-xs text-[#8796A2] mt-0.5">
+        <p className="font-mono text-xs text-[#64748B] mt-0.5">
           Updating evidence automatically re-queues skill extraction and deterministic scoring.
         </p>
       </div>
 
       <div className="mt-4 space-y-3">
         {message && (
-          <p role="status" className="font-mono text-xs text-[#9CC7D8] bg-[#9CC7D8]/10 p-3 rounded-sm border border-[#9CC7D8]/30">
+          <p role="status" className="font-mono text-xs text-[#B08D57] bg-[rgba(176,141,87,0.08)] p-3 rounded-sm border border-[#B08D57]/30">
             {message}
           </p>
         )}
@@ -107,15 +107,15 @@ export function EvidenceLifecycle({
                 <motion.li
                   key={evidence.id}
                   variants={prefersReducedMotion ? undefined : cardItemVariants}
-                  className="rounded-sm border border-white/10 bg-white/[0.01] p-4 space-y-2 hover:border-white/20 transition-colors"
+                  className="rounded-sm border border-[#E5E1D8] bg-[#F7F5F0] p-4 space-y-2 hover:border-[#E5E1D8] transition-colors"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
-                      <p className="font-mono text-sm text-[#F7F8F8]">{evidence.title}</p>
-                      <p className="text-xs text-[#BEC8CF] line-clamp-2 leading-relaxed">
+                      <p className="font-mono text-sm text-[#111827]">{evidence.title}</p>
+                      <p className="text-xs text-[#475569] line-clamp-2 leading-relaxed">
                         {evidence.description}
                       </p>
-                      <p className="font-mono text-[10px] uppercase text-[#8796A2] pt-1">
+                      <p className="font-mono text-[10px] uppercase text-[#64748B] pt-1">
                         Extraction Status: {evidence.extraction_status.replaceAll("_", " ")}
                       </p>
                     </div>
@@ -124,15 +124,15 @@ export function EvidenceLifecycle({
                       <button
                         type="button"
                         onClick={() => beginEdit(evidence)}
-                        className="text-[#9CC7D8] hover:text-[#F7F8F8] cursor-pointer"
+                        className="text-[#B08D57] hover:text-[#111827] cursor-pointer"
                       >
                         Edit
                       </button>
-                      <span className="text-white/20">·</span>
+                      <span className="text-[#111827]/20">·</span>
                       <button
                         type="button"
                         onClick={() => void remove(evidence)}
-                        className="text-red-400 hover:text-red-300 cursor-pointer"
+                        className="text-[#B4534B] hover:text-red-300 cursor-pointer"
                       >
                         Delete
                       </button>
@@ -146,25 +146,25 @@ export function EvidenceLifecycle({
                         initial="hidden"
                         animate="visible"
                         exit="exit"
-                        className="mt-3 grid gap-3 border-t border-white/10 pt-3"
+                        className="mt-3 grid gap-3 border-t border-[#E5E1D8] pt-3"
                       >
                         <input
                           aria-label="Edit evidence title"
                           value={title}
                           onChange={(event) => setTitle(event.target.value)}
-                          className="rounded-md border border-white/15 bg-white/[0.03] px-3 py-1.5 font-mono text-xs text-[#F7F8F8] focus:border-white focus:outline-none"
+                          className="rounded-md border border-[#E5E1D8] bg-[#F7F5F0] px-3 py-1.5 font-mono text-xs text-[#111827] focus:border-[#B08D57] focus:outline-none"
                         />
                         <textarea
                           aria-label="Edit evidence description"
                           value={description}
                           onChange={(event) => setDescription(event.target.value)}
-                          className="min-h-20 rounded-md border border-white/15 bg-white/[0.03] px-3 py-1.5 font-mono text-xs text-[#F7F8F8] focus:border-white focus:outline-none"
+                          className="min-h-20 rounded-md border border-[#E5E1D8] bg-[#F7F5F0] px-3 py-1.5 font-mono text-xs text-[#111827] focus:border-[#B08D57] focus:outline-none"
                         />
                         <div className="flex justify-end gap-2 font-mono text-xs">
                           <button
                             type="button"
                             onClick={() => setEditing(null)}
-                            className="px-3 py-1 text-[#8796A2] hover:text-[#F7F8F8] cursor-pointer"
+                            className="px-3 py-1 text-[#64748B] hover:text-[#111827] cursor-pointer"
                           >
                             Cancel
                           </button>
@@ -183,19 +183,19 @@ export function EvidenceLifecycle({
             </motion.ul>
 
             {result.total > 20 && (
-              <div className="flex items-center justify-between pt-3 border-t border-white/10 font-mono text-xs">
+              <div className="flex items-center justify-between pt-3 border-t border-[#E5E1D8] font-mono text-xs">
                 <button
                   disabled={page === 1}
                   onClick={() => setPage((p) => p - 1)}
-                  className="px-3 py-1 border border-white/10 rounded-xs disabled:opacity-30 text-[#8796A2] hover:text-white cursor-pointer"
+                  className="px-3 py-1 border border-[#E5E1D8] rounded-xs disabled:opacity-30 text-[#64748B] hover:text-[#111827] cursor-pointer"
                 >
                   Previous
                 </button>
-                <span className="text-[#8796A2]">Page {page}</span>
+                <span className="text-[#64748B]">Page {page}</span>
                 <button
                   disabled={page * 20 >= result.total}
                   onClick={() => setPage((p) => p + 1)}
-                  className="px-3 py-1 border border-white/10 rounded-xs disabled:opacity-30 text-[#8796A2] hover:text-white cursor-pointer"
+                  className="px-3 py-1 border border-[#E5E1D8] rounded-xs disabled:opacity-30 text-[#64748B] hover:text-[#111827] cursor-pointer"
                 >
                   Next
                 </button>

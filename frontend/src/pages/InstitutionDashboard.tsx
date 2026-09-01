@@ -371,8 +371,8 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
   if (loading || !analytics) {
     return (
       <div className="p-12 text-center">
-        <div className="inline-block animate-spin h-8 w-8 border-2 border-[#9CC7D8] border-t-transparent rounded-full mb-3" />
-        <p className="text-sm text-slate-500 dark:text-slate-400">Loading university decision-support intelligence...</p>
+        <div className="inline-block animate-spin h-8 w-8 border-2 border-[#B08D57] border-t-transparent rounded-full mb-3" />
+        <p className="text-sm text-slate-500 text-[#475569]">Loading university decision-support intelligence...</p>
       </div>
     );
   }
@@ -380,20 +380,20 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
   return (
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6">
       {/* Header Banner */}
-      <div className="border border-white/10 bg-[#071E2B] rounded-md p-6 md:p-8 space-y-6">
+      <div className="border border-[#E5E1D8] bg-[#FFFFFF] rounded-md p-6 md:p-8 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <div className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-[#8796A2] mb-2">
+            <div className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-[#64748B] mb-2">
               <Building2 className="h-3.5 w-3.5" />
               <span>University & Institution Intelligence Hub (SIH 26044)</span>
             </div>
             <h1
-              className="text-3xl md:text-4xl font-normal text-[#F7F8F8]"
+              className="text-3xl md:text-4xl font-normal text-[#111827]"
               style={{ fontFamily: "var(--font-display)" }}
             >
               {analytics.institution_name}
             </h1>
-            <p className="text-xs text-[#BEC8CF] mt-1 max-w-3xl leading-relaxed">
+            <p className="text-xs text-[#475569] mt-1 max-w-3xl leading-relaxed">
               Decision-support analytics, department-wise skill progression, deterministic intervention planning, and industry collaboration metrics without individual PII exposure.
             </p>
           </div>
@@ -404,7 +404,7 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
                 setActiveTab("reports");
                 setSelectedReportType("skill_gap");
               }}
-              className="px-4 py-2 border border-white/20 bg-white/10 hover:bg-white/15 text-[#F7F8F8] font-mono text-xs rounded-md transition-colors flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2 border border-[#E5E1D8] bg-[#F7F5F0] hover:bg-white/15 text-[#111827] font-mono text-xs rounded-md transition-colors flex items-center gap-2 cursor-pointer"
             >
               <Download className="h-4 w-4" />
               <span>Audit Reports</span>
@@ -413,30 +413,30 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
         </div>
 
         {/* Overview KPI Counters */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-6 border-t border-white/10">
-          <div className="p-4 rounded-sm border border-white/10 bg-white/[0.01]">
-            <span className="font-mono text-[10px] text-[#8796A2] uppercase tracking-wider block">Total Students</span>
-            <p className="text-2xl font-normal text-[#F7F8F8] mt-1" style={{ fontFamily: "var(--font-display)" }}>{analytics.total_students}</p>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-6 border-t border-[#E5E1D8]">
+          <div className="p-4 rounded-sm border border-[#E5E1D8] bg-[#F7F5F0]">
+            <span className="font-mono text-[10px] text-[#64748B] uppercase tracking-wider block">Total Students</span>
+            <p className="text-2xl font-normal text-[#111827] mt-1" style={{ fontFamily: "var(--font-display)" }}>{analytics.total_students}</p>
           </div>
-          <div className="p-4 rounded-sm border border-white/10 bg-white/[0.01]">
-            <span className="font-mono text-[10px] text-[#8796A2] uppercase tracking-wider block">Verified Skills</span>
-            <p className="text-2xl font-normal text-emerald-400 mt-1" style={{ fontFamily: "var(--font-display)" }}>
+          <div className="p-4 rounded-sm border border-[#E5E1D8] bg-[#F7F5F0]">
+            <span className="font-mono text-[10px] text-[#64748B] uppercase tracking-wider block">Verified Skills</span>
+            <p className="text-2xl font-normal text-[#4F6F5A] mt-1" style={{ fontFamily: "var(--font-display)" }}>
               {analytics.total_verified_skills}
             </p>
           </div>
-          <div className="p-4 rounded-sm border border-white/10 bg-white/[0.01]">
-            <span className="font-mono text-[10px] text-[#8796A2] uppercase tracking-wider block">Active Internships</span>
-            <p className="text-2xl font-normal text-[#9CC7D8] mt-1" style={{ fontFamily: "var(--font-display)" }}>{analytics.active_internships}</p>
+          <div className="p-4 rounded-sm border border-[#E5E1D8] bg-[#F7F5F0]">
+            <span className="font-mono text-[10px] text-[#64748B] uppercase tracking-wider block">Active Internships</span>
+            <p className="text-2xl font-normal text-[#B08D57] mt-1" style={{ fontFamily: "var(--font-display)" }}>{analytics.active_internships}</p>
           </div>
-          <div className="p-4 rounded-sm border border-white/10 bg-white/[0.01]">
-            <span className="font-mono text-[10px] text-[#8796A2] uppercase tracking-wider block">Placements Secured</span>
-            <p className="text-2xl font-normal text-[#F7F8F8] mt-1" style={{ fontFamily: "var(--font-display)" }}>
+          <div className="p-4 rounded-sm border border-[#E5E1D8] bg-[#F7F5F0]">
+            <span className="font-mono text-[10px] text-[#64748B] uppercase tracking-wider block">Placements Secured</span>
+            <p className="text-2xl font-normal text-[#111827] mt-1" style={{ fontFamily: "var(--font-display)" }}>
               {analytics.placements_secured}
             </p>
           </div>
-          <div className="p-4 rounded-sm border border-white/10 bg-white/[0.01]">
-            <span className="font-mono text-[10px] text-[#8796A2] uppercase tracking-wider block">Verified Coverage</span>
-            <p className="text-2xl font-normal text-[#9CC7D8] mt-1" style={{ fontFamily: "var(--font-display)" }}>{analytics.overall_employability_index}%</p>
+          <div className="p-4 rounded-sm border border-[#E5E1D8] bg-[#F7F5F0]">
+            <span className="font-mono text-[10px] text-[#64748B] uppercase tracking-wider block">Verified Coverage</span>
+            <p className="text-2xl font-normal text-[#B08D57] mt-1" style={{ fontFamily: "var(--font-display)" }}>{analytics.overall_employability_index}%</p>
           </div>
         </div>
       </div>
@@ -450,10 +450,10 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
 
       {/* Actionable Alerts Bar */}
       {alerts.length > 0 && (
-        <div className="bg-[#071E2B] rounded-md p-4 border border-white/10 space-y-3 font-mono">
+        <div className="bg-[#FFFFFF] rounded-md p-4 border border-[#E5E1D8] space-y-3 font-mono">
           <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="h-4 w-4 text-amber-400" />
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-[#F7F8F8]">
+            <AlertTriangle className="h-4 w-4 text-[#A67C3A]" />
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-[#111827]">
               Institutional Actionable Alerts ({alerts.length})
             </h2>
           </div>
@@ -461,26 +461,26 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
             {alerts.map((alt) => (
               <div
                 key={alt.id}
-                className="p-3 rounded-sm bg-white/[0.01] border border-white/10 flex flex-col justify-between"
+                className="p-3 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8] flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between gap-1 mb-1">
-                    <span className="text-xs font-semibold text-[#F7F8F8] line-clamp-1">{alt.title}</span>
+                    <span className="text-xs font-semibold text-[#111827] line-clamp-1">{alt.title}</span>
                     <span
                       className={`px-1.5 py-0.5 rounded-xs text-[9px] font-mono uppercase ${
                         alt.severity === "critical"
-                          ? "bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400"
-                          : "bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400"
+                          ? "bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-[#B4534B]"
+                          : "bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-[#A67C3A]"
                       }`}
                     >
                       {alt.severity}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">{alt.message}</p>
+                  <p className="text-[11px] text-slate-500 text-[#475569] line-clamp-2">{alt.message}</p>
                 </div>
                 <button
                   onClick={() => setActiveTab(alt.target_tab as TabType)}
-                  className="mt-2 text-[10px] font-medium text-[#9CC7D8] hover:underline flex items-center gap-1 cursor-pointer self-start"
+                  className="mt-2 text-[10px] font-medium text-[#B08D57] hover:underline flex items-center gap-1 cursor-pointer self-start"
                 >
                   {alt.action_label} <ChevronRight className="h-3 w-3" />
                 </button>
@@ -491,10 +491,10 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
       )}
 
       {/* Active Section Header Badge */}
-      <div className="flex items-center justify-between pb-2 border-b border-slate-200/80 dark:border-white/[0.08]">
+      <div className="flex items-center justify-between pb-2 border-b border-slate-200/80 border-[#E5E1D8]">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-extrabold uppercase tracking-wider text-[#BEC8CF]">Active View:</span>
-          <span className="px-3 py-1 rounded-sm text-xs font-mono bg-[#9CC7D8]/10 text-[#9CC7D8] border border-[#9CC7D8]/30 flex items-center gap-1.5">
+          <span className="text-xs font-extrabold uppercase tracking-wider text-[#475569]">Active View:</span>
+          <span className="px-3 py-1 rounded-sm text-xs font-mono bg-[rgba(176,141,87,0.08)] text-[#B08D57] border border-[#B08D57]/30 flex items-center gap-1.5">
             {[
               { id: "overview", label: "Executive Overview" },
               { id: "departments", label: "Department Drill-Down" },
@@ -519,13 +519,13 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
         <div className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Top Verified Skills Chart */}
-            <div className="bg-[#071E2B] rounded-md p-6 border border-white/10">
+            <div className="bg-[#FFFFFF] rounded-md p-6 border border-[#E5E1D8]">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5 text-[#9CC7D8]" />
-                  <h2 className="text-base font-bold text-[#F7F8F8]">Top Student Competencies</h2>
+                  <ShieldCheck className="h-5 w-5 text-[#B08D57]" />
+                  <h2 className="text-base font-bold text-[#111827]">Top Student Competencies</h2>
                 </div>
-                <span className="text-xs font-mono text-[#8796A2]">Verified Evidence</span>
+                <span className="text-xs font-mono text-[#64748B]">Verified Evidence</span>
               </div>
               <div className="h-64 w-full min-h-[260px]">
                 {analytics.top_skills_distribution && analytics.top_skills_distribution.length > 0 ? (
@@ -543,7 +543,7 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="flex h-full items-center justify-center text-xs font-mono text-[#8796A2]">
+                  <div className="flex h-full items-center justify-center text-xs font-mono text-[#64748B]">
                     No competency distribution records available.
                   </div>
                 )}
@@ -551,39 +551,39 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
             </div>
 
             {/* Curriculum vs Industry Demand Radar */}
-            <div className="bg-[#071E2B] rounded-md p-6 border border-white/10">
+            <div className="bg-[#FFFFFF] rounded-md p-6 border border-[#E5E1D8]">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-[#9CC7D8]" />
-                  <h2 className="text-base font-bold text-[#F7F8F8]">Market Demand vs Supply Radar</h2>
+                  <TrendingUp className="h-5 w-5 text-[#B08D57]" />
+                  <h2 className="text-base font-bold text-[#111827]">Market Demand vs Supply Radar</h2>
                 </div>
                 <button
                   onClick={() => setActiveTab("interventions")}
-                  className="text-xs font-mono text-[#9CC7D8] hover:underline"
+                  className="text-xs font-mono text-[#B08D57] hover:underline"
                 >
                   Plan Interventions &rarr;
                 </button>
               </div>
               <div className="space-y-3">
                 {analytics.market_skill_demand_gaps.map((item) => (
-                  <div key={item.skill} className="p-3 rounded-sm bg-white/[0.01] border border-white/10 font-mono">
+                  <div key={item.skill} className="p-3 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8] font-mono">
                     <div className="flex items-center justify-between text-xs font-bold mb-1.5">
-                      <span className="text-[#F7F8F8]">{item.skill}</span>
+                      <span className="text-[#111827]">{item.skill}</span>
                       <span
                         className={`px-2 py-0.5 rounded-xs text-[10px] uppercase font-mono ${
                           item.gap_severity === "Critical" || item.gap_severity === "High"
-                            ? "bg-rose-950/40 text-rose-400 border border-rose-800/40"
+                            ? "bg-rose-950/40 text-[#B4534B] border border-rose-800/40"
                             : item.gap_severity === "Medium"
-                            ? "bg-amber-950/40 text-[#9CC7D8] border border-white/15"
-                            : "bg-emerald-950/40 text-emerald-400 border border-emerald-800/40"
+                            ? "bg-[rgba(166,124,58,0.10)] text-[#B08D57] border border-[#E5E1D8]"
+                            : "bg-[rgba(79,111,90,0.10)] text-[#4F6F5A] border border-[rgba(79,111,90,0.25)]"
                         }`}
                       >
                         {item.gap_severity} Gap
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-[11px] text-[#8796A2]">
-                      <div>Industry Demand: <strong className="text-[#9CC7D8]">{item.industry_demand_index}%</strong></div>
-                      <div>Student Supply: <strong className="text-[#BEC8CF]">{item.student_supply_index}%</strong></div>
+                    <div className="grid grid-cols-2 gap-2 text-[11px] text-[#64748B]">
+                      <div>Industry Demand: <strong className="text-[#B08D57]">{item.industry_demand_index}%</strong></div>
+                      <div>Student Supply: <strong className="text-[#475569]">{item.student_supply_index}%</strong></div>
                     </div>
                   </div>
                 ))}
@@ -592,17 +592,17 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
           </div>
 
           {/* Department Matrix */}
-          <div className="bg-[#071E2B] rounded-md p-6 border border-white/10 overflow-hidden font-mono">
+          <div className="bg-[#FFFFFF] rounded-md p-6 border border-[#E5E1D8] overflow-hidden font-mono">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base text-[#F7F8F8] flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
-                <FileSpreadsheet className="h-5 w-5 text-[#9CC7D8]" />
+              <h2 className="text-base text-[#111827] flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
+                <FileSpreadsheet className="h-5 w-5 text-[#B08D57]" />
                 Department-Wise Competency & Placement Matrix
               </h2>
-              <span className="text-xs text-[#8796A2]">Click any row to drill down</span>
+              <span className="text-xs text-[#64748B]">Click any row to drill down</span>
             </div>
             <div className="overflow-x-auto" role="region" aria-label="Department competency and placement matrix" tabIndex={0}>
               <table className="w-full text-left text-xs">
-                <thead className="bg-white/[0.03] text-[#8796A2] uppercase tracking-wider border-b border-white/10">
+                <thead className="bg-[#F7F5F0] text-[#64748B] uppercase tracking-wider border-b border-[#E5E1D8]">
                   <tr>
                     <th className="p-3.5">Department</th>
                     <th className="p-3.5">Total Enrolled</th>
@@ -612,7 +612,7 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
                     <th className="p-3.5 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/[0.06] text-[#BEC8CF]">
+                <tbody className="divide-y divide-white/[0.06] text-[#475569]">
                   {analytics.department_metrics.map((dept) => (
                     <tr
                       key={dept.department}
@@ -622,13 +622,13 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
                       }}
                       className="hover:bg-white/[0.04] transition-colors cursor-pointer"
                     >
-                      <td className="p-3.5 text-[#F7F8F8]">{dept.department}</td>
+                      <td className="p-3.5 text-[#111827]">{dept.department}</td>
                       <td className="p-3.5">{dept.total_students} Students</td>
-                      <td className="p-3.5 text-emerald-400">{dept.verified_skills_average} / Student</td>
-                      <td className="p-3.5 text-[#9CC7D8]">{dept.placement_rate}%</td>
-                      <td className="p-3.5 text-[#BEC8CF]">{dept.internship_rate}%</td>
+                      <td className="p-3.5 text-[#4F6F5A]">{dept.verified_skills_average} / Student</td>
+                      <td className="p-3.5 text-[#B08D57]">{dept.placement_rate}%</td>
+                      <td className="p-3.5 text-[#475569]">{dept.internship_rate}%</td>
                       <td className="p-3.5 text-right">
-                        <span className="inline-flex items-center gap-1 text-[11px] text-[#9CC7D8] hover:text-white">
+                        <span className="inline-flex items-center gap-1 text-[11px] text-[#B08D57] hover:text-[#111827]">
                           Drill Down <ChevronRight className="h-3.5 w-3.5" />
                         </span>
                       </td>
@@ -647,69 +647,69 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
       {activeTab === "departments" && (
         <div className="space-y-6 font-mono">
           {/* Department Selector */}
-          <div className="bg-[#071E2B] rounded-md p-4 border border-white/10 flex flex-wrap items-center justify-between gap-4">
+          <div className="bg-[#FFFFFF] rounded-md p-4 border border-[#E5E1D8] flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <span className="text-xs uppercase text-[#8796A2]">Select Department:</span>
+              <span className="text-xs uppercase text-[#64748B]">Select Department:</span>
               {analytics.department_metrics.map((d) => (
                 <button
                   key={d.department}
                   onClick={() => setSelectedDept(d.department)}
                   className={`px-3 py-1.5 rounded-xs text-xs transition-colors cursor-pointer ${
                     selectedDept === d.department
-                      ? "border border-white/20 bg-white/15 text-white"
-                      : "border border-white/10 bg-white/[0.02] text-[#8796A2] hover:text-white"
+                      ? "bg-[#0B0B0A] text-[#FFFFFF] font-medium"
+                      : "border border-[#E5E1D8] bg-[#F7F5F0] text-[#64748B] hover:text-[#111827]"
                   }`}
                 >
                   {d.department}
                 </button>
               ))}
             </div>
-            <span className="text-xs text-[#8796A2]">Aggregate Cohort Metrics</span>
+            <span className="text-xs text-[#64748B]">Aggregate Cohort Metrics</span>
           </div>
 
           {deptLoading || !deptDetail ? (
-            <div className="p-8 text-center text-sm text-[#8796A2]">Loading department insights...</div>
+            <div className="p-8 text-center text-sm text-[#64748B]">Loading department insights...</div>
           ) : (
             <div className="space-y-6">
               {/* Department Overview Cards */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-xs text-[#8796A2] uppercase">Total Students</span>
-                  <p className="text-2xl text-[#F7F8F8] mt-1">{deptDetail.total_students}</p>
-                  <span className="text-[11px] text-emerald-400 mt-1 block">Avg {deptDetail.verified_skills_average} verified skills</span>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-xs text-[#64748B] uppercase">Total Students</span>
+                  <p className="text-2xl text-[#111827] mt-1">{deptDetail.total_students}</p>
+                  <span className="text-[11px] text-[#4F6F5A] mt-1 block">Avg {deptDetail.verified_skills_average} verified skills</span>
                 </div>
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-xs text-[#8796A2] uppercase">Role Readiness</span>
-                  <p className="text-2xl text-[#9CC7D8] mt-1">{deptDetail.average_readiness}%</p>
-                  <span className="text-[11px] text-[#8796A2] mt-1 block">{deptDetail.assessment_completion_rate}% assessment complete</span>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-xs text-[#64748B] uppercase">Role Readiness</span>
+                  <p className="text-2xl text-[#B08D57] mt-1">{deptDetail.average_readiness}%</p>
+                  <span className="text-[11px] text-[#64748B] mt-1 block">{deptDetail.assessment_completion_rate}% assessment complete</span>
                 </div>
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-xs text-[#8796A2] uppercase">Placement Conversion</span>
-                  <p className="text-2xl text-emerald-400 mt-1">{deptDetail.placement_conversion_rate}%</p>
-                  <span className="text-[11px] text-[#8796A2] mt-1 block">{deptDetail.placement_eligibility_rate}% eligibility pool</span>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-xs text-[#64748B] uppercase">Placement Conversion</span>
+                  <p className="text-2xl text-[#4F6F5A] mt-1">{deptDetail.placement_conversion_rate}%</p>
+                  <span className="text-[11px] text-[#64748B] mt-1 block">{deptDetail.placement_eligibility_rate}% eligibility pool</span>
                 </div>
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-xs text-[#8796A2] uppercase">Internship Rate</span>
-                  <p className="text-2xl text-[#F7F8F8] mt-1">{deptDetail.internship_participation_rate}%</p>
-                  <span className="text-[11px] text-[#8796A2] mt-1 block">{deptDetail.internship_completion_rate}% completed successfully</span>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-xs text-[#64748B] uppercase">Internship Rate</span>
+                  <p className="text-2xl text-[#111827] mt-1">{deptDetail.internship_participation_rate}%</p>
+                  <span className="text-[11px] text-[#64748B] mt-1 block">{deptDetail.internship_completion_rate}% completed successfully</span>
                 </div>
               </div>
 
               {/* Skills, Gaps and Actions Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 font-mono">
                 {/* Top Competencies */}
-                <div className="bg-[#071E2B] p-6 rounded-md border border-white/10">
-                  <h3 className="text-sm font-semibold text-[#F7F8F8] mb-4 flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4 text-[#9CC7D8]" />
+                <div className="bg-[#FFFFFF] p-6 rounded-md border border-[#E5E1D8]">
+                  <h3 className="text-sm font-semibold text-[#111827] mb-4 flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-[#B08D57]" />
                     Top Department Verified Skills
                   </h3>
                   <div className="space-y-2.5">
                     {deptDetail.top_verified_skills.map((s) => (
-                      <div key={s.skill} className="flex items-center justify-between p-2.5 rounded-sm bg-white/[0.01] border border-white/10 text-xs">
-                        <span className="font-semibold text-[#F7F8F8]">{s.skill}</span>
+                      <div key={s.skill} className="flex items-center justify-between p-2.5 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8] text-xs">
+                        <span className="font-semibold text-[#111827]">{s.skill}</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-[#8796A2]">{s.students} students</span>
-                          <span className="px-2 py-0.5 rounded-xs bg-[#9CC7D8]/10 text-[#9CC7D8] border border-[#9CC7D8]/30 text-[10px]">
+                          <span className="text-[#64748B]">{s.students} students</span>
+                          <span className="px-2 py-0.5 rounded-xs bg-[rgba(176,141,87,0.08)] text-[#B08D57] border border-[#B08D57]/30 text-[10px]">
                             {Math.round(s.avg_proficiency * 100)}%
                           </span>
                         </div>
@@ -719,16 +719,16 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
                 </div>
 
                 {/* Critical Gaps */}
-                <div className="bg-[#071E2B] p-6 rounded-md border border-white/10">
-                  <h3 className="text-sm font-bold text-[#F7F8F8] mb-3">Curriculum Deficits in {selectedDept}</h3>
+                <div className="bg-[#FFFFFF] p-6 rounded-md border border-[#E5E1D8]">
+                  <h3 className="text-sm font-bold text-[#111827] mb-3">Curriculum Deficits in {selectedDept}</h3>
                   <div className="space-y-2">
                     {deptDetail.top_technical_gaps.map((g) => (
-                      <div key={g.skill} className="p-3 rounded-sm bg-white/[0.01] border border-white/10 text-xs font-mono">
+                      <div key={g.skill} className="p-3 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8] text-xs font-mono">
                         <div className="flex justify-between font-bold">
-                          <span className="text-[#F7F8F8]">{g.skill}</span>
-                          <span className="text-rose-400">{g.gap_severity} Gap</span>
+                          <span className="text-[#111827]">{g.skill}</span>
+                          <span className="text-[#B4534B]">{g.gap_severity} Gap</span>
                         </div>
-                        <p className="text-[11px] text-[#8796A2] mt-1">Industry: {g.industry_demand}% | Dept: {g.student_supply}%</p>
+                        <p className="text-[11px] text-[#64748B] mt-1">Industry: {g.industry_demand}% | Dept: {g.student_supply}%</p>
                       </div>
                     ))}
                   </div>
@@ -736,21 +736,21 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
               </div>
 
               {/* Recommended Department Actions */}
-                <div className="bg-[#071E2B] p-6 rounded-md border border-white/10 font-mono">
-                <h3 className="text-sm text-[#F7F8F8] mb-3 flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-amber-400" />
+                <div className="bg-[#FFFFFF] p-6 rounded-md border border-[#E5E1D8] font-mono">
+                <h3 className="text-sm text-[#111827] mb-3 flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-[#A67C3A]" />
                   Deterministic Recommended Department Actions
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {deptDetail.recommended_actions.map((act, i) => (
-                    <div key={i} className="p-3.5 rounded-sm bg-white/[0.01] border border-white/10 text-xs text-[#BEC8CF] flex flex-col justify-between">
+                    <div key={i} className="p-3.5 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8] text-xs text-[#475569] flex flex-col justify-between">
                       <p>{act}</p>
                       <button
                         onClick={() => {
                           setNewAction((prev) => ({ ...prev, related_department: selectedDept, title: act.slice(0, 50), source_insight: act }));
                           setShowActionModal(true);
                         }}
-                        className="mt-3 text-[11px] text-[#9CC7D8] hover:text-white flex items-center gap-1 cursor-pointer self-start"
+                        className="mt-3 text-[11px] text-[#B08D57] hover:text-[#111827] flex items-center gap-1 cursor-pointer self-start"
                       >
                         Convert to Action Plan &rarr;
                       </button>
@@ -769,15 +769,15 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
       {activeTab === "cohorts" && (
         <div className="space-y-6">
           {/* Cohort Filters */}
-          <div className="bg-[#071E2B] rounded-md p-4 border border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+          <div className="bg-[#FFFFFF] rounded-md p-4 border border-[#E5E1D8] flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
             <div className="flex items-center gap-3 flex-wrap">
-              <span className="uppercase text-[#8796A2] flex items-center gap-1">
+              <span className="uppercase text-[#64748B] flex items-center gap-1">
                 <Filter className="h-3.5 w-3.5" /> Filters:
               </span>
               <select
                 value={cohortDeptFilter}
                 onChange={(e) => setCohortDeptFilter(e.target.value)}
-                className="bg-[#071E2B] border border-white/15 rounded-sm px-2.5 py-1.5 text-xs text-[#F7F8F8]"
+                className="bg-[#FFFFFF] border border-[#E5E1D8] rounded-sm px-2.5 py-1.5 text-xs text-[#111827]"
               >
                 <option value="All">All Departments</option>
                 <option value="CSE">Computer Science</option>
@@ -788,7 +788,7 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
               <select
                 value={cohortYearFilter}
                 onChange={(e) => setCohortYearFilter(e.target.value)}
-                className="bg-[#071E2B] border border-white/15 rounded-sm px-2.5 py-1.5 text-xs text-[#F7F8F8]"
+                className="bg-[#FFFFFF] border border-[#E5E1D8] rounded-sm px-2.5 py-1.5 text-xs text-[#111827]"
               >
                 <option value="All">All Graduation Years</option>
                 <option value="2025">2025 (Final Year)</option>
@@ -797,7 +797,7 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
               <select
                 value={cohortReadinessFilter}
                 onChange={(e) => setCohortReadinessFilter(e.target.value)}
-                className="bg-[#071E2B] border border-white/15 rounded-sm px-2.5 py-1.5 text-xs text-[#F7F8F8]"
+                className="bg-[#FFFFFF] border border-[#E5E1D8] rounded-sm px-2.5 py-1.5 text-xs text-[#111827]"
               >
                 <option value="All">All Readiness Bands</option>
                 <option value="high">High Readiness (&ge;80%)</option>
@@ -815,38 +815,38 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
             <div className="bg-rose-950/20 rounded-md p-6 border border-rose-900/40 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5 text-rose-400" />
+                  <AlertTriangle className="h-5 w-5 text-[#B4534B]" />
                   <h3 className="text-base font-bold text-rose-200">
                     Needs Attention & At-Risk Cohort Detection ({atRiskData.total_at_risk_students} Students)
                   </h3>
                 </div>
-                <span className="text-xs font-mono text-rose-400">Rule-Based Signals</span>
+                <span className="text-xs font-mono text-[#B4534B]">Rule-Based Signals</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {atRiskData.risk_groups.map((group, idx) => (
                   <div
                     key={idx}
-                    className="p-4 rounded-md bg-[#071E2B] border border-rose-900/30 text-xs font-mono space-y-2"
+                    className="p-4 rounded-md bg-[#FFFFFF] border border-rose-900/30 text-xs font-mono space-y-2"
                   >
                     <div className="flex items-center justify-between font-bold">
-                      <span className="text-[#F7F8F8] font-semibold">{group.risk_category}</span>
+                      <span className="text-[#111827] font-semibold">{group.risk_category}</span>
                       <span className="px-2 py-0.5 rounded-xs bg-rose-950 text-rose-300 text-[10px]">
                         {group.affected_students_count} Students
                       </span>
                     </div>
-                    <p className="text-[#8796A2] text-[11px]">
+                    <p className="text-[#64748B] text-[11px]">
                       <strong>Target:</strong> {group.department}
                     </p>
                     <div className="space-y-1">
                       {group.key_signals.map((sig, sIdx) => (
-                        <div key={sIdx} className="flex items-center gap-1.5 text-[11px] text-rose-400 font-medium">
+                        <div key={sIdx} className="flex items-center gap-1.5 text-[11px] text-[#B4534B] font-medium">
                           <span className="h-1.5 w-1.5 rounded-full bg-rose-500 shrink-0" />
                           {sig}
                         </div>
                       ))}
                     </div>
-                    <div className="pt-2 border-t border-white/10 flex items-center justify-between">
-                      <span className="text-[11px] text-[#8796A2]">{group.recommended_action}</span>
+                    <div className="pt-2 border-t border-[#E5E1D8] flex items-center justify-between">
+                      <span className="text-[11px] text-[#64748B]">{group.recommended_action}</span>
                       <button
                         onClick={() => {
                           setNewPlan((prev) => ({
@@ -859,7 +859,7 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
                           setActiveTab("interventions");
                           setShowInterventionModal(true);
                         }}
-                        className="text-[10px] text-[#9CC7D8] hover:underline whitespace-nowrap ml-2 cursor-pointer"
+                        className="text-[10px] text-[#B08D57] hover:underline whitespace-nowrap ml-2 cursor-pointer"
                       >
                         Plan Intervention &rarr;
                       </button>
@@ -875,37 +875,37 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
             {cohortData?.cohorts.map((cohort) => (
               <div
                 key={cohort.cohort_id}
-                className="bg-[#071E2B] rounded-md p-5 border border-white/10 space-y-3"
+                className="bg-[#FFFFFF] rounded-md p-5 border border-[#E5E1D8] space-y-3"
               >
                 <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-semibold text-[#F7F8F8] line-clamp-1">{cohort.cohort_name}</h4>
-                  <span className="px-2 py-0.5 rounded-xs text-[10px] font-mono border border-white/15 text-[#9CC7D8]">
+                  <h4 className="text-sm font-semibold text-[#111827] line-clamp-1">{cohort.cohort_name}</h4>
+                  <span className="px-2 py-0.5 rounded-xs text-[10px] font-mono border border-[#E5E1D8] text-[#B08D57]">
                     {cohort.total_students} Students
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs pt-1 font-mono">
-                  <div className="p-2 rounded-sm bg-white/[0.01] border border-white/10">
-                    <span className="text-[#8796A2] text-[10px] uppercase block">Avg Readiness</span>
-                    <strong className="text-[#F7F8F8] text-sm">{cohort.average_readiness}%</strong>
+                  <div className="p-2 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8]">
+                    <span className="text-[#64748B] text-[10px] uppercase block">Avg Readiness</span>
+                    <strong className="text-[#111827] text-sm">{cohort.average_readiness}%</strong>
                   </div>
-                  <div className="p-2 rounded-sm bg-white/[0.01] border border-white/10">
-                    <span className="text-[#8796A2] text-[10px] uppercase block">Assessment Rate</span>
-                    <strong className="text-[#F7F8F8] text-sm">{cohort.assessment_completion_pct}%</strong>
+                  <div className="p-2 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8]">
+                    <span className="text-[#64748B] text-[10px] uppercase block">Assessment Rate</span>
+                    <strong className="text-[#111827] text-sm">{cohort.assessment_completion_pct}%</strong>
                   </div>
-                  <div className="p-2 rounded-sm bg-white/[0.01] border border-white/10">
-                    <span className="text-[#8796A2] text-[10px] uppercase block">Placement Rate</span>
-                    <strong className="text-[#9CC7D8] text-sm">{cohort.placement_conversion_pct}%</strong>
+                  <div className="p-2 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8]">
+                    <span className="text-[#64748B] text-[10px] uppercase block">Placement Rate</span>
+                    <strong className="text-[#B08D57] text-sm">{cohort.placement_conversion_pct}%</strong>
                   </div>
-                  <div className="p-2 rounded-sm bg-white/[0.01] border border-white/10">
-                    <span className="text-[#8796A2] text-[10px] uppercase block">Internship Rate</span>
-                    <strong className="text-emerald-400 text-sm">{cohort.internship_participation_pct}%</strong>
+                  <div className="p-2 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8]">
+                    <span className="text-[#64748B] text-[10px] uppercase block">Internship Rate</span>
+                    <strong className="text-[#4F6F5A] text-sm">{cohort.internship_participation_pct}%</strong>
                   </div>
                 </div>
-                <div className="pt-2 border-t border-white/10">
-                  <span className="text-[10px] font-mono uppercase text-[#8796A2] block mb-1">Critical Skill Gaps:</span>
+                <div className="pt-2 border-t border-[#E5E1D8]">
+                  <span className="text-[10px] font-mono uppercase text-[#64748B] block mb-1">Critical Skill Gaps:</span>
                   <div className="flex flex-wrap gap-1 font-mono">
                     {cohort.critical_skill_gaps.map((gap) => (
-                      <span key={gap} className="px-2 py-0.5 rounded-xs text-[10px] bg-rose-950/40 text-rose-400 border border-rose-800/40">
+                      <span key={gap} className="px-2 py-0.5 rounded-xs text-[10px] bg-rose-950/40 text-[#B4534B] border border-rose-800/40">
                         {gap}
                       </span>
                     ))}
@@ -922,14 +922,14 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
       {/* ======================================================== */}
       {activeTab === "skills" && (
         <div className="space-y-6 font-mono">
-          <div className="bg-[#071E2B] rounded-md p-6 border border-white/10">
+          <div className="bg-[#FFFFFF] rounded-md p-6 border border-[#E5E1D8]">
             <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="h-5 w-5 text-[#9CC7D8]" />
-              <h2 className="text-base text-[#F7F8F8]" style={{ fontFamily: "var(--font-display)" }}>
+              <TrendingUp className="h-5 w-5 text-[#B08D57]" />
+              <h2 className="text-base text-[#111827]" style={{ fontFamily: "var(--font-display)" }}>
                 Curriculum vs Industry Demand Decision Support
               </h2>
             </div>
-            <p className="text-xs text-[#8796A2] mb-6 ml-7">
+            <p className="text-xs text-[#64748B] mb-6 ml-7">
               Deterministic skill intelligence matching real employer hiring signals against student verified competency supply across academic departments.
             </p>
 
@@ -937,27 +937,27 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
               {curriculumRecs.map((rec) => (
                 <div
                   key={rec.id}
-                  className="p-5 rounded-sm bg-white/[0.01] border border-white/10 space-y-4 hover:border-white/20 transition-colors"
+                  className="p-5 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8] space-y-4 hover:border-[#E5E1D8] transition-colors"
                 >
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-3 border-b border-white/10">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-3 border-b border-[#E5E1D8]">
                     <div>
-                      <h3 className="text-sm text-[#F7F8F8]">{rec.skill_area}</h3>
+                      <h3 className="text-sm text-[#111827]">{rec.skill_area}</h3>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[11px] text-[#8796A2]">
+                        <span className="text-[11px] text-[#64748B]">
                           Departments: {rec.departments_affected.join(", ")}
                         </span>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-xs text-[#8796A2]">
-                        Demand: <strong className="text-[#9CC7D8]">{rec.industry_demand_index}%</strong> | Supply:{" "}
-                        <strong className="text-[#F7F8F8]">{rec.student_supply_index}%</strong>
+                      <span className="text-xs text-[#64748B]">
+                        Demand: <strong className="text-[#B08D57]">{rec.industry_demand_index}%</strong> | Supply:{" "}
+                        <strong className="text-[#111827]">{rec.student_supply_index}%</strong>
                       </span>
                       <span
                         className={`px-2 py-0.5 rounded-xs text-[10px] uppercase border ${
                           rec.gap_severity === "Critical"
                             ? "bg-rose-950/40 border-rose-700/40 text-rose-300"
-                            : "bg-amber-950/40 border-amber-700/40 text-amber-300"
+                            : "bg-[rgba(166,124,58,0.10)] border-amber-700/40 text-amber-300"
                         }`}
                       >
                         {rec.gap_severity} Gap (-{rec.gap_size}%)
@@ -966,32 +966,32 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                    <div className="p-3 rounded-sm bg-white/[0.01] border border-white/10">
-                      <span className="text-[10px] uppercase text-[#8796A2] block mb-1">Recommended Modules:</span>
-                      <ul className="space-y-1 text-[#BEC8CF]">
+                    <div className="p-3 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8]">
+                      <span className="text-[10px] uppercase text-[#64748B] block mb-1">Recommended Modules:</span>
+                      <ul className="space-y-1 text-[#475569]">
                         {rec.recommended_modules.map((m, i) => (
                           <li key={i} className="flex items-start gap-1.5">
-                            <span className="text-[#9CC7D8]">&bull;</span> {m}
+                            <span className="text-[#B08D57]">&bull;</span> {m}
                           </li>
                         ))}
                       </ul>
                     </div>
-                    <div className="p-3 rounded-sm bg-white/[0.01] border border-white/10">
-                      <span className="text-[10px] uppercase text-[#8796A2] block mb-1">Suggested Lab Work:</span>
-                      <ul className="space-y-1 text-[#BEC8CF]">
+                    <div className="p-3 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8]">
+                      <span className="text-[10px] uppercase text-[#64748B] block mb-1">Suggested Lab Work:</span>
+                      <ul className="space-y-1 text-[#475569]">
                         {rec.suggested_labs.map((l, i) => (
                           <li key={i} className="flex items-start gap-1.5">
-                            <span className="text-emerald-400">&bull;</span> {l}
+                            <span className="text-[#4F6F5A]">&bull;</span> {l}
                           </li>
                         ))}
                       </ul>
                     </div>
-                    <div className="p-3 rounded-sm bg-white/[0.01] border border-white/10">
-                      <span className="text-[10px] uppercase text-[#8796A2] block mb-1">Industry Bootcamps:</span>
-                      <ul className="space-y-1 text-[#BEC8CF]">
+                    <div className="p-3 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8]">
+                      <span className="text-[10px] uppercase text-[#64748B] block mb-1">Industry Bootcamps:</span>
+                      <ul className="space-y-1 text-[#475569]">
                         {rec.bootcamp_tracks.map((b, i) => (
                           <li key={i} className="flex items-start gap-1.5">
-                            <span className="text-[#9CC7D8]">&bull;</span> {b}
+                            <span className="text-[#B08D57]">&bull;</span> {b}
                           </li>
                         ))}
                       </ul>
@@ -1015,7 +1015,7 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
                         setActiveTab("interventions");
                         setShowInterventionModal(true);
                       }}
-                      className="px-3.5 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs rounded-md transition-colors cursor-pointer"
+                      className="px-3.5 py-2 bg-[#0B0B0A] hover:bg-[#111827] text-[#FFFFFF] text-xs rounded-md transition-colors cursor-pointer"
                     >
                       Link into Intervention Plan &rarr;
                     </button>
@@ -1027,13 +1027,13 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
 
           {/* Training & Certification Effectiveness */}
           {learningData && (
-            <div className="bg-[#071E2B] rounded-md p-6 border border-white/10 space-y-4 font-mono">
+            <div className="bg-[#FFFFFF] rounded-md p-6 border border-[#E5E1D8] space-y-4 font-mono">
               <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-[#F7F8F8] flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-emerald-400" />
+                <h3 className="text-base font-bold text-[#111827] flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-[#4F6F5A]" />
                   Training & Certification Program Adoption & Effectiveness
                 </h3>
-                <span className="text-xs text-[#8796A2]">
+                <span className="text-xs text-[#64748B]">
                   {learningData.total_enrolled} Enrolled &bull; Avg Gain +{learningData.average_readiness_gain}%
                 </span>
               </div>
@@ -1041,25 +1041,25 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
                 {learningData.courses.map((course) => (
                   <div
                     key={course.course_id}
-                    className="p-4 rounded-sm bg-white/[0.01] border border-white/10 text-xs space-y-2 flex flex-col justify-between"
+                    className="p-4 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8] text-xs space-y-2 flex flex-col justify-between"
                   >
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-[#F7F8F8] text-xs">{course.title}</span>
-                        <span className="px-1.5 py-0.5 rounded-xs text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-800/40">
+                        <span className="font-semibold text-[#111827] text-xs">{course.title}</span>
+                        <span className="px-1.5 py-0.5 rounded-xs text-[10px] bg-emerald-950 text-emerald-300 border border-[rgba(79,111,90,0.25)]">
                           {course.completion_rate}% Completed
                         </span>
                       </div>
-                      <span className="text-[10px] text-[#8796A2]">{course.provider} &bull; {course.category}</span>
+                      <span className="text-[10px] text-[#64748B]">{course.provider} &bull; {course.category}</span>
                     </div>
-                    <div className="pt-2 border-t border-white/10 text-[11px] grid grid-cols-2 gap-2">
+                    <div className="pt-2 border-t border-[#E5E1D8] text-[11px] grid grid-cols-2 gap-2">
                       <div>
-                        <span className="text-[#8796A2] block text-[10px]">Readiness Gain</span>
-                        <strong className="text-emerald-400">+{course.readiness_gain}%</strong>
+                        <span className="text-[#64748B] block text-[10px]">Readiness Gain</span>
+                        <strong className="text-[#4F6F5A]">+{course.readiness_gain}%</strong>
                       </div>
                       <div>
-                        <span className="text-[#8796A2] block text-[10px]">Placement Correlation</span>
-                        <strong className="text-[#9CC7D8]">{course.placement_correlation_rate}%</strong>
+                        <span className="text-[#64748B] block text-[10px]">Placement Correlation</span>
+                        <strong className="text-[#B08D57]">{course.placement_correlation_rate}%</strong>
                       </div>
                     </div>
                   </div>
@@ -1079,45 +1079,45 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
             <>
               {/* Funnel Metrics */}
               <div className="grid grid-cols-2 md:grid-cols-6 gap-3 font-mono">
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-[10px] uppercase text-[#8796A2] block">Eligible</span>
-                  <p className="text-xl text-[#F7F8F8] mt-1">{internshipData.eligible_students}</p>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-[10px] uppercase text-[#64748B] block">Eligible</span>
+                  <p className="text-xl text-[#111827] mt-1">{internshipData.eligible_students}</p>
                 </div>
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-[10px] uppercase text-[#8796A2] block">Applied</span>
-                  <p className="text-xl text-[#9CC7D8] mt-1">{internshipData.applicants}</p>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-[10px] uppercase text-[#64748B] block">Applied</span>
+                  <p className="text-xl text-[#B08D57] mt-1">{internshipData.applicants}</p>
                 </div>
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-[10px] uppercase text-[#8796A2] block">Selected</span>
-                  <p className="text-xl text-emerald-400 mt-1">{internshipData.selected_students}</p>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-[10px] uppercase text-[#64748B] block">Selected</span>
+                  <p className="text-xl text-[#4F6F5A] mt-1">{internshipData.selected_students}</p>
                 </div>
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-[10px] uppercase text-[#8796A2] block">Active</span>
-                  <p className="text-xl text-[#F7F8F8] mt-1">{internshipData.active_internships}</p>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-[10px] uppercase text-[#64748B] block">Active</span>
+                  <p className="text-xl text-[#111827] mt-1">{internshipData.active_internships}</p>
                 </div>
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-[10px] uppercase text-[#8796A2] block">Completed</span>
-                  <p className="text-xl text-emerald-400 mt-1">{internshipData.completed_internships}</p>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-[10px] uppercase text-[#64748B] block">Completed</span>
+                  <p className="text-xl text-[#4F6F5A] mt-1">{internshipData.completed_internships}</p>
                 </div>
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-[10px] uppercase text-[#8796A2] block">PPO Converted</span>
-                  <p className="text-xl text-emerald-400 mt-1">{internshipData.ppo_conversions}</p>
-                  <span className="text-[9px] text-[#8796A2]">({internshipData.ppo_conversion_rate}%)</span>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-[10px] uppercase text-[#64748B] block">PPO Converted</span>
+                  <p className="text-xl text-[#4F6F5A] mt-1">{internshipData.ppo_conversions}</p>
+                  <span className="text-[9px] text-[#64748B]">({internshipData.ppo_conversion_rate}%)</span>
                 </div>
               </div>
 
               {/* Department and Industry Breakdown */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 font-mono">
-                <div className="bg-[#071E2B] rounded-md p-6 border border-white/10">
-                  <h3 className="text-sm font-semibold text-[#F7F8F8] mb-4">Department Internship Conversion</h3>
+                <div className="bg-[#FFFFFF] rounded-md p-6 border border-[#E5E1D8]">
+                  <h3 className="text-sm font-semibold text-[#111827] mb-4">Department Internship Conversion</h3>
                   <div className="space-y-3">
                     {internshipData.by_department.map((d) => (
-                      <div key={d.department} className="p-3 rounded-sm bg-white/[0.01] border border-white/10 text-xs">
+                      <div key={d.department} className="p-3 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8] text-xs">
                         <div className="flex items-center justify-between font-bold mb-1">
-                          <span className="text-[#F7F8F8]">{d.department}</span>
-                          <span className="text-[#9CC7D8]">{d.rate}% Participation</span>
+                          <span className="text-[#111827]">{d.department}</span>
+                          <span className="text-[#B08D57]">{d.rate}% Participation</span>
                         </div>
-                        <div className="flex items-center gap-3 text-[11px] text-[#8796A2]">
+                        <div className="flex items-center gap-3 text-[11px] text-[#64748B]">
                           <span>Eligible: {d.eligible}</span>
                           <span>Active: {d.active}</span>
                           <span>Completed: {d.completed}</span>
@@ -1127,18 +1127,18 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
                   </div>
                 </div>
 
-                <div className="bg-[#071E2B] rounded-md p-6 border border-white/10">
-                  <h3 className="text-sm font-semibold text-[#F7F8F8] mb-4">Top Hiring Industries & Partners</h3>
+                <div className="bg-[#FFFFFF] rounded-md p-6 border border-[#E5E1D8]">
+                  <h3 className="text-sm font-semibold text-[#111827] mb-4">Top Hiring Industries & Partners</h3>
                   <div className="space-y-3">
                     {internshipData.by_industry.map((ind) => (
-                      <div key={ind.industry} className="p-3 rounded-sm bg-white/[0.01] border border-white/10 text-xs">
+                      <div key={ind.industry} className="p-3 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8] text-xs">
                         <div className="flex items-center justify-between font-bold mb-1">
-                          <span className="text-[#F7F8F8]">{ind.industry}</span>
-                          <span className="px-2 py-0.5 rounded-xs bg-emerald-950 text-emerald-400 border border-emerald-800/40 text-[10px]">
+                          <span className="text-[#111827]">{ind.industry}</span>
+                          <span className="px-2 py-0.5 rounded-xs bg-emerald-950 text-[#4F6F5A] border border-[rgba(79,111,90,0.25)] text-[10px]">
                             {ind.selected} Selected
                           </span>
                         </div>
-                        <p className="text-[11px] text-[#8796A2]">Key Partners: {ind.companies.join(", ")}</p>
+                        <p className="text-[11px] text-[#64748B]">Key Partners: {ind.companies.join(", ")}</p>
                       </div>
                     ))}
                   </div>
@@ -1158,59 +1158,59 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
             <>
               {/* Placement Funnel */}
               <div className="grid grid-cols-2 md:grid-cols-6 gap-3 font-mono">
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-[10px] uppercase text-[#8796A2] block">Eligible</span>
-                  <p className="text-xl text-[#F7F8F8] mt-1">{placementData.eligible_students}</p>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-[10px] uppercase text-[#64748B] block">Eligible</span>
+                  <p className="text-xl text-[#111827] mt-1">{placementData.eligible_students}</p>
                 </div>
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-[10px] uppercase text-[#8796A2] block">Applications</span>
-                  <p className="text-xl text-[#9CC7D8] mt-1">{placementData.applications}</p>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-[10px] uppercase text-[#64748B] block">Applications</span>
+                  <p className="text-xl text-[#B08D57] mt-1">{placementData.applications}</p>
                 </div>
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-[10px] uppercase text-[#8796A2] block">Shortlisted</span>
-                  <p className="text-xl text-emerald-400 mt-1">{placementData.shortlisted}</p>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-[10px] uppercase text-[#64748B] block">Shortlisted</span>
+                  <p className="text-xl text-[#4F6F5A] mt-1">{placementData.shortlisted}</p>
                 </div>
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-[10px] uppercase text-[#8796A2] block">Interviews</span>
-                  <p className="text-xl text-[#F7F8F8] mt-1">{placementData.interviews_scheduled}</p>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-[10px] uppercase text-[#64748B] block">Interviews</span>
+                  <p className="text-xl text-[#111827] mt-1">{placementData.interviews_scheduled}</p>
                 </div>
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-[10px] uppercase text-[#8796A2] block">Offers</span>
-                  <p className="text-xl text-emerald-400 mt-1">{placementData.offers_extended}</p>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-[10px] uppercase text-[#64748B] block">Offers</span>
+                  <p className="text-xl text-[#4F6F5A] mt-1">{placementData.offers_extended}</p>
                 </div>
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-[10px] uppercase text-[#8796A2] block">Placement Rate</span>
-                  <p className="text-xl text-emerald-400 mt-1">{placementData.conversion_rate}%</p>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-[10px] uppercase text-[#64748B] block">Placement Rate</span>
+                  <p className="text-xl text-[#4F6F5A] mt-1">{placementData.conversion_rate}%</p>
                 </div>
               </div>
 
               {/* Department Placement and Recruiting Demand */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 font-mono">
-                <div className="bg-[#071E2B] rounded-md p-6 border border-white/10">
-                  <h3 className="text-sm font-semibold text-[#F7F8F8] mb-4">Department Placement Outcomes</h3>
+                <div className="bg-[#FFFFFF] rounded-md p-6 border border-[#E5E1D8]">
+                  <h3 className="text-sm font-semibold text-[#111827] mb-4">Department Placement Outcomes</h3>
                   <div className="space-y-3">
                     {placementData.by_department.map((dept) => (
-                      <div key={dept.department} className="p-3 rounded-sm bg-white/[0.01] border border-white/10 text-xs">
+                      <div key={dept.department} className="p-3 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8] text-xs">
                         <div className="flex items-center justify-between font-bold mb-1">
-                          <span className="text-[#F7F8F8]">{dept.department}</span>
-                          <span className="text-emerald-400 font-semibold">{dept.placed_pct}% Placed</span>
+                          <span className="text-[#111827]">{dept.department}</span>
+                          <span className="text-[#4F6F5A] font-semibold">{dept.placed_pct}% Placed</span>
                         </div>
-                        <div className="flex items-center justify-between text-[11px] text-[#8796A2]">
+                        <div className="flex items-center justify-between text-[11px] text-[#64748B]">
                           <span>Eligible: {dept.eligible} | Offers: {dept.offers}</span>
-                          <span className="text-[#BEC8CF]">Avg CTC: {dept.avg_ctc}</span>
+                          <span className="text-[#475569]">Avg CTC: {dept.avg_ctc}</span>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="bg-[#071E2B] rounded-md p-6 border border-white/10">
-                  <h3 className="text-sm font-semibold text-[#F7F8F8] mb-4">Top Recruiting Skill Demand in Placement Drives</h3>
+                <div className="bg-[#FFFFFF] rounded-md p-6 border border-[#E5E1D8]">
+                  <h3 className="text-sm font-semibold text-[#111827] mb-4">Top Recruiting Skill Demand in Placement Drives</h3>
                   <div className="space-y-3">
                     {placementData.top_recruiting_skill_demand.map((req) => (
-                      <div key={req.skill} className="flex items-center justify-between p-3 rounded-sm bg-white/[0.01] border border-white/10 text-xs">
-                        <span className="text-[#F7F8F8]">{req.skill}</span>
-                        <span className="px-2.5 py-0.5 rounded-xs bg-[#9CC7D8]/10 text-[#9CC7D8] border border-[#9CC7D8]/30 text-[11px]">
+                      <div key={req.skill} className="flex items-center justify-between p-3 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8] text-xs">
+                        <span className="text-[#111827]">{req.skill}</span>
+                        <span className="px-2.5 py-0.5 rounded-xs bg-[rgba(176,141,87,0.08)] text-[#B08D57] border border-[#B08D57]/30 text-[11px]">
                           {req.openings_count} Openings
                         </span>
                       </div>
@@ -1232,33 +1232,33 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
             <>
               {/* Overview Numbers */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 font-mono">
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-xs text-[#8796A2] uppercase block">Participating Faculty</span>
-                  <p className="text-2xl text-[#F7F8F8] mt-1">{facultyData.total_participating_faculty}</p>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-xs text-[#64748B] uppercase block">Participating Faculty</span>
+                  <p className="text-2xl text-[#111827] mt-1">{facultyData.total_participating_faculty}</p>
                 </div>
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-xs text-[#8796A2] uppercase block">Sponsored Research Value</span>
-                  <p className="text-2xl text-emerald-400 mt-1">₹{(facultyData.total_research_grant_value / 100000).toFixed(1)}L</p>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-xs text-[#64748B] uppercase block">Sponsored Research Value</span>
+                  <p className="text-2xl text-[#4F6F5A] mt-1">₹{(facultyData.total_research_grant_value / 100000).toFixed(1)}L</p>
                 </div>
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-xs text-[#8796A2] uppercase block">Active FDPs & Sabbaticals</span>
-                  <p className="text-2xl text-[#9CC7D8] mt-1">{facultyData.active_fdps + facultyData.active_faculty_internships}</p>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-xs text-[#64748B] uppercase block">Active FDPs & Sabbaticals</span>
+                  <p className="text-2xl text-[#B08D57] mt-1">{facultyData.active_fdps + facultyData.active_faculty_internships}</p>
                 </div>
-                <div className="bg-[#071E2B] p-4 rounded-sm border border-white/10">
-                  <span className="text-xs text-[#8796A2] uppercase block">Active Industry Partners</span>
-                  <p className="text-2xl text-[#F7F8F8] mt-1">{facultyData.active_industry_partners_count}</p>
+                <div className="bg-[#FFFFFF] p-4 rounded-sm border border-[#E5E1D8]">
+                  <span className="text-xs text-[#64748B] uppercase block">Active Industry Partners</span>
+                  <p className="text-2xl text-[#111827] mt-1">{facultyData.active_industry_partners_count}</p>
                 </div>
               </div>
 
               {/* Multi-Party Collaboration Linkages */}
-              <div className="bg-[#071E2B] rounded-md p-6 border border-white/10">
-                <h3 className="text-base font-bold text-[#F7F8F8] mb-4 flex items-center gap-2 font-mono">
-                  <GraduationCap className="h-5 w-5 text-[#9CC7D8]" />
+              <div className="bg-[#FFFFFF] rounded-md p-6 border border-[#E5E1D8]">
+                <h3 className="text-base font-bold text-[#111827] mb-4 flex items-center gap-2 font-mono">
+                  <GraduationCap className="h-5 w-5 text-[#B08D57]" />
                   Faculty–Student–Industry Collaborative Initiatives
                 </h3>
                 <div className="overflow-x-auto" role="region" aria-label="Faculty, student, and industry collaboration initiatives" tabIndex={0}>
                   <table className="w-full text-left text-xs font-mono">
-                    <thead className="bg-white/[0.02] text-[#8796A2] uppercase tracking-wider">
+                    <thead className="bg-[#F7F5F0] text-[#64748B] uppercase tracking-wider">
                       <tr>
                         <th className="p-3.5">Industry Partner</th>
                         <th className="p-3.5">Faculty Lead</th>
@@ -1267,21 +1267,21 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
                         <th className="p-3.5">Outcome & Status</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/10 text-[#BEC8CF]">
+                    <tbody className="divide-y divide-[#E5E1D8] text-[#475569]">
                       {relationshipsData?.relationships.map((rel) => (
-                        <tr key={rel.id} className="hover:bg-white/[0.02] transition-colors">
-                          <td className="p-3.5 font-bold text-[#F7F8F8]">{rel.industry_partner}</td>
+                        <tr key={rel.id} className="hover:bg-[#F7F5F0] transition-colors">
+                          <td className="p-3.5 font-bold text-[#111827]">{rel.industry_partner}</td>
                           <td className="p-3.5">
-                            <span className="font-bold text-[#F7F8F8] block">{rel.faculty_lead}</span>
-                            <span className="text-[11px] text-[#8796A2]">{rel.faculty_department}</span>
+                            <span className="font-bold text-[#111827] block">{rel.faculty_lead}</span>
+                            <span className="text-[11px] text-[#64748B]">{rel.faculty_department}</span>
                           </td>
                           <td className="p-3.5">{rel.student_team_or_cohort}</td>
-                          <td className="p-3.5 text-[#F7F8F8]">{rel.initiative_title}</td>
+                          <td className="p-3.5 text-[#111827]">{rel.initiative_title}</td>
                           <td className="p-3.5">
-                            <span className="px-2 py-0.5 rounded-xs bg-emerald-950 text-emerald-400 text-[10px] font-mono block w-fit border border-emerald-800/40">
+                            <span className="px-2 py-0.5 rounded-xs bg-emerald-950 text-[#4F6F5A] text-[10px] font-mono block w-fit border border-[rgba(79,111,90,0.25)]">
                               {rel.status}
                             </span>
-                            <span className="text-[11px] text-[#8796A2] mt-1 block">{rel.outcome_metric}</span>
+                            <span className="text-[11px] text-[#64748B] mt-1 block">{rel.outcome_metric}</span>
                           </td>
                         </tr>
                       ))}
@@ -1304,34 +1304,34 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
               <div
                 key={partner.partner_name}
                 onClick={() => handlePartnerClick(partner.partner_name)}
-                className="bg-[#071E2B] rounded-md p-5 border border-white/10 hover:border-white/20 transition-colors cursor-pointer space-y-3 flex flex-col justify-between"
+                className="bg-[#FFFFFF] rounded-md p-5 border border-[#E5E1D8] hover:border-[#E5E1D8] transition-colors cursor-pointer space-y-3 flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded-xs text-[10px] font-mono uppercase bg-[#9CC7D8]/10 text-[#9CC7D8] border border-[#9CC7D8]/30">
+                    <span className="px-2 py-0.5 rounded-xs text-[10px] font-mono uppercase bg-[rgba(176,141,87,0.08)] text-[#B08D57] border border-[#B08D57]/30">
                       {partner.status}
                     </span>
-                    <ArrowUpRight className="h-4 w-4 text-[#8796A2]" />
+                    <ArrowUpRight className="h-4 w-4 text-[#64748B]" />
                   </div>
-                  <h4 className="text-base font-semibold text-[#F7F8F8] mt-2">{partner.partner_name}</h4>
-                  <p className="text-xs text-[#8796A2] mt-0.5">{partner.domain}</p>
+                  <h4 className="text-base font-semibold text-[#111827] mt-2">{partner.partner_name}</h4>
+                  <p className="text-xs text-[#64748B] mt-0.5">{partner.domain}</p>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-white/10">
+                <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-[#E5E1D8]">
                   <div>
-                    <span className="text-[10px] text-[#8796A2] block uppercase">Internships</span>
-                    <strong className="text-[#F7F8F8]">{partner.internships_posted} posted</strong>
+                    <span className="text-[10px] text-[#64748B] block uppercase">Internships</span>
+                    <strong className="text-[#111827]">{partner.internships_posted} posted</strong>
                   </div>
                   <div>
-                    <span className="text-[10px] text-[#8796A2] block uppercase">Placements</span>
-                    <strong className="text-emerald-400">{partner.placements_offered} offers</strong>
+                    <span className="text-[10px] text-[#64748B] block uppercase">Placements</span>
+                    <strong className="text-[#4F6F5A]">{partner.placements_offered} offers</strong>
                   </div>
                   <div>
-                    <span className="text-[10px] text-[#8796A2] block uppercase">Faculty</span>
-                    <strong className="text-[#9CC7D8]">{partner.faculty_engagements_count} projects</strong>
+                    <span className="text-[10px] text-[#64748B] block uppercase">Faculty</span>
+                    <strong className="text-[#B08D57]">{partner.faculty_engagements_count} projects</strong>
                   </div>
                   <div>
-                    <span className="text-[10px] text-[#8796A2] block uppercase">Selected</span>
-                    <strong className="text-[#F7F8F8]">{partner.students_selected} students</strong>
+                    <span className="text-[10px] text-[#64748B] block uppercase">Selected</span>
+                    <strong className="text-[#111827]">{partner.students_selected} students</strong>
                   </div>
                 </div>
               </div>
@@ -1341,52 +1341,52 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
           {/* Partner Detail Drawer/Modal */}
           {selectedPartner && (
             <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-              <div className="bg-[#071E2B] rounded-md p-6 md:p-8 max-w-2xl w-full border border-white/15 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto text-[#F7F8F8] font-sans">
-                <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="bg-[#FFFFFF] rounded-md p-6 md:p-8 max-w-2xl w-full border border-[#E5E1D8] shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto text-[#111827] font-sans">
+                <div className="flex items-center justify-between pb-3 border-b border-[#E5E1D8]">
                   <div>
-                    <h3 className="text-xl font-normal text-[#F7F8F8]" style={{ fontFamily: "var(--font-display)" }}>{selectedPartner.partner_name}</h3>
-                    <span className="text-xs text-[#9CC7D8] font-mono">{selectedPartner.domain}</span>
+                    <h3 className="text-xl font-normal text-[#111827]" style={{ fontFamily: "var(--font-display)" }}>{selectedPartner.partner_name}</h3>
+                    <span className="text-xs text-[#B08D57] font-mono">{selectedPartner.domain}</span>
                   </div>
                   <button
                     onClick={() => setSelectedPartner(null)}
-                    className="p-1 rounded-sm text-[#8796A2] hover:text-white cursor-pointer"
+                    className="p-1 rounded-sm text-[#64748B] hover:text-[#111827] cursor-pointer"
                   >
                     <X className="h-5 w-5" />
                   </button>
                 </div>
 
-                <p className="text-xs text-[#BEC8CF] leading-relaxed">{selectedPartner.partner_overview}</p>
+                <p className="text-xs text-[#475569] leading-relaxed">{selectedPartner.partner_overview}</p>
 
                 <div className="space-y-4 font-mono">
                   <div>
-                    <h4 className="text-xs uppercase text-[#8796A2] mb-2">Student Programs</h4>
+                    <h4 className="text-xs uppercase text-[#64748B] mb-2">Student Programs</h4>
                     <div className="space-y-2">
                       {selectedPartner.student_engagements.map((p, i) => (
-                        <div key={i} className="p-2.5 rounded-sm bg-white/[0.01] border border-white/10 text-xs flex items-center justify-between">
-                          <span className="text-[#F7F8F8]">{p.program}</span>
-                          <span className="text-[#8796A2]">{p.students_enrolled} students enrolled ({p.status})</span>
+                        <div key={i} className="p-2.5 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8] text-xs flex items-center justify-between">
+                          <span className="text-[#111827]">{p.program}</span>
+                          <span className="text-[#64748B]">{p.students_enrolled} students enrolled ({p.status})</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
                   <div>
-                    <h4 className="text-xs uppercase text-[#8796A2] mb-2">Faculty Collaborations</h4>
+                    <h4 className="text-xs uppercase text-[#64748B] mb-2">Faculty Collaborations</h4>
                     <div className="space-y-2">
                       {selectedPartner.faculty_engagements.map((f, i) => (
-                        <div key={i} className="p-2.5 rounded-sm bg-white/[0.01] border border-white/10 text-xs flex items-center justify-between">
-                          <span className="text-[#F7F8F8]">{f.faculty} ({f.department})</span>
-                          <span className="text-[#9CC7D8]">{f.role}</span>
+                        <div key={i} className="p-2.5 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8] text-xs flex items-center justify-between">
+                          <span className="text-[#111827]">{f.faculty} ({f.department})</span>
+                          <span className="text-[#B08D57]">{f.role}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 </div>
 
-                <div className="flex justify-end pt-4 border-t border-white/10">
+                <div className="flex justify-end pt-4 border-t border-[#E5E1D8]">
                   <button
                     onClick={() => setSelectedPartner(null)}
-                    className="px-4 py-2 bg-white/[0.04] hover:bg-white/10 border border-white/15 text-[#BEC8CF] rounded-md text-xs cursor-pointer"
+                    className="px-4 py-2 bg-white/[0.04] hover:bg-[#F7F5F0] border border-[#E5E1D8] text-[#475569] rounded-md text-xs cursor-pointer"
                   >
                     Close
                   </button>
@@ -1404,34 +1404,34 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
         <div className="space-y-8 font-mono">
           {/* Auto-Generated Recommendations */}
           {interventionRecs.length > 0 && (
-            <div className="bg-[#071E2B] rounded-md p-6 border border-white/10 space-y-4">
+            <div className="bg-[#FFFFFF] rounded-md p-6 border border-[#E5E1D8] space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-[#F7F8F8] flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-[#9CC7D8]" />
+                <h3 className="text-base font-bold text-[#111827] flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-[#B08D57]" />
                   Auto-Generated Skill Gap Recommendations ({interventionRecs.length})
                 </h3>
-                <span className="text-xs text-[#9CC7D8]">Deterministic Gap Sizing</span>
+                <span className="text-xs text-[#B08D57]">Deterministic Gap Sizing</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {interventionRecs.map((rec) => (
                   <div
                     key={rec.skill}
-                    className="p-4 rounded-sm bg-white/[0.01] border border-white/10 text-xs space-y-2 flex flex-col justify-between"
+                    className="p-4 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8] text-xs space-y-2 flex flex-col justify-between"
                   >
                     <div>
                       <div className="flex items-center justify-between font-bold">
-                        <span className="text-[#F7F8F8] text-sm font-semibold">{rec.skill}</span>
+                        <span className="text-[#111827] text-sm font-semibold">{rec.skill}</span>
                         <span className="px-2 py-0.5 rounded-xs bg-rose-950 text-rose-300 text-[10px] uppercase border border-rose-800/40">
                           {rec.gap_severity} Gap
                         </span>
                       </div>
-                      <span className="text-[11px] text-[#8796A2] block mt-0.5">
+                      <span className="text-[11px] text-[#64748B] block mt-0.5">
                         Cluster: {rec.skill_cluster} &bull; {rec.affected_student_count} Affected Students
                       </span>
                     </div>
 
-                    <div className="pt-2 border-t border-white/10 flex items-center justify-between">
-                      <span className="text-[10px] text-[#8796A2]">Demand {rec.industry_demand_index}% vs Supply {rec.student_supply_index}%</span>
+                    <div className="pt-2 border-t border-[#E5E1D8] flex items-center justify-between">
+                      <span className="text-[10px] text-[#64748B]">Demand {rec.industry_demand_index}% vs Supply {rec.student_supply_index}%</span>
                       <button
                         onClick={() => {
                           setNewPlan((prev) => ({
@@ -1448,7 +1448,7 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
                           }));
                           setShowInterventionModal(true);
                         }}
-                        className="text-[11px] text-[#9CC7D8] hover:underline cursor-pointer"
+                        className="text-[11px] text-[#B08D57] hover:underline cursor-pointer"
                       >
                         Create Plan &rarr;
                       </button>
@@ -1460,20 +1460,20 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
           )}
 
           {/* Section 1: Skill Gap Intervention Plans */}
-          <div className="bg-[#071E2B] rounded-md p-6 border border-white/10 space-y-4">
+          <div className="bg-[#FFFFFF] rounded-md p-6 border border-[#E5E1D8] space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-[#F7F8F8] flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-[#9CC7D8]" />
+                <h3 className="text-base font-bold text-[#111827] flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-[#B08D57]" />
                   Active Skill Gap Intervention Plans ({interventionPlans.length})
                 </h3>
-                <p className="text-xs text-[#8796A2] mt-0.5">
+                <p className="text-xs text-[#64748B] mt-0.5">
                   Targeted academic interventions, industry labs, and mentorship sprints to close supply-demand gaps.
                 </p>
               </div>
               <button
                 onClick={() => setShowInterventionModal(true)}
-                className="px-3.5 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-mono rounded-md flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-2 bg-[#0B0B0A] hover:bg-[#111827] text-[#FFFFFF] text-xs font-mono rounded-md flex items-center gap-1.5 cursor-pointer"
               >
                 <Plus className="h-4 w-4" /> New Intervention Plan
               </button>
@@ -1483,16 +1483,16 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
               {interventionPlans.map((plan) => (
                 <div
                   key={plan.id}
-                  className="p-5 rounded-sm bg-white/[0.01] border border-white/10 text-xs space-y-3 flex flex-col justify-between"
+                  className="p-5 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8] text-xs space-y-3 flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-semibold text-[#F7F8F8]">{plan.title}</h4>
+                      <h4 className="text-sm font-semibold text-[#111827]">{plan.title}</h4>
                       <div className="flex items-center gap-1.5">
                         <select
                           value={plan.status}
                           onChange={(e) => handleUpdateInterventionStatus(plan.id, e.target.value)}
-                          className="bg-[#071E2B] border border-white/15 rounded-sm px-2 py-0.5 text-[10px] text-[#9CC7D8]"
+                          className="bg-[#FFFFFF] border border-[#E5E1D8] rounded-sm px-2 py-0.5 text-[10px] text-[#B08D57]"
                         >
                           <option value="draft">Draft</option>
                           <option value="planned">Planned</option>
@@ -1502,23 +1502,23 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
                         </select>
                         <button
                           onClick={() => handleDeleteIntervention(plan.id)}
-                          className="text-[#8796A2] hover:text-rose-400 p-1 cursor-pointer"
+                          className="text-[#64748B] hover:text-[#B4534B] p-1 cursor-pointer"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>
-                    <span className="text-[11px] text-[#9CC7D8] block mt-0.5">{plan.skill_cluster} &bull; {plan.department}</span>
-                    <p className="text-[#BEC8CF] mt-2 text-[11px] leading-relaxed">{plan.notes || "Strategic intervention targeting market readiness."}</p>
+                    <span className="text-[11px] text-[#B08D57] block mt-0.5">{plan.skill_cluster} &bull; {plan.department}</span>
+                    <p className="text-[#475569] mt-2 text-[11px] leading-relaxed">{plan.notes || "Strategic intervention targeting market readiness."}</p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10 text-[11px]">
+                  <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#E5E1D8] text-[11px]">
                     <div>
-                      <span className="text-[#8796A2] block">Supply Target</span>
+                      <span className="text-[#64748B] block">Supply Target</span>
                       <strong>{plan.baseline_supply_index}% &rarr; {plan.target_supply_index}%</strong>
                     </div>
                     <div>
-                      <span className="text-[#8796A2] block">Target Cohort</span>
+                      <span className="text-[#64748B] block">Target Cohort</span>
                       <strong>{plan.target_students_count} Students</strong>
                     </div>
                   </div>
@@ -1528,20 +1528,20 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
           </div>
 
           {/* Section 2: Institutional Action Plans */}
-          <div className="bg-[#071E2B] rounded-md p-6 border border-white/10 space-y-4">
+          <div className="bg-[#FFFFFF] rounded-md p-6 border border-[#E5E1D8] space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-base font-bold text-[#F7F8F8] flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                <h3 className="text-base font-bold text-[#111827] flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-[#4F6F5A]" />
                   Institutional Strategic Action Plans ({actionPlans.length})
                 </h3>
-                <p className="text-xs text-[#8796A2] mt-0.5">
+                <p className="text-xs text-[#64748B] mt-0.5">
                   Actionable decisions translating employability intelligence into academic policies and career services execution.
                 </p>
               </div>
               <button
                 onClick={() => setShowActionModal(true)}
-                className="px-3.5 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white text-xs font-mono rounded-md flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-2 bg-[#0B0B0A] hover:bg-[#111827] text-[#FFFFFF] text-xs font-mono rounded-md flex items-center gap-1.5 cursor-pointer"
               >
                 <Plus className="h-4 w-4" /> New Action Plan
               </button>
@@ -1551,20 +1551,20 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
               {actionPlans.map((action) => (
                 <div
                   key={action.id}
-                  className="p-4 rounded-sm bg-white/[0.01] border border-white/10 text-xs flex flex-col md:flex-row md:items-center justify-between gap-3"
+                  className="p-4 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8] text-xs flex flex-col md:flex-row md:items-center justify-between gap-3"
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-[#F7F8F8] text-sm">{action.title}</span>
-                      <span className="px-2 py-0.5 rounded-xs text-[9px] uppercase font-mono bg-emerald-950 text-emerald-300 border border-emerald-800/40">
+                      <span className="font-semibold text-[#111827] text-sm">{action.title}</span>
+                      <span className="px-2 py-0.5 rounded-xs text-[9px] uppercase font-mono bg-emerald-950 text-emerald-300 border border-[rgba(79,111,90,0.25)]">
                         {action.priority} Priority
                       </span>
                     </div>
-                    <p className="text-[#BEC8CF] text-[11px]">{action.source_insight}</p>
-                    <span className="text-[10px] text-[#8796A2]">Owner: {action.owner} &bull; Dept: {action.related_department}</span>
+                    <p className="text-[#475569] text-[11px]">{action.source_insight}</p>
+                    <span className="text-[10px] text-[#64748B]">Owner: {action.owner} &bull; Dept: {action.related_department}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="px-2.5 py-1 rounded-sm bg-[#071E2B] border border-white/15 text-[11px] text-[#BEC8CF]">
+                    <span className="px-2.5 py-1 rounded-sm bg-[#FFFFFF] border border-[#E5E1D8] text-[11px] text-[#475569]">
                       {action.status}
                     </span>
                   </div>
@@ -1578,69 +1578,69 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
             <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
               <form
                 onSubmit={handleCreateIntervention}
-                className="bg-[#071E2B] rounded-md p-6 md:p-8 max-w-lg w-full border border-white/15 shadow-2xl space-y-4 text-[#F7F8F8] font-sans"
+                className="bg-[#FFFFFF] rounded-md p-6 md:p-8 max-w-lg w-full border border-[#E5E1D8] shadow-2xl space-y-4 text-[#111827] font-sans"
               >
-                <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                  <h3 className="text-lg font-bold text-[#F7F8F8]">Create Skill Gap Intervention Plan</h3>
-                  <button type="button" onClick={() => setShowInterventionModal(false)} className="text-[#8796A2] hover:text-white">
+                <div className="flex items-center justify-between pb-3 border-b border-[#E5E1D8]">
+                  <h3 className="text-lg font-bold text-[#111827]">Create Skill Gap Intervention Plan</h3>
+                  <button type="button" onClick={() => setShowInterventionModal(false)} className="text-[#64748B] hover:text-[#111827]">
                     <X className="h-5 w-5" />
                   </button>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-mono text-[#BEC8CF] mb-1">Plan Title</label>
+                  <label className="block text-xs font-mono text-[#475569] mb-1">Plan Title</label>
                   <input
                     type="text"
                     value={newPlan.title}
                     onChange={(e) => setNewPlan({ ...newPlan, title: e.target.value })}
                     placeholder="e.g. Spring Kubernetes Immersion Track"
-                    className="w-full rounded-md border border-white/15 bg-white/[0.03] px-3.5 py-2 font-mono text-xs text-[#F7F8F8] placeholder:text-[#8796A2]"
+                    className="w-full rounded-md border border-[#E5E1D8] bg-[#F7F5F0] px-3.5 py-2 font-mono text-xs text-[#111827] placeholder:text-[#64748B]"
                     required
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-mono text-[#BEC8CF] mb-1">Skill Cluster</label>
+                    <label className="block text-xs font-mono text-[#475569] mb-1">Skill Cluster</label>
                     <input
                       type="text"
                       value={newPlan.skill_cluster}
                       onChange={(e) => setNewPlan({ ...newPlan, skill_cluster: e.target.value })}
-                      className="w-full rounded-md border border-white/15 bg-white/[0.03] px-3.5 py-2 font-mono text-xs text-[#F7F8F8]"
+                      className="w-full rounded-md border border-[#E5E1D8] bg-[#F7F5F0] px-3.5 py-2 font-mono text-xs text-[#111827]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-mono text-[#BEC8CF] mb-1">Target Students</label>
+                    <label className="block text-xs font-mono text-[#475569] mb-1">Target Students</label>
                     <input
                       type="number"
                       value={newPlan.target_students_count}
                       onChange={(e) => setNewPlan({ ...newPlan, target_students_count: parseInt(e.target.value) || 0 })}
-                      className="w-full rounded-md border border-white/15 bg-white/[0.03] px-3.5 py-2 font-mono text-xs text-[#F7F8F8]"
+                      className="w-full rounded-md border border-[#E5E1D8] bg-[#F7F5F0] px-3.5 py-2 font-mono text-xs text-[#111827]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-mono text-[#BEC8CF] mb-1">Strategic Notes</label>
+                  <label className="block text-xs font-mono text-[#475569] mb-1">Strategic Notes</label>
                   <textarea
                     value={newPlan.notes || ""}
                     onChange={(e) => setNewPlan({ ...newPlan, notes: e.target.value })}
                     placeholder="Target outcomes, industry vouchers, partner participation..."
-                    className="w-full rounded-md border border-white/15 bg-white/[0.03] px-3.5 py-2 font-mono text-xs text-[#F7F8F8] placeholder:text-[#8796A2] h-20"
+                    className="w-full rounded-md border border-[#E5E1D8] bg-[#F7F5F0] px-3.5 py-2 font-mono text-xs text-[#111827] placeholder:text-[#64748B] h-20"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E5E1D8]">
                   <button
                     type="button"
                     onClick={() => setShowInterventionModal(false)}
-                    className="px-4 py-2 font-mono text-xs text-[#8796A2] hover:text-white cursor-pointer"
+                    className="px-4 py-2 font-mono text-xs text-[#64748B] hover:text-[#111827] cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white font-mono text-xs rounded-md cursor-pointer"
+                    className="px-4 py-2 bg-[#0B0B0A] hover:bg-[#111827] text-[#FFFFFF] font-mono text-xs rounded-md cursor-pointer"
                   >
                     Save Plan
                   </button>
@@ -1654,54 +1654,54 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
             <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
               <form
                 onSubmit={handleCreateActionPlan}
-                className="bg-[#071E2B] rounded-md p-6 md:p-8 max-w-lg w-full border border-white/15 shadow-2xl space-y-4 text-[#F7F8F8] font-sans"
+                className="bg-[#FFFFFF] rounded-md p-6 md:p-8 max-w-lg w-full border border-[#E5E1D8] shadow-2xl space-y-4 text-[#111827] font-sans"
               >
-                <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                  <h3 className="text-lg font-bold text-[#F7F8F8]">Create Institutional Action Plan</h3>
-                  <button type="button" onClick={() => setShowActionModal(false)} className="text-[#8796A2] hover:text-white">
+                <div className="flex items-center justify-between pb-3 border-b border-[#E5E1D8]">
+                  <h3 className="text-lg font-bold text-[#111827]">Create Institutional Action Plan</h3>
+                  <button type="button" onClick={() => setShowActionModal(false)} className="text-[#64748B] hover:text-[#111827]">
                     <X className="h-5 w-5" />
                   </button>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-mono text-[#BEC8CF] mb-1">Action Title</label>
+                  <label className="block text-xs font-mono text-[#475569] mb-1">Action Title</label>
                   <input
                     type="text"
                     value={newAction.title}
                     onChange={(e) => setNewAction({ ...newAction, title: e.target.value })}
                     placeholder="e.g. Mandatory OAuth Lab in Semester 6"
-                    className="w-full rounded-md border border-white/15 bg-white/[0.03] px-3.5 py-2 font-mono text-xs text-[#F7F8F8] placeholder:text-[#8796A2]"
+                    className="w-full rounded-md border border-[#E5E1D8] bg-[#F7F5F0] px-3.5 py-2 font-mono text-xs text-[#111827] placeholder:text-[#64748B]"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-mono text-[#BEC8CF] mb-1">Source Insight</label>
+                  <label className="block text-xs font-mono text-[#475569] mb-1">Source Insight</label>
                   <textarea
                     value={newAction.source_insight}
                     onChange={(e) => setNewAction({ ...newAction, source_insight: e.target.value })}
                     placeholder="What intelligence or gap triggered this action?"
-                    className="w-full rounded-md border border-white/15 bg-white/[0.03] px-3.5 py-2 font-mono text-xs text-[#F7F8F8] placeholder:text-[#8796A2] h-20"
+                    className="w-full rounded-md border border-[#E5E1D8] bg-[#F7F5F0] px-3.5 py-2 font-mono text-xs text-[#111827] placeholder:text-[#64748B] h-20"
                     required
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs font-mono text-[#BEC8CF] mb-1">Owner / Lead</label>
+                    <label className="block text-xs font-mono text-[#475569] mb-1">Owner / Lead</label>
                     <input
                       type="text"
                       value={newAction.owner}
                       onChange={(e) => setNewAction({ ...newAction, owner: e.target.value })}
-                      className="w-full rounded-md border border-white/15 bg-white/[0.03] px-3.5 py-2 font-mono text-xs text-[#F7F8F8]"
+                      className="w-full rounded-md border border-[#E5E1D8] bg-[#F7F5F0] px-3.5 py-2 font-mono text-xs text-[#111827]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-mono text-[#BEC8CF] mb-1">Priority</label>
+                    <label className="block text-xs font-mono text-[#475569] mb-1">Priority</label>
                     <select
                       value={newAction.priority}
                       onChange={(e) => setNewAction({ ...newAction, priority: e.target.value })}
-                      className="w-full rounded-md border border-white/15 bg-[#071E2B] px-3.5 py-2 font-mono text-xs text-[#F7F8F8]"
+                      className="w-full rounded-md border border-[#E5E1D8] bg-[#FFFFFF] px-3.5 py-2 font-mono text-xs text-[#111827]"
                     >
                       <option value="critical">Critical</option>
                       <option value="high">High</option>
@@ -1711,17 +1711,17 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+                <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E5E1D8]">
                   <button
                     type="button"
                     onClick={() => setShowActionModal(false)}
-                    className="px-4 py-2 font-mono text-xs text-[#8796A2] hover:text-white cursor-pointer"
+                    className="px-4 py-2 font-mono text-xs text-[#64748B] hover:text-[#111827] cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white font-mono text-xs rounded-md cursor-pointer"
+                    className="px-4 py-2 bg-[#0B0B0A] hover:bg-[#111827] text-[#FFFFFF] font-mono text-xs rounded-md cursor-pointer"
                   >
                     Save Action Plan
                   </button>
@@ -1737,14 +1737,14 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
       {/* ======================================================== */}
       {activeTab === "reports" && (
         <div className="space-y-6">
-          <div className="bg-[#071E2B] rounded-md p-6 border border-white/10 space-y-6">
+          <div className="bg-[#FFFFFF] rounded-md p-6 border border-[#E5E1D8] space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div>
-                <h2 className="text-base font-bold text-[#F7F8F8] flex items-center gap-2 font-mono">
-                  <Download className="h-5 w-5 text-[#9CC7D8]" />
+                <h2 className="text-base font-bold text-[#111827] flex items-center gap-2 font-mono">
+                  <Download className="h-5 w-5 text-[#B08D57]" />
                   Institutional Audit & Accreditation Reports
                 </h2>
-                <p className="text-xs text-[#8796A2] mt-0.5">
+                <p className="text-xs text-[#64748B] mt-0.5">
                   Generate explainable audit datasets for NAAC, NIRF, AISHE accreditation, and internal academic reviews.
                 </p>
               </div>
@@ -1752,7 +1752,7 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
               {reportData && (
                 <button
                   onClick={() => exportCSV(reportData)}
-                  className="px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white font-mono text-xs rounded-md flex items-center gap-2 transition-colors cursor-pointer self-start md:self-auto"
+                  className="px-4 py-2 bg-[#0B0B0A] hover:bg-[#111827] text-[#FFFFFF] font-mono text-xs rounded-md flex items-center gap-2 transition-colors cursor-pointer self-start md:self-auto"
                 >
                   <Download className="h-4 w-4" /> Download CSV Export
                 </button>
@@ -1775,8 +1775,8 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
                   onClick={() => setSelectedReportType(rep.id)}
                   className={`px-3 py-1.5 rounded-xs text-xs whitespace-nowrap transition-colors cursor-pointer ${
                     selectedReportType === rep.id
-                      ? "border border-white/20 bg-white/15 text-white"
-                      : "border border-white/10 bg-white/[0.02] text-[#8796A2] hover:text-white"
+                      ? "bg-[#0B0B0A] text-[#FFFFFF] font-medium"
+                      : "border border-[#E5E1D8] bg-[#F7F5F0] text-[#64748B] hover:text-[#111827]"
                   }`}
                 >
                   {rep.label}
@@ -1786,22 +1786,22 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
 
             {/* Table Preview */}
             {reportLoading || !reportData ? (
-              <div className="p-12 text-center text-sm font-mono text-[#8796A2]">Generating report preview...</div>
+              <div className="p-12 text-center text-sm font-mono text-[#64748B]">Generating report preview...</div>
             ) : (
-              <div className="overflow-x-auto border border-white/10 rounded-sm" role="region" aria-label="Institutional report preview" tabIndex={0}>
+              <div className="overflow-x-auto border border-[#E5E1D8] rounded-sm" role="region" aria-label="Institutional report preview" tabIndex={0}>
                 <table className="w-full text-left text-xs font-mono">
-                  <thead className="bg-white/[0.02] text-[#8796A2] uppercase tracking-wider">
+                  <thead className="bg-[#F7F5F0] text-[#64748B] uppercase tracking-wider">
                     <tr>
                       {reportData.columns.map((col) => (
                         <th key={col} className="p-3.5">{col}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/10 text-[#BEC8CF]">
+                  <tbody className="divide-y divide-[#E5E1D8] text-[#475569]">
                     {reportData.rows.map((row, idx) => (
-                      <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
+                      <tr key={idx} className="hover:bg-[#F7F5F0] transition-colors">
                         {reportData.columns.map((col) => (
-                          <td key={col} className="p-3.5 whitespace-nowrap font-medium text-[#F7F8F8]">
+                          <td key={col} className="p-3.5 whitespace-nowrap font-medium text-[#111827]">
                             {displayReportValue(row[col])}
                           </td>
                         ))}

@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { Check } from "lucide-react";
 import { api } from "../api";
 import type { TeamSuggestion } from "../api";
-import { EditorialButton, EditorialPageHeader } from "../components/ui/EditorialPrimitives";
+import { EditorialButton } from "../components/ui/EditorialPrimitives";
 
 interface CandidatePeer {
   id: string;
@@ -132,17 +132,10 @@ export function TeamSuggestions({
 
   return (
     <div className="space-y-6 font-sans">
-      <EditorialPageHeader
-        category="STUDENT"
-        index="TEAM"
-        title="Form a Complementary Student Team"
-        subtitle="Deterministic pairing algorithm: Maximizes Target Skill Coverage minus 0.5× Jaccard Redundancy."
-      />
-
-      <form onSubmit={submit} className="border border-white/10 bg-[#071E2B] p-6 rounded-md space-y-6">
+      <form onSubmit={submit} className="border border-[#E5E1D8] bg-[#FFFFFF] p-6 rounded-md space-y-6">
         {/* Step 1: Target Project Selector */}
         <div className="space-y-3">
-          <label className="block font-mono text-xs text-[#8796A2] uppercase tracking-wider">
+          <label className="block font-mono text-xs text-[#64748B] uppercase tracking-wider">
             1. Select Target Project or Challenge Objective
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -153,12 +146,12 @@ export function TeamSuggestions({
                 onClick={() => handleSelectProject(proj)}
                 className={`p-4 rounded-sm border text-left transition-colors cursor-pointer ${
                   selectedProject === proj.title
-                    ? "border-white/40 bg-white/10 text-white"
-                    : "border-white/10 bg-white/[0.01] text-[#BEC8CF] hover:border-white/20 hover:text-white"
+                    ? "border-[#B08D57] bg-[rgba(176,141,87,0.12)] text-[#111827]"
+                    : "border-[#E5E1D8] bg-[#F7F5F0] text-[#475569] hover:border-[#E5E1D8] hover:text-[#111827]"
                 }`}
               >
                 <p className="font-mono text-xs font-semibold leading-snug">{proj.title}</p>
-                <div className="pt-2 font-mono text-[11px] text-[#8796A2]">
+                <div className="pt-2 font-mono text-[11px] text-[#64748B]">
                   {proj.skills.join(" · ")}
                 </div>
               </button>
@@ -168,7 +161,7 @@ export function TeamSuggestions({
 
         {/* Step 2: Peer Candidate Selector */}
         <div className="space-y-3">
-          <label className="block font-mono text-xs text-[#8796A2] uppercase tracking-wider">
+          <label className="block font-mono text-xs text-[#64748B] uppercase tracking-wider">
             2. Select Candidate Pool ({selectedCandidateIds.length} selected)
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -180,24 +173,24 @@ export function TeamSuggestions({
                   onClick={() => toggleCandidate(peer.id)}
                   className={`p-4 rounded-sm border flex items-start justify-between gap-3 transition-colors cursor-pointer ${
                     isSelected
-                      ? "border-[#9CC7D8]/40 bg-[#9CC7D8]/10 text-white"
-                      : "border-white/10 bg-white/[0.01] text-[#8796A2] hover:border-white/20 hover:text-[#BEC8CF]"
+                      ? "border-[#B08D57] bg-[rgba(176,141,87,0.12)] text-[#111827]"
+                      : "border-[#E5E1D8] bg-[#F7F5F0] text-[#64748B] hover:border-[#E5E1D8] hover:text-[#475569]"
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="h-7 w-7 rounded-sm border border-white/15 bg-white/5 text-white font-mono text-xs flex items-center justify-center shrink-0">
+                    <div className="h-7 w-7 rounded-sm border border-[#E5E1D8] bg-[#0B0B0A] text-[#FFFFFF] font-mono text-xs flex items-center justify-center shrink-0">
                       {peer.avatar}
                     </div>
                     <div>
-                      <p className="font-mono text-xs font-semibold text-[#F7F8F8] leading-tight">{peer.name}</p>
-                      <p className="font-mono text-[10px] text-[#8796A2] mt-0.5">{peer.domain}</p>
-                      <p className="font-mono text-[10px] text-[#BEC8CF] pt-1">
+                      <p className="font-mono text-xs font-semibold text-[#111827] leading-tight">{peer.name}</p>
+                      <p className="font-mono text-[10px] text-[#64748B] mt-0.5">{peer.domain}</p>
+                      <p className="font-mono text-[10px] text-[#475569] pt-1">
                         {peer.skills.join(" · ")}
                       </p>
                     </div>
                   </div>
                   <div className={`h-4 w-4 rounded-xs flex items-center justify-center shrink-0 ${
-                    isSelected ? "bg-[#9CC7D8] text-[#021522]" : "border border-white/20"
+                    isSelected ? "bg-[#B08D57] text-[#FFFFFF]" : "border border-[#E5E1D8]"
                   }`}>
                     {isSelected && <Check className="h-3 w-3 stroke-[3]" />}
                   </div>
@@ -224,9 +217,9 @@ export function TeamSuggestions({
 
       {/* Results */}
       {suggestions && (
-        <div className="border border-white/10 bg-[#071E2B] p-6 rounded-md space-y-4">
+        <div className="border border-[#E5E1D8] bg-[#FFFFFF] p-6 rounded-md space-y-4">
           <h3
-            className="text-lg font-normal text-[#F7F8F8] border-b border-white/10 pb-3"
+            className="text-lg font-normal text-[#111827] border-b border-[#E5E1D8] pb-3"
             style={{ fontFamily: "var(--font-display)" }}
           >
             Complementary Pairing Recommendations
@@ -237,16 +230,16 @@ export function TeamSuggestions({
               return (
                 <div
                   key={index}
-                  className="p-4 rounded-sm border border-white/10 bg-white/[0.01] space-y-2 font-mono"
+                  className="p-4 rounded-sm border border-[#E5E1D8] bg-[#F7F5F0] space-y-2 font-mono"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase text-[#8796A2]">Rank #{index + 1}</span>
-                    <span className="text-xs text-[#9CC7D8] font-bold">
+                    <span className="text-[10px] uppercase text-[#64748B]">Rank #{index + 1}</span>
+                    <span className="text-xs text-[#B08D57] font-bold">
                       {Math.round(suggestion.complementarity_score * 100)}% Synergy
                     </span>
                   </div>
-                  <p className="text-xs text-[#F7F8F8] font-semibold font-sans">{pairNames}</p>
-                  <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[10px] text-[#8796A2]">
+                  <p className="text-xs text-[#111827] font-semibold font-sans">{pairNames}</p>
+                  <div className="pt-2 border-t border-[#E5E1D8] flex items-center justify-between text-[10px] text-[#64748B]">
                     <span>Coverage: {Math.round((suggestion.coverage_score ?? 0.9) * 100)}%</span>
                     <span>Redundancy: -{Math.round((suggestion.redundancy_penalty ?? 0.05) * 100)}%</span>
                   </div>

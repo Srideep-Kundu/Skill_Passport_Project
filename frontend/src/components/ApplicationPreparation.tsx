@@ -26,7 +26,7 @@ function FieldInput({
     id: field.field_id,
     name: field.field_id,
     className:
-      "mt-1 w-full rounded-md border border-white/15 bg-white/[0.03] px-3 py-1.5 font-mono text-xs text-[#F7F8F8] focus:border-white focus:outline-none",
+      "mt-1 w-full rounded-md border border-[#E5E1D8] bg-[#F7F5F0] px-3 py-1.5 font-mono text-xs text-[#111827] focus:border-[#B08D57] focus:outline-none",
   };
 
   if (field.field_type === "select")
@@ -37,9 +37,9 @@ function FieldInput({
         onChange={(event) => onChange(event.target.value)}
         className={`${common.className} cursor-pointer`}
       >
-        <option value="" className="bg-[#071E2B] text-[#BEC8CF]">Select an answer</option>
+        <option value="" className="bg-[#FFFFFF] text-[#475569]">Select an answer</option>
         {field.allowed_values.map((option) => (
-          <option key={option} value={option} className="bg-[#071E2B] text-[#F7F8F8]">
+          <option key={option} value={option} className="bg-[#FFFFFF] text-[#111827]">
             {option}
           </option>
         ))}
@@ -54,7 +54,7 @@ function FieldInput({
         type="checkbox"
         checked={value === true}
         onChange={(event) => onChange(event.target.checked)}
-        className="mt-2 rounded-xs border-white/20 text-[#9CC7D8] focus:ring-0"
+        className="mt-2 rounded-xs border-[#E5E1D8] text-[#B08D57] focus:ring-0"
       />
     );
 
@@ -195,14 +195,14 @@ export function ApplicationPreparation({
 
   if (application.status === "approved" && !form)
     return (
-      <div className="mt-4 rounded-md border border-white/10 bg-[#071E2B] p-5 space-y-3 font-sans">
+      <div className="mt-4 rounded-md border border-[#E5E1D8] bg-[#FFFFFF] p-5 space-y-3 font-sans">
         <h4
-          className="text-lg font-normal text-[#F7F8F8]"
+          className="text-lg font-normal text-[#111827]"
           style={{ fontFamily: "var(--font-display)" }}
         >
           Application Preparation
         </h4>
-        <p className="text-xs text-[#BEC8CF] leading-relaxed">
+        <p className="text-xs text-[#475569] leading-relaxed">
           Prepare the provider-neutral field list and review exactly what can be used. Sensitive questions always require your direct input.
         </p>
         <EditorialButton
@@ -226,16 +226,16 @@ export function ApplicationPreparation({
     <>
       <section
         aria-label="Application preparation"
-        className="mt-4 rounded-md border border-white/10 bg-[#071E2B] p-6 text-[#F7F8F8] space-y-4 font-sans"
+        className="mt-4 rounded-md border border-[#E5E1D8] bg-[#FFFFFF] p-6 text-[#111827] space-y-4 font-sans"
       >
-        <div className="border-b border-white/10 pb-4">
+        <div className="border-b border-[#E5E1D8] pb-4">
           <h4
-            className="text-xl font-normal text-[#F7F8F8]"
+            className="text-xl font-normal text-[#111827]"
             style={{ fontFamily: "var(--font-display)" }}
           >
             Application Preparation
           </h4>
-          <p className="mt-1 font-mono text-xs text-[#8796A2]">
+          <p className="mt-1 font-mono text-xs text-[#64748B]">
             Provider: {form.provider} ·{" "}
             {form.submission_capability.submission_ready
               ? "Automatic submission supported for this employer"
@@ -243,18 +243,18 @@ export function ApplicationPreparation({
                 ? "Provider integration connected, but assisted application is required"
                 : "Provider integration is not connected"}
           </p>
-          <p className="font-mono text-[11px] text-[#8796A2] mt-0.5">{form.submission_capability.reason}</p>
-          <p className="font-mono text-xs text-[#9CC7D8] mt-1">
+          <p className="font-mono text-[11px] text-[#64748B] mt-0.5">{form.submission_capability.reason}</p>
+          <p className="font-mono text-xs text-[#B08D57] mt-1">
             Resume: {application.application_snapshot.resume.original_filename}
           </p>
         </div>
 
         {form.unresolved_field_ids.length ? (
-          <p className="rounded-sm bg-[#9CC7D8]/10 border border-[#9CC7D8]/30 p-3 text-xs text-[#9CC7D8] font-mono">
+          <p className="rounded-sm bg-[rgba(176,141,87,0.08)] border border-[#B08D57]/30 p-3 text-xs text-[#B08D57] font-mono">
             {form.unresolved_field_ids.length} required field{form.unresolved_field_ids.length === 1 ? "" : "s"} need direct input.
           </p>
         ) : (
-          <p className="text-xs text-emerald-400 font-mono flex items-center gap-1.5">
+          <p className="text-xs text-[#4F6F5A] font-mono flex items-center gap-1.5">
             <CheckCircle2 className="h-3.5 w-3.5" />
             <span>All required fields are resolved. Review before marking ready.</span>
           </p>
@@ -264,22 +264,22 @@ export function ApplicationPreparation({
           {form.fields.map((field) => (
             <div
               key={field.field_id}
-              className="rounded-sm border border-white/10 bg-white/[0.01] p-4 space-y-1.5"
+              className="rounded-sm border border-[#E5E1D8] bg-[#F7F5F0] p-4 space-y-1.5"
             >
-              <label htmlFor={field.field_id} className="text-xs font-semibold text-[#F7F8F8] flex items-center gap-1.5">
+              <label htmlFor={field.field_id} className="text-xs font-semibold text-[#111827] flex items-center gap-1.5">
                 {field.sensitive ? (
-                  <AlertTriangle className="h-3.5 w-3.5 text-[#9CC7D8]" />
+                  <AlertTriangle className="h-3.5 w-3.5 text-[#B08D57]" />
                 ) : field.is_answered ? (
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" aria-hidden="true" />
+                  <CheckCircle2 className="h-3.5 w-3.5 text-[#4F6F5A]" aria-hidden="true" />
                 ) : (
-                  <AlertCircle className="h-3.5 w-3.5 text-[#9CC7D8]" aria-hidden="true" />
+                  <AlertCircle className="h-3.5 w-3.5 text-[#B08D57]" aria-hidden="true" />
                 )}
                 <span>
                   {field.label}
                   {field.required ? " (required)" : ""}
                 </span>
               </label>
-              <p className="text-[11px] text-[#8796A2] font-mono">
+              <p className="text-[11px] text-[#64748B] font-mono">
                 {field.sensitive
                   ? "Sensitive — answer directly; its value is not shown again."
                   : field.requires_user_input
@@ -289,7 +289,7 @@ export function ApplicationPreparation({
                       : "No answer yet."}
               </p>
               {field.sensitive && field.is_answered && draft[field.field_id] === undefined ? (
-                <p className="mt-2 text-xs text-emerald-400 font-mono">Direct answer recorded</p>
+                <p className="mt-2 text-xs text-[#4F6F5A] font-mono">Direct answer recorded</p>
               ) : (
                 <FieldInput
                   field={field}
@@ -323,7 +323,7 @@ export function ApplicationPreparation({
               href={application.manual_apply_url ?? application.application_snapshot.job.source_url}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-md border border-white/20 bg-white/10 px-4 py-2 font-mono text-xs text-[#F7F8F8] hover:bg-white/15 transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-md border border-[#E5E1D8] bg-[#F7F5F0] px-4 py-2 font-mono text-xs text-[#111827] hover:bg-white/15 transition-colors"
             >
               <span>Continue on provider site</span>
               <ExternalLink className="h-3 w-3" />
@@ -348,7 +348,7 @@ export function ApplicationPreparation({
           ) : null}
         </div>
 
-        <p className="font-mono text-[11px] text-[#8796A2] pt-1">
+        <p className="font-mono text-[11px] text-[#64748B] pt-1">
           No browser automation is used. Provider credentials are never shown in this application.
         </p>
       </section>

@@ -44,7 +44,7 @@ const headerContentMap: Record<StudentTab, { title: string; subtitle: string; ca
   },
   passport: {
     category: "STUDENT / 02",
-    title: "Unified Skill Passport",
+    title: "Unified Lumina Intel Passport",
     subtitle: "Consolidated verifiable skill records, cryptographic evidence graph, and verified competencies.",
   },
   gaps: {
@@ -55,7 +55,7 @@ const headerContentMap: Record<StudentTab, { title: string; subtitle: string; ca
   assessments: {
     category: "STUDENT / 04",
     title: "Diagnostic Skill Assessments",
-    subtitle: "Standardized technical testing with automatic scoring and verified Skill Passport credit.",
+    subtitle: "Standardized technical testing with automatic scoring and verified Lumina Intel credit.",
   },
   learning: {
     category: "STUDENT / 05",
@@ -250,10 +250,10 @@ export function StudentDashboard({
           <button
             type="button"
             onClick={() => void toggleConsent()}
-            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 font-mono text-xs border transition-colors cursor-pointer ${
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 font-mono text-xs border transition-all cursor-pointer ${
               recruiterConsent
-                ? "border-white/30 bg-white/10 text-white"
-                : "border-white/10 bg-white/[0.02] text-neutral-400 hover:text-white"
+                ? "border-[#4F6F5A]/40 bg-[rgba(79,111,90,0.10)] text-[#4F6F5A] font-semibold"
+                : "border-[#E5E1D8] bg-[#FFFFFF] text-[#64748B] hover:text-[#111827]"
             }`}
           >
             <ShieldCheck className="h-3.5 w-3.5" />
@@ -266,18 +266,19 @@ export function StudentDashboard({
       {activeTab === "overview" && (
         <div className="space-y-8">
           {/* Readiness Dossier Header Box */}
-          <div className="border border-white/10 bg-[#061524] p-6 sm:p-8 rounded-md flex flex-col md:flex-row md:items-center justify-between gap-8">
+          <div className="border border-[#E5E1D8] bg-[#FFFFFF] p-6 sm:p-8 rounded-[16px] flex flex-col md:flex-row md:items-center justify-between gap-8 shadow-[0_8px_30px_rgba(17,24,39,0.04)]">
             <div className="space-y-2 max-w-xl">
-              <div className="font-mono text-xs uppercase tracking-widest text-neutral-400">
+              <div className="font-mono text-xs uppercase tracking-widest text-[#B08D57] font-semibold flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#B08D57]" />
                 VERIFIABLE CAREER READINESS
               </div>
               <h2
-                className="text-3xl sm:text-4xl font-normal text-white"
+                className="text-3xl sm:text-4xl font-normal text-[#111827]"
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 Every skill backed by proof.
               </h2>
-              <p className="text-sm text-neutral-300 leading-relaxed">
+              <p className="text-sm text-[#475569] leading-relaxed">
                 Your portfolio holds {totalSkillsCount} total skills, with {verifiedSkillsCount} cryptographically verified through repository activity and assessments.
               </p>
               <div className="pt-3 flex flex-wrap gap-3">
@@ -287,25 +288,25 @@ export function StudentDashboard({
                 <button
                   type="button"
                   onClick={() => onNavigateTab?.("matches")}
-                  className="rounded-full border border-white/20 bg-white/5 px-5 py-2 text-xs font-medium text-neutral-300 hover:text-white transition-colors cursor-pointer"
+                  className="pill-btn-outline px-5 py-2 text-xs font-medium text-[#111827] cursor-pointer"
                 >
                   View Ranked Matches
                 </button>
               </div>
             </div>
 
-            <div className="border-t md:border-t-0 md:border-l border-white/10 pt-6 md:pt-0 md:pl-8 flex flex-col items-center justify-center text-center">
-              <div className="font-mono text-xs uppercase tracking-wider text-neutral-400 mb-1">
+            <div className="border-t md:border-t-0 md:border-l border-[#E5E1D8] pt-6 md:pt-0 md:pl-8 flex flex-col items-center justify-center text-center">
+              <div className="font-mono text-xs uppercase tracking-wider text-[#64748B] mb-1 font-semibold">
                 TOP READINESS SCORE
               </div>
               <div
-                className="text-5xl sm:text-6xl font-normal text-white"
+                className="text-5xl sm:text-6xl font-normal text-[#111827]"
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 {topMatchScore > 0 ? `${topMatchScore}%` : `${completenessPercent}%`}
               </div>
-              <div className="mt-2 font-mono text-[11px] text-neutral-400">
-                Verification Ratio: {verifiedRatio}%
+              <div className="mt-2 font-mono text-[11px] text-[#64748B]">
+                Verification Ratio: <span className="text-[#B08D57] font-bold">{verifiedRatio}%</span>
               </div>
             </div>
           </div>
@@ -342,71 +343,73 @@ export function StudentDashboard({
           {/* Data Visualizations */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Skill Breakdown Chart */}
-            <div className="border border-white/10 bg-[#061524] p-6 rounded-md space-y-4">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <div className="font-mono text-xs uppercase tracking-wider text-neutral-300">
+            <div className="border border-[#E5E1D8] bg-[#FFFFFF] p-6 rounded-[16px] space-y-4 shadow-[0_8px_30px_rgba(17,24,39,0.04)]">
+              <div className="flex items-center justify-between border-b border-[#E5E1D8] pb-3">
+                <div className="font-mono text-xs uppercase tracking-wider text-[#111827] font-semibold">
                   Skill Breakdown by Category
                 </div>
-                <div className="font-mono text-[11px] text-neutral-400">Total vs Verified</div>
+                <div className="font-mono text-[11px] text-[#64748B]">Total vs Verified</div>
               </div>
               {skillStrengthData.length ? (
                 <div className="h-64 w-full pt-2">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={skillStrengthData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#9ca3af" }} stroke="#374151" />
-                      <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} stroke="#374151" allowDecimals={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#64748B" }} stroke="#E5E1D8" />
+                      <YAxis tick={{ fontSize: 11, fill: "#64748B" }} stroke="#E5E1D8" allowDecimals={false} />
                       <Tooltip
                         contentStyle={{
-                          borderRadius: "4px",
+                          borderRadius: "12px",
                           fontSize: "12px",
-                          border: "1px solid rgba(255, 255, 255, 0.15)",
-                          backgroundColor: "#061524",
-                          color: "#ffffff",
+                          border: "1px solid #E5E1D8",
+                          backgroundColor: "#FFFFFF",
+                          color: "#111827",
+                          boxShadow: "0 8px 30px rgba(17,24,39,0.06)",
                         }}
                       />
-                      <Bar dataKey="total" name="Total Skills" fill="#ffffff" opacity={0.3} radius={[2, 2, 0, 0]} />
-                      <Bar dataKey="verified" name="Verified" fill="#ffffff" radius={[2, 2, 0, 0]} />
+                      <Bar dataKey="total" name="Total Skills" fill="#111827" opacity={0.25} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="verified" name="Verified" fill="#B08D57" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div className="h-48 flex items-center justify-center text-xs font-mono text-neutral-400">
+                <div className="h-48 flex items-center justify-center text-xs font-mono text-[#64748B]">
                   No skill evidence registered yet.
                 </div>
               )}
             </div>
 
             {/* Match Breakdown Chart */}
-            <div className="border border-white/10 bg-[#061524] p-6 rounded-md space-y-4">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <div className="font-mono text-xs uppercase tracking-wider text-neutral-300">
+            <div className="border border-[#E5E1D8] bg-[#FFFFFF] p-6 rounded-[16px] space-y-4 shadow-[0_8px_30px_rgba(17,24,39,0.04)]">
+              <div className="flex items-center justify-between border-b border-[#E5E1D8] pb-3">
+                <div className="font-mono text-xs uppercase tracking-wider text-[#111827] font-semibold">
                   Opportunity Score Decomposition
                 </div>
-                <div className="font-mono text-[11px] text-neutral-400">Exact / Semantic / Bonus</div>
+                <div className="font-mono text-[11px] text-[#64748B]">Exact / Semantic / Bonus</div>
               </div>
               {matchChartData.length ? (
                 <div className="h-64 w-full pt-2">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={matchChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#9ca3af" }} stroke="#374151" />
-                      <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} stroke="#374151" domain={[0, 100]} unit="%" />
+                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#64748B" }} stroke="#E5E1D8" />
+                      <YAxis tick={{ fontSize: 11, fill: "#64748B" }} stroke="#E5E1D8" domain={[0, 100]} unit="%" />
                       <Tooltip
                         contentStyle={{
-                          borderRadius: "4px",
+                          borderRadius: "12px",
                           fontSize: "12px",
-                          border: "1px solid rgba(255, 255, 255, 0.15)",
-                          backgroundColor: "#061524",
-                          color: "#ffffff",
+                          border: "1px solid #E5E1D8",
+                          backgroundColor: "#FFFFFF",
+                          color: "#111827",
+                          boxShadow: "0 8px 30px rgba(17,24,39,0.06)",
                         }}
                       />
-                      <Bar dataKey="Exact" name="Exact Match" stackId="a" fill="#ffffff" />
-                      <Bar dataKey="Semantic" name="Semantic Match" stackId="a" fill="#9ca3af" />
-                      <Bar dataKey="Bonus" name="Verified Bonus" stackId="a" fill="#d1d5db" />
+                      <Bar dataKey="Exact" name="Exact Match" stackId="a" fill="#111827" />
+                      <Bar dataKey="Semantic" name="Semantic Match" stackId="a" fill="#64748B" />
+                      <Bar dataKey="Bonus" name="Verified Bonus" stackId="a" fill="#B08D57" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
-                <div className="h-48 flex items-center justify-center text-xs font-mono text-neutral-400">
+                <div className="h-48 flex items-center justify-center text-xs font-mono text-[#64748B]">
                   No active match computations available.
                 </div>
               )}
@@ -416,15 +419,15 @@ export function StudentDashboard({
           {/* Top Opportunities & Applications Index */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Opportunities Table */}
-            <div className="border border-white/10 bg-[#061524] p-6 rounded-md space-y-4">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <div className="font-mono text-xs uppercase tracking-wider text-neutral-300">
+            <div className="border border-[#E5E1D8] bg-[#FFFFFF] p-6 rounded-[16px] space-y-4 shadow-[0_8px_30px_rgba(17,24,39,0.04)]">
+              <div className="flex items-center justify-between border-b border-[#E5E1D8] pb-3">
+                <div className="font-mono text-xs uppercase tracking-wider text-[#111827] font-semibold">
                   Top Recommended Opportunities
                 </div>
                 <button
                   type="button"
                   onClick={() => onNavigateTab?.("matches")}
-                  className="font-mono text-xs text-neutral-400 hover:text-white transition-colors cursor-pointer"
+                  className="font-mono text-xs text-[#B08D57] hover:text-[#111827] font-medium transition-colors cursor-pointer"
                 >
                   View All ({allMatchesList.length}) →
                 </button>
@@ -435,45 +438,45 @@ export function StudentDashboard({
                   {allMatchesList.slice(0, 4).map((m) => (
                     <div
                       key={m.id}
-                      className="border border-white/5 bg-white/[0.02] p-3.5 rounded-sm flex items-center justify-between gap-4"
+                      className="border border-[#E5E1D8] bg-[#F7F5F0] p-4 rounded-[12px] flex items-center justify-between gap-4 hover:border-[#B08D57]/60 transition-all"
                     >
                       <div className="min-w-0">
                         <div
-                          className="text-base text-white truncate"
+                          className="text-base text-[#111827] font-normal truncate"
                           style={{ fontFamily: "var(--font-display)" }}
                         >
                           {m.internship_title}
                         </div>
-                        <div className="font-mono text-xs text-neutral-400 mt-0.5">
-                          Exact: {Math.round(m.deterministic_score * 100)}% · Bonus: +{Math.round(m.verification_bonus * 100)}%
+                        <div className="font-mono text-xs text-[#64748B] mt-0.5">
+                          Exact: {Math.round(m.deterministic_score * 100)}% · Bonus: <span className="text-[#B08D57]">+{Math.round(m.verification_bonus * 100)}%</span>
                         </div>
                       </div>
                       <div className="text-right shrink-0">
                         <div
-                          className="text-2xl text-white font-normal"
+                          className="text-2xl text-[#111827] font-normal"
                           style={{ fontFamily: "var(--font-display)" }}
                         >
                           {Math.round(m.final_score * 100)}%
                         </div>
-                        <div className="font-mono text-[10px] uppercase text-neutral-400">Fit Score</div>
+                        <div className="font-mono text-[10px] uppercase text-[#64748B]">Fit Score</div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center text-xs font-mono text-neutral-400">
+                <div className="py-8 text-center text-xs font-mono text-[#64748B]">
                   No ranked matches available.
                 </div>
               )}
             </div>
 
             {/* Applications Table */}
-            <div className="border border-white/10 bg-[#061524] p-6 rounded-md space-y-4">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <div className="font-mono text-xs uppercase tracking-wider text-neutral-300">
+            <div className="border border-[#E5E1D8] bg-[#FFFFFF] p-6 rounded-[16px] space-y-4 shadow-[0_8px_30px_rgba(17,24,39,0.04)]">
+              <div className="flex items-center justify-between border-b border-[#E5E1D8] pb-3">
+                <div className="font-mono text-xs uppercase tracking-wider text-[#111827] font-semibold">
                   Applications & Review Queue
                 </div>
-                <div className="font-mono text-xs text-neutral-400">{applications.length} Records</div>
+                <div className="font-mono text-xs text-[#64748B]">{applications.length} Records</div>
               </div>
 
               {applications.length ? (
@@ -481,27 +484,27 @@ export function StudentDashboard({
                   {applications.slice(0, 4).map((app) => (
                     <div
                       key={app.id}
-                      className="border border-white/5 bg-white/[0.02] p-3.5 rounded-sm flex items-center justify-between gap-4"
+                      className="border border-[#E5E1D8] bg-[#F7F5F0] p-4 rounded-[12px] flex items-center justify-between gap-4"
                     >
                       <div className="min-w-0">
                         <div
-                          className="text-base text-white truncate"
+                          className="text-base text-[#111827] font-normal truncate"
                           style={{ fontFamily: "var(--font-display)" }}
                         >
                           {app.application_snapshot?.job?.title || "Internship Application"}
                         </div>
-                        <div className="text-xs text-neutral-400 mt-0.5">
+                        <div className="text-xs text-[#64748B] mt-0.5">
                           {app.application_snapshot?.job?.company_name || "Partner Company"}
                         </div>
                       </div>
-                      <span className="font-mono text-[11px] uppercase tracking-wider border border-white/15 px-2 py-0.5 rounded-xs text-neutral-300">
+                      <span className="font-mono text-[11px] uppercase tracking-wider border border-[#E5E1D8] bg-[#FFFFFF] px-2.5 py-1 rounded-full text-[#475569]">
                         {app.status.replace(/_/g, " ")}
                       </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center text-xs font-mono text-neutral-400">
+                <div className="py-8 text-center text-xs font-mono text-[#64748B]">
                   No application records filed yet.
                 </div>
               )}
@@ -513,13 +516,14 @@ export function StudentDashboard({
       {/* 2. PASSPORT TAB */}
       {activeTab === "passport" && (
         <div className="space-y-6">
-          <div className="border border-white/10 bg-[#061524] p-6 rounded-md space-y-4">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="font-mono text-xs uppercase tracking-wider text-neutral-300">
-                Verified Skill Inventory ({allSkills.length})
-              </h3>
+          <div className="border border-[#E5E1D8] bg-[#FFFFFF] p-6 sm:p-8 rounded-[16px] space-y-4 shadow-[0_8px_30px_rgba(17,24,39,0.04)]">
+            <div className="flex items-center justify-between border-b border-[#E5E1D8] pb-3">
+              <div className="font-mono text-[11px] uppercase tracking-widest text-[#B08D57] font-semibold flex items-center gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#B08D57]" />
+                <span>VERIFIED SKILL INVENTORY ({allSkills.length})</span>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2.5 pt-2">
               {allSkills.map((skill) => (
                 <SkillBadge key={skill.id} name={skill.canonical_name} tier={skill.verification_tier} />
               ))}
@@ -579,7 +583,7 @@ export function StudentDashboard({
               type="button"
               onClick={() => void handleRecomputeInternshipMatches()}
               disabled={recomputingInternshipMatches}
-              className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2 font-mono text-xs text-neutral-300 hover:text-white transition-colors cursor-pointer disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-full border border-[#E5E1D8] bg-[#FFFFFF] px-4 py-2 font-mono text-xs text-[#0f172a] font-bold hover:bg-[#F7F5F0] hover:text-[#000000] transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
             >
               <RefreshCw className={`h-3.5 w-3.5 ${recomputingInternshipMatches ? "animate-spin" : ""}`} />
               <span>{recomputingInternshipMatches ? "Recomputing..." : "Recompute Matches"}</span>
@@ -640,16 +644,16 @@ export function StudentDashboard({
 
 function DashboardSkeleton() {
   return (
-    <div className="space-y-8 animate-pulse font-mono text-xs text-neutral-400">
-      <div className="h-20 w-1/2 border border-white/10 bg-[#061524] rounded-md" />
+    <div className="space-y-8 animate-pulse font-mono text-xs text-[#64748B]">
+      <div className="h-20 w-1/2 border border-[#E5E1D8] bg-[#FFFFFF] rounded-[16px]" />
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-24 border border-white/10 bg-[#061524] rounded-md" />
+          <div key={i} className="h-24 border border-[#E5E1D8] bg-[#FFFFFF] rounded-[16px]" />
         ))}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="h-72 border border-white/10 bg-[#061524] rounded-md" />
-        <div className="h-72 border border-white/10 bg-[#061524] rounded-md" />
+        <div className="h-72 border border-[#E5E1D8] bg-[#FFFFFF] rounded-[16px]" />
+        <div className="h-72 border border-[#E5E1D8] bg-[#FFFFFF] rounded-[16px]" />
       </div>
     </div>
   );

@@ -27,7 +27,7 @@ import type {
 import { ApplicationPreparation } from "./ApplicationPreparation";
 import { SavedDiscoveries } from "./SavedDiscoveries";
 import { ErrorState, LoadingState } from "./AsyncState";
-import { EditorialButton, EditorialPageHeader } from "./ui/EditorialPrimitives";
+import { EditorialButton } from "./ui/EditorialPrimitives";
 
 function syncedLabel(value: string | null): string {
   if (!value) return "Just now";
@@ -56,30 +56,30 @@ function getProviderBadge(provider: string) {
   if (norm.includes("yc")) {
     return {
       label: "YC STARTUP",
-      border: "border-white/20 text-[#9CC7D8]",
+      border: "border-[#E5E1D8] text-[#B08D57]",
     };
   }
   if (norm.includes("greenhouse")) {
     return {
       label: "GREENHOUSE",
-      border: "border-white/20 text-emerald-400",
+      border: "border-[#E5E1D8] text-[#4F6F5A]",
     };
   }
   if (norm.includes("lever")) {
     return {
       label: "LEVER",
-      border: "border-white/20 text-[#BEC8CF]",
+      border: "border-[#E5E1D8] text-[#475569]",
     };
   }
   if (norm.includes("ashby")) {
     return {
       label: "ASHBY",
-      border: "border-white/20 text-[#BEC8CF]",
+      border: "border-[#E5E1D8] text-[#475569]",
     };
   }
   return {
     label: provider.toUpperCase(),
-    border: "border-white/10 text-[#8796A2]",
+    border: "border-[#E5E1D8] text-[#64748B]",
   };
 }
 
@@ -217,40 +217,31 @@ export function ExternalJobs({ token }: { token: string }) {
 
   return (
     <div className="space-y-6 font-sans">
-      {/* Editorial Page Header */}
-      <EditorialPageHeader
-        category="STUDENT"
-        index="10"
-        title="Live Opportunity Discovery"
-        subtitle="Discover verified startup, internship, and engineering opportunities from real external ATS boards and YC networks."
-        action={
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <EditorialButton
-              variant="secondary"
-              onClick={() => setShowSavedRules(true)}
-            >
-              <ListFilter className="h-3.5 w-3.5 mr-1" />
-              <span>Discovery Rules</span>
-            </EditorialButton>
-            <EditorialButton
-              variant="primary"
-              disabled={refreshing || loading}
-              onClick={handleSyncAllSources}
-            >
-              <RefreshCw className={`h-3.5 w-3.5 mr-1 ${refreshing ? "animate-spin" : ""}`} />
-              <span>{refreshing ? "Ingesting..." : "Refresh Opportunities"}</span>
-            </EditorialButton>
-          </div>
-        }
-      />
+      <div className="flex justify-end gap-3">
+        <EditorialButton
+          variant="secondary"
+          onClick={() => setShowSavedRules(true)}
+        >
+          <ListFilter className="h-3.5 w-3.5 mr-1" />
+          <span>Discovery Rules</span>
+        </EditorialButton>
+        <EditorialButton
+          variant="primary"
+          disabled={refreshing || loading}
+          onClick={handleSyncAllSources}
+        >
+          <RefreshCw className={`h-3.5 w-3.5 mr-1 ${refreshing ? "animate-spin" : ""}`} />
+          <span>{refreshing ? "Ingesting..." : "Refresh Opportunities"}</span>
+        </EditorialButton>
+      </div>
 
       {/* MAIN DISCOVERY SECTION */}
-      <div className="border border-white/10 bg-[#071E2B] p-6 rounded-md space-y-6">
+      <div className="border border-[#E5E1D8] bg-[#FFFFFF] p-6 rounded-md space-y-6">
         {/* PROVIDER STATUS STRIP */}
         <div className="space-y-3">
-          <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-[#8796A2]">
+          <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-wider text-[#64748B]">
             <span>Opportunity Provider Status</span>
-            <span className="text-[#9CC7D8]">
+            <span className="text-[#B08D57]">
               {providers.filter((p) => p.status === "live").length} Verified Live
             </span>
           </div>
@@ -264,21 +255,21 @@ export function ExternalJobs({ token }: { token: string }) {
                   title={p.reason || `${p.name}: configured sync recorded`}
                   className={`rounded-sm border p-3 flex flex-col justify-between font-mono text-xs ${
                     isLive
-                      ? "border-white/15 bg-white/[0.02]"
-                      : "border-white/10 bg-white/[0.005] opacity-60"
+                      ? "border-[#E5E1D8] bg-[#F7F5F0]"
+                      : "border-[#E5E1D8] bg-white/[0.005] opacity-60"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-1">
-                    <span className="text-xs font-semibold text-[#F7F8F8] truncate">
+                    <span className="text-xs font-semibold text-[#111827] truncate">
                       {p.name.replace(" Jobs", "")}
                     </span>
                     <span className="h-1.5 w-1.5 rounded-full shrink-0">
                       <span className={`block h-1.5 w-1.5 rounded-full ${isLive ? "bg-emerald-400" : "bg-[#8796A2]"}`} />
                     </span>
                   </div>
-                  <div className="flex items-center justify-between text-[10px] text-[#8796A2] pt-2">
+                  <div className="flex items-center justify-between text-[10px] text-[#64748B] pt-2">
                     <span>{p.active_jobs_count ? `${p.active_jobs_count} jobs` : "0 jobs"}</span>
-                    <span className="text-[#BEC8CF]">{isLive ? syncedLabel(p.last_synced_at) : p.status.replaceAll("_", " ")}</span>
+                    <span className="text-[#475569]">{isLive ? syncedLabel(p.last_synced_at) : p.status.replaceAll("_", " ")}</span>
                   </div>
                 </div>
               );
@@ -287,23 +278,23 @@ export function ExternalJobs({ token }: { token: string }) {
         </div>
 
         {/* SEARCH & FILTERS */}
-        <div className="pt-4 border-t border-white/10 space-y-3">
+        <div className="pt-4 border-t border-[#E5E1D8] space-y-3">
           <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-4">
             {/* Search Input */}
             <div className="md:col-span-2 relative">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#8796A2]" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#64748B]" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by role, required skills (e.g. Python, React)..."
-                className="w-full rounded-md border border-white/15 bg-white/[0.02] pl-9 pr-8 py-2 font-mono text-xs text-[#F7F8F8] placeholder:text-[#8796A2] focus:border-white focus:outline-none"
+                className="w-full rounded-md border border-[#E5E1D8] bg-[#F7F5F0] pl-9 pr-8 py-2 font-mono text-xs text-[#111827] placeholder:text-[#64748B] focus:border-[#B08D57] focus:outline-none"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8796A2] hover:text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] hover:text-[#111827]"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -312,13 +303,13 @@ export function ExternalJobs({ token }: { token: string }) {
 
             {/* Location Input */}
             <div className="relative">
-              <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#8796A2]" />
+              <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#64748B]" />
               <input
                 type="text"
                 value={locationQuery}
                 onChange={(e) => setLocationQuery(e.target.value)}
                 placeholder="Location (e.g. Remote, India)..."
-                className="w-full rounded-md border border-white/15 bg-white/[0.02] pl-9 pr-3 py-2 font-mono text-xs text-[#F7F8F8] placeholder:text-[#8796A2] focus:border-white focus:outline-none"
+                className="w-full rounded-md border border-[#E5E1D8] bg-[#F7F5F0] pl-9 pr-3 py-2 font-mono text-xs text-[#111827] placeholder:text-[#64748B] focus:border-[#B08D57] focus:outline-none"
               />
             </div>
 
@@ -328,7 +319,7 @@ export function ExternalJobs({ token }: { token: string }) {
                 value={selectedProvider}
                 onChange={(e) => setSelectedProvider(e.target.value)}
                 aria-label="Filter by provider"
-                className="w-full rounded-md border border-white/15 bg-[#071E2B] px-3 py-2 font-mono text-xs text-[#F7F8F8] focus:border-white focus:outline-none cursor-pointer"
+                className="w-full rounded-md border border-[#E5E1D8] bg-[#FFFFFF] px-3 py-2 font-mono text-xs text-[#111827] focus:border-[#B08D57] focus:outline-none cursor-pointer"
               >
                 <option value="all">All Providers</option>
                 <option value="yc">YC Startup Jobs</option>
@@ -346,8 +337,8 @@ export function ExternalJobs({ token }: { token: string }) {
               onClick={() => setRemoteOnly((v) => !v)}
               className={`rounded-xs border px-3 py-1 text-xs transition-colors cursor-pointer ${
                 remoteOnly
-                  ? "border-[#9CC7D8]/40 bg-[#9CC7D8]/10 text-[#9CC7D8]"
-                  : "border-white/10 bg-white/[0.02] text-[#8796A2] hover:text-white"
+                  ? "border-[#B08D57]/40 bg-[rgba(176,141,87,0.08)] text-[#B08D57]"
+                  : "border-[#E5E1D8] bg-[#F7F5F0] text-[#64748B] hover:text-[#111827]"
               }`}
             >
               Remote Only
@@ -357,7 +348,7 @@ export function ExternalJobs({ token }: { token: string }) {
               value={employmentType}
               onChange={(e) => setEmploymentType(e.target.value)}
               aria-label="Employment type filter"
-              className="rounded-xs border border-white/10 bg-[#071E2B] px-3 py-1 text-xs text-[#BEC8CF] focus:outline-none cursor-pointer"
+              className="rounded-xs border border-[#E5E1D8] bg-[#FFFFFF] px-3 py-1 text-xs text-[#475569] focus:outline-none cursor-pointer"
             >
               <option value="all">Type: All</option>
               <option value="internship">Internship</option>
@@ -369,7 +360,7 @@ export function ExternalJobs({ token }: { token: string }) {
               value={freshnessDays}
               onChange={(e) => setFreshnessDays(Number(e.target.value))}
               aria-label="Posted date freshness filter"
-              className="rounded-xs border border-white/10 bg-[#071E2B] px-3 py-1 text-xs text-[#BEC8CF] focus:outline-none cursor-pointer"
+              className="rounded-xs border border-[#E5E1D8] bg-[#FFFFFF] px-3 py-1 text-xs text-[#475569] focus:outline-none cursor-pointer"
             >
               <option value={0}>Posted: Anytime</option>
               <option value={1}>Posted: Last 24 hours</option>
@@ -389,7 +380,7 @@ export function ExternalJobs({ token }: { token: string }) {
                   setEmploymentType("all");
                   setFreshnessDays(0);
                 }}
-                className="text-xs text-[#9CC7D8] hover:text-white ml-auto cursor-pointer"
+                className="text-xs text-[#B08D57] hover:text-[#111827] ml-auto cursor-pointer"
               >
                 Clear all filters
               </button>
@@ -404,14 +395,14 @@ export function ExternalJobs({ token }: { token: string }) {
       ) : error ? (
         <ErrorState message={error} onRetry={() => void loadData()} />
       ) : jobs.length === 0 ? (
-        <div className="rounded-md border border-white/10 bg-[#071E2B] p-12 text-center space-y-3 font-sans">
+        <div className="rounded-md border border-[#E5E1D8] bg-[#FFFFFF] p-12 text-center space-y-3 font-sans">
           <h3
-            className="text-xl font-normal text-[#F7F8F8]"
+            className="text-xl font-normal text-[#111827]"
             style={{ fontFamily: "var(--font-display)" }}
           >
             No live jobs discovered yet
           </h3>
-          <p className="font-mono text-xs text-[#8796A2] max-w-md mx-auto leading-relaxed">
+          <p className="font-mono text-xs text-[#64748B] max-w-md mx-auto leading-relaxed">
             Configure job board discovery filters or click discover to fetch fresh tech roles directly from Greenhouse, Lever, and Ashby APIs.
           </p>
         </div>
@@ -427,7 +418,7 @@ export function ExternalJobs({ token }: { token: string }) {
                 key={job.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="rounded-md border border-white/10 bg-[#071E2B] p-6 flex flex-col justify-between space-y-4 hover:border-white/20 transition-colors"
+                className="rounded-md border border-[#E5E1D8] bg-[#FFFFFF] p-6 flex flex-col justify-between space-y-4 hover:border-[#E5E1D8] transition-colors"
               >
                 <div className="space-y-3">
                   {/* Top Bar: Provider & Match Score */}
@@ -440,12 +431,12 @@ export function ExternalJobs({ token }: { token: string }) {
                       <button
                         type="button"
                         onClick={() => setActiveExplanationMatch(match)}
-                        className="rounded-xs border border-[#9CC7D8]/30 bg-[#9CC7D8]/10 px-2.5 py-0.5 text-xs text-[#9CC7D8] hover:text-white transition-colors cursor-pointer"
+                        className="rounded-xs border border-[#B08D57]/30 bg-[rgba(176,141,87,0.08)] px-2.5 py-0.5 text-xs text-[#B08D57] hover:text-[#111827] transition-colors cursor-pointer"
                       >
                         {Math.round(match.final_score * 100)}% Match
                       </button>
                     ) : (
-                      <span className="text-[10px] text-[#8796A2]">
+                      <span className="text-[10px] text-[#64748B]">
                         Live posting
                       </span>
                     )}
@@ -454,19 +445,19 @@ export function ExternalJobs({ token }: { token: string }) {
                   {/* Title & Company */}
                   <div className="space-y-1">
                     <h3
-                      className="text-xl font-normal text-[#F7F8F8] leading-tight"
+                      className="text-xl font-normal text-[#111827] leading-tight"
                       style={{ fontFamily: "var(--font-display)" }}
                     >
                       {job.title}
                     </h3>
-                    <p className="text-xs text-[#BEC8CF] flex items-center gap-1.5 font-mono">
-                      <Building2 className="h-3.5 w-3.5 text-[#8796A2]" />
+                    <p className="text-xs text-[#475569] flex items-center gap-1.5 font-mono">
+                      <Building2 className="h-3.5 w-3.5 text-[#64748B]" />
                       <span>{job.company_name}</span>
                     </p>
                   </div>
 
                   {/* Location & Metadata */}
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-[#8796A2]">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs text-[#64748B]">
                     {job.location && (
                       <span className="flex items-center gap-1">
                         <MapPin className="h-3 w-3" />
@@ -474,11 +465,11 @@ export function ExternalJobs({ token }: { token: string }) {
                       </span>
                     )}
                     {job.remote_status && (
-                      <span className="text-emerald-400">
+                      <span className="text-[#4F6F5A]">
                         · {job.remote_status.replace("_", " ")}
                       </span>
                     )}
-                    <span className="text-[#8796A2]">
+                    <span className="text-[#64748B]">
                       · {formatDate(job.posted_at)}
                     </span>
                   </div>
@@ -486,10 +477,10 @@ export function ExternalJobs({ token }: { token: string }) {
                   {/* Requirements Tags */}
                   {job.requirements && job.requirements.length > 0 && (
                     <div className="pt-1">
-                      <span className="font-mono text-[10px] uppercase tracking-wider text-[#8796A2] block mb-1">
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-[#64748B] block mb-1">
                         Requirements
                       </span>
-                      <p className="font-mono text-xs text-[#BEC8CF]">
+                      <p className="font-mono text-xs text-[#475569]">
                         {job.requirements.map((r) => r.skill_name).join(" · ")}
                       </p>
                     </div>
@@ -497,13 +488,13 @@ export function ExternalJobs({ token }: { token: string }) {
                 </div>
 
                 {/* Bottom Actions */}
-                <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-3">
+                <div className="pt-4 border-t border-[#E5E1D8] flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <a
                       href={job.source_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="border border-white/10 bg-white/[0.02] p-2 rounded-md text-[#8796A2] hover:text-white transition-colors"
+                      className="border border-[#E5E1D8] bg-[#F7F5F0] p-2 rounded-md text-[#64748B] hover:text-[#111827] transition-colors"
                       title="View original posting"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
@@ -514,8 +505,8 @@ export function ExternalJobs({ token }: { token: string }) {
                       onClick={() => handleToggleSave(job.id)}
                       className={`border p-2 rounded-md transition-colors cursor-pointer ${
                         isSaved
-                          ? "border-[#9CC7D8]/40 bg-[#9CC7D8]/10 text-[#9CC7D8]"
-                          : "border-white/10 bg-white/[0.02] text-[#8796A2] hover:text-white"
+                          ? "border-[#B08D57]/40 bg-[rgba(176,141,87,0.08)] text-[#B08D57]"
+                          : "border-[#E5E1D8] bg-[#F7F5F0] text-[#64748B] hover:text-[#111827]"
                       }`}
                       title={isSaved ? "Saved" : "Save opportunity"}
                     >
@@ -546,13 +537,13 @@ export function ExternalJobs({ token }: { token: string }) {
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.97 }}
-              className="w-full max-w-2xl rounded-md border border-white/15 bg-[#071E2B] shadow-2xl p-6 space-y-5 text-[#F7F8F8]"
+              className="w-full max-w-2xl rounded-md border border-[#E5E1D8] bg-[#FFFFFF] shadow-2xl p-6 space-y-5 text-[#111827]"
             >
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center justify-between border-b border-[#E5E1D8] pb-4">
                 <div className="flex items-center gap-2">
-                  <ListFilter className="h-4 w-4 text-[#9CC7D8]" />
+                  <ListFilter className="h-4 w-4 text-[#B08D57]" />
                   <h3
-                    className="text-xl font-normal text-[#F7F8F8]"
+                    className="text-xl font-normal text-[#111827]"
                     style={{ fontFamily: "var(--font-display)" }}
                   >
                     Saved Discovery Rules & Cadence
@@ -561,7 +552,7 @@ export function ExternalJobs({ token }: { token: string }) {
                 <button
                   type="button"
                   onClick={() => setShowSavedRules(false)}
-                  className="text-[#8796A2] hover:text-white p-1"
+                  className="text-[#64748B] hover:text-[#111827] p-1"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -569,7 +560,7 @@ export function ExternalJobs({ token }: { token: string }) {
 
               <SavedDiscoveries token={token} />
 
-              <div className="pt-3 border-t border-white/10 flex justify-end">
+              <div className="pt-3 border-t border-[#E5E1D8] flex justify-end">
                 <EditorialButton
                   variant="primary"
                   onClick={() => setShowSavedRules(false)}
@@ -590,48 +581,48 @@ export function ExternalJobs({ token }: { token: string }) {
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.97 }}
-              className="w-full max-w-xl rounded-md border border-white/15 bg-[#071E2B] shadow-2xl p-6 space-y-5 text-[#F7F8F8]"
+              className="w-full max-w-xl rounded-md border border-[#E5E1D8] bg-[#FFFFFF] shadow-2xl p-6 space-y-5 text-[#111827]"
             >
-              <div className="flex items-start justify-between border-b border-white/10 pb-4">
+              <div className="flex items-start justify-between border-b border-[#E5E1D8] pb-4">
                 <div className="space-y-1">
-                  <span className="font-mono text-[10px] uppercase tracking-wider text-[#8796A2]">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-[#64748B]">
                     Match Explanation
                   </span>
                   <h3
-                    className="text-xl font-normal text-[#F7F8F8]"
+                    className="text-xl font-normal text-[#111827]"
                     style={{ fontFamily: "var(--font-display)" }}
                   >
                     {activeExplanationMatch.title}
                   </h3>
-                  <p className="font-mono text-xs text-[#BEC8CF]">
+                  <p className="font-mono text-xs text-[#475569]">
                     {activeExplanationMatch.company_name} · Score: {Math.round(activeExplanationMatch.final_score * 100)}%
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setActiveExplanationMatch(null)}
-                  className="text-[#8796A2] hover:text-white p-1"
+                  className="text-[#64748B] hover:text-[#111827] p-1"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
 
               <div className="grid grid-cols-3 gap-2 text-center font-mono">
-                <div className="rounded-sm border border-white/10 bg-white/[0.01] p-3">
-                  <span className="text-[10px] uppercase text-[#8796A2] block">Exact</span>
-                  <strong className="text-base font-normal text-[#F7F8F8]" style={{ fontFamily: "var(--font-display)" }}>
+                <div className="rounded-sm border border-[#E5E1D8] bg-[#F7F5F0] p-3">
+                  <span className="text-[10px] uppercase text-[#64748B] block">Exact</span>
+                  <strong className="text-base font-normal text-[#111827]" style={{ fontFamily: "var(--font-display)" }}>
                     {Math.round(activeExplanationMatch.deterministic_score * 100)}%
                   </strong>
                 </div>
-                <div className="rounded-sm border border-white/10 bg-white/[0.01] p-3">
-                  <span className="text-[10px] uppercase text-[#8796A2] block">Semantic</span>
-                  <strong className="text-base font-normal text-[#9CC7D8]" style={{ fontFamily: "var(--font-display)" }}>
+                <div className="rounded-sm border border-[#E5E1D8] bg-[#F7F5F0] p-3">
+                  <span className="text-[10px] uppercase text-[#64748B] block">Semantic</span>
+                  <strong className="text-base font-normal text-[#B08D57]" style={{ fontFamily: "var(--font-display)" }}>
                     {Math.round(activeExplanationMatch.semantic_score * 100)}%
                   </strong>
                 </div>
-                <div className="rounded-sm border border-white/10 bg-white/[0.01] p-3">
-                  <span className="text-[10px] uppercase text-[#8796A2] block">Verification</span>
-                  <strong className="text-base font-normal text-emerald-400" style={{ fontFamily: "var(--font-display)" }}>
+                <div className="rounded-sm border border-[#E5E1D8] bg-[#F7F5F0] p-3">
+                  <span className="text-[10px] uppercase text-[#64748B] block">Verification</span>
+                  <strong className="text-base font-normal text-[#4F6F5A]" style={{ fontFamily: "var(--font-display)" }}>
                     +{Math.round(activeExplanationMatch.verification_bonus * 100)}%
                   </strong>
                 </div>
@@ -641,23 +632,23 @@ export function ExternalJobs({ token }: { token: string }) {
                 {activeExplanationMatch.explanation?.items?.map((item) => (
                   <div
                     key={item.skill_id}
-                    className="flex items-start gap-2.5 rounded-sm border border-white/10 bg-white/[0.01] p-3 text-xs font-mono"
+                    className="flex items-start gap-2.5 rounded-sm border border-[#E5E1D8] bg-[#F7F5F0] p-3 text-xs font-mono"
                   >
                     {item.status === "missing" ? (
-                      <AlertTriangle className="h-3.5 w-3.5 text-[#9CC7D8] shrink-0 mt-0.5" />
+                      <AlertTriangle className="h-3.5 w-3.5 text-[#B08D57] shrink-0 mt-0.5" />
                     ) : (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                      <CheckCircle2 className="h-3.5 w-3.5 text-[#4F6F5A] shrink-0 mt-0.5" />
                     )}
                     <div>
-                      <span className="text-[#F7F8F8]">
+                      <span className="text-[#111827]">
                         {item.skill_name}
                       </span>
-                      <span className="text-[#8796A2] ml-2">
+                      <span className="text-[#64748B] ml-2">
                         {item.status === "missing"
-                          ? "Missing from Skill Passport"
+                          ? "Missing from Lumina Intel"
                           : item.evidence_title
                           ? `✓ Proven in: ${item.evidence_title}`
-                          : "✓ Verified in Skill Passport"}
+                          : "✓ Verified in Lumina Intel"}
                       </span>
                     </div>
                   </div>
@@ -685,13 +676,13 @@ export function ExternalJobs({ token }: { token: string }) {
               initial={{ opacity: 0, scale: 0.97 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.97 }}
-              className="w-full max-w-2xl rounded-md border border-white/15 bg-[#071E2B] shadow-2xl p-6 space-y-4 text-[#F7F8F8]"
+              className="w-full max-w-2xl rounded-md border border-[#E5E1D8] bg-[#FFFFFF] shadow-2xl p-6 space-y-4 text-[#111827]"
             >
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center justify-between border-b border-[#E5E1D8] pb-4">
                 <div className="flex items-center gap-2">
-                  <FileCheck2 className="h-4 w-4 text-[#9CC7D8]" />
+                  <FileCheck2 className="h-4 w-4 text-[#B08D57]" />
                   <h3
-                    className="text-xl font-normal text-[#F7F8F8]"
+                    className="text-xl font-normal text-[#111827]"
                     style={{ fontFamily: "var(--font-display)" }}
                   >
                     Application Review & Verification
@@ -700,7 +691,7 @@ export function ExternalJobs({ token }: { token: string }) {
                 <button
                   type="button"
                   onClick={() => setApplicationInReview(null)}
-                  className="text-[#8796A2] hover:text-white p-1"
+                  className="text-[#64748B] hover:text-[#111827] p-1"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -712,7 +703,7 @@ export function ExternalJobs({ token }: { token: string }) {
                 onChanged={(updated) => setApplicationInReview(updated)}
               />
 
-              <div className="pt-3 border-t border-white/10 flex justify-end">
+              <div className="pt-3 border-t border-[#E5E1D8] flex justify-end">
                 <EditorialButton
                   variant="secondary"
                   onClick={() => setApplicationInReview(null)}

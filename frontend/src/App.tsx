@@ -35,7 +35,6 @@ import { useAuth } from "./auth/AuthContext";
 import { CommandPalette } from "./components/CommandPalette";
 import { SkillPassportCopilot } from "./components/SkillPassportCopilot";
 import { PostLoginTransition } from "./components/PostLoginTransition";
-import { AuthBackground } from "./components/AuthBackground";
 
 const RecruiterDashboard = lazy(async () => ({
   default: (await import("./pages/RecruiterDashboard")).RecruiterDashboard,
@@ -49,6 +48,34 @@ const AcademicianDashboard = lazy(async () => ({
 const InstitutionDashboard = lazy(async () => ({
   default: (await import("./pages/InstitutionDashboard")).InstitutionDashboard,
 }));
+
+function DashboardVideoBackground() {
+  const prefersReduced = useReducedMotion();
+
+  return (
+    <div
+      aria-hidden="true"
+      className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none"
+    >
+      {/* Full-viewport Background Video Layer (100% High Visibility) */}
+      {!prefersReduced ? (
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="fixed inset-0 h-full w-full object-cover z-[-2] opacity-100"
+          src="https://designerstephen.github.io/public-assets/videos/serene-art-hero.mp4"
+        />
+      ) : (
+        <div className="fixed inset-0 bg-[#F7F5F0] z-[-2]" />
+      )}
+
+      {/* Subtle Non-Obtrusive Legibility Overlay (Maximizes Video Visibility) */}
+      <div className="fixed inset-0 z-[-1] bg-gradient-to-b from-white/20 via-transparent to-white/20" />
+    </div>
+  );
+}
 
 export type StudentTab =
   | "overview"
@@ -96,7 +123,6 @@ export function App() {
   const [institutionTab, setInstitutionTab] = useState<InstitutionTab>("overview");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
-  const [copilotOpen, setCopilotOpen] = useState(false);
 
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     return localStorage.getItem("skill_passport_sidebar_collapsed") === "true";
@@ -106,15 +132,12 @@ export function App() {
     localStorage.setItem("skill_passport_sidebar_collapsed", String(isCollapsed));
   }, [isCollapsed]);
 
-  // Keyboard shortcut (Ctrl+B / Cmd+B) to toggle sidebar, and (Ctrl+J / Cmd+J) for Copilot
+  // Keyboard shortcut (Ctrl+B / Cmd+B) to toggle sidebar
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
         e.preventDefault();
         setIsCollapsed((prev) => !prev);
-      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "j") {
-        e.preventDefault();
-        setCopilotOpen((prev) => !prev);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -147,7 +170,7 @@ export function App() {
   // Core student navigation tabs
   const studentNavItems: { id: StudentTab; label: string; icon: React.ReactNode }[] = [
     { id: "overview", label: "Overview", icon: <LayoutDashboard className="h-4 w-4 shrink-0" aria-hidden="true" /> },
-    { id: "passport", label: "Skill Passport", icon: <BadgeCheck className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "passport", label: "Lumina Intel", icon: <BadgeCheck className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "gaps", label: "Skill Gaps & Goals", icon: <TrendingUp className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "assessments", label: "Skill Assessments", icon: <ShieldCheck className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "learning", label: "Learning Hub", icon: <BookOpen className="h-4 w-4 shrink-0" aria-hidden="true" /> },
@@ -205,11 +228,12 @@ export function App() {
     : institutionTab;
 
   return (
-    <div className="dark auth-background-shell min-h-screen bg-[#021522] flex text-white relative font-sans selection:bg-white/20 selection:text-white">
-      <AuthBackground />
+    <div className="min-h-screen relative flex text-[#111827] font-sans selection:bg-[rgba(176,141,87,0.2)] selection:text-[#111827]">
+      {/* Shared Full-Viewport Animated Background Video Layer */}
+      <DashboardVideoBackground />
 
       {/* Toast Notifications */}
-      <Toaster position="bottom-right" theme="dark" closeButton />
+      <Toaster position="bottom-right" theme="light" closeButton />
 
       {/* Command Palette */}
       {(isStudent || isRecruiter) && (
@@ -219,41 +243,40 @@ export function App() {
           role={isStudent ? "student" : "recruiter"}
           onSelectStudentTab={setStudentTab}
           onSelectRecruiterTab={setRecruiterTab}
-          onOpenCopilot={() => setCopilotOpen(true)}
         />
       )}
 
       {/* Mobile Overlay */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-40 bg-[#031322]/80 backdrop-blur-xs md:hidden"
+          className="fixed inset-0 z-40 bg-[#0F172A]/40 backdrop-blur-xs md:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
-      {/* Left Rail / Sidebar */}
+      {/* Left Rail / Sidebar (Translucent Glassmorphism with Subtle Border) */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 h-screen md:sticky md:top-0 bg-[#061524] border-r border-white/10 flex flex-col justify-between transition-all duration-200 md:translate-x-0 shrink-0 ${
+        className={`fixed inset-y-0 left-0 z-40 h-screen md:sticky md:top-0 bg-white/20 md:bg-white/20 backdrop-blur-md border-r border-[#E5E1D8]/60 flex flex-col justify-between transition-all duration-200 md:translate-x-0 shrink-0 ${
           isCollapsed ? "md:w-20" : "md:w-64"
-        } w-64 ${mobileMenuOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}
+        } w-64 ${mobileMenuOpen ? "translate-x-0 shadow-2xl bg-white/95" : "-translate-x-full"}`}
       >
         {/* Top Header & Nav Items */}
         <div className={`flex-1 min-h-0 ${isCollapsed ? "p-3 overflow-hidden" : "p-5 overflow-y-auto no-scrollbar"}`}>
           {/* Logo */}
-          <div className={`flex items-center ${isCollapsed ? "flex-col gap-3" : "justify-between"} pb-6 border-b border-white/10 mb-4`}>
-            <a href="/" className="flex items-center gap-2.5 text-white min-w-0">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-white/20 bg-white/10 font-mono text-xs text-white">
-                SP
+          <div className={`flex items-center ${isCollapsed ? "flex-col gap-3" : "justify-between"} pb-6 border-b border-[#E5E1D8]/40 mb-4`}>
+            <a href="/" className="flex items-center gap-2.5 text-[#111827] min-w-0">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#B08D57]/40 bg-white/30 font-mono text-xs text-[#B08D57] font-semibold">
+                LI
               </span>
               {!isCollapsed && (
                 <div className="overflow-hidden whitespace-nowrap">
                   <span
-                    className="text-lg font-normal tracking-tight block leading-none text-white"
+                    className="text-lg font-normal tracking-tight block leading-none text-[#111827]"
                     style={{ fontFamily: "var(--font-display)" }}
                   >
-                    Skill Passport<sup className="text-[10px] ml-0.5 opacity-70">®</sup>
+                    Lumina Intel<sup className="text-[10px] ml-0.5 text-[#B08D57]">®</sup>
                   </span>
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 block mt-1">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-[#B08D57] block mt-1 font-semibold">
                     {session.role}
                   </span>
                 </div>
@@ -265,7 +288,7 @@ export function App() {
               type="button"
               onClick={() => setIsCollapsed((prev) => !prev)}
               aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="hidden md:flex h-7 w-7 shrink-0 items-center justify-center rounded-sm border border-white/10 bg-white/[0.02] text-neutral-400 hover:text-white hover:border-white/20 transition-colors cursor-pointer"
+              className="hidden md:flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#E5E1D8]/40 bg-white/20 text-[#64748B] hover:text-[#111827] hover:border-[#B08D57]/50 transition-colors cursor-pointer"
             >
               <MoreHorizontal className={`h-3.5 w-3.5 transition-transform ${isCollapsed ? "rotate-90" : ""}`} />
             </button>
@@ -273,7 +296,7 @@ export function App() {
             {/* Mobile Close Button */}
             <button
               type="button"
-              className="md:hidden text-neutral-400 hover:text-white p-1"
+              className="md:hidden text-[#64748B] hover:text-[#111827] p-1"
               onClick={() => setMobileMenuOpen(false)}
               aria-label="Close menu"
             >
@@ -284,7 +307,7 @@ export function App() {
           {/* Navigation Links */}
           <nav className="space-y-1">
             {!isCollapsed && (
-              <div className="text-[10px] font-mono uppercase tracking-widest text-neutral-400 px-3 py-1.5 mb-1">
+              <div className="text-[11px] font-mono uppercase tracking-widest text-[#0f172a] px-3 py-1.5 mb-1.5 font-bold">
                 Workspace
               </div>
             )}
@@ -301,15 +324,15 @@ export function App() {
                       setMobileMenuOpen(false);
                     }}
                     title={isCollapsed ? item.label : undefined}
-                    className={`w-full flex items-center rounded-sm text-xs transition-colors cursor-pointer ${
-                      isCollapsed ? "justify-center p-2.5" : "px-3 py-2 gap-3"
+                    className={`w-full flex items-center rounded-lg text-xs transition-all duration-200 cursor-pointer ${
+                      isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
                     } ${
                       isActive
-                        ? "bg-white/10 text-white font-medium border-l-2 border-white"
-                        : "text-neutral-400 hover:bg-white/[0.03] hover:text-neutral-200"
+                        ? "bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
+                        : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
                     }`}
                   >
-                    <span className="shrink-0">{item.icon}</span>
+                    <span className={`shrink-0 ${isActive ? "text-[#935f18]" : "text-[#1e293b]"}`}>{item.icon}</span>
                     {!isCollapsed && <span className="truncate">{item.label}</span>}
                   </button>
                 );
@@ -327,15 +350,15 @@ export function App() {
                       setMobileMenuOpen(false);
                     }}
                     title={isCollapsed ? item.label : undefined}
-                    className={`w-full flex items-center rounded-sm text-xs transition-colors cursor-pointer ${
-                      isCollapsed ? "justify-center p-2.5" : "px-3 py-2 gap-3"
+                    className={`w-full flex items-center rounded-lg text-xs transition-all duration-200 cursor-pointer ${
+                      isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
                     } ${
                       isActive
-                        ? "bg-white/10 text-white font-medium border-l-2 border-white"
-                        : "text-neutral-400 hover:bg-white/[0.03] hover:text-neutral-200"
+                        ? "bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
+                        : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
                     }`}
                   >
-                    <span className="shrink-0">{item.icon}</span>
+                    <span className={`shrink-0 ${isActive ? "text-[#935f18]" : "text-[#1e293b]"}`}>{item.icon}</span>
                     {!isCollapsed && <span className="truncate">{item.label}</span>}
                   </button>
                 );
@@ -353,15 +376,15 @@ export function App() {
                       setMobileMenuOpen(false);
                     }}
                     title={isCollapsed ? item.label : undefined}
-                    className={`w-full flex items-center rounded-sm text-xs transition-colors cursor-pointer ${
-                      isCollapsed ? "justify-center p-2.5" : "px-3 py-2 gap-3"
+                    className={`w-full flex items-center rounded-lg text-xs transition-all duration-200 cursor-pointer ${
+                      isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
                     } ${
                       isActive
-                        ? "bg-white/10 text-white font-medium border-l-2 border-white"
-                        : "text-neutral-400 hover:bg-white/[0.03] hover:text-neutral-200"
+                        ? "bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
+                        : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
                     }`}
                   >
-                    <span className="shrink-0">{item.icon}</span>
+                    <span className={`shrink-0 ${isActive ? "text-[#935f18]" : "text-[#1e293b]"}`}>{item.icon}</span>
                     {!isCollapsed && <span className="truncate">{item.label}</span>}
                   </button>
                 );
@@ -379,15 +402,15 @@ export function App() {
                       setMobileMenuOpen(false);
                     }}
                     title={isCollapsed ? item.label : undefined}
-                    className={`w-full flex items-center rounded-sm text-xs transition-colors cursor-pointer ${
-                      isCollapsed ? "justify-center p-2.5" : "px-3 py-2 gap-3"
+                    className={`w-full flex items-center rounded-lg text-xs transition-all duration-200 cursor-pointer ${
+                      isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
                     } ${
                       isActive
-                        ? "bg-white/10 text-white font-medium border-l-2 border-white"
-                        : "text-neutral-400 hover:bg-white/[0.03] hover:text-neutral-200"
+                        ? "bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
+                        : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
                     }`}
                   >
-                    <span className="shrink-0">{item.icon}</span>
+                    <span className={`shrink-0 ${isActive ? "text-[#935f18]" : "text-[#1e293b]"}`}>{item.icon}</span>
                     {!isCollapsed && <span className="truncate">{item.label}</span>}
                   </button>
                 );
@@ -395,22 +418,22 @@ export function App() {
           </nav>
         </div>
 
-        {/* Footer / User Profile & Logout */}
-        <div className={`border-t border-white/10 bg-[#061524] p-3.5 space-y-2`}>
+        {/* Footer / User Profile & Logout (Translucent Glass) */}
+        <div className={`border-t border-[#E5E1D8]/60 bg-white/20 p-3.5 space-y-2`}>
           {!isCollapsed ? (
-            <div className="flex items-center justify-between gap-2 p-2 rounded-sm border border-white/10 bg-white/[0.02]">
+            <div className="flex items-center justify-between gap-2 p-2 rounded-lg border border-[#E5E1D8]/60 bg-white/40 backdrop-blur-xs shadow-2xs">
               <div className="min-w-0 flex-1">
-                <div className="text-xs text-white truncate font-medium">{session.email}</div>
-                <div className="font-mono text-[10px] uppercase text-neutral-400 mt-0.5">{session.role}</div>
+                <div className="text-xs text-[#000000] truncate font-bold">{session.email}</div>
+                <div className="font-mono text-[10px] uppercase text-[#935f18] mt-0.5 font-bold">{session.role}</div>
               </div>
               <button
                 type="button"
                 onClick={signOut}
                 title="Sign out"
                 aria-label="Sign out"
-                className="p-1 text-neutral-400 hover:text-red-300 transition-colors cursor-pointer"
+                className="p-1.5 text-[#0f172a] hover:text-[#b91c1c] transition-colors cursor-pointer"
               >
-                <LogOut className="h-3.5 w-3.5" />
+                <LogOut className="h-4 w-4" />
               </button>
             </div>
           ) : (
@@ -419,7 +442,7 @@ export function App() {
               onClick={signOut}
               title="Sign out"
               aria-label="Sign out"
-              className="flex h-9 w-full items-center justify-center rounded-sm border border-white/10 text-neutral-400 hover:text-red-300 transition-colors cursor-pointer"
+              className="flex h-9 w-full items-center justify-center rounded-lg border border-[#E5E1D8]/60 bg-white/40 text-[#0f172a] hover:text-[#b91c1c] transition-colors cursor-pointer shadow-2xs"
             >
               <LogOut className="h-4 w-4" />
             </button>
@@ -428,20 +451,20 @@ export function App() {
       </aside>
 
       {/* Main Content Area */}
-      <div className="relative z-10 flex-1 flex flex-col min-w-0 bg-transparent">
-        {/* Desktop Top Status Bar */}
-        <header className="sticky top-0 z-30 border-b border-white/10 bg-[#031322]/[0.92] backdrop-blur-[2px] px-6 py-3.5 flex items-center justify-between">
+      <div className="relative z-10 flex-1 flex flex-col min-w-0">
+        {/* Desktop Top Status Bar (Translucent Glassmorphism) */}
+        <header className="sticky top-0 z-30 border-b border-[#E5E1D8]/50 bg-white/25 md:bg-white/25 backdrop-blur-md px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
               aria-label="Open sidebar menu"
-              className="md:hidden p-1.5 rounded-sm border border-white/10 text-neutral-400 hover:text-white"
+              className="md:hidden p-1.5 rounded-lg border border-[#E5E1D8]/50 text-[#0f172a] hover:text-[#000000] hover:bg-white/40"
             >
               <Menu className="h-4 w-4" />
             </button>
-            <div className="font-mono text-xs text-neutral-400 uppercase tracking-wider hidden sm:block">
-              {session.role} / <span className="text-white">{currentTabName}</span>
+            <div className="font-mono text-xs uppercase tracking-wider hidden sm:block text-[#334155] font-semibold">
+              {session.role} / <span className="text-[#000000] font-bold">{currentTabName}</span>
             </div>
           </div>
 
@@ -450,25 +473,12 @@ export function App() {
               <button
                 type="button"
                 onClick={() => setCmdOpen(true)}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1 text-xs text-neutral-400 hover:text-white hover:border-white/20 transition-colors cursor-pointer"
+                className="pill-btn-outline px-3.5 py-1 text-xs text-[#0f172a] font-medium hover:text-[#000000] hover:font-semibold gap-2 shadow-2xs border-[#E5E1D8]/60 bg-white/40 hover:bg-white/60"
               >
-                <Search className="h-3.5 w-3.5" />
+                <Search className="h-3.5 w-3.5 text-[#0f172a]" />
                 <span>Search actions</span>
-                <kbd className="font-mono text-[10px] text-neutral-400 border border-white/10 px-1 py-0.5 rounded-xs">
+                <kbd className="font-mono text-[10px] text-[#0f172a] font-bold border border-[#CBD5E1] bg-white/60 px-1.5 py-0.5 rounded-sm">
                   ⌘K
-                </kbd>
-              </button>
-            )}
-
-            {(isStudent || isRecruiter) && (
-              <button
-                type="button"
-                onClick={() => setCopilotOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3.5 py-1 text-xs font-medium text-white hover:bg-white/15 transition-colors cursor-pointer"
-              >
-                <span>Copilot</span>
-                <kbd className="font-mono text-[10px] text-neutral-400 border border-white/10 px-1 py-0.5 rounded-xs">
-                  ⌘J
                 </kbd>
               </button>
             )}
@@ -488,7 +498,7 @@ export function App() {
               {isStudent ? (
                 <Suspense
                   fallback={
-                    <div className="flex flex-col items-center justify-center py-24 text-center font-mono text-xs text-neutral-400">
+                    <div className="flex flex-col items-center justify-center py-24 text-center font-mono text-xs text-[#64748B]">
                       <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent mb-3" />
                       Loading Student Dossier...
                     </div>
@@ -499,7 +509,7 @@ export function App() {
               ) : isRecruiter ? (
                 <Suspense
                   fallback={
-                    <div className="flex flex-col items-center justify-center py-24 text-center font-mono text-xs text-neutral-400">
+                    <div className="flex flex-col items-center justify-center py-24 text-center font-mono text-xs text-[#64748B]">
                       <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent mb-3" />
                       Loading Recruiter Workspace...
                     </div>
@@ -510,7 +520,7 @@ export function App() {
               ) : isAcademician ? (
                 <Suspense
                   fallback={
-                    <div className="flex flex-col items-center justify-center py-24 text-center font-mono text-xs text-neutral-400">
+                    <div className="flex flex-col items-center justify-center py-24 text-center font-mono text-xs text-[#64748B]">
                       <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent mb-3" />
                       Loading Academician Portal...
                     </div>
@@ -525,7 +535,7 @@ export function App() {
               ) : isInstitution ? (
                 <Suspense
                   fallback={
-                    <div className="flex flex-col items-center justify-center py-24 text-center font-mono text-xs text-neutral-400">
+                    <div className="flex flex-col items-center justify-center py-24 text-center font-mono text-xs text-[#64748B]">
                       <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent mb-3" />
                       Loading University Intelligence...
                     </div>
@@ -538,11 +548,11 @@ export function App() {
                   />
                 </Suspense>
               ) : (
-                <section className="border border-white/10 bg-[#061524] p-8 rounded-md">
-                  <h1 className="text-2xl font-normal text-white" style={{ fontFamily: "var(--font-display)" }}>
+                <section className="border border-[#E5E1D8] bg-[#FFFFFF] p-8 rounded-[16px] shadow-[0_8px_30px_rgba(17,24,39,0.04)] text-[#111827]">
+                  <h1 className="text-2xl font-normal text-[#111827]" style={{ fontFamily: "var(--font-display)" }}>
                     Administrator Access
                   </h1>
-                  <p className="mt-2 text-xs text-neutral-400 font-sans">
+                  <p className="mt-2 text-xs text-[#475569] font-sans">
                     Administrative taxonomy and fairness controls remain server-authorized endpoints.
                   </p>
                 </section>
@@ -552,14 +562,11 @@ export function App() {
         </main>
       </div>
 
-      {/* Copilot Drawer */}
+      {/* Floating Bottom-Right Copilot Assistant */}
       {(isStudent || isRecruiter) && (
         <SkillPassportCopilot
           token={session.access_token}
-          isOpen={copilotOpen}
-          onOpen={() => setCopilotOpen(true)}
-          onClose={() => setCopilotOpen(false)}
-          onNavigate={(tab) => {
+          onNavigate={(tab: string) => {
             if (isStudent) setStudentTab(tab as StudentTab);
             else if (isRecruiter) setRecruiterTab(tab as RecruiterTab);
           }}

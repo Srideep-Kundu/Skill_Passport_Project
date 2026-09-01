@@ -1,4 +1,4 @@
-// Centralized Motion Design Tokens for Skill Passport
+// Centralized Motion Design Tokens for Lumina Intel
 // Coordinated Cinematic Page Entry, Light Arriving, and Tab Transitions
 import type { Variants, Transition } from "framer-motion";
 

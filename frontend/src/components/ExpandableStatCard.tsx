@@ -99,18 +99,18 @@ export function ExpandableStatCard({
           duration: 0.22,
           ease: [0.16, 1, 0.3, 1],
         }}
-        className={`absolute top-0 left-0 right-0 w-full origin-center rounded-md border p-5 transition-colors cursor-pointer ${
+        className={`absolute top-0 left-0 right-0 w-full origin-center rounded-[16px] border p-5 transition-all cursor-pointer ${
           isHovered
-            ? "z-50 border-white/30 bg-[#0B2634] shadow-xl"
-            : "z-10 border-white/10 bg-[#071E2B]"
+            ? "z-50 border-[#B08D57] bg-[#FFFFFF] shadow-[0_12px_40px_rgba(17,24,39,0.12)]"
+            : "z-10 border-[#E5E1D8] bg-[#FFFFFF] shadow-[0_8px_30px_rgba(17,24,39,0.04)]"
         }`}
       >
         {/* Top Header */}
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-mono uppercase tracking-wider text-[#8796A2]">
+          <span className="text-[11px] font-mono uppercase tracking-wider text-[#64748B] font-semibold">
             {title}
           </span>
-          <div className="flex items-center gap-1.5 text-[#9CC7D8]">
+          <div className="flex items-center gap-1.5 text-[#B08D57]">
             {icon}
           </div>
         </div>
@@ -120,37 +120,37 @@ export function ExpandableStatCard({
           <div className="flex items-baseline justify-between gap-2">
             <div className="flex items-baseline gap-2">
               <span
-                className="text-3xl font-normal text-[#F7F8F8]"
+                className="text-3xl font-normal text-[#111827]"
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 {mainValue}
               </span>
               {badge && (
-                <span className={badge.className ?? "text-xs font-mono text-emerald-400"}>
+                <span className={badge.className ?? "text-xs font-mono text-[#4F6F5A]"}>
                   {badge.text}
                 </span>
               )}
             </div>
             {subValue && (
-              <span className="font-mono text-xs text-[#8796A2] shrink-0">
+              <span className="font-mono text-xs text-[#64748B] shrink-0">
                 {subValue}
               </span>
             )}
           </div>
 
           {progressBar && (
-            <div className="mt-2 h-1.5 w-full rounded-xs bg-white/5 overflow-hidden">
+            <div className="mt-2 h-1.5 w-full rounded-full bg-[#F7F5F0] overflow-hidden">
               <motion.div
                 initial={{ width: 0 }}
                 animate={{ width: `${Math.min(100, Math.max(0, progressBar.value))}%` }}
                 transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-                className={progressBar.color ?? "h-full rounded-xs bg-[#9CC7D8]"}
+                className={progressBar.color ?? "h-full rounded-full bg-[#B08D57]"}
               />
             </div>
           )}
 
           {footerText && (
-            <p className="font-mono text-[11px] text-[#8796A2] mt-1">
+            <p className="font-mono text-[11px] text-[#64748B] mt-1">
               {footerText}
             </p>
           )}
@@ -179,13 +179,13 @@ export function ExpandableStatCard({
                 duration: 0.20,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              className="border-t border-white/10 pt-3 overflow-hidden text-xs text-[#BEC8CF]"
+              className="border-t border-[#E5E1D8] pt-3 overflow-hidden text-xs text-[#475569]"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="font-mono text-[10px] uppercase text-[#9CC7D8]">
+                <span className="font-mono text-[10px] uppercase text-[#B08D57]">
                   {hoverTitle}
                 </span>
-                <span className="font-mono text-[9px] uppercase tracking-wider text-[#8796A2] border border-white/10 px-1.5 py-0.5 rounded-xs">
+                <span className="font-mono text-[9px] uppercase tracking-wider text-[#64748B] border border-[#E5E1D8] px-1.5 py-0.5 rounded-xs">
                   Expanded
                 </span>
               </div>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 const HERO_BACKGROUND_VIDEO =
-  "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4";
+  "https://designerstephen.github.io/public-assets/videos/serene-art-hero.mp4";
 
 /**
  * The landing hero's exact video, mounted once behind every authenticated view.

@@ -91,22 +91,26 @@ export function GitHubVerification({
   const projectEvidence = evidence.filter((item) => item.evidence_type === "project" && item.external_url);
 
   return (
-    <section className="border border-white/10 bg-[#061524] p-6 rounded-md space-y-6 text-white font-sans">
-      <div className="border-b border-white/10 pb-3 flex items-center justify-between">
+    <section className="border border-[#E5E1D8] bg-[#FFFFFF] p-6 sm:p-8 rounded-[16px] space-y-6 text-[#111827] font-sans shadow-[0_8px_30px_rgba(17,24,39,0.04)]">
+      <div className="border-b border-[#E5E1D8] pb-4 flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-normal text-white flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
-            <GitBranch className="h-4 w-4 text-white/80" />
+          <div className="font-mono text-[11px] uppercase tracking-widest text-[#B08D57] font-semibold mb-1 flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#B08D57]" />
+            <span>EXTERNAL CRYPTOGRAPHIC LEDGER</span>
+          </div>
+          <h2 className="text-2xl font-normal text-[#111827] flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
+            <GitBranch className="h-5 w-5 text-[#B08D57]" />
             <span>GitHub Project Verification</span>
           </h2>
-          <p className="text-xs text-neutral-400 mt-0.5">
+          <p className="text-xs text-[#475569] mt-0.5">
             Verify repository ownership, commits, and languages to boost matching confidence tiers.
           </p>
         </div>
       </div>
 
       {/* Identity Ledger Row */}
-      <div className="border border-white/10 bg-white/[0.02] p-4 rounded-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="font-mono text-xs text-neutral-300">
+      <div className="border border-[#E5E1D8] bg-[#F7F5F0] p-4 rounded-[14px] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="font-mono text-xs text-[#475569]">
           {identityStatus}
         </div>
         <div className="flex items-center gap-2">
@@ -115,7 +119,7 @@ export function GitHubVerification({
             value={username}
             onChange={(event) => setUsername(event.target.value)}
             placeholder="GitHub handle (e.g. maya-dev)"
-            className="rounded-md border border-white/15 bg-white/[0.03] px-3 py-1.5 text-xs text-white focus:border-white focus:outline-none"
+            className="rounded-lg border border-[#E5E1D8] bg-[#FFFFFF] px-3.5 py-2 text-xs text-[#111827] focus:border-[#B08D57]"
           />
           <LiquidGlassButton size="sm" onClick={() => void saveIdentity()}>
             Save Handle
@@ -125,21 +129,21 @@ export function GitHubVerification({
 
       {/* Repositories Audit Table */}
       <div className="space-y-3">
-        <div className="font-mono text-xs uppercase tracking-wider text-neutral-400">
+        <div className="font-mono text-xs uppercase tracking-wider text-[#64748B] font-semibold">
           Attached Project Repositories
         </div>
         {projectEvidence.length ? (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {projectEvidence.map((item) => (
               <div
                 key={item.id}
-                className="border border-white/10 bg-white/[0.02] p-4 rounded-sm flex flex-wrap items-center justify-between gap-4"
+                className="border border-[#E5E1D8] bg-[#F7F5F0] p-4 rounded-[14px] flex flex-wrap items-center justify-between gap-4 hover:border-[#B08D57]/60 transition-all"
               >
                 <div className="space-y-0.5 min-w-0">
-                  <span className="text-sm font-normal text-white block" style={{ fontFamily: "var(--font-display)" }}>
+                  <span className="text-base font-normal text-[#111827] block" style={{ fontFamily: "var(--font-display)" }}>
                     {item.title}
                   </span>
-                  <span className="font-mono text-xs text-neutral-400 block truncate max-w-md">
+                  <span className="font-mono text-xs text-[#64748B] block truncate max-w-md">
                     {item.external_url}
                   </span>
                 </div>
@@ -147,7 +151,7 @@ export function GitHubVerification({
                   type="button"
                   onClick={() => void verify(item.id)}
                   disabled={isVerifyingId === item.id}
-                  className="rounded-full border border-white/20 bg-white/5 px-4 py-1.5 font-mono text-xs text-neutral-300 hover:text-white hover:border-white/40 transition-colors cursor-pointer disabled:opacity-50"
+                  className="rounded-full border border-[#E5E1D8] bg-[#FFFFFF] px-4 py-1.5 font-mono text-xs text-[#111827] hover:border-[#B08D57] transition-colors cursor-pointer disabled:opacity-50"
                 >
                   {isVerifyingId === item.id ? "Verifying..." : "Run GitHub Verification"}
                 </button>
@@ -155,42 +159,42 @@ export function GitHubVerification({
             ))}
           </div>
         ) : (
-          <p className="text-xs text-neutral-400 font-mono py-4">
+          <p className="text-xs text-[#64748B] font-mono py-4">
             No project evidence with a GitHub or repository URL found. Add a project URL in the Evidence tab first.
           </p>
         )}
       </div>
 
       {message && (
-        <div role="alert" className="p-3 text-xs text-red-300 border border-red-500/30 bg-red-950/20 rounded-sm font-mono">
+        <div role="alert" className="p-3 text-xs text-[#B4534B] border border-[#B4534B]/30 bg-[rgba(180,83,75,0.08)] rounded-lg font-mono">
           {message}
         </div>
       )}
 
       {/* Audit Outcome Ledger */}
       {result && (
-        <div className="border border-white/15 bg-white/[0.03] p-5 rounded-sm space-y-3">
-          <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
-            <span className="font-mono text-xs uppercase tracking-wider text-neutral-300">Verification Outcome:</span>
-            <span className="font-mono text-xs uppercase text-white border border-white/20 px-2 py-0.5 rounded-xs">
+        <div className="border border-[#E5E1D8] bg-[#F7F5F0] p-5 rounded-[14px] space-y-3">
+          <div className="flex items-center justify-between border-b border-[#E5E1D8] pb-2.5">
+            <span className="font-mono text-xs uppercase tracking-wider text-[#111827] font-semibold">Verification Outcome:</span>
+            <span className="font-mono text-xs uppercase text-[#B08D57] font-bold border border-[#B08D57]/30 px-2.5 py-0.5 rounded-full bg-[#B08D57]/5">
               {result.verification_tier.replaceAll("_", " ")}
             </span>
           </div>
-          <ul className="space-y-2 font-mono text-xs text-neutral-300 pt-1">
+          <ul className="space-y-2 font-mono text-xs text-[#475569] pt-1">
             {result.checks.map((check) => (
               <li key={`${check.check_type}-${check.checked_at}`} className="flex items-start gap-2.5">
                 <span className="shrink-0 mt-0.5">
                   {check.result === "pass" ? (
-                    <CheckCircle2 className="h-3.5 w-3.5 text-white" aria-hidden="true" />
+                    <CheckCircle2 className="h-3.5 w-3.5 text-[#4F6F5A]" aria-hidden="true" />
                   ) : check.result === "partial" ? (
-                    <Clock className="h-3.5 w-3.5 text-neutral-400" aria-hidden="true" />
+                    <Clock className="h-3.5 w-3.5 text-[#B08D57]" aria-hidden="true" />
                   ) : (
-                    <XCircle className="h-3.5 w-3.5 text-red-400" aria-hidden="true" />
+                    <XCircle className="h-3.5 w-3.5 text-[#B4534B]" aria-hidden="true" />
                   )}
                 </span>
                 <div>
-                  <strong className="text-white uppercase">{check.check_type.replaceAll("_", " ")}: </strong>
-                  <span className="text-neutral-400">{checkSummary(check)}</span>
+                  <strong className="text-[#111827] uppercase">{check.check_type.replaceAll("_", " ")}: </strong>
+                  <span className="text-[#475569]">{checkSummary(check)}</span>
                 </div>
               </li>
             ))}

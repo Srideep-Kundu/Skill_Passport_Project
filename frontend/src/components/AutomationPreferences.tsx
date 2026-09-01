@@ -31,31 +31,31 @@ const safeDefaultPolicy = {
 function QueueItem({ item }: { item: AutomationQueueItem }) {
   const missing = item.explanation.items.filter((entry) => entry.status === "missing").map((entry) => entry.skill_name);
   return (
-    <li className="rounded-sm border border-white/10 bg-white/[0.01] p-4 space-y-2 text-[#F7F8F8] font-sans">
+    <li className="rounded-sm border border-[#E5E1D8] bg-[#F7F5F0] p-4 space-y-2 text-[#111827] font-sans">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <strong className="font-semibold text-sm text-[#F7F8F8]">{item.title}</strong>
-          <p className="font-mono text-xs text-[#8796A2] mt-0.5">
+          <strong className="font-semibold text-sm text-[#111827]">{item.title}</strong>
+          <p className="font-mono text-xs text-[#64748B] mt-0.5">
             {item.company_name} · {item.provider} · selected by {item.policy_name}
           </p>
         </div>
         <strong
-          className="text-lg font-normal text-[#9CC7D8]"
+          className="text-lg font-normal text-[#B08D57]"
           style={{ fontFamily: "var(--font-display)" }}
         >
           {Math.round(item.final_score * 100)}%
         </strong>
       </div>
-      <p className="font-mono text-xs text-[#BEC8CF]">
+      <p className="font-mono text-xs text-[#475569]">
         Why it matched: {item.policy_reason.join(", ").replaceAll("_", " ")}
       </p>
-      <p className="font-mono text-xs text-[#8796A2]">
+      <p className="font-mono text-xs text-[#64748B]">
         Missing skills: {missing.length ? missing.join(", ") : "None recorded"}
       </p>
-      <p className="font-mono text-xs text-[#8796A2]">
+      <p className="font-mono text-xs text-[#64748B]">
         Active resume: {item.active_resume_filename ?? "No active resume selected"}
       </p>
-      <p className="pt-1 font-mono text-xs text-[#9CC7D8]">
+      <p className="pt-1 font-mono text-xs text-[#B08D57]">
         {item.application_status ? `Application: ${item.application_status.replaceAll("_", " ")}` : "Recommendation surfaced for review"}
       </p>
     </li>
@@ -121,16 +121,16 @@ function PolicyEditor({
   }
 
   const inputClass =
-    "w-full rounded-md border border-white/15 bg-white/[0.03] px-3 py-1.5 font-mono text-xs text-[#F7F8F8] focus:border-white focus:outline-none";
+    "w-full rounded-md border border-[#E5E1D8] bg-[#F7F5F0] px-3 py-1.5 font-mono text-xs text-[#111827] focus:border-[#B08D57] focus:outline-none";
 
   return (
-    <details className="mt-3 border-t border-white/10 pt-3 text-xs font-mono">
-      <summary className="cursor-pointer font-mono text-[#9CC7D8] hover:text-white">
+    <details className="mt-3 border-t border-[#E5E1D8] pt-3 text-xs font-mono">
+      <summary className="cursor-pointer font-mono text-[#B08D57] hover:text-[#111827]">
         Edit policy filters and review limits
       </summary>
       <form onSubmit={save} className="mt-3 grid gap-3 md:grid-cols-2">
         <label className="space-y-1 block">
-          <span className="text-[#8796A2]">Minimum match score (0.0 to 1.0)</span>
+          <span className="text-[#64748B]">Minimum match score (0.0 to 1.0)</span>
           <input
             type="number"
             min="0"
@@ -143,7 +143,7 @@ function PolicyEditor({
         </label>
 
         <label className="space-y-1 block">
-          <span className="text-[#8796A2]">Allowed locations (comma-separated)</span>
+          <span className="text-[#64748B]">Allowed locations (comma-separated)</span>
           <input
             value={draft.allowed_locations.join(", ")}
             onChange={(event) => set("allowed_locations", csv(event.target.value))}
@@ -152,7 +152,7 @@ function PolicyEditor({
         </label>
 
         <label className="space-y-1 block">
-          <span className="text-[#8796A2]">Require any skill IDs</span>
+          <span className="text-[#64748B]">Require any skill IDs</span>
           <input
             value={draft.required_skills_any.join(", ")}
             onChange={(event) => set("required_skills_any", csv(event.target.value))}
@@ -161,7 +161,7 @@ function PolicyEditor({
         </label>
 
         <label className="space-y-1 block">
-          <span className="text-[#8796A2]">Require all skill IDs</span>
+          <span className="text-[#64748B]">Require all skill IDs</span>
           <input
             value={draft.required_skills_all.join(", ")}
             onChange={(event) => set("required_skills_all", csv(event.target.value))}
@@ -170,7 +170,7 @@ function PolicyEditor({
         </label>
 
         <label className="space-y-1 block">
-          <span className="text-[#8796A2]">Exclude skill IDs</span>
+          <span className="text-[#64748B]">Exclude skill IDs</span>
           <input
             value={draft.excluded_skills.join(", ")}
             onChange={(event) => set("excluded_skills", csv(event.target.value))}
@@ -179,7 +179,7 @@ function PolicyEditor({
         </label>
 
         <label className="space-y-1 block">
-          <span className="text-[#8796A2]">Excluded companies</span>
+          <span className="text-[#64748B]">Excluded companies</span>
           <input
             value={draft.excluded_companies.join(", ")}
             onChange={(event) => set("excluded_companies", csv(event.target.value))}
@@ -188,7 +188,7 @@ function PolicyEditor({
         </label>
 
         <label className="space-y-1 block">
-          <span className="text-[#8796A2]">Jobs per run</span>
+          <span className="text-[#64748B]">Jobs per run</span>
           <input
             type="number"
             min="1"
@@ -200,7 +200,7 @@ function PolicyEditor({
         </label>
 
         <label className="space-y-1 block">
-          <span className="text-[#8796A2]">Review intents per day</span>
+          <span className="text-[#64748B]">Review intents per day</span>
           <input
             type="number"
             min="0"
@@ -211,12 +211,12 @@ function PolicyEditor({
           />
         </label>
 
-        <label className="flex items-center gap-2 md:col-span-2 pt-1 text-[#F7F8F8]">
+        <label className="flex items-center gap-2 md:col-span-2 pt-1 text-[#111827]">
           <input
             type="checkbox"
             checked={draft.auto_create_review_intent}
             onChange={(event) => set("auto_create_review_intent", event.target.checked)}
-            className="rounded-xs border-white/20 text-[#9CC7D8]"
+            className="rounded-xs border-[#E5E1D8] text-[#B08D57]"
           />
           <span>Automatically add eligible jobs to review queue</span>
         </label>
@@ -296,17 +296,17 @@ export function AutomationPreferences({ token }: { token: string }) {
   return (
     <section
       aria-label="Automation preferences"
-      className="space-y-6 rounded-md border border-white/10 bg-[#071E2B] p-6 text-[#F7F8F8] font-sans"
+      className="space-y-6 rounded-md border border-[#E5E1D8] bg-[#FFFFFF] p-6 text-[#111827] font-sans"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 pb-4">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#E5E1D8] pb-4">
         <div>
           <h2
-            className="text-xl font-normal text-[#F7F8F8]"
+            className="text-xl font-normal text-[#111827]"
             style={{ fontFamily: "var(--font-display)" }}
           >
             Job Review Automation
           </h2>
-          <p className="font-mono text-xs text-[#8796A2] mt-0.5">
+          <p className="font-mono text-xs text-[#64748B] mt-0.5">
             Automatically add matching jobs to my review queue. This does not approve or submit applications.
           </p>
         </div>
@@ -323,18 +323,18 @@ export function AutomationPreferences({ token }: { token: string }) {
       {error ? <ErrorState message={error} onRetry={() => void load()} /> : null}
 
       <div className="space-y-3">
-        <h3 className="font-mono text-[10px] uppercase tracking-wider text-[#8796A2]">Active Policies</h3>
+        <h3 className="font-mono text-[10px] uppercase tracking-wider text-[#64748B]">Active Policies</h3>
         {policies?.length ? (
           <ul className="space-y-3">
             {policies.map((policy) => (
               <li
                 key={policy.id}
-                className="rounded-sm border border-white/10 bg-white/[0.01] p-4 text-[#F7F8F8]"
+                className="rounded-sm border border-[#E5E1D8] bg-[#F7F5F0] p-4 text-[#111827]"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <strong className="font-semibold text-sm text-[#F7F8F8]">{policy.name}</strong>
-                    <p className="font-mono text-xs text-[#8796A2] mt-0.5">
+                    <strong className="font-semibold text-sm text-[#111827]">{policy.name}</strong>
+                    <p className="font-mono text-xs text-[#64748B] mt-0.5">
                       Minimum match {Math.round(policy.minimum_match_score * 100)}% · up to {policy.maximum_review_intents_per_day} review intents/day
                     </p>
                   </div>
@@ -357,8 +357,8 @@ export function AutomationPreferences({ token }: { token: string }) {
         )}
       </div>
 
-      <div className="border-t border-white/10 pt-4 space-y-3">
-        <h3 className="font-mono text-[10px] uppercase tracking-wider text-[#8796A2]">Ready for Review</h3>
+      <div className="border-t border-[#E5E1D8] pt-4 space-y-3">
+        <h3 className="font-mono text-[10px] uppercase tracking-wider text-[#64748B]">Ready for Review</h3>
         {queue?.length ? (
           <ul className="space-y-3">
             {queue.map((item) => (
@@ -366,7 +366,7 @@ export function AutomationPreferences({ token }: { token: string }) {
             ))}
           </ul>
         ) : (
-          <p className="font-mono text-xs text-[#8796A2] italic py-1">No policy-selected recommendations yet.</p>
+          <p className="font-mono text-xs text-[#64748B] italic py-1">No policy-selected recommendations yet.</p>
         )}
       </div>
     </section>
