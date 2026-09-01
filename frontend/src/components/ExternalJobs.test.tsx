@@ -174,7 +174,7 @@ describe("ExternalJobs", () => {
       await Promise.resolve();
     });
 
-    expect(screen.getByText("Live Opportunity Discovery")).toBeInTheDocument();
+    expect(screen.getByText("Opportunity Provider Status")).toBeInTheDocument();
     expect(screen.getByText("Backend Intern")).toBeInTheDocument();
     expect(screen.getByText("Acme Labs")).toBeInTheDocument();
     expect(screen.getByText("75% Match")).toBeInTheDocument();

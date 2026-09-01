@@ -215,7 +215,9 @@ def _usable_embedding(row: Any) -> list[float] | None:
 
 def _input_fingerprint(requirements: list[RequirementInput], possessed: list[PossessedSkill]) -> str:
     settings = get_settings()
-    payload = {"score": SCORE_VERSION, "semantic": settings.semantic_matching_enabled, "threshold": settings.semantic_similarity_threshold, "embedding": [settings.embedding_provider, settings.embedding_model, settings.embedding_dimension], "requirements": [(str(item.skill_id), item.weight, item.is_required, item.embedding_fingerprint) for item in requirements], "possessed": [(str(item.skill_id), str(item.evidence_id), item.effective_confidence, item.verification_tier, item.embedding_fingerprint) for item in possessed]}
+    sorted_reqs = sorted(requirements, key=lambda item: (str(item.skill_id), float(item.weight), bool(item.is_required)))
+    sorted_pos = sorted(possessed, key=lambda item: (str(item.skill_id), str(item.evidence_id), float(item.effective_confidence), str(item.verification_tier)))
+    payload = {"score": SCORE_VERSION, "semantic": settings.semantic_matching_enabled, "threshold": settings.semantic_similarity_threshold, "embedding": [settings.embedding_provider, settings.embedding_model, settings.embedding_dimension], "requirements": [(str(item.skill_id), item.weight, item.is_required, item.embedding_fingerprint) for item in sorted_reqs], "possessed": [(str(item.skill_id), str(item.evidence_id), item.effective_confidence, item.verification_tier, item.embedding_fingerprint) for item in sorted_pos]}
     return hashlib.sha256(json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
@@ -341,6 +343,7 @@ async def match_is_stale(session: AsyncSession, match: Match) -> bool:
 
 
 async def external_job_match_is_stale(session: AsyncSession, match: ExternalJobMatch) -> bool:
+    await activate_matching_role(session)
     external_job = await session.get(ExternalJob, match.external_job_id)
     if external_job is None or not external_job.is_active:
         return True

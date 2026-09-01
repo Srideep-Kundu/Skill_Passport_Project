@@ -52,7 +52,7 @@ describe("LinkedInIntelligence", () => {
       await Promise.resolve();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Export Archive (.zip)" }));
+    fireEvent.click(screen.getByRole("button", { name: "ZIP Archive Upload" }));
     const file = new File(["fake zip content"], "export.zip", { type: "application/zip" });
     fireEvent.change(screen.getByLabelText("LinkedIn export zip archive"), {
       target: { files: [file] },

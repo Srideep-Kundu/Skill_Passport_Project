@@ -6,8 +6,6 @@ import {
   BadgeCheck,
   FileText,
   Target,
-  ClipboardList,
-  PlusCircle,
   MoreHorizontal,
   X,
   LogOut,
@@ -29,6 +27,7 @@ import {
   Layers,
   FileSpreadsheet,
   Download,
+  BarChart3,
 } from "lucide-react";
 import { LandingPage } from "./pages/LandingPage";
 import { useAuth } from "./auth/AuthContext";
@@ -90,7 +89,19 @@ export type StudentTab =
   | "matches"
   | "discovery"
   | "teams";
-export type RecruiterTab = "overview" | "internships" | "post_job" | "candidates";
+export type RecruiterTab =
+  | "overview"
+  | "evidence_graph"
+  | "discovery"
+  | "matches"
+  | "candidates"
+  | "comparison"
+  | "skills"
+  | "pipeline"
+  | "internships"
+  | "post_job"
+  | "applications"
+  | "analytics";
 export type AcademicianTab =
   | "opportunities"
   | "applications"
@@ -183,12 +194,18 @@ export function App() {
     { id: "teams", label: "Team Formation", icon: <Users className="h-4 w-4 shrink-0" aria-hidden="true" /> },
   ];
 
-  // Exact 4 core recruiter navigation tabs
+  // 10 Lumina Intel Recruiter navigation tabs
   const recruiterNavItems: { id: RecruiterTab; label: string; icon: React.ReactNode }[] = [
-    { id: "overview", label: "Dashboard Overview", icon: <LayoutDashboard className="h-4 w-4 shrink-0" aria-hidden="true" /> },
-    { id: "internships", label: "Your Internships", icon: <ClipboardList className="h-4 w-4 shrink-0" aria-hidden="true" /> },
-    { id: "post_job", label: "Post New Internship", icon: <PlusCircle className="h-4 w-4 shrink-0" aria-hidden="true" /> },
-    { id: "candidates", label: "Ranked Candidates", icon: <Target className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "overview", label: "Overview", icon: <LayoutDashboard className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "evidence_graph", label: "Evidence Graph", icon: <BadgeCheck className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "discovery", label: "Talent Discovery", icon: <Compass className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "matches", label: "Explainable Matches", icon: <Target className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "comparison", label: "Candidate Comparison", icon: <Users2 className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "skills", label: "Skill Intelligence", icon: <TrendingUp className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "pipeline", label: "Talent Pipeline", icon: <Layers className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "internships", label: "Internship Management", icon: <Briefcase className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "applications", label: "Candidate Applications", icon: <FileText className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "analytics", label: "Analytics & Insights", icon: <BarChart3 className="h-4 w-4 shrink-0" aria-hidden="true" /> },
   ];
 
   // 10 Faculty / Academician Portal navigation tabs
@@ -515,7 +532,7 @@ export function App() {
                     </div>
                   }
                 >
-                  <RecruiterDashboard token={session.access_token} activeTab={recruiterTab} />
+                  <RecruiterDashboard token={session.access_token} activeTab={recruiterTab} onSelectTab={setRecruiterTab} />
                 </Suspense>
               ) : isAcademician ? (
                 <Suspense

@@ -17,13 +17,14 @@ from app.models import (
 from app.services.embeddings import deterministic_embedding
 from app.services.matching_service import compute_and_persist_match
 
-pytestmark = pytest.mark.asyncio(loop_scope="module")
+pytestmark = pytest.mark.asyncio
 
 
 async def test_matching_role_cannot_select_protected_student_fields() -> None:
     if engine.dialect.name != "postgresql":
         pytest.skip("PostgreSQL privilege test requires the migrated CI or deployment database")
 
+    await engine.dispose()
     async with engine.connect() as connection:
         transaction = await connection.begin()
         try:
@@ -38,6 +39,7 @@ async def test_matching_operation_works_when_activated_as_matching_role() -> Non
     if engine.dialect.name != "postgresql":
         pytest.skip("PostgreSQL privilege test requires the migrated CI or deployment database")
 
+    await engine.dispose()
     from uuid import uuid4
     suffix = uuid4().hex[:8]
     async with SessionLocal() as session:
