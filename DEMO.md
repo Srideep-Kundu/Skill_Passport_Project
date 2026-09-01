@@ -40,13 +40,4 @@ The one-click account launcher is compiled only when `VITE_DEMO_MODE=true`. Prod
 7. Open Application Review and Tracking. The Lever historical application follows approved → prepared → assisted/manual apply → user-reported submitted/in-review; it was never provider-confirmed.
 8. Sign in as the recruiter to view backend, frontend, and intentionally weak cloud-infrastructure matching examples.
 
-## Current SIH journeys
-
-- Student: run deterministic technical, soft-skill, or aptitude assessments; inspect assessment evidence in the Passport; show learning and internship completion outcomes; open unified **My Applications**; create a revocable public Passport and demonstrate PDF/QR access.
-- Recruiter: show learning programs, internal placement jobs, hiring stages, internship mentor feedback, collaboration projects, and company-scoped demand analytics.
-- Faculty: show invitations, collaboration workspaces, lifecycle transitions, and persisted outcomes.
-- Institution: show durable tenant scoping, persisted demand-versus-supply analytics, and governed import previews/mappings. Institution screens intentionally show empty states when supporting records do not exist.
-
-YC, Greenhouse, Lever, and Ashby adapters are live-capable only when configured and backed by a successful non-fixture sync. Indeed and Jobsuit remain unavailable. No workflow silently submits an application.
-
 Live extraction and provider sync are optional demonstrations only. If they fail or are unavailable, leave the fixture path in place; no fixture claims that a live provider action happened.

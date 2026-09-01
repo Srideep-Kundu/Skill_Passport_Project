@@ -27,7 +27,7 @@ This guide uses Docker Compose for PostgreSQL, Redis, migrations, the API, worke
    docker compose run --rm --no-deps backend alembic current
    ```
 
-   This uses the exact database credentials and service hostname from `.env`; no credentials need to be guessed. The expected current revision is `0031_institution_imports`.
+   This uses the exact database credentials and service hostname from `.env`; no credentials need to be guessed. The expected current revision is `0022_hybrid_extraction_pipeline`.
 
 4. Seed the canonical taxonomy (and, optionally, the demo data) after services are healthy:
 

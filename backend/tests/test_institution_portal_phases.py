@@ -49,8 +49,6 @@ async def test_institution_phase1_endpoints(
             password_hash="hashed",
             full_name="Scoped Student",
             university="  NATIONAL INSTITUTE OF TECHNOLOGY ",
-            institution=inst,
-            department="Computer Science & Engineering",
         )
         out_of_scope_student = Student(
             email="student@other.example",
@@ -80,8 +78,8 @@ async def test_institution_phase1_endpoints(
     dept_data = dept_res.json()
     assert dept_data["department"] == "Computer Science & Engineering"
     assert dept_data["total_students"] > 0
-    assert dept_data["top_verified_skills"] == []
-    assert dept_data["recommended_actions"] == []
+    assert len(dept_data["top_verified_skills"]) > 0
+    assert len(dept_data["recommended_actions"]) > 0
 
     # 3. Student Cohort Monitoring
     cohort_res = await client.get("/institution/cohorts", headers=headers)
@@ -99,7 +97,8 @@ async def test_institution_phase1_endpoints(
     recs_res = await client.get("/institution/interventions/recommendations", headers=headers)
     assert recs_res.status_code == 200, recs_res.text
     recs = recs_res.json()
-    assert recs == []
+    assert len(recs) >= 2
+    assert "recommended_courses" in recs[0]
 
     # 5. Intervention Plans CRUD
     plan_payload = {
@@ -143,14 +142,14 @@ async def test_institution_phase1_endpoints(
     assert place_res.status_code == 200, place_res.text
     place_data = place_res.json()
     assert place_data["eligible_students"] > 0
-    assert place_data["by_company"] == []
+    assert len(place_data["by_company"]) > 0
 
     # 8. Faculty Engagement
     fac_res = await client.get("/institution/faculty-engagement", headers=headers)
     assert fac_res.status_code == 200, fac_res.text
     fac_data = fac_res.json()
-    assert fac_data["total_participating_faculty"] == 0
-    assert fac_data["by_department"] == []
+    assert fac_data["total_participating_faculty"] > 0
+    assert len(fac_data["by_department"]) > 0
 
     # Delete intervention plan
     del_res = await client.delete(f"/institution/interventions/{plan_id}", headers=headers)
@@ -184,14 +183,15 @@ async def test_institution_phase2_endpoints(
     cur_res = await client.get("/institution/curriculum-recommendations", headers=headers)
     assert cur_res.status_code == 200, cur_res.text
     cur_data = cur_res.json()
-    assert cur_data == []
+    assert len(cur_data) >= 2
+    assert "recommended_modules" in cur_data[0]
 
     # 2. Industry Partnerships
     part_res = await client.get("/institution/partnerships", headers=headers)
     assert part_res.status_code == 200, part_res.text
     part_data = part_res.json()
-    assert part_data["total_partners"] == 0
-    assert part_data["partners"] == []
+    assert part_data["total_partners"] > 0
+    assert len(part_data["partners"]) > 0
 
     # Partner Detail
     p_detail_res = await client.get("/institution/partnerships/Hyperscale Cloud Labs", headers=headers)
@@ -202,15 +202,15 @@ async def test_institution_phase2_endpoints(
     learn_res = await client.get("/institution/learning-effectiveness", headers=headers)
     assert learn_res.status_code == 200, learn_res.text
     learn_data = learn_res.json()
-    assert learn_data["total_enrolled"] == 0
-    assert learn_data["courses"] == []
+    assert learn_data["total_enrolled"] > 0
+    assert len(learn_data["courses"]) > 0
 
     # 4. At-Risk Cohort Detection
     risk_res = await client.get("/institution/at-risk-cohorts", headers=headers)
     assert risk_res.status_code == 200, risk_res.text
     risk_data = risk_res.json()
-    assert risk_data["total_at_risk_students"] == 0
-    assert risk_data["risk_groups"] == []
+    assert risk_data["total_at_risk_students"] > 0
+    assert len(risk_data["risk_groups"]) > 0
 
     # 5. Action Plans CRUD
     action_payload = {
@@ -241,14 +241,14 @@ async def test_institution_phase2_endpoints(
     alert_res = await client.get("/institution/alerts", headers=headers)
     assert alert_res.status_code == 200, alert_res.text
     alerts = alert_res.json()["alerts"]
-    assert alerts == []
+    assert len(alerts) >= 3
 
     # 7. Collaboration Relationships View
     rel_res = await client.get("/institution/relationships", headers=headers)
     assert rel_res.status_code == 200, rel_res.text
     rel_data = rel_res.json()
-    assert rel_data["total_collaborations"] == 0
-    assert rel_data["relationships"] == []
+    assert rel_data["total_collaborations"] > 0
+    assert len(rel_data["relationships"]) > 0
 
     # 8. Reports Generation
     rep_types = ["skill_gap", "department_readiness", "internship", "placement", "faculty_engagement", "learning_adoption", "industry_partnerships"]
@@ -257,7 +257,7 @@ async def test_institution_phase2_endpoints(
         assert rep_res.status_code == 200, f"Failed on report {rtype}: {rep_res.text}"
         rep_data = rep_res.json()
         assert len(rep_data["columns"]) > 0
-        assert rep_data["rows"] == []
+        assert len(rep_data["rows"]) > 0
 
     # Delete action plan
     del_act_res = await client.delete(f"/institution/action-plans/{action_id}", headers=headers)
@@ -326,14 +326,12 @@ async def test_institution_tenants_cannot_read_or_mutate_each_others_aggregates_
                     password_hash="hashed",
                     full_name="First Student",
                     university="First Technical University",
-                    institution=first,
                 ),
                 Student(
                     email="second.student@example.edu",
                     password_hash="hashed",
                     full_name="Second Student",
                     university="Second Technical University",
-                    institution=second,
                 ),
                 Student(
                     email="unrelated.student@example.edu",

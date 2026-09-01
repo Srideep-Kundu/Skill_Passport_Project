@@ -26,7 +26,6 @@ from app.models import (
     Role,
     Student,
 )
-from seed.seed_phase1_assessments import seed_phase1_assessments
 
 _NOW = datetime.now(UTC)
 DEMO_PASSWORD_HASH = hash_password("password123")
@@ -275,8 +274,6 @@ async def seed_sih_ecosystem():
                 ),
             ])
 
-        await seed_phase1_assessments(session)
-
         # 2. Seed Learning Courses & Training Programs
         existing_course = (await session.scalars(select(LearningCourse))).first()
         if not existing_course:
@@ -491,25 +488,31 @@ async def seed_sih_ecosystem():
                     tags=["Redis", "Python", "Distributed Systems", "Performance Tuning"],
                     status="active",
                 ),
+                InnovationChallenge(
+                    challenge_type="workshop",
+                    title="Hands-on Workshop: Production pgvector & RAG Architectures",
+                    host_company="Postgres Enterprise Guild",
+                    problem_statement="Intensive 2-day technical workshop on deploying HNSW vector indexes, cosine similarity tuning, and low-latency embeddings search in production.",
+                    prize_pool="Certificate + Cloud Credits",
+                    team_size=1,
+                    duration_weeks=1,
+                    mentor_name="Dr. Rajiv Mehta (Principal Architect)",
+                    deliverables=["Working pgvector Sandbox", "Hybrid Search Query Script"],
+                    milestones=[],
+                    deadline=_NOW + timedelta(days=14),
+                    tags=["PostgreSQL", "pgvector", "Embeddings", "AI Systems"],
+                    status="active",
+                ),
             ])
 
         # 7. Seed Demo Accounts for 4 Personas
         # Student
-        pilot_institution = (
-            await session.scalars(
-                select(Institution).where(Institution.email == "dean@example.demo")
-            )
-        ).first()
         if not await session.scalar(select(Student.id).where(Student.email == "maya@poly.demo")):
             st = Student(
                 email="maya@poly.demo",
                 password_hash=DEMO_PASSWORD_HASH,
                 full_name="Maya Rivera",
                 university="Harbor Polytechnic",
-                institution_id=pilot_institution.id if pilot_institution else None,
-                department="Computer Science",
-                cohort_year=2026,
-                roll_number="HPU-POLY-001",
                 github_username="demo-maya",
                 recruiter_evidence_consent=True,
                 career_goals={"target_roles": ["Full Stack Developer", "Backend Engineer"], "target_industries": ["FinTech", "Cloud Systems"]},
@@ -517,17 +520,6 @@ async def seed_sih_ecosystem():
             session.add(st)
             await session.flush()
             session.add(AccountEmail(email=st.email, account_id=st.id, role=Role.student))
-        else:
-            st = (
-                await session.scalars(
-                    select(Student).where(Student.email == "maya@poly.demo")
-                )
-            ).one()
-            if pilot_institution is not None:
-                st.institution_id = pilot_institution.id
-            st.department = st.department or "Computer Science"
-            st.cohort_year = st.cohort_year or 2026
-            st.roll_number = st.roll_number or "HPU-POLY-001"
 
         # Recruiter
         if not await session.scalar(select(Recruiter.id).where(Recruiter.email == "recruiter@techcorp.demo")):

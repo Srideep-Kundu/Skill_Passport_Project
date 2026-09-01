@@ -3,13 +3,10 @@
 import re
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
-from time import perf_counter
 from typing import Any
 from uuid import UUID
 
-import httpx
 from sqlalchemy import delete, select
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -20,17 +17,9 @@ from app.services.application_service import (
 from app.services.job_providers import (
     JobSearchFilters,
     NormalizedExternalJob,
-    ProviderAuthenticationError,
-    ProviderConfigurationError,
     ProviderError,
-    ProviderNotFound,
-    ProviderPayloadError,
-    ProviderRateLimited,
     provider_registry,
 )
-
-PROVIDER_SYNC_AUDIT_ACTION = "external_job_provider_sync"
-SUPPORTED_DISCOVERY_PROVIDERS = ("yc", "greenhouse", "lever", "ashby")
 
 
 @dataclass(frozen=True)
@@ -51,24 +40,6 @@ class ExternalJobSyncResult:
     marked_inactive: int
     synced: int
     synced_at: datetime
-    latency_ms: int = 0
-    fixture: bool = False
-
-
-@dataclass(frozen=True)
-class ProviderSyncEvidence:
-    provider: str
-    status: str
-    enabled: bool
-    configured: bool
-    fixture: bool
-    active_jobs_count: int
-    last_attempt_at: datetime | None
-    last_success_at: datetime | None
-    last_item_count: int | None
-    last_latency_ms: int | None
-    latest_error_category: str | None
-    message: str | None
 
 
 def _now() -> datetime:
@@ -90,197 +61,6 @@ def configured_provider_source(provider: str, source_key: str) -> bool:
         or (provider == "lever" and source_key in settings.lever_site_tokens)
         or (provider == "ashby" and source_key in settings.ashby_job_board_names)
     )
-
-
-def configured_provider_sources() -> dict[str, list[str]]:
-    """Return approved source identifiers without exposing provider credentials."""
-    settings = get_settings()
-    return {
-        "yc": list(settings.yc_source_keys or ["yc_startups"]),
-        "greenhouse": list(settings.greenhouse_board_tokens),
-        "lever": list(settings.lever_site_tokens),
-        "ashby": list(settings.ashby_job_board_names),
-    }
-
-
-def classify_provider_failure(error: Exception) -> str:
-    """Map provider failures to bounded, non-secret operational categories."""
-    if isinstance(error, ProviderRateLimited):
-        return "rate_limited"
-    if isinstance(error, ProviderAuthenticationError):
-        return "authentication_error"
-    if isinstance(error, (ProviderConfigurationError, ProviderNotFound)):
-        return "configuration_error"
-    if isinstance(error, ProviderPayloadError):
-        return "malformed_response"
-    if isinstance(error, SQLAlchemyError):
-        return "persistence_error"
-    if isinstance(error, (KeyError, TypeError, ValueError)):
-        return "normalization_error"
-
-    cause: BaseException | None = error
-    while cause is not None:
-        if isinstance(cause, httpx.TimeoutException):
-            return "timeout"
-        if isinstance(cause, httpx.HTTPStatusError):
-            status_code = cause.response.status_code
-            if status_code in {401, 403}:
-                return "authentication_error"
-            if status_code == 429:
-                return "rate_limited"
-            if status_code >= 500:
-                return "upstream_unavailable"
-        if isinstance(cause, httpx.TransportError):
-            return "upstream_unavailable"
-        cause = cause.__cause__
-    if isinstance(error, ProviderError):
-        return "upstream_unavailable"
-    return "unknown"
-
-
-def _sync_audit_log(
-    *,
-    actor_id: UUID | None,
-    provider: str,
-    source_key: str,
-    outcome: str,
-    fixture: bool,
-    latency_ms: int,
-    item_count: int | None = None,
-    error_category: str | None = None,
-    created: int = 0,
-    updated: int = 0,
-    marked_inactive: int = 0,
-) -> AuditLog:
-    return AuditLog(
-        actor_id=actor_id,
-        action=PROVIDER_SYNC_AUDIT_ACTION,
-        entity_type="external_job_source",
-        entity_id=None,
-        details={
-            "provider": provider,
-            "provider_source": source_key,
-            "outcome": outcome,
-            "fixture": fixture,
-            "item_count": item_count,
-            "latency_ms": max(0, latency_ms),
-            "error_category": error_category,
-            "created": created,
-            "updated": updated,
-            "marked_inactive": marked_inactive,
-        },
-        created_at=_now(),
-    )
-
-
-async def provider_sync_evidence(
-    session: AsyncSession,
-) -> dict[str, ProviderSyncEvidence]:
-    """Derive provider health only from persisted attempts and explicit fixtures."""
-    sources = configured_provider_sources()
-    rows = list(
-        (
-            await session.scalars(
-                select(AuditLog)
-                .where(AuditLog.action == PROVIDER_SYNC_AUDIT_ACTION)
-                .order_by(AuditLog.created_at, AuditLog.id)
-            )
-        ).all()
-    )
-    active_jobs = list(
-        (
-            await session.scalars(
-                select(ExternalJob).where(
-                    ExternalJob.provider.in_(SUPPORTED_DISCOVERY_PROVIDERS),
-                    ExternalJob.is_active.is_(True),
-                )
-            )
-        ).all()
-    )
-
-    output: dict[str, ProviderSyncEvidence] = {}
-    for provider_name in SUPPORTED_DISCOVERY_PROVIDERS:
-        configured = bool(sources[provider_name])
-        enabled = configured and provider_name in provider_registry.names()
-        if enabled:
-            enabled = provider_registry.get(provider_name).capabilities.search
-        provider_rows = [
-            row
-            for row in rows
-            if isinstance(row.details, dict)
-            and row.details.get("provider") == provider_name
-        ]
-        real_rows = [
-            row for row in provider_rows if not bool((row.details or {}).get("fixture"))
-        ]
-        successful_real_rows = [
-            row for row in real_rows if (row.details or {}).get("outcome") == "success"
-        ]
-        latest = provider_rows[-1] if provider_rows else None
-        latest_real = real_rows[-1] if real_rows else None
-        latest_real_success = successful_real_rows[-1] if successful_real_rows else None
-        provider_jobs = [job for job in active_jobs if job.provider == provider_name]
-        has_fixture_data = any(
-            isinstance(job.raw_metadata, dict)
-            and bool(job.raw_metadata.get("fixture"))
-            for job in provider_jobs
-        )
-        latest_details = latest.details if latest and isinstance(latest.details, dict) else {}
-        latest_real_details = (
-            latest_real.details
-            if latest_real and isinstance(latest_real.details, dict)
-            else {}
-        )
-
-        if not enabled:
-            status = "disabled"
-            message = "No approved provider source identifiers are configured"
-        elif latest_real_details.get("outcome") == "success":
-            status = "live"
-            message = "Latest real provider sync completed successfully"
-        elif latest_real_details.get("outcome") == "failure":
-            status = "degraded"
-            message = "Latest real provider sync failed safely"
-        elif has_fixture_data or (
-            latest_details.get("outcome") == "success"
-            and bool(latest_details.get("fixture"))
-        ):
-            status = "fixture"
-            message = "Demo fixture data; no live provider health is implied"
-        else:
-            status = "configured"
-            message = "Configured, but no successful real sync is recorded"
-
-        output[provider_name] = ProviderSyncEvidence(
-            provider=provider_name,
-            status=status,
-            enabled=enabled,
-            configured=configured,
-            fixture=status == "fixture",
-            active_jobs_count=len(provider_jobs),
-            last_attempt_at=latest.created_at if latest else None,
-            last_success_at=(
-                latest_real_success.created_at if latest_real_success else None
-            ),
-            last_item_count=(
-                int(latest_details["item_count"])
-                if isinstance(latest_details.get("item_count"), int)
-                else None
-            ),
-            last_latency_ms=(
-                int(latest_details["latency_ms"])
-                if isinstance(latest_details.get("latency_ms"), int)
-                else None
-            ),
-            latest_error_category=(
-                str(latest_real_details["error_category"])
-                if latest_real_details.get("outcome") == "failure"
-                and latest_real_details.get("error_category")
-                else None
-            ),
-            message=message,
-        )
-    return output
 
 
 def normalize_job_requirements(
@@ -411,18 +191,19 @@ async def _persist_job(
     return external_job, created
 
 
-async def _sync_external_jobs_once(
+async def sync_external_jobs(
     session: AsyncSession,
     *,
     provider_name: str,
     source_key: str,
+    actor_id: UUID | None = None,
 ) -> ExternalJobSyncResult:
     """Fetch a complete configured source, upsert stable IDs, then retire unseen postings."""
     provider = provider_registry.get(provider_name)
     if not configured_provider_source(provider_name, source_key):
-        raise ProviderConfigurationError()
+        raise ProviderError("provider source is not configured")
     if not provider.capabilities.search:
-        raise ProviderConfigurationError()
+        raise ProviderError("provider does not support search")
     cursor: str | None = None
     fetched: dict[str, NormalizedExternalJob] = {}
     for _ in range(50):
@@ -478,6 +259,21 @@ async def _sync_external_jobs_once(
             changed_job_ids.add(external_job.id)
             marked_inactive += 1
     await invalidate_stale_approved_applications_for_jobs(session, changed_job_ids)
+    session.add(
+        AuditLog(
+            actor_id=actor_id,
+            action="external_jobs_synced",
+            entity_type="external_job_source",
+            entity_id=None,
+            details={
+                "provider": provider_name,
+                "provider_source": source_key,
+                "created": created,
+                "updated": updated,
+                "marked_inactive": marked_inactive,
+            },
+        )
+    )
     await session.commit()
     return ExternalJobSyncResult(
         provider_name,
@@ -490,61 +286,7 @@ async def _sync_external_jobs_once(
     )
 
 
-async def sync_external_jobs(
-    session: AsyncSession,
-    *,
-    provider_name: str,
-    source_key: str,
-    actor_id: UUID | None = None,
-) -> ExternalJobSyncResult:
-    """Run a source sync and persist safe evidence for every outcome."""
-    started = perf_counter()
-    fixture = False
-    try:
-        provider = provider_registry.get(provider_name)
-        fixture = provider.is_fixture
-        result = await _sync_external_jobs_once(
-            session,
-            provider_name=provider_name,
-            source_key=source_key,
-        )
-    except Exception as error:
-        latency_ms = round((perf_counter() - started) * 1000)
-        await session.rollback()
-        session.add(
-            _sync_audit_log(
-                actor_id=actor_id,
-                provider=provider_name,
-                source_key=source_key,
-                outcome="failure",
-                fixture=fixture,
-                latency_ms=latency_ms,
-                error_category=classify_provider_failure(error),
-            )
-        )
-        await session.commit()
-        raise
-
-    latency_ms = round((perf_counter() - started) * 1000)
-    session.add(
-        _sync_audit_log(
-            actor_id=actor_id,
-            provider=provider_name,
-            source_key=source_key,
-            outcome="success",
-            fixture=fixture,
-            latency_ms=latency_ms,
-            item_count=result.synced,
-            created=result.created,
-            updated=result.updated,
-            marked_inactive=result.marked_inactive,
-        )
-    )
-    await session.commit()
-    return replace(result, latency_ms=latency_ms, fixture=fixture)
-
-
-async def _sync_discovery_source_once(
+async def sync_discovery_source(
     session: AsyncSession,
     *,
     provider_name: str,
@@ -557,7 +299,7 @@ async def _sync_discovery_source_once(
         not configured_provider_source(provider_name, source_key)
         or not provider.capabilities.search
     ):
-        raise ProviderConfigurationError()
+        raise ProviderError("provider source is not configured")
     cursor: str | None = None
     fetched: dict[str, NormalizedExternalJob] = {}
     for _ in range(5):
@@ -600,83 +342,33 @@ async def _sync_discovery_source_once(
     )
 
 
-async def sync_discovery_source(
-    session: AsyncSession,
-    *,
-    provider_name: str,
-    source_key: str,
-    filters: JobSearchFilters,
-) -> tuple[list[UUID], ExternalJobSyncResult]:
-    """Run a bounded discovery sync while recording the same health evidence."""
-    started = perf_counter()
-    fixture = False
-    try:
-        provider = provider_registry.get(provider_name)
-        fixture = provider.is_fixture
-        job_ids, result = await _sync_discovery_source_once(
-            session,
-            provider_name=provider_name,
-            source_key=source_key,
-            filters=filters,
-        )
-    except Exception as error:
-        latency_ms = round((perf_counter() - started) * 1000)
-        await session.rollback()
-        session.add(
-            _sync_audit_log(
-                actor_id=None,
-                provider=provider_name,
-                source_key=source_key,
-                outcome="failure",
-                fixture=fixture,
-                latency_ms=latency_ms,
-                error_category=classify_provider_failure(error),
-            )
-        )
-        await session.commit()
-        raise
-
-    latency_ms = round((perf_counter() - started) * 1000)
-    session.add(
-        _sync_audit_log(
-            actor_id=None,
-            provider=provider_name,
-            source_key=source_key,
-            outcome="success",
-            fixture=fixture,
-            latency_ms=latency_ms,
-            item_count=result.synced,
-            created=result.created,
-            updated=result.updated,
-        )
-    )
-    await session.commit()
-    return job_ids, replace(result, latency_ms=latency_ms, fixture=fixture)
-
-
 async def sync_all_configured_sources(
     session: AsyncSession,
     *,
     actor_id: UUID | None = None,
 ) -> dict[str, Any]:
     """Sync all live providers safely without failing the whole sync if one source is rate-limited."""
+    settings = get_settings()
     results: dict[str, Any] = {}
     total_created = total_updated = total_synced = 0
-    sources_map = configured_provider_sources()
+
+    sources_map: dict[str, list[str]] = {
+        "yc": list(settings.yc_source_keys or ["yc_startups"]),
+        "greenhouse": list(settings.greenhouse_board_tokens),
+        "lever": list(settings.lever_site_tokens),
+        "ashby": list(settings.ashby_job_board_names),
+    }
 
     for provider_name, source_keys in sources_map.items():
         if provider_name not in provider_registry.names():
-            results[provider_name] = {"status": "disabled", "jobs_synced": 0}
+            results[provider_name] = {"status": "unavailable", "jobs_synced": 0}
             continue
         provider = provider_registry.get(provider_name)
-        if not source_keys or not provider.capabilities.search:
-            results[provider_name] = {"status": "disabled", "jobs_synced": 0}
+        if not provider.capabilities.search:
+            results[provider_name] = {"status": "api_required", "jobs_synced": 0}
             continue
 
         provider_synced = provider_created = provider_updated = provider_errors = 0
-        provider_successes = provider_fixture_successes = 0
-        provider_error_categories: list[str] = []
-        provider_started = perf_counter()
         for source_key in source_keys[:5]:
             try:
                 res = await sync_external_jobs(
@@ -688,47 +380,15 @@ async def sync_all_configured_sources(
                 provider_synced += res.synced
                 provider_created += res.created
                 provider_updated += res.updated
-                provider_successes += 1
-                provider_fixture_successes += int(res.fixture)
-            except ProviderError as error:
+            except ProviderError:
                 provider_errors += 1
-                provider_error_categories.append(classify_provider_failure(error))
                 continue
 
         total_created += provider_created
         total_updated += provider_updated
         total_synced += provider_synced
-        if provider_errors:
-            sync_status = "degraded"
-        elif provider_successes and provider_fixture_successes == provider_successes:
-            sync_status = "fixture"
-        elif provider_successes:
-            sync_status = "live"
-        else:
-            sync_status = "configured"
-        aggregate_fixture = (
-            provider_successes > 0
-            and provider_fixture_successes == provider_successes
-        )
-        session.add(
-            _sync_audit_log(
-                actor_id=actor_id,
-                provider=provider_name,
-                source_key="all_configured_sources",
-                outcome="failure" if provider_errors else "success",
-                fixture=aggregate_fixture,
-                latency_ms=round((perf_counter() - provider_started) * 1000),
-                item_count=provider_synced,
-                error_category=(
-                    provider_error_categories[0] if provider_error_categories else None
-                ),
-                created=provider_created,
-                updated=provider_updated,
-            )
-        )
-        await session.commit()
         results[provider_name] = {
-            "status": sync_status,
+            "status": "live" if (provider_synced > 0 or not provider_errors) else "degraded",
             "jobs_synced": provider_synced,
             "jobs_created": provider_created,
             "jobs_updated": provider_updated,
@@ -737,12 +397,12 @@ async def sync_all_configured_sources(
 
     # Record provider integrations requiring API configuration
     results["indeed"] = {
-        "status": "disabled",
+        "status": "api_required",
         "jobs_synced": 0,
         "reason": "Publisher/Partner API credentials required",
     }
     results["jobsuit"] = {
-        "status": "disabled",
+        "status": "integration_status",
         "jobs_synced": 0,
         "reason": "Partner API configuration required",
     }

@@ -6,18 +6,15 @@ from typing import Any
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     Boolean,
-    CheckConstraint,
     DateTime,
     Enum,
     ForeignKey,
-    Index,
     Integer,
     Numeric,
     String,
     Text,
     UniqueConstraint,
     func,
-    text,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -177,39 +174,17 @@ class Timestamped:
 
 class Student(Timestamped, Base):
     __tablename__ = "students"
-    __table_args__ = (
-        Index("ix_students_institution_department", "institution_id", "department"),
-        Index("ix_students_institution_cohort", "institution_id", "cohort_year"),
-        Index(
-            "uq_students_institution_roll_number",
-            "institution_id",
-            "roll_number",
-            unique=True,
-            postgresql_where=text("roll_number IS NOT NULL"),
-            sqlite_where=text("roll_number IS NOT NULL"),
-        ),
-    )
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     full_name: Mapped[str] = mapped_column(String(200))
     university: Mapped[str | None] = mapped_column(String(255))
     graduation_year: Mapped[int | None] = mapped_column(Integer)
-    institution_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("institutions.id", ondelete="SET NULL"), index=True
-    )
-    department: Mapped[str | None] = mapped_column(String(120))
-    cohort_year: Mapped[int | None] = mapped_column(Integer)
-    roll_number: Mapped[str | None] = mapped_column(String(120))
     github_username: Mapped[str | None] = mapped_column(String(39), unique=True, index=True)
     career_goals: Mapped[dict[str, Any] | None] = mapped_column(Json)
     recruiter_evidence_consent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    account_status: Mapped[str] = mapped_column(
-        String(32), default="active", nullable=False, index=True
-    )
     role = Role.student.value
     evidence: Mapped[list["Evidence"]] = relationship(back_populates="student", cascade="all, delete-orphan")
-    institution: Mapped["Institution | None"] = relationship(back_populates="students")
 
 
 class Recruiter(Timestamped, Base):
@@ -258,70 +233,6 @@ class Institution(Timestamped, Base):
     state: Mapped[str | None] = mapped_column(String(100))
     departments: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
     role = Role.institution.value
-    students: Mapped[list[Student]] = relationship(back_populates="institution")
-
-
-class InstitutionImportBatch(Base):
-    """Tenant-owned audit record for one confirmed governed import."""
-
-    __tablename__ = "institution_import_batches"
-    __table_args__ = (
-        UniqueConstraint(
-            "institution_id", "import_type", "checksum", name="uq_institution_import_checksum"
-        ),
-        Index(
-            "ix_institution_import_batches_scope",
-            "institution_id",
-            "import_type",
-            "status",
-        ),
-    )
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    institution_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("institutions.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    import_type: Mapped[str] = mapped_column(String(32), nullable=False)
-    checksum: Mapped[str] = mapped_column(String(64), nullable=False)
-    status: Mapped[str] = mapped_column(String(24), nullable=False, default="processing")
-    total_rows: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    valid_rows: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    invalid_rows: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    created_rows: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    updated_rows: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    skipped_rows: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    safe_error_summary: Mapped[list[dict[str, Any]]] = mapped_column(
-        Json, nullable=False, default=list
-    )
-    created_by: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-
-
-class InstitutionMapping(Base):
-    """Tenant-scoped mapping from an external label to an approved value."""
-
-    __tablename__ = "institution_mappings"
-    __table_args__ = (
-        UniqueConstraint(
-            "institution_id", "mapping_type", "external_key", name="uq_institution_mapping_key"
-        ),
-        Index("ix_institution_mappings_scope", "institution_id", "mapping_type"),
-    )
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    institution_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("institutions.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    mapping_type: Mapped[str] = mapped_column(String(32), nullable=False)
-    external_key: Mapped[str] = mapped_column(String(160), nullable=False)
-    canonical_value: Mapped[str] = mapped_column(String(255), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
-    )
 
 
 class Admin(Timestamped, Base):
@@ -821,9 +732,6 @@ class Assessment(Timestamped, Base):
     __tablename__ = "assessments"
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
-    assessment_type: Mapped[str] = mapped_column(
-        String(32), default="technical", nullable=False, index=True
-    )
     canonical_skill_name: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
     skill_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("skills.id"), index=True)
     category: Mapped[str] = mapped_column(String(80), nullable=False)
@@ -838,9 +746,6 @@ class AssessmentQuestion(Base):
     __tablename__ = "assessment_questions"
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     assessment_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("assessments.id", ondelete="CASCADE"), nullable=False, index=True)
-    competency_skill_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("skills.id", ondelete="RESTRICT"), index=True
-    )
     question_text: Mapped[str] = mapped_column(Text, nullable=False)
     question_type: Mapped[str] = mapped_column(String(32), default="mcq", nullable=False)
     options: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
@@ -848,26 +753,13 @@ class AssessmentQuestion(Base):
     explanation: Mapped[str | None] = mapped_column(Text)
     points: Mapped[int] = mapped_column(Integer, default=10, nullable=False)
     assessment: Mapped[Assessment] = relationship(back_populates="questions")
-    competency_skill: Mapped[Skill | None] = relationship()
 
 
 class AssessmentAttempt(Base):
     __tablename__ = "assessment_attempts"
-    __table_args__ = (
-        UniqueConstraint(
-            "student_id",
-            "assessment_id",
-            "idempotency_key",
-            name="uq_assessment_attempt_submission",
-        ),
-    )
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
     assessment_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("assessments.id"), nullable=False, index=True)
-    evidence_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("evidence.id", ondelete="SET NULL"), unique=True, index=True
-    )
-    idempotency_key: Mapped[str | None] = mapped_column(String(64))
     score: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
     total_points: Mapped[int] = mapped_column(Integer, nullable=False)
     passed: Mapped[bool] = mapped_column(Boolean, nullable=False)
@@ -903,52 +795,19 @@ class LearningCourse(Timestamped, Base):
 
 class CourseEnrollment(Base):
     __tablename__ = "course_enrollments"
-    __table_args__ = (
-        UniqueConstraint("student_id", "course_id", name="uq_student_course_enrollment"),
-        UniqueConstraint(
-            "institution_id",
-            "external_source",
-            "external_id",
-            name="uq_course_enrollment_import_id",
-        ),
-    )
+    __table_args__ = (UniqueConstraint("student_id", "course_id", name="uq_student_course_enrollment"),)
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
     course_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("learning_courses.id", ondelete="CASCADE"), nullable=False, index=True)
     status: Mapped[str] = mapped_column(String(32), default="enrolled", nullable=False)
     progress: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    attendance_status: Mapped[str] = mapped_column(
-        String(32), default="pending", nullable=False
-    )
-    attendance_marked_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True)
-    )
-    completion_source: Mapped[str | None] = mapped_column(String(64))
-    completion_evidence_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("evidence.id", ondelete="SET NULL"), unique=True, index=True
-    )
-    verified_by_recruiter_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("recruiters.id", ondelete="SET NULL"), index=True
-    )
-    institution_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("institutions.id", ondelete="SET NULL"), index=True
-    )
-    external_source: Mapped[str | None] = mapped_column(String(64))
-    external_id: Mapped[str | None] = mapped_column(String(160))
     enrolled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     course: Mapped[LearningCourse] = relationship()
-    completion_evidence: Mapped[Evidence | None] = relationship()
-    verified_by_recruiter: Mapped[Recruiter | None] = relationship()
 
 
 class InternshipEngagement(Timestamped, Base):
     __tablename__ = "internship_engagements"
-    __table_args__ = (
-        UniqueConstraint(
-            "internship_id", "student_id", name="uq_internship_engagement_student"
-        ),
-    )
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     internship_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("internships.id", ondelete="CASCADE"), nullable=False, index=True)
     student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
@@ -958,21 +817,13 @@ class InternshipEngagement(Timestamped, Base):
     mentor_email: Mapped[str | None] = mapped_column(String(120))
     start_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     end_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    status: Mapped[str] = mapped_column(String(32), default="applied", nullable=False)
+    status: Mapped[str] = mapped_column(String(32), default="applied", nullable=False)  # applied, shortlisted, selected, active, completed, rejected, withdrawn
     progress_percentage: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     milestones: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
     mentor_feedback: Mapped[dict[str, Any] | None] = mapped_column(Json)
     final_rating: Mapped[float | None] = mapped_column(Numeric(3, 2))
     completion_notes: Mapped[str | None] = mapped_column(Text)
-    completed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), index=True
-    )
-    mentor_verified_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), index=True
-    )
-    completion_evidence_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("evidence.id", ondelete="SET NULL"), unique=True, index=True
-    )
+    completion_evidence_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("evidence.id", ondelete="SET NULL"))
 
     internship: Mapped[Internship] = relationship()
     student: Mapped[Student] = relationship()
@@ -982,19 +833,8 @@ class InternshipEngagement(Timestamped, Base):
 
 class PlacementDrive(Timestamped, Base):
     __tablename__ = "placement_drives"
-    __table_args__ = (
-        UniqueConstraint(
-            "institution_id",
-            "external_source",
-            "external_id",
-            name="uq_placement_external_source_id",
-        ),
-    )
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     recruiter_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("recruiters.id", ondelete="SET NULL"), index=True)
-    institution_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("institutions.id", ondelete="SET NULL"), index=True
-    )
     company_name: Mapped[str] = mapped_column(String(255), nullable=False)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
@@ -1006,86 +846,14 @@ class PlacementDrive(Timestamped, Base):
     drive_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="upcoming", nullable=False)
     required_skills: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
-    qualifications: Mapped[str | None] = mapped_column(Text)
-    employment_type: Mapped[str] = mapped_column(
-        String(64), default="full_time", nullable=False
-    )
-    location: Mapped[str | None] = mapped_column(String(255))
-    application_deadline: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), index=True
-    )
-    eligibility: Mapped[dict[str, Any]] = mapped_column(JSON(), default=dict, nullable=False)
-    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    external_source: Mapped[str | None] = mapped_column(String(64))
-    external_id: Mapped[str | None] = mapped_column(String(160))
-    requirements: Mapped[list["PlacementRequirement"]] = relationship(
-        back_populates="drive", cascade="all, delete-orphan"
-    )
-
-
-class PlacementRequirement(Base):
-    __tablename__ = "placement_requirements"
-    __table_args__ = (
-        UniqueConstraint(
-            "placement_drive_id", "skill_id", name="uq_placement_requirement_skill"
-        ),
-    )
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    placement_drive_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("placement_drives.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    skill_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("skills.id"), nullable=False, index=True
-    )
-    weight: Mapped[float] = mapped_column(Numeric(4, 2), default=1.0, nullable=False)
-    requirement_type: Mapped[str] = mapped_column(
-        String(16), default="required", nullable=False
-    )
-    drive: Mapped[PlacementDrive] = relationship(back_populates="requirements")
-    skill: Mapped[Skill] = relationship()
-
-
-class PassportShare(Timestamped, Base):
-    """Revocable public projection of a student's private passport."""
-
-    __tablename__ = "passport_shares"
-    __table_args__ = (
-        Index("ix_passport_shares_student_active", "student_id", "revoked_at", "expires_at"),
-    )
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    student_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
-    visibility_allowlist: Mapped[list[str]] = mapped_column(Json, nullable=False)
-    label: Mapped[str | None] = mapped_column(String(120))
-    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
-    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
-    last_accessed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    access_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    student: Mapped[Student] = relationship()
 
 
 class PlacementRegistration(Base):
     __tablename__ = "placement_registrations"
-    __table_args__ = (
-        UniqueConstraint("student_id", "placement_drive_id", name="uq_student_placement_drive"),
-        UniqueConstraint(
-            "institution_id",
-            "external_source",
-            "external_id",
-            name="uq_placement_registration_import_id",
-        ),
-    )
+    __table_args__ = (UniqueConstraint("student_id", "placement_drive_id", name="uq_student_placement_drive"),)
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
     placement_drive_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("placement_drives.id", ondelete="CASCADE"), nullable=False, index=True)
-    institution_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("institutions.id", ondelete="SET NULL"), index=True
-    )
-    external_source: Mapped[str | None] = mapped_column(String(64))
-    external_id: Mapped[str | None] = mapped_column(String(160))
     status: Mapped[str] = mapped_column(String(32), default="registered", nullable=False)  # registered, shortlisted, interview_scheduled, interviewed, offered, accepted, rejected, withdrawn
     match_score: Mapped[float] = mapped_column(Numeric(5, 4), default=0.0, nullable=False)
     deterministic_score: Mapped[float] = mapped_column(Numeric(5, 4), default=0.0, nullable=False)
@@ -1098,39 +866,6 @@ class PlacementRegistration(Base):
     notes: Mapped[str | None] = mapped_column(String(255))
     drive: Mapped[PlacementDrive] = relationship()
     student: Mapped[Student] = relationship()
-    status_events: Mapped[list["PlacementStatusEvent"]] = relationship(
-        back_populates="registration", cascade="all, delete-orphan"
-    )
-
-
-class PlacementStatusEvent(Base):
-    """Append-only placement pipeline transition history."""
-
-    __tablename__ = "placement_status_events"
-    __table_args__ = (
-        Index(
-            "ix_placement_status_events_registration",
-            "placement_registration_id",
-            "created_at",
-        ),
-    )
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    placement_registration_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("placement_registrations.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    old_stage: Mapped[str | None] = mapped_column(String(32))
-    new_stage: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
-    actor_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
-    actor_role: Mapped[str] = mapped_column(String(32), nullable=False)
-    source: Mapped[str] = mapped_column(String(32), nullable=False)
-    note: Mapped[str | None] = mapped_column(String(500))
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    registration: Mapped[PlacementRegistration] = relationship(
-        back_populates="status_events"
-    )
 
 
 class FacultyOpportunity(Timestamped, Base):
@@ -1154,9 +889,7 @@ class FacultyOpportunity(Timestamped, Base):
     required_documents: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
     contact_email: Mapped[str | None] = mapped_column(String(320))
     contact_person: Mapped[str | None] = mapped_column(String(200))
-    created_by_recruiter_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("recruiters.id", ondelete="SET NULL")
-    )
+    created_by_recruiter_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("recruiters.id", ondelete="SET NULL"), index=True)
 
 
 class FacultyApplication(Base):
@@ -1280,10 +1013,7 @@ class MentorshipSession(Timestamped, Base):
 class InnovationChallenge(Timestamped, Base):
     __tablename__ = "innovation_challenges"
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    recruiter_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("recruiters.id", ondelete="SET NULL"), index=True
-    )
-    challenge_type: Mapped[str] = mapped_column(String(64), default="hackathon", nullable=False)  # hackathon, innovation_challenge, live_project
+    challenge_type: Mapped[str] = mapped_column(String(64), default="hackathon", nullable=False)  # hackathon, live_industry_project, workshop, guest_lecture, research_collaboration
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     host_company: Mapped[str] = mapped_column(String(255), nullable=False)
     problem_statement: Mapped[str] = mapped_column(Text, nullable=False)
@@ -1296,46 +1026,10 @@ class InnovationChallenge(Timestamped, Base):
     deadline: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     tags: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="active", nullable=False)
-    start_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    end_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
-    closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
-    participant_capacity: Mapped[int | None] = mapped_column(Integer)
-    eligibility: Mapped[dict[str, Any]] = mapped_column(Json, default=dict, nullable=False)
-    outcome_criteria: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
-    requirements: Mapped[list["ChallengeSkillRequirement"]] = relationship(
-        back_populates="challenge", cascade="all, delete-orphan"
-    )
-
-
-class ChallengeSkillRequirement(Base):
-    __tablename__ = "challenge_skill_requirements"
-    __table_args__ = (
-        CheckConstraint(
-            "requirement_type IN ('required', 'preferred')",
-            name="ck_challenge_requirement_type",
-        ),
-        UniqueConstraint("challenge_id", "skill_id", name="uq_challenge_skill"),
-    )
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    challenge_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("innovation_challenges.id", ondelete="CASCADE"), index=True
-    )
-    skill_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("skills.id"), index=True)
-    requirement_type: Mapped[str] = mapped_column(String(16), nullable=False)
-    weight: Mapped[float] = mapped_column(Numeric(4, 2), default=1.0, nullable=False)
-    challenge: Mapped[InnovationChallenge] = relationship(back_populates="requirements")
-    skill: Mapped[Skill] = relationship()
 
 
 class ProjectApplication(Base):
     __tablename__ = "project_applications"
-    __table_args__ = (
-        CheckConstraint(
-            "feedback_rating IS NULL OR (feedback_rating BETWEEN 1 AND 5)",
-            name="ck_project_feedback_rating",
-        ),
-    )
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     challenge_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("innovation_challenges.id", ondelete="CASCADE"), nullable=False, index=True)
     student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
@@ -1346,67 +1040,11 @@ class ProjectApplication(Base):
     feedback: Mapped[str | None] = mapped_column(Text)
     score_or_grade: Mapped[str | None] = mapped_column(String(32))
     completion_evidence_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("evidence.id", ondelete="SET NULL"))
-    feedback_rating: Mapped[int | None] = mapped_column(Integer)
-    outcome_metadata: Mapped[dict[str, Any]] = mapped_column(Json, default=dict, nullable=False)
-    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     applied_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     challenge: Mapped[InnovationChallenge] = relationship()
     student: Mapped[Student] = relationship()
     completion_evidence: Mapped[Evidence | None] = relationship()
-
-
-class FacultyInvitation(Timestamped, Base):
-    __tablename__ = "faculty_invitations"
-    __table_args__ = (
-        CheckConstraint(
-            "status IN ('pending', 'accepted', 'declined', 'revoked')",
-            name="ck_faculty_invitation_status",
-        ),
-        CheckConstraint(
-            "faculty_opportunity_id IS NOT NULL OR collaboration_workspace_id IS NOT NULL",
-            name="ck_faculty_invitation_context",
-        ),
-        Index(
-            "uq_faculty_invitation_opportunity",
-            "recruiter_id", "academician_id", "faculty_opportunity_id",
-            unique=True,
-            postgresql_where=text("faculty_opportunity_id IS NOT NULL AND status = 'pending'"),
-            sqlite_where=text("faculty_opportunity_id IS NOT NULL AND status = 'pending'"),
-        ),
-        Index(
-            "uq_faculty_invitation_workspace",
-            "recruiter_id", "academician_id", "collaboration_workspace_id",
-            unique=True,
-            postgresql_where=text("collaboration_workspace_id IS NOT NULL AND status = 'pending'"),
-            sqlite_where=text("collaboration_workspace_id IS NOT NULL AND status = 'pending'"),
-        ),
-    )
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    recruiter_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("recruiters.id", ondelete="CASCADE"), index=True
-    )
-    academician_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("academicians.id", ondelete="CASCADE"), index=True
-    )
-    faculty_opportunity_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("faculty_opportunities.id", ondelete="CASCADE"), index=True
-    )
-    collaboration_workspace_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("collaboration_workspaces.id", ondelete="CASCADE"), index=True
-    )
-    status: Mapped[str] = mapped_column(String(16), default="pending", nullable=False, index=True)
-    message: Mapped[str] = mapped_column(String(1000), nullable=False)
-    responded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
-    )
-    recruiter: Mapped[Recruiter] = relationship()
-    academician: Mapped[Academician] = relationship()
-    faculty_opportunity: Mapped[FacultyOpportunity | None] = relationship()
-    collaboration_workspace: Mapped[CollaborationWorkspace | None] = relationship()
 
 
 class UserDocument(Timestamped, Base):

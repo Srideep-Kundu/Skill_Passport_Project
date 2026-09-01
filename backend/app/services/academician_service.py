@@ -1135,9 +1135,7 @@ async def list_advised_projects(
     challenges = (
         await session.scalars(
             select(InnovationChallenge).where(
-                InnovationChallenge.challenge_type.in_(
-                    ["live_project", "live_industry_project", "hackathon"]
-                )
+                InnovationChallenge.challenge_type.in_(["live_industry_project", "hackathon"])
             )
         )
     ).all()

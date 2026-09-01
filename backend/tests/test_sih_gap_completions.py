@@ -27,7 +27,6 @@ from app.models import (
     EvidenceType,
     ExtractionStatus,
     Internship,
-    InternshipRequirement,
     LearningCourse,
     Recruiter,
     Role,
@@ -227,26 +226,9 @@ async def test_internship_engagement_lifecycle_and_mentor_feedback(gap_client):
             title="Backend Engineering Intern",
             description="Build distributed APIs in Python.",
         )
-        outcome_skill = Skill(
-            id=uuid.uuid4(), canonical_name=f"API Delivery {uuid.uuid4()}", category="technical"
-        )
-        db_session.add_all([internship, outcome_skill])
-        await db_session.flush()
-        db_session.add(
-            InternshipRequirement(
-                internship_id=internship.id,
-                skill_id=outcome_skill.id,
-                is_required=True,
-                weight=1.0,
-            )
-        )
+        db_session.add(internship)
         await db_session.commit()
-        recruiter_id, student_id, internship_id, outcome_skill_id = (
-            recruiter.id,
-            student.id,
-            internship.id,
-            outcome_skill.id,
-        )
+        recruiter_id, student_id, internship_id = recruiter.id, student.id, internship.id
 
     recruiter_token = create_access_token(recruiter_id, Role.recruiter.value)
     student_token = create_access_token(student_id, Role.student.value)
@@ -266,9 +248,9 @@ async def test_internship_engagement_lifecycle_and_mentor_feedback(gap_client):
     assert res_create.status_code == 201
     eng_data = res_create.json()
     eng_id = eng_data["id"]
-    assert eng_data["status"] == "applied"
+    assert eng_data["status"] == "active"
     assert eng_data["mentor_name"] == "Devin Torres"
-    assert eng_data["milestones"] == []
+    assert len(eng_data["milestones"]) >= 3
 
     # 2. Student views their engagement
     res_student_view = await client.get(
@@ -279,17 +261,10 @@ async def test_internship_engagement_lifecycle_and_mentor_feedback(gap_client):
     assert len(res_student_view.json()) >= 1
     assert res_student_view.json()[0]["id"] == eng_id
 
-    # 3. Recruiter advances the governed lifecycle and updates progress
-    for next_status in ("shortlisted", "selected", "active"):
-        transition = await client.patch(
-            f"/internship-engagements/{eng_id}/status",
-            json={"status": next_status},
-            headers={"Authorization": f"Bearer {recruiter_token}"},
-        )
-        assert transition.status_code == 200
+    # 3. Recruiter updates progress
     res_progress = await client.patch(
         f"/internship-engagements/{eng_id}/status",
-        json={"progress_percentage": 65},
+        json={"progress_percentage": 65, "status": "active"},
         headers={"Authorization": f"Bearer {recruiter_token}"},
     )
     assert res_progress.status_code == 200
@@ -299,30 +274,27 @@ async def test_internship_engagement_lifecycle_and_mentor_feedback(gap_client):
     res_feedback = await client.post(
         f"/internship-engagements/{eng_id}/feedback",
         json={
-            "mentor_name": "Devin Torres",
-            "mentor_email": "devin@cloudscale.com",
-            "skill_feedback": [
-                {
-                    "skill_id": str(outcome_skill_id),
-                    "rating": 5,
-                    "comment": "Outstanding delivery.",
-                    "observed_outcome": "Delivered and tested the Redis streaming service.",
-                }
-            ],
-            "overall_comment": "Evidence reviewed against delivered work.",
+            "technical_skills_rating": 4.8,
+            "communication_rating": 4.5,
+            "teamwork_rating": 4.7,
+            "problem_solving_rating": 5.0,
+            "overall_rating": 4.8,
+            "comments": "Outstanding delivery on the Redis streaming service and microservice testing.",
         },
         headers={"Authorization": f"Bearer {recruiter_token}"},
     )
     assert res_feedback.status_code == 200
-    assert res_feedback.json()["final_rating"] == 5.0
-    assert res_feedback.json()["mentor_feedback"]["skills"][0]["rating"] == 5
+    assert res_feedback.json()["final_rating"] == 4.8
+    assert res_feedback.json()["mentor_feedback"]["problem_solving_rating"] == 5.0
 
     # 5. Complete internship -> generates verified completion evidence
-    res_complete = await client.post(
-        f"/internship-engagements/{eng_id}/complete",
+    res_complete = await client.patch(
+        f"/internship-engagements/{eng_id}/status",
         json={
+            "status": "completed",
+            "progress_percentage": 100,
             "completion_notes": "Completed with distinction.",
-            "outcome_summary": "Delivered and tested the agreed streaming service.",
+            "final_rating": 4.9,
         },
         headers={"Authorization": f"Bearer {recruiter_token}"},
     )
@@ -443,12 +415,6 @@ async def test_placement_drive_lifecycle_and_deterministic_candidate_ranking(gap
 
     # 4. Recruiter schedules interview and extends offer
     reg_id = top_cand["registration_id"]
-    res_shortlist = await client.patch(
-        f"/placements/registrations/{reg_id}/stage",
-        json={"stage": "shortlisted"},
-        headers={"Authorization": f"Bearer {recruiter_token}"},
-    )
-    assert res_shortlist.status_code == 200
     res_interview = await client.patch(
         f"/placements/registrations/{reg_id}/stage",
         json={

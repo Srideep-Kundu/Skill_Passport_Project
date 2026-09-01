@@ -1,4 +1,3 @@
-import asyncio
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import ClassVar, Self
@@ -225,13 +224,6 @@ class RecordingRedis:
 @pytest.mark.asyncio
 async def test_enqueue_failure_is_recoverable_and_duplicate_enqueue_does_not_push_twice(monkeypatch: pytest.MonkeyPatch, session_factory: async_sessionmaker[AsyncSession]) -> None:
     monkeypatch.setattr(extraction_service, "get_settings", lambda: settings(redis_url="redis://test"))
-    direct_processing: list[UUID] = []
-
-    async def record_direct_processing(evidence_id: UUID) -> str:
-        direct_processing.append(evidence_id)
-        return "completed"
-
-    monkeypatch.setattr(extraction_service, "process_evidence_job", record_direct_processing)
     async with session_factory() as session:
         evidence, _ = await evidence_with_job(session)
         monkeypatch.setattr(extraction_service, "Redis", FailingRedis)
@@ -242,10 +234,8 @@ async def test_enqueue_failure_is_recoverable_and_duplicate_enqueue_does_not_pus
         RecordingRedis.calls = []
         assert await extraction_service.enqueue_extraction(session, evidence.id)
         assert await extraction_service.enqueue_extraction(session, evidence.id)
-        await asyncio.sleep(0)
 
     assert len(RecordingRedis.calls) == 1
-    assert direct_processing == []
 
 
 @pytest.mark.asyncio

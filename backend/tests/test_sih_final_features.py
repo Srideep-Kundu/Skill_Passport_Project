@@ -35,62 +35,9 @@ from app.models import (
     StudentSkill,
     VerificationTier,
 )
-from app.services.integrations.cert_adapter import (
-    BaseCertificationAdapter,
-    ExternalCertificateClaim,
-)
+from app.services.integrations.cert_adapter import MockCertificationAdapter
 from app.services.integrations.institution_import_adapter import import_students_csv
-from app.services.integrations.lms_adapter import BaseLMSAdapter, LMSCourseCompletion
-
-
-class MockLMSAdapter(BaseLMSAdapter):
-    """Test-only LMS fixture; never available to application runtime."""
-
-    provider_name = "test-lms"
-
-    async def fetch_student_completions(
-        self, external_user_id: str
-    ) -> list[LMSCourseCompletion]:
-        return [
-            LMSCourseCompletion(
-                external_course_id="SWAYAM-CS-2025",
-                course_name="Data Structures and Algorithms in C++",
-                provider="NPTEL / SWAYAM",
-                completion_percentage=100.0,
-                grade="Elite + Gold (92%)",
-                completed_at="2026-02-15T10:00:00Z",
-                skills_covered=["Data Structures", "Algorithms", "C++"],
-            ),
-            LMSCourseCompletion(
-                external_course_id="COURSERA-CLOUD-401",
-                course_name="Cloud Computing & Kubernetes Architecture",
-                provider="Coursera",
-                completion_percentage=100.0,
-                grade="Pass with Honors",
-                completed_at="2026-04-10T14:30:00Z",
-                skills_covered=["Kubernetes", "Docker", "Cloud Computing"],
-            ),
-        ]
-
-
-class MockCertificationAdapter(BaseCertificationAdapter):
-    """Test-only certification fixture; never available to application runtime."""
-
-    provider_name = "test-certification"
-
-    async def verify_credential_assertion(
-        self, credential_url: str
-    ) -> ExternalCertificateClaim:
-        return ExternalCertificateClaim(
-            badge_id="test-badge",
-            recipient_email="student@example.edu",
-            issuer_name="Test Certification Issuer",
-            badge_name="AWS Test Credential",
-            issued_on="2026-03-01T00:00:00Z",
-            verification_url=credential_url,
-            skills_asserted=["AWS", "Python"],
-            is_cryptographically_valid=True,
-        )
+from app.services.integrations.lms_adapter import MockLMSAdapter
 
 
 @pytest_asyncio.fixture
@@ -126,16 +73,9 @@ async def test_soft_skills_and_aptitude_assessments(final_fixture):
         session.add(student)
         await session.flush()
 
-        teamwork = Skill(canonical_name="Teamwork", category="Professional Competency", aliases=[])
-        logical_reasoning = Skill(canonical_name="Logical Reasoning", category="Aptitude", aliases=[])
-        session.add_all([teamwork, logical_reasoning])
-        await session.flush()
-
         soft_ass = Assessment(
             title="Workplace Situational Judgment",
-            assessment_type="soft_skill",
-            canonical_skill_name="Teamwork",
-            skill_id=teamwork.id,
+            canonical_skill_name="Team Leadership",
             category="Soft Skills",
             difficulty="intermediate",
             duration_minutes=20,
@@ -146,7 +86,6 @@ async def test_soft_skills_and_aptitude_assessments(final_fixture):
 
         q1 = AssessmentQuestion(
             assessment_id=soft_ass.id,
-            competency_skill_id=teamwork.id,
             question_text="How to handle disagreements?",
             question_type="mcq",
             options=["Collaborate", "Argue"],
@@ -158,9 +97,7 @@ async def test_soft_skills_and_aptitude_assessments(final_fixture):
 
         apt_ass = Assessment(
             title="Logical Reasoning Test",
-            assessment_type="aptitude",
             canonical_skill_name="Logical Reasoning",
-            skill_id=logical_reasoning.id,
             category="Aptitude",
             difficulty="intermediate",
             duration_minutes=20,
@@ -171,7 +108,6 @@ async def test_soft_skills_and_aptitude_assessments(final_fixture):
 
         q2 = AssessmentQuestion(
             assessment_id=apt_ass.id,
-            competency_skill_id=logical_reasoning.id,
             question_text="If A=B and B=C, is A=C?",
             question_type="mcq",
             options=["Yes", "No"],
@@ -201,9 +137,9 @@ async def test_soft_skills_and_aptitude_assessments(final_fixture):
     data = submit_res.json()
     assert data["passed"] is True
     assert data["breakdown"]["type"] == "soft_skills"
+    assert "communication" in data["breakdown"]
     assert "teamwork" in data["breakdown"]
     assert "strengths" in data["breakdown"]
-    assert data["competencies"][0]["skill_name"] == "Teamwork"
 
     # 2. Submit Aptitude Assessment
     apt_res = await client.post(
@@ -215,6 +151,7 @@ async def test_soft_skills_and_aptitude_assessments(final_fixture):
     apt_data = apt_res.json()
     assert apt_data["passed"] is True
     assert apt_data["breakdown"]["type"] == "aptitude"
+    assert "quantitative_score" in apt_data["breakdown"]
     assert "logical_reasoning_score" in apt_data["breakdown"]
 
 
@@ -399,8 +336,7 @@ async def test_recruiter_analytics_and_integration_adapters(final_fixture):
     analytics = res.json()
     assert analytics["company_name"] == "TechCorp Global"
     assert len(analytics["recruitment_funnel"]) == 5
-    # Empty persisted demand is reported truthfully; no synthetic skill rows.
-    assert analytics["top_demanded_skills"] == []
+    assert len(analytics["top_demanded_skills"]) > 0
 
     # 2. Test LMS adapter
     lms = MockLMSAdapter()

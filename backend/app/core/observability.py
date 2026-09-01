@@ -17,15 +17,13 @@ _SENSITIVE_ASSIGNMENT = re.compile(
     r"(?:\"[^\"]*\"|'[^']*'|[^&\s,;]+)"
 )
 _BEARER_CREDENTIAL = re.compile(r"(?i)(\bbearer\s+)[^\s,;]+")
-_PUBLIC_SHARE_TOKEN = re.compile(r"(/public/passports/)[^/?\s]+")
 
 
 def redact_secrets(value: object) -> str:
     """Redact credential-shaped values before they reach any configured log sink."""
     text = str(value)
     text = _SENSITIVE_ASSIGNMENT.sub(r"\1[REDACTED]", text)
-    text = _BEARER_CREDENTIAL.sub(r"\1[REDACTED]", text)
-    return _PUBLIC_SHARE_TOKEN.sub(r"\1[REDACTED]", text)
+    return _BEARER_CREDENTIAL.sub(r"\1[REDACTED]", text)
 
 
 def new_request_id() -> str:
@@ -49,7 +47,9 @@ class StructuredFormatter(logging.Formatter):
             if value is not None:
                 payload[field] = value
         if record.exc_info:
-            payload["exception"] = redact_secrets(self.formatException(record.exc_info))
+            payload["exception"] = redact_secrets(
+                self.formatException(record.exc_info)
+            )
         return json.dumps(payload, default=str)
 
 
@@ -66,9 +66,6 @@ def configure_logging(log_level: str) -> None:
 def safe_request_id(headers: Mapping[str, str]) -> str:
     """Accept a bounded opaque correlation ID or replace it with a UUID."""
     candidate = headers.get("x-request-id", "")
-    if (
-        1 <= len(candidate) <= 128
-        and candidate.replace("-", "").replace("_", "").isalnum()
-    ):
+    if 1 <= len(candidate) <= 128 and candidate.replace("-", "").replace("_", "").isalnum():
         return candidate
     return new_request_id()

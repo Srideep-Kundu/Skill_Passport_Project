@@ -802,6 +802,7 @@ async def enqueue_extraction(session: AsyncSession, evidence_id: UUID) -> bool:
     evidence.extraction_status = ExtractionStatus.queued
     session.add(_audit(evidence, "extraction_job_queued", {"mode": "redis"}))
     await session.commit()
+    asyncio.create_task(process_evidence_job(evidence_id))
     return True
 
 

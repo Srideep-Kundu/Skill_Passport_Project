@@ -459,19 +459,11 @@ class ExternalJobSyncResponse(APIModel):
 class ProviderStatusItem(APIModel):
     provider: str
     name: str
-    status: Literal["disabled", "configured", "fixture", "degraded", "live"]
-    enabled: bool
-    configured: bool
-    fixture: bool
+    status: str  # "disabled" | "configured" | "fixture" | "degraded" | "live" | "unavailable"
     badge_label: str
     search_supported: bool
     status_tracking_supported: bool
     active_jobs_count: int = 0
-    last_attempt_at: datetime | None = None
-    last_success_at: datetime | None = None
-    last_item_count: int | None = None
-    last_latency_ms: int | None = None
-    latest_error_category: str | None = None
     last_synced_at: datetime | None = None
     reason: str | None = None
 
@@ -862,93 +854,6 @@ class PassportResponse(APIModel):
     evidence: list[EvidenceResponse]
 
 
-PassportVisibility = Literal[
-    "display_identity",
-    "verified_skills",
-    "selected_evidence_summaries",
-    "projects",
-    "certifications",
-    "achievements",
-    "internship_outcomes",
-    "learning_outcomes",
-    "assessment_competencies",
-    "collaboration_outcomes",
-    "verification_summaries",
-]
-
-
-class PassportShareCreate(APIModel):
-    visibility_allowlist: list[PassportVisibility] = Field(min_length=1, max_length=11)
-    expires_at: datetime | None = None
-    label: str | None = Field(default=None, min_length=1, max_length=120)
-
-    @field_validator("visibility_allowlist")
-    @classmethod
-    def unique_visibility(cls, value: list[PassportVisibility]) -> list[PassportVisibility]:
-        if len(value) != len(set(value)):
-            raise ValueError("visibility selections must be unique")
-        return value
-
-
-class PassportShareResponse(APIModel):
-    id: UUID
-    label: str | None
-    visibility_allowlist: list[PassportVisibility]
-    expires_at: datetime | None
-    revoked_at: datetime | None
-    created_at: datetime
-    last_accessed_at: datetime | None
-    access_count: int
-    status: Literal["active", "expired", "revoked"]
-
-
-class PassportShareCreated(PassportShareResponse):
-    public_url: str
-    raw_token: str
-
-
-class PublicProvenanceSummary(APIModel):
-    source_type: str
-    source_label: str
-
-
-class PublicSkillSummary(APIModel):
-    canonical_name: str
-    verification_tier: Literal["verified", "partially_verified", "unverified"]
-    confidence: float
-    provenance: list[PublicProvenanceSummary]
-
-
-class PublicEvidenceSummary(APIModel):
-    evidence_type: str
-    title: str
-    verification_summary: str
-
-
-class PublicOutcomeSummary(APIModel):
-    title: str
-    category: str
-    status: str
-    completed_at: datetime | None = None
-    summary: str | None = None
-
-
-class PublicPassportResponse(APIModel):
-    display_name: str | None = None
-    generated_at: datetime
-    visible_sections: list[PassportVisibility]
-    skills: list[PublicSkillSummary] | None = None
-    evidence: list[PublicEvidenceSummary] | None = None
-    projects: list[PublicOutcomeSummary] | None = None
-    certifications: list[PublicOutcomeSummary] | None = None
-    achievements: list[PublicOutcomeSummary] | None = None
-    internship_outcomes: list[PublicOutcomeSummary] | None = None
-    learning_outcomes: list[PublicOutcomeSummary] | None = None
-    assessment_competencies: list[PublicOutcomeSummary] | None = None
-    collaboration_outcomes: list[PublicOutcomeSummary] | None = None
-    verification_summary: dict[str, int] | None = None
-
-
 class ProfileEvidenceSupport(APIModel):
     evidence_id: UUID
     title: str
@@ -1066,14 +971,11 @@ class AssessmentQuestionResponse(APIModel):
     question_type: str
     options: list[str]
     points: int
-    competency_skill_id: UUID | None = None
-    competency_name: str | None = None
 
 
 class AssessmentResponse(APIModel):
     id: UUID
     title: str
-    assessment_type: Literal["technical", "soft_skill", "aptitude"] = "technical"
     canonical_skill_name: str
     category: str
     difficulty: str
@@ -1085,7 +987,6 @@ class AssessmentResponse(APIModel):
 class AssessmentSummaryResponse(APIModel):
     id: UUID
     title: str
-    assessment_type: Literal["technical", "soft_skill", "aptitude"] = "technical"
     canonical_skill_name: str
     category: str
     difficulty: str
@@ -1096,31 +997,17 @@ class AssessmentSummaryResponse(APIModel):
 
 class AssessmentSubmitRequest(APIModel):
     answers: dict[str, str]  # question_id -> selected option or answer string
-    submission_id: UUID | None = None
-
-
-class AssessmentCompetencyResult(APIModel):
-    skill_id: UUID
-    skill_name: str
-    earned_points: int
-    total_points: int
-    percentage: float
-    passed: bool
 
 
 class AssessmentAttemptResponse(APIModel):
     id: UUID
     assessment_id: UUID
     assessment_title: str
-    assessment_type: Literal["technical", "soft_skill", "aptitude"] = "technical"
     score: float
     total_points: int
     percentage: float
     passed: bool
     breakdown: dict[str, Any] = Field(default_factory=dict)
-    competencies: list[AssessmentCompetencyResult] = Field(default_factory=list)
-    evidence_id: UUID | None = None
-    passport_updated: bool = False
     completed_at: datetime
 
 
@@ -1136,30 +1023,8 @@ class LearningCourseResponse(APIModel):
     rating: float
     description: str
     skills: list[str]
-    skill_ids: list[UUID] = Field(default_factory=list)
-    program_type: Literal[
-        "course",
-        "workshop",
-        "certification",
-        "bootcamp",
-        "mentorship_program",
-        "training_program",
-        "guest_lecture",
-        "industry_orientation",
-    ] = "course"
-    recruiter_id: UUID | None = None
-    start_date: datetime | None = None
-    end_date: datetime | None = None
-    delivery_mode: Literal["online", "hybrid", "in_person"] = "online"
-    capacity: int | None = None
-    enrolled_count: int = 0
-    certificate_available: bool = True
-    is_published: bool = True
     is_enrolled: bool = False
     progress: int = 0
-    enrollment_status: str | None = None
-    attendance_status: str | None = None
-    completion_verified: bool = False
     recommendation_reason: str | None = None
 
 
@@ -1170,80 +1035,12 @@ class CourseEnrollmentResponse(APIModel):
     provider: str
     status: str
     progress: int
-    attendance_status: str = "pending"
-    attendance_marked_at: datetime | None = None
-    completion_source: str | None = None
-    completion_evidence_id: UUID | None = None
-    verified_by_recruiter_id: UUID | None = None
-    completion_verified: bool = False
-    student_id: UUID | None = None
-    student_name: str | None = None
-    student_email: str | None = None
     enrolled_at: datetime
     completed_at: datetime | None = None
 
 
 class CourseProgressUpdate(APIModel):
     progress: int = Field(ge=0, le=100)
-
-
-LearningProgramType = Literal[
-    "course",
-    "workshop",
-    "certification",
-    "bootcamp",
-    "mentorship_program",
-    "training_program",
-    "guest_lecture",
-]
-
-
-class LearningProgramCreate(APIModel):
-    title: str = Field(min_length=3, max_length=255)
-    category: str = Field(min_length=2, max_length=80)
-    program_type: LearningProgramType
-    difficulty: str = Field(default="all_levels", min_length=2, max_length=32)
-    duration_hours: int = Field(ge=1, le=10000)
-    start_date: datetime | None = None
-    end_date: datetime | None = None
-    delivery_mode: Literal["online", "hybrid", "in_person"] = "online"
-    capacity: int | None = Field(default=None, ge=1)
-    certificate_available: bool = True
-    is_published: bool = False
-    url: str = Field(default="", max_length=2048)
-    description: str = Field(min_length=10, max_length=10000)
-    skill_ids: list[UUID] = Field(min_length=1, max_length=20)
-
-
-class LearningProgramUpdate(APIModel):
-    title: str | None = Field(default=None, min_length=3, max_length=255)
-    category: str | None = Field(default=None, min_length=2, max_length=80)
-    program_type: LearningProgramType | None = None
-    difficulty: str | None = Field(default=None, min_length=2, max_length=32)
-    duration_hours: int | None = Field(default=None, ge=1, le=10000)
-    start_date: datetime | None = None
-    end_date: datetime | None = None
-    delivery_mode: Literal["online", "hybrid", "in_person"] | None = None
-    capacity: int | None = Field(default=None, ge=1)
-    certificate_available: bool | None = None
-    is_published: bool | None = None
-    url: str | None = Field(default=None, max_length=2048)
-    description: str | None = Field(default=None, min_length=10, max_length=10000)
-    skill_ids: list[UUID] | None = Field(default=None, min_length=1, max_length=20)
-
-
-class AttendanceUpdate(APIModel):
-    attendance_status: Literal["attended", "absent"]
-
-
-class PlacementRequirementInput(APIModel):
-    skill_id: UUID
-    weight: float = Field(default=1.0, gt=0.0, le=10.0)
-    requirement_type: Literal["required", "preferred"] = "required"
-
-
-class PlacementRequirementResponse(PlacementRequirementInput):
-    skill_name: str
 
 
 class PlacementDriveResponse(APIModel):
@@ -1259,27 +1056,6 @@ class PlacementDriveResponse(APIModel):
     drive_date: datetime
     status: str
     required_skills: list[str]
-    preferred_skills: list[str] = Field(default_factory=list)
-    requirements: list[PlacementRequirementResponse] = Field(default_factory=list)
-    qualifications: str | None = None
-    employment_type: str = "full_time"
-    location: str | None = None
-    application_deadline: datetime | None = None
-    eligibility: dict[str, Any] = Field(default_factory=dict)
-    eligibility_status: Literal["eligible", "ineligible", "not_evaluated"] = "not_evaluated"
-    eligibility_reasons: list[str] = Field(default_factory=list)
-    can_apply: bool = False
-    published_at: datetime | None = None
-    closed_at: datetime | None = None
-    unresolved_skill_names: list[str] = Field(default_factory=list)
-    deterministic_score: float = 0.0
-    semantic_score: float = 0.0
-    verification_bonus: float = 0.0
-    final_score: float = 0.0
-    matched_skills: list[str] = Field(default_factory=list)
-    missing_skills: list[str] = Field(default_factory=list)
-    evidence_references: list[UUID] = Field(default_factory=list)
-    formula_version: str = "v2-embedding-accounting"
     is_registered: bool = False
     registration_status: str | None = None
 
@@ -1614,63 +1390,6 @@ class InnovationChallengeResponse(APIModel):
     deadline: datetime
     tags: list[str]
     status: str
-    recruiter_id: UUID | None = None
-    start_date: datetime | None = None
-    end_date: datetime | None = None
-    published_at: datetime | None = None
-    closed_at: datetime | None = None
-    participant_capacity: int | None = None
-    eligibility: dict[str, Any] = Field(default_factory=dict)
-    outcome_criteria: list[str] = Field(default_factory=list)
-    requirements: list["ChallengeSkillRequirementResponse"] = Field(default_factory=list)
-
-
-class ChallengeSkillRequirementInput(APIModel):
-    skill_id: UUID
-    requirement_type: Literal["required", "preferred"] = "required"
-    weight: float = Field(default=1.0, gt=0, le=5)
-
-
-class ChallengeSkillRequirementResponse(ChallengeSkillRequirementInput):
-    skill_name: str
-
-
-class InnovationChallengeCreate(APIModel):
-    challenge_type: Literal["hackathon", "innovation_challenge", "live_project"]
-    title: str = Field(min_length=3, max_length=255)
-    problem_statement: str = Field(min_length=10, max_length=10000)
-    prize_pool: str = Field(default="Recognition", max_length=100)
-    team_size: int = Field(default=1, ge=1, le=20)
-    duration_weeks: int = Field(default=4, ge=1, le=104)
-    mentor_name: str | None = Field(default=None, max_length=120)
-    deliverables: list[str] = Field(default_factory=list, max_length=30)
-    milestones: list[dict[str, Any]] = Field(default_factory=list, max_length=30)
-    deadline: datetime
-    start_date: datetime | None = None
-    end_date: datetime | None = None
-    participant_capacity: int | None = Field(default=None, ge=1, le=10000)
-    eligibility: dict[str, Any] = Field(default_factory=dict)
-    outcome_criteria: list[str] = Field(default_factory=list, max_length=30)
-    requirements: list[ChallengeSkillRequirementInput] = Field(default_factory=list, max_length=50)
-
-
-class InnovationChallengeUpdate(APIModel):
-    title: str | None = Field(default=None, min_length=3, max_length=255)
-    problem_statement: str | None = Field(default=None, min_length=10, max_length=10000)
-    challenge_type: Literal["hackathon", "innovation_challenge", "live_project"] | None = None
-    prize_pool: str | None = Field(default=None, max_length=100)
-    team_size: int | None = Field(default=None, ge=1, le=20)
-    duration_weeks: int | None = Field(default=None, ge=1, le=104)
-    mentor_name: str | None = Field(default=None, max_length=120)
-    deliverables: list[str] | None = Field(default=None, max_length=30)
-    milestones: list[dict[str, Any]] | None = Field(default=None, max_length=30)
-    deadline: datetime | None = None
-    start_date: datetime | None = None
-    end_date: datetime | None = None
-    participant_capacity: int | None = Field(default=None, ge=1, le=10000)
-    eligibility: dict[str, Any] | None = None
-    outcome_criteria: list[str] | None = Field(default=None, max_length=30)
-    requirements: list[ChallengeSkillRequirementInput] | None = Field(default=None, max_length=50)
 
 
 
@@ -1708,18 +1427,20 @@ class InstitutionAnalyticsOverview(APIModel):
 class InternshipEngagementCreate(APIModel):
     internship_id: UUID
     student_id: UUID
-    mentor_name: str | None = Field(default=None, min_length=2, max_length=120)
-    mentor_email: str | None = Field(default=None, min_length=3, max_length=120)
+    mentor_name: str | None = None
+    mentor_email: str | None = None
     start_date: datetime | None = None
     end_date: datetime | None = None
     milestones: list[dict[str, Any]] | None = None
 
 
 class InternshipEngagementUpdate(APIModel):
-    status: str | None = None
+    status: str | None = None  # applied, shortlisted, selected, active, completed, rejected, withdrawn
     progress_percentage: int | None = Field(default=None, ge=0, le=100)
-    mentor_name: str | None = Field(default=None, min_length=2, max_length=120)
-    mentor_email: str | None = Field(default=None, min_length=3, max_length=120)
+    mentor_name: str | None = None
+    mentor_email: str | None = None
+    completion_notes: str | None = None
+    final_rating: float | None = Field(default=None, ge=1.0, le=5.0)
 
 
 class MilestoneUpdateRequest(APIModel):
@@ -1729,31 +1450,13 @@ class MilestoneUpdateRequest(APIModel):
     feedback: str | None = None
 
 
-class MentorSkillFeedback(APIModel):
-    skill_id: UUID
-    rating: int = Field(ge=1, le=5)
-    comment: str | None = Field(default=None, max_length=1000)
-    observed_outcome: str = Field(min_length=3, max_length=2000)
-
-
 class MentorFeedbackRequest(APIModel):
-    mentor_name: str | None = Field(default=None, min_length=2, max_length=120)
-    mentor_email: str | None = Field(default=None, min_length=3, max_length=120)
-    skill_feedback: list[MentorSkillFeedback] = Field(default_factory=list, max_length=30)
-    overall_comment: str | None = Field(default=None, max_length=2000)
-    # Additive compatibility fields. Legacy feedback remains visible but cannot
-    # create passport skills or satisfy governed completion.
-    technical_skills_rating: float | None = Field(default=None, ge=1.0, le=5.0)
-    communication_rating: float | None = Field(default=None, ge=1.0, le=5.0)
-    teamwork_rating: float | None = Field(default=None, ge=1.0, le=5.0)
-    problem_solving_rating: float | None = Field(default=None, ge=1.0, le=5.0)
-    overall_rating: float | None = Field(default=None, ge=1.0, le=5.0)
-    comments: str | None = Field(default=None, min_length=5, max_length=2000)
-
-
-class InternshipCompletionRequest(APIModel):
-    completion_notes: str = Field(min_length=3, max_length=4000)
-    outcome_summary: str = Field(min_length=3, max_length=4000)
+    technical_skills_rating: float = Field(ge=1.0, le=5.0)
+    communication_rating: float = Field(ge=1.0, le=5.0)
+    teamwork_rating: float = Field(ge=1.0, le=5.0)
+    problem_solving_rating: float = Field(ge=1.0, le=5.0)
+    overall_rating: float = Field(ge=1.0, le=5.0)
+    comments: str = Field(min_length=5)
 
 
 class InternshipEngagementResponse(APIModel):
@@ -1775,11 +1478,6 @@ class InternshipEngagementResponse(APIModel):
     mentor_feedback: dict[str, Any] | None = None
     final_rating: float | None = None
     completion_notes: str | None = None
-    completion_evidence_id: UUID | None = None
-    completion_verified: bool = False
-    completed_at: datetime | None = None
-    mentor_verified_at: datetime | None = None
-    allowed_next_statuses: list[str] = Field(default_factory=list)
     created_at: datetime
 
 
@@ -1797,47 +1495,11 @@ class PlacementDriveCreate(APIModel):
     minimum_cgpa: float = Field(default=7.0, ge=0.0, le=10.0)
     passing_year: int = Field(default=2025, ge=2020, le=2030)
     drive_date: datetime
-    required_skills: list[str] = Field(default_factory=list, max_length=30)
-    requirements: list[PlacementRequirementInput] = Field(default_factory=list, max_length=30)
-    qualifications: str | None = Field(default=None, max_length=5000)
-    employment_type: str = Field(default="full_time", min_length=2, max_length=64)
-    location: str | None = Field(default=None, max_length=255)
-    application_deadline: datetime | None = None
-    eligibility: dict[str, Any] = Field(default_factory=dict)
-    status: Literal["draft", "published"] = "published"
-
-
-class PlacementDriveUpdate(APIModel):
-    title: str | None = Field(default=None, min_length=2, max_length=255)
-    description: str | None = Field(default=None, min_length=10, max_length=10000)
-    role_type: str | None = Field(default=None, min_length=2, max_length=80)
-    ctc_lpa: float | None = Field(default=None, ge=1.0, le=200.0)
-    eligible_departments: list[str] | None = None
-    minimum_cgpa: float | None = Field(default=None, ge=0.0, le=10.0)
-    passing_year: int | None = Field(default=None, ge=2020, le=2100)
-    drive_date: datetime | None = None
-    qualifications: str | None = Field(default=None, max_length=5000)
-    employment_type: str | None = Field(default=None, min_length=2, max_length=64)
-    location: str | None = Field(default=None, max_length=255)
-    application_deadline: datetime | None = None
-    eligibility: dict[str, Any] | None = None
-    requirements: list[PlacementRequirementInput] | None = Field(default=None, max_length=30)
-    status: Literal["draft", "published", "closed"] | None = None
+    required_skills: list[str] = Field(min_length=1)
 
 
 class PlacementRegistrationStageUpdate(APIModel):
-    stage: Literal[
-        "shortlisted",
-        "interview",
-        "interview_scheduled",
-        "interviewed",
-        "offer",
-        "offered",
-        "hired",
-        "accepted",
-        "rejected",
-    ]
-    note: str | None = Field(default=None, max_length=500)
+    stage: str  # registered, shortlisted, interview_scheduled, interviewed, offered, accepted, rejected, withdrawn
     interview_date: datetime | None = None
     interview_notes: str | None = None
     offer_details: dict[str, Any] | None = None
@@ -1855,139 +1517,9 @@ class PlacementCandidateRanking(APIModel):
     verification_bonus: float
     matched_skills: list[str]
     missing_skills: list[str]
-    preferred_skills: list[str] = Field(default_factory=list)
-    evidence_references: list[UUID] = Field(default_factory=list)
-    eligibility_status: Literal["eligible", "ineligible", "not_evaluated"] = "not_evaluated"
-    eligibility_reasons: list[str] = Field(default_factory=list)
-    formula_version: str = "v2-embedding-accounting"
     registered_at: datetime
     interview_date: datetime | None = None
     offer_details: dict[str, Any] | None = None
-    allowed_next_stages: list[str] = Field(default_factory=list)
-
-
-class PlacementStatusEventResponse(APIModel):
-    id: UUID
-    placement_registration_id: UUID
-    old_stage: str | None
-    new_stage: str
-    actor_role: str
-    source: str
-    note: str | None
-    created_at: datetime
-
-
-class UnifiedApplicationResponse(APIModel):
-    id: UUID
-    source_type: Literal["external_job", "placement", "internship"]
-    source_id: UUID
-    opportunity_title: str
-    organization: str
-    location: str | None = None
-    applied_at: datetime
-    normalized_status: Literal[
-        "draft",
-        "approval_pending",
-        "applied",
-        "shortlisted",
-        "interview",
-        "selected",
-        "offer",
-        "hired",
-        "rejected",
-        "withdrawn",
-        "completed",
-        "failed",
-        "unknown",
-    ]
-    source_status: str
-    match_score: float | None = None
-    action_required: bool = False
-    action_label: str | None = None
-    deadline: datetime | None = None
-    latest_event: str | None = None
-    latest_event_at: datetime | None = None
-    can_withdraw: bool = False
-    next_student_action: str | None = None
-    application_mode: str | None = None
-
-
-class UnifiedApplicationPage(APIModel):
-    page: int
-    page_size: int
-    total: int
-    items: list[UnifiedApplicationResponse]
-
-
-class UnifiedApplicationTimelineEvent(APIModel):
-    id: UUID
-    source_type: Literal["external_job", "placement", "internship"]
-    event_type: str
-    source_status: str | None = None
-    normalized_status: str | None = None
-    source: str
-    note: str | None = None
-    created_at: datetime
-
-
-class RecruiterDemandSkill(APIModel):
-    skill_id: UUID
-    skill_name: str
-    demand_count: int
-    required_count: int
-    preferred_count: int
-    weighted_demand: float
-    active_opportunity_count: int
-    candidate_supply: int
-    qualified_supply: int
-    candidates_missing: int
-    gap: int
-    average_readiness: float | None
-    trend: float | None = None
-    trend_available: bool = False
-
-
-class RecruiterDemandAnalytics(APIModel):
-    company_name: str
-    opportunity_type: Literal["all", "internship", "placement"]
-    active_only: bool
-    active_opportunities: int
-    authorized_candidate_pool: int
-    qualification_threshold: float
-    skills: list[RecruiterDemandSkill]
-
-
-class InstitutionDemandSupplySkill(APIModel):
-    skill_id: UUID
-    skill_name: str
-    student_supply: int
-    evidence_backed_supply: int
-    qualified_supply: int
-    verified_supply: int
-    average_readiness: float | None
-    industry_demand: int
-    weighted_demand: float
-    internship_demand: int
-    placement_demand: int
-    gap: int
-    classification: Literal["shortage", "balanced", "surplus"]
-    trend: float | None = None
-    trend_available: bool = False
-
-
-class InstitutionDemandSupplyAnalytics(APIModel):
-    institution_id: UUID
-    institution_name: str
-    department: str | None = None
-    cohort_year: int | None = None
-    assigned_students: int
-    qualification_threshold: float
-    available_departments: list[str]
-    available_cohorts: list[int]
-    student_metadata_available: bool
-    industry_demand_available: bool
-    trend_available: bool = False
-    skills: list[InstitutionDemandSupplySkill]
 
 
 # =========================================================================
@@ -2012,59 +1544,6 @@ class ProjectApplicationResponse(APIModel):
     feedback: str | None = None
     score_or_grade: str | None = None
     applied_at: datetime
-    completion_evidence_id: UUID | None = None
-    feedback_rating: int | None = None
-    outcome_metadata: dict[str, Any] = Field(default_factory=dict)
-    started_at: datetime | None = None
-    submitted_at: datetime | None = None
-    completed_at: datetime | None = None
-    challenge_requirements: list[ChallengeSkillRequirementResponse] = Field(default_factory=list)
-
-
-class ProjectApplicationTransition(APIModel):
-    status: Literal[
-        "shortlisted", "selected", "active", "submitted", "completed",
-        "rejected", "withdrawn", "cancelled"
-    ]
-
-
-class ProjectSubmissionRequest(APIModel):
-    submission_url: str = Field(min_length=5, max_length=2048)
-    submission_notes: str | None = Field(default=None, max_length=5000)
-
-
-class SharedValidatedFeedback(APIModel):
-    rating: int = Field(ge=1, le=5)
-    comment: str = Field(min_length=1, max_length=2000)
-    observed_outcome: str = Field(min_length=1, max_length=1000)
-    skill_feedback: list[MentorSkillFeedback] = Field(min_length=1, max_length=50)
-
-
-class ProjectCompletionRequest(APIModel):
-    outcome_summary: str = Field(min_length=5, max_length=5000)
-
-
-class FacultyInvitationCreate(APIModel):
-    academician_id: UUID
-    faculty_opportunity_id: UUID | None = None
-    collaboration_workspace_id: UUID | None = None
-    message: str = Field(min_length=3, max_length=1000)
-
-
-class FacultyInvitationResponse(APIModel):
-    id: UUID
-    recruiter_id: UUID
-    recruiter_company: str
-    academician_id: UUID
-    academician_name: str
-    faculty_opportunity_id: UUID | None = None
-    opportunity_title: str | None = None
-    collaboration_workspace_id: UUID | None = None
-    workspace_title: str | None = None
-    status: Literal["pending", "accepted", "declined", "revoked"]
-    message: str
-    created_at: datetime
-    responded_at: datetime | None = None
 
 
 # =========================================================================
@@ -2393,96 +1872,6 @@ class InstitutionReportResponse(APIModel):
     columns: list[str]
     rows: list[dict[str, Any]]
     csv_export_url: str | None = None
-
-
-# Phase 9: governed institution imports and mappings.
-InstitutionImportType = Literal["students", "placements", "learning_completion"]
-InstitutionMappingType = Literal[
-    "department", "course", "cohort", "external_program", "skill", "trusted_provider"
-]
-
-
-class InstitutionImportRowError(APIModel):
-    row: int = Field(ge=1)
-    code: str = Field(min_length=1, max_length=64)
-    message: str = Field(min_length=1, max_length=240)
-
-
-class InstitutionImportPreview(APIModel):
-    import_type: InstitutionImportType
-    checksum: str = Field(min_length=64, max_length=64)
-    total_rows: int = Field(ge=0)
-    valid_rows: int = Field(ge=0)
-    invalid_rows: int = Field(ge=0)
-    proposed_creates: int = Field(ge=0)
-    proposed_updates: int = Field(ge=0)
-    proposed_skips: int = Field(ge=0)
-    errors: list[InstitutionImportRowError] = Field(default_factory=list)
-    mapping_warnings: list[str] = Field(default_factory=list)
-
-
-class InstitutionImportBatchResponse(APIModel):
-    id: UUID
-    institution_id: UUID
-    import_type: InstitutionImportType
-    checksum: str
-    status: Literal["processing", "completed", "failed"]
-    total_rows: int
-    valid_rows: int
-    invalid_rows: int
-    created_rows: int
-    updated_rows: int
-    skipped_rows: int
-    safe_error_summary: list[InstitutionImportRowError]
-    created_at: datetime
-    completed_at: datetime | None = None
-
-
-class InstitutionMappingCreate(APIModel):
-    mapping_type: InstitutionMappingType
-    external_key: str = Field(min_length=1, max_length=160)
-    canonical_value: str = Field(min_length=1, max_length=255)
-
-
-class InstitutionMappingUpdate(APIModel):
-    canonical_value: str = Field(min_length=1, max_length=255)
-
-
-class InstitutionMappingResponse(InstitutionMappingCreate):
-    id: UUID
-    institution_id: UUID
-    created_at: datetime
-    updated_at: datetime
-
-
-class NormalizedStudentRecord(APIModel):
-    external_id: str
-    full_name: str
-    email: str
-    department: str
-    cohort_year: int
-
-
-class NormalizedPlacementRecord(APIModel):
-    external_source: str
-    external_id: str
-    company_name: str
-    title: str
-    student_external_id: str | None = None
-
-
-class NormalizedLearningCompletionRecord(APIModel):
-    external_source: str
-    external_id: str
-    student_external_id: str
-    course_external_key: str
-    status: Literal["completed", "verified"]
-
-
-class InstitutionAdapterStatus(APIModel):
-    provider: str
-    status: Literal["unavailable", "configured", "fixture/test", "degraded", "live"]
-    credentialed: bool
 
 
 

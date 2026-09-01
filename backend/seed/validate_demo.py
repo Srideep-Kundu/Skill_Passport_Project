@@ -1,4 +1,4 @@
-"""Fail-fast, read-only validation for the persisted demo fixture graph."""
+"""Fail-fast validation for the deterministic offline demo fixture graph."""
 
 import asyncio
 
@@ -9,31 +9,20 @@ from app.models import (
     Application,
     ApplicationStatus,
     ApplicationStatusEvent,
-    AssessmentAttempt,
     AutomationPolicy,
-    CourseEnrollment,
     DiscoveryRecommendation,
     Evidence,
     ExternalJob,
     ExternalJobMatchExplanation,
-    FacultyInvitation,
-    InstitutionImportBatch,
-    InstitutionMapping,
     Internship,
-    InternshipEngagement,
     JobDiscovery,
     Match,
-    PassportShare,
-    PlacementRegistration,
-    PlacementStatusEvent,
-    ProjectApplication,
     ResumeDocument,
     Student,
     StudentSkill,
     VerificationCheck,
 )
-from app.services.external_jobs_service import provider_sync_evidence
-from seed.seed_demo_data import DEMO_STUDENT_EMAIL
+from seed.seed_demo_data import DEMO_STUDENT_EMAIL, _assert_demo_environment
 
 
 async def _require(session, statement, label: str) -> object:
@@ -44,6 +33,7 @@ async def _require(session, statement, label: str) -> object:
 
 
 async def validate_demo() -> None:
+    _assert_demo_environment()
     async with SessionLocal() as session:
         maya = await _require(
             session, select(Student).where(Student.email == DEMO_STUDENT_EMAIL), "main student"
@@ -88,8 +78,10 @@ async def validate_demo() -> None:
             raise RuntimeError("Demo validation failed: provider fixture coverage")
         await _require(
             session,
-            select(ExternalJobMatchExplanation.id),
-            "external-job match explanation",
+            select(ExternalJobMatchExplanation.id).where(
+                ExternalJobMatchExplanation.status == "semantic_near_match"
+            ),
+            "semantic near match",
         )
         await _require(
             session,
@@ -120,79 +112,6 @@ async def validate_demo() -> None:
         await _require(session, select(Application.id).where(Application.student_id == maya.id, Application.status == ApplicationStatus.approval_pending), "approval-pending review")
         tracked = await _require(session, select(Application.id).where(Application.student_id == maya.id, Application.status == ApplicationStatus.submitted), "tracked application")
         await _require(session, select(ApplicationStatusEvent.id).where(ApplicationStatusEvent.application_id == tracked), "application timeline")
-        await _require(
-            session,
-            select(AssessmentAttempt.id).where(
-                AssessmentAttempt.student_id == maya.id,
-                AssessmentAttempt.evidence_id.is_not(None),
-                AssessmentAttempt.passed.is_(True),
-            ),
-            "assessment provenance",
-        )
-        await _require(
-            session,
-            select(CourseEnrollment.id).where(
-                CourseEnrollment.student_id == maya.id,
-                CourseEnrollment.status == "verified",
-                CourseEnrollment.completion_evidence_id.is_not(None),
-            ),
-            "learning completion provenance",
-        )
-        await _require(
-            session,
-            select(InternshipEngagement.id).where(
-                InternshipEngagement.student_id == maya.id,
-                InternshipEngagement.status == "completed",
-                InternshipEngagement.completion_evidence_id.is_not(None),
-            ),
-            "internship completion provenance",
-        )
-        registration = await _require(
-            session,
-            select(PlacementRegistration.id).where(
-                PlacementRegistration.student_id == maya.id,
-                PlacementRegistration.status == "hired",
-            ),
-            "placement pipeline outcome",
-        )
-        stage_count = int(
-            await session.scalar(
-                select(func.count())
-                .select_from(PlacementStatusEvent)
-                .where(PlacementStatusEvent.placement_registration_id == registration)
-            )
-            or 0
-        )
-        if stage_count < 5:
-            raise RuntimeError("Demo validation failed: placement stage timeline")
-        await _require(
-            session,
-            select(ProjectApplication.id).where(
-                ProjectApplication.student_id == maya.id,
-                ProjectApplication.status == "completed",
-                ProjectApplication.completion_evidence_id.is_not(None),
-            ),
-            "collaboration completion provenance",
-        )
-        await _require(
-            session,
-            select(FacultyInvitation.id).where(FacultyInvitation.status == "accepted"),
-            "faculty invitation lifecycle",
-        )
-        await _require(
-            session,
-            select(PassportShare.id).where(
-                PassportShare.student_id == maya.id,
-                PassportShare.revoked_at.is_(None),
-            ),
-            "shareable passport",
-        )
-        await _require(session, select(InstitutionImportBatch.id), "institution import audit")
-        await _require(session, select(InstitutionMapping.id), "institution mapping")
-
-        health = await provider_sync_evidence(session)
-        if any(item.status == "live" and item.fixture for item in health.values()):
-            raise RuntimeError("Demo validation failed: fixture provider reported live")
 
 
 async def main() -> None:

@@ -1,5 +1,4 @@
 import logging
-import re
 import time
 from contextlib import asynccontextmanager
 
@@ -30,7 +29,6 @@ from app.api import (
     external_job_matches,
     external_jobs,
     institution_analytics,
-    institution_imports,
     internship_engagements,
     internships,
     job_discoveries,
@@ -43,7 +41,6 @@ from app.api import (
     resumes,
     skill_gaps,
     skills,
-    student_applications,
     teams,
 )
 from app.core.config import get_settings
@@ -55,12 +52,6 @@ from app.core.observability import (
 )
 
 logger = logging.getLogger(__name__)
-PUBLIC_SHARE_PATH = re.compile(r"^/public/passports/[^/]+")
-
-
-def _safe_log_path(path: str) -> str:
-    """Keep revocable bearer-style share tokens out of application logs."""
-    return PUBLIC_SHARE_PATH.sub("/public/passports/[redacted]", path)
 
 
 @asynccontextmanager
@@ -111,7 +102,6 @@ app.include_router(placements.router)
 app.include_router(internship_engagements.router)
 app.include_router(academicians.router)
 app.include_router(institution_analytics.router)
-app.include_router(institution_imports.router)
 app.include_router(collaborations.router)
 app.include_router(documents.router)
 app.include_router(achievements.router)
@@ -121,7 +111,6 @@ app.include_router(automation_policies.router)
 app.include_router(automation_policies.queue_router)
 app.include_router(job_discoveries.router)
 app.include_router(passport.router)
-app.include_router(passport.public_router)
 app.include_router(evidence.router)
 app.include_router(external_job_matches.router)
 app.include_router(external_jobs.router)
@@ -130,7 +119,6 @@ app.include_router(linkedin.router)
 app.include_router(skills.router)
 app.include_router(internships.router)
 app.include_router(matches.router)
-app.include_router(student_applications.router)
 app.include_router(teams.router)
 app.include_router(admin.router)
 
@@ -149,7 +137,7 @@ async def correlation_and_access_log(request: Request, call_next):
             extra={
                 "event": "request_completed",
                 "method": request.method,
-                "path": _safe_log_path(request.url.path),
+                "path": request.url.path,
                 "status_code": response.status_code,
                 "duration_ms": round((time.perf_counter() - started) * 1000, 2),
             },
@@ -174,10 +162,7 @@ async def safe_validation_exception(
 ) -> JSONResponse:
     return JSONResponse(
         status_code=422,
-        content={
-            "detail": jsonable_encoder(exc.errors()),
-            "request_id": request_id_context.get(),
-        },
+        content={"detail": jsonable_encoder(exc.errors()), "request_id": request_id_context.get()},
     )
 
 
@@ -185,18 +170,11 @@ async def safe_validation_exception(
 async def safe_unhandled_exception(request: Request, exc: Exception) -> JSONResponse:
     logger.exception(
         "unhandled_request_error",
-        extra={
-            "event": "unhandled_request_error",
-            "method": request.method,
-            "path": _safe_log_path(request.url.path),
-        },
+        extra={"event": "unhandled_request_error", "method": request.method, "path": request.url.path},
     )
     return JSONResponse(
         status_code=500,
-        content={
-            "detail": "Internal server error",
-            "request_id": request_id_context.get(),
-        },
+        content={"detail": "Internal server error", "request_id": request_id_context.get()},
     )
 
 
@@ -223,7 +201,5 @@ async def ready() -> dict[str, str]:
             "readiness_dependency_unavailable",
             extra={"event": "readiness_dependency_unavailable"},
         )
-        raise HTTPException(
-            status_code=503, detail="Service dependencies unavailable"
-        ) from None
+        raise HTTPException(status_code=503, detail="Service dependencies unavailable") from None
     return {"status": "ready"}
