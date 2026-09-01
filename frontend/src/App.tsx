@@ -64,15 +64,15 @@ function DashboardVideoBackground() {
           loop
           muted
           playsInline
-          className="fixed inset-0 h-full w-full object-cover z-[-2] opacity-100 dark:opacity-40 transition-opacity duration-300"
+          className="fixed inset-0 h-full w-full object-cover z-[-2] opacity-100"
           src="https://designerstephen.github.io/public-assets/videos/serene-art-hero.mp4"
         />
       ) : (
-        <div className="fixed inset-0 bg-[#F7F5F0] dark:bg-[#0B0F17] z-[-2]" />
+        <div className="fixed inset-0 bg-[#F7F5F0] z-[-2]" />
       )}
 
-      {/* Non-Obtrusive Legibility Overlay */}
-      <div className="fixed inset-0 z-[-1] bg-gradient-to-b from-white/20 via-transparent to-white/20 dark:from-black/70 dark:via-black/50 dark:to-black/80 transition-colors duration-300" />
+      {/* Subtle Non-Obtrusive Legibility Overlay (Maximizes Video Visibility) */}
+      <div className="fixed inset-0 z-[-1] bg-gradient-to-b from-white/20 via-transparent to-white/20" />
     </div>
   );
 }
@@ -328,11 +328,11 @@ export function App() {
                       isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
                     } ${
                       isActive
-                        ? "bg-white/80 dark:bg-white/15 text-[#000000] dark:text-white font-bold border-l-3 border-[#935f18] dark:border-[#E2B874] shadow-xs"
-                        : "text-[#0f172a] dark:text-slate-300 font-medium hover:bg-white/40 dark:hover:bg-white/10 hover:text-[#000000] dark:hover:text-white hover:font-semibold"
+                        ? "bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
+                        : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
                     }`}
                   >
-                    <span className={`shrink-0 ${isActive ? "text-[#935f18] dark:text-[#E2B874]" : "text-[#1e293b] dark:text-slate-400"}`}>{item.icon}</span>
+                    <span className={`shrink-0 ${isActive ? "text-[#935f18]" : "text-[#1e293b]"}`}>{item.icon}</span>
                     {!isCollapsed && <span className="truncate">{item.label}</span>}
                   </button>
                 );
@@ -354,11 +354,11 @@ export function App() {
                       isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
                     } ${
                       isActive
-                        ? "bg-white/80 dark:bg-white/15 text-[#000000] dark:text-white font-bold border-l-3 border-[#935f18] dark:border-[#E2B874] shadow-xs"
-                        : "text-[#0f172a] dark:text-slate-300 font-medium hover:bg-white/40 dark:hover:bg-white/10 hover:text-[#000000] dark:hover:text-white hover:font-semibold"
+                        ? "bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
+                        : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
                     }`}
                   >
-                    <span className={`shrink-0 ${isActive ? "text-[#935f18] dark:text-[#E2B874]" : "text-[#1e293b] dark:text-slate-400"}`}>{item.icon}</span>
+                    <span className={`shrink-0 ${isActive ? "text-[#935f18]" : "text-[#1e293b]"}`}>{item.icon}</span>
                     {!isCollapsed && <span className="truncate">{item.label}</span>}
                   </button>
                 );
@@ -380,11 +380,11 @@ export function App() {
                       isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
                     } ${
                       isActive
-                        ? "bg-white/80 dark:bg-white/15 text-[#000000] dark:text-white font-bold border-l-3 border-[#935f18] dark:border-[#E2B874] shadow-xs"
-                        : "text-[#0f172a] dark:text-slate-300 font-medium hover:bg-white/40 dark:hover:bg-white/10 hover:text-[#000000] dark:hover:text-white hover:font-semibold"
+                        ? "bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
+                        : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
                     }`}
                   >
-                    <span className={`shrink-0 ${isActive ? "text-[#935f18] dark:text-[#E2B874]" : "text-[#1e293b] dark:text-slate-400"}`}>{item.icon}</span>
+                    <span className={`shrink-0 ${isActive ? "text-[#935f18]" : "text-[#1e293b]"}`}>{item.icon}</span>
                     {!isCollapsed && <span className="truncate">{item.label}</span>}
                   </button>
                 );
@@ -406,11 +406,11 @@ export function App() {
                       isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
                     } ${
                       isActive
-                        ? "bg-white/80 dark:bg-white/15 text-[#000000] dark:text-white font-bold border-l-3 border-[#935f18] dark:border-[#E2B874] shadow-xs"
-                        : "text-[#0f172a] dark:text-slate-300 font-medium hover:bg-white/40 dark:hover:bg-white/10 hover:text-[#000000] dark:hover:text-white hover:font-semibold"
+                        ? "bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
+                        : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
                     }`}
                   >
-                    <span className={`shrink-0 ${isActive ? "text-[#935f18] dark:text-[#E2B874]" : "text-[#1e293b] dark:text-slate-400"}`}>{item.icon}</span>
+                    <span className={`shrink-0 ${isActive ? "text-[#935f18]" : "text-[#1e293b]"}`}>{item.icon}</span>
                     {!isCollapsed && <span className="truncate">{item.label}</span>}
                   </button>
                 );
@@ -418,20 +418,20 @@ export function App() {
           </nav>
         </div>
 
-        {/* Footer / User Profile & Logout */}
-        <div className={`border-t border-[#E5E1D8]/60 dark:border-slate-800 bg-white/20 dark:bg-slate-900/30 p-3.5 space-y-2`}>
+        {/* Footer / User Profile & Logout (Translucent Glass) */}
+        <div className={`border-t border-[#E5E1D8]/60 bg-white/20 p-3.5 space-y-2`}>
           {!isCollapsed ? (
-            <div className="flex items-center justify-between gap-2 p-2 rounded-lg border border-[#E5E1D8]/60 dark:border-slate-700 bg-white/40 dark:bg-slate-800/60 backdrop-blur-xs shadow-2xs">
+            <div className="flex items-center justify-between gap-2 p-2 rounded-lg border border-[#E5E1D8]/60 bg-white/40 backdrop-blur-xs shadow-2xs">
               <div className="min-w-0 flex-1">
-                <div className="text-xs text-[#000000] dark:text-white truncate font-bold">{session.email}</div>
-                <div className="font-mono text-[10px] uppercase text-[#935f18] dark:text-[#E2B874] mt-0.5 font-bold">{session.role}</div>
+                <div className="text-xs text-[#000000] truncate font-bold">{session.email}</div>
+                <div className="font-mono text-[10px] uppercase text-[#935f18] mt-0.5 font-bold">{session.role}</div>
               </div>
               <button
                 type="button"
                 onClick={signOut}
                 title="Sign out"
                 aria-label="Sign out"
-                className="p-1.5 text-[#0f172a] dark:text-slate-300 hover:text-[#b91c1c] dark:hover:text-rose-400 transition-colors cursor-pointer"
+                className="p-1.5 text-[#0f172a] hover:text-[#b91c1c] transition-colors cursor-pointer"
               >
                 <LogOut className="h-4 w-4" />
               </button>
@@ -442,7 +442,7 @@ export function App() {
               onClick={signOut}
               title="Sign out"
               aria-label="Sign out"
-              className="flex h-9 w-full items-center justify-center rounded-lg border border-[#E5E1D8]/60 dark:border-slate-700 bg-white/40 dark:bg-slate-800/60 text-[#0f172a] dark:text-slate-300 hover:text-[#b91c1c] dark:hover:text-rose-400 transition-colors cursor-pointer shadow-2xs"
+              className="flex h-9 w-full items-center justify-center rounded-lg border border-[#E5E1D8]/60 bg-white/40 text-[#0f172a] hover:text-[#b91c1c] transition-colors cursor-pointer shadow-2xs"
             >
               <LogOut className="h-4 w-4" />
             </button>

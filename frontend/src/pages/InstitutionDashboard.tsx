@@ -28,6 +28,7 @@ import {
   Cell,
 } from "recharts";
 import { api } from "../api/service";
+import { errorMessage } from "../api/client";
 import type {
   ActionPlanPayload,
   AtRiskCohortSummary,
@@ -49,25 +50,6 @@ import type {
   LearningEffectivenessOverview,
   PlacementMonitoringOverview,
 } from "../api/types";
-import {
-  DUMMY_INSTITUTION_ANALYTICS,
-  DUMMY_INSTITUTION_ALERTS,
-  DUMMY_DEPARTMENT_DETAILS,
-  DUMMY_COHORT_DATA,
-  DUMMY_AT_RISK_DATA,
-  DUMMY_CURRICULUM_RECS,
-  DUMMY_LEARNING_EFFECTIVENESS,
-  DUMMY_INTERNSHIP_DATA,
-  DUMMY_PLACEMENT_DATA,
-  DUMMY_FACULTY_DATA,
-  DUMMY_RELATIONSHIPS_DATA,
-  DUMMY_PARTNERSHIP_DATA,
-  DUMMY_PARTNER_DETAILS,
-  DUMMY_INTERVENTION_PLANS,
-  DUMMY_INTERVENTION_RECS,
-  DUMMY_ACTION_PLANS,
-  DUMMY_REPORTS,
-} from "../data/institutionDummyData";
 import { toast } from "sonner";
 
 function displayReportValue(value: unknown): string {
@@ -210,105 +192,22 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
         api.getCollaborationRelationships(token),
       ]);
 
-      if (overviewRes.status === "fulfilled" && overviewRes.value && overviewRes.value.total_students > 0) {
-        setAnalytics(overviewRes.value);
-      } else {
-        setAnalytics(DUMMY_INSTITUTION_ANALYTICS);
-      }
-
-      if (alertsRes.status === "fulfilled" && alertsRes.value?.alerts?.length > 0) {
-        setAlerts(alertsRes.value.alerts);
-      } else {
-        setAlerts(DUMMY_INSTITUTION_ALERTS);
-      }
-
-      if (cohortsRes.status === "fulfilled" && cohortsRes.value?.cohorts?.length > 0) {
-        setCohortData(cohortsRes.value);
-      } else {
-        setCohortData(DUMMY_COHORT_DATA);
-      }
-
-      if (interventionsRes.status === "fulfilled" && interventionsRes.value?.length > 0) {
-        setInterventionPlans(interventionsRes.value);
-      } else {
-        setInterventionPlans(DUMMY_INTERVENTION_PLANS);
-      }
-
-      if (recsRes.status === "fulfilled" && recsRes.value?.length > 0) {
-        setInterventionRecs(recsRes.value);
-      } else {
-        setInterventionRecs(DUMMY_INTERVENTION_RECS);
-      }
-
-      if (actionsRes.status === "fulfilled" && actionsRes.value?.length > 0) {
-        setActionPlans(actionsRes.value);
-      } else {
-        setActionPlans(DUMMY_ACTION_PLANS);
-      }
-
-      if (internRes.status === "fulfilled" && internRes.value && internRes.value.eligible_students > 0) {
-        setInternshipData(internRes.value);
-      } else {
-        setInternshipData(DUMMY_INTERNSHIP_DATA);
-      }
-
-      if (placeRes.status === "fulfilled" && placeRes.value && placeRes.value.eligible_students > 0) {
-        setPlacementData(placeRes.value);
-      } else {
-        setPlacementData(DUMMY_PLACEMENT_DATA);
-      }
-
-      if (facRes.status === "fulfilled" && facRes.value && facRes.value.total_participating_faculty > 0) {
-        setFacultyData(facRes.value);
-      } else {
-        setFacultyData(DUMMY_FACULTY_DATA);
-      }
-
-      if (curRes.status === "fulfilled" && curRes.value?.length > 0) {
-        setCurriculumRecs(curRes.value);
-      } else {
-        setCurriculumRecs(DUMMY_CURRICULUM_RECS);
-      }
-
-      if (partRes.status === "fulfilled" && partRes.value?.partners?.length > 0) {
-        setPartnershipData(partRes.value);
-      } else {
-        setPartnershipData(DUMMY_PARTNERSHIP_DATA);
-      }
-
-      if (learnRes.status === "fulfilled" && learnRes.value?.courses?.length > 0) {
-        setLearningData(learnRes.value);
-      } else {
-        setLearningData(DUMMY_LEARNING_EFFECTIVENESS);
-      }
-
-      if (riskRes.status === "fulfilled" && riskRes.value?.risk_groups?.length > 0) {
-        setAtRiskData(riskRes.value);
-      } else {
-        setAtRiskData(DUMMY_AT_RISK_DATA);
-      }
-
-      if (relRes.status === "fulfilled" && relRes.value?.relationships?.length > 0) {
-        setRelationshipsData(relRes.value);
-      } else {
-        setRelationshipsData(DUMMY_RELATIONSHIPS_DATA);
-      }
-    } catch {
-      // Fallback on full dummy dataset
-      setAnalytics(DUMMY_INSTITUTION_ANALYTICS);
-      setAlerts(DUMMY_INSTITUTION_ALERTS);
-      setCohortData(DUMMY_COHORT_DATA);
-      setInterventionPlans(DUMMY_INTERVENTION_PLANS);
-      setInterventionRecs(DUMMY_INTERVENTION_RECS);
-      setActionPlans(DUMMY_ACTION_PLANS);
-      setInternshipData(DUMMY_INTERNSHIP_DATA);
-      setPlacementData(DUMMY_PLACEMENT_DATA);
-      setFacultyData(DUMMY_FACULTY_DATA);
-      setCurriculumRecs(DUMMY_CURRICULUM_RECS);
-      setPartnershipData(DUMMY_PARTNERSHIP_DATA);
-      setLearningData(DUMMY_LEARNING_EFFECTIVENESS);
-      setAtRiskData(DUMMY_AT_RISK_DATA);
-      setRelationshipsData(DUMMY_RELATIONSHIPS_DATA);
+      if (overviewRes.status === "fulfilled") setAnalytics(overviewRes.value);
+      if (alertsRes.status === "fulfilled") setAlerts(alertsRes.value.alerts);
+      if (cohortsRes.status === "fulfilled") setCohortData(cohortsRes.value);
+      if (interventionsRes.status === "fulfilled") setInterventionPlans(interventionsRes.value);
+      if (recsRes.status === "fulfilled") setInterventionRecs(recsRes.value);
+      if (actionsRes.status === "fulfilled") setActionPlans(actionsRes.value);
+      if (internRes.status === "fulfilled") setInternshipData(internRes.value);
+      if (placeRes.status === "fulfilled") setPlacementData(placeRes.value);
+      if (facRes.status === "fulfilled") setFacultyData(facRes.value);
+      if (curRes.status === "fulfilled") setCurriculumRecs(curRes.value);
+      if (partRes.status === "fulfilled") setPartnershipData(partRes.value);
+      if (learnRes.status === "fulfilled") setLearningData(learnRes.value);
+      if (riskRes.status === "fulfilled") setAtRiskData(riskRes.value);
+      if (relRes.status === "fulfilled") setRelationshipsData(relRes.value);
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to load institutional intelligence data"));
     } finally {
       setLoading(false);
     }
@@ -318,13 +217,9 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
     try {
       setDeptLoading(true);
       const data = await api.getDepartmentDetail(deptName, token);
-      if (data && data.total_students > 0) {
-        setDeptDetail(data);
-      } else {
-        setDeptDetail(DUMMY_DEPARTMENT_DETAILS[deptName] || DUMMY_DEPARTMENT_DETAILS["Computer Science & Engineering"]);
-      }
-    } catch {
-      setDeptDetail(DUMMY_DEPARTMENT_DETAILS[deptName] || DUMMY_DEPARTMENT_DETAILS["Computer Science & Engineering"]);
+      setDeptDetail(data);
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to load department detail"));
     } finally {
       setDeptLoading(false);
     }
@@ -337,28 +232,9 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
         graduation_year: cohortYearFilter !== "All" ? cohortYearFilter : undefined,
         readiness_band: cohortReadinessFilter !== "All" ? cohortReadinessFilter : undefined,
       });
-      if (data && data.cohorts && data.cohorts.length > 0) {
-        setCohortData(data);
-      } else {
-        // Filter dummy cohorts
-        let filtered = DUMMY_COHORT_DATA.cohorts;
-        if (cohortDeptFilter !== "All") {
-          filtered = filtered.filter((c) => c.department.toLowerCase().includes(cohortDeptFilter.toLowerCase()));
-        }
-        if (cohortYearFilter !== "All") {
-          filtered = filtered.filter((c) => String(c.graduation_year) === cohortYearFilter);
-        }
-        if (cohortReadinessFilter !== "All") {
-          filtered = filtered.filter((c) => c.readiness_band.toLowerCase() === cohortReadinessFilter.toLowerCase());
-        }
-        setCohortData({
-          total_cohorts: filtered.length,
-          total_students_monitored: filtered.reduce((acc, c) => acc + c.total_students, 0),
-          cohorts: filtered,
-        });
-      }
-    } catch {
-      setCohortData(DUMMY_COHORT_DATA);
+      setCohortData(data);
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to filter cohorts"));
     }
   }, [cohortDeptFilter, cohortReadinessFilter, cohortYearFilter, token]);
 
@@ -366,13 +242,9 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
     try {
       setReportLoading(true);
       const data = await api.getInstitutionReport(rtype, token);
-      if (data && data.rows && data.rows.length > 0) {
-        setReportData(data);
-      } else {
-        setReportData(DUMMY_REPORTS[rtype] || DUMMY_REPORTS["skill_gap"]);
-      }
-    } catch {
-      setReportData(DUMMY_REPORTS[rtype] || DUMMY_REPORTS["skill_gap"]);
+      setReportData(data);
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to generate report"));
     } finally {
       setReportLoading(false);
     }
@@ -395,65 +267,9 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
   async function handlePartnerClick(partnerName: string) {
     try {
       const data = await api.getIndustryPartnerDetail(partnerName, token);
-      if (data && data.partner_name) {
-        setSelectedPartner(data);
-      } else {
-        setSelectedPartner(
-          DUMMY_PARTNER_DETAILS[partnerName] || {
-            partner_name: partnerName,
-            domain: "Strategic Enterprise & Academic Partner",
-            partner_overview: `Active university-industry collaboration with ${partnerName} supporting experiential learning, hackathons, and direct placements.`,
-            student_engagements: [
-              { program: "Campus Hackathon & Technology Immersion", students_enrolled: 120, status: "Active", avg_rating: 4.8 },
-            ],
-            faculty_engagements: [
-              { faculty: "Lead Faculty Coordinator", department: "Engineering", role: "Industry Liaison", status: "Active" },
-            ],
-            posted_opportunities: [
-              { title: "Campus Technology Intern", type: "Internship", stipend: "₹40,000/mo", location: "Hybrid" },
-            ],
-            placement_drives: [
-              { drive_title: `${partnerName} Campus Drive`, passing_year: 2025, offers_made: 25, status: "Completed" },
-            ],
-            research_and_consultancy: [
-              { title: "Collaborative Research Initiative", grant_amount: "₹10.0 Lakhs", duration_months: 12, status: "Active" },
-            ],
-            outcome_metrics: {
-              total_students_trained: 150,
-              total_certifications_issued: 120,
-              total_placements_secured: 35,
-            },
-          }
-        );
-      }
-    } catch {
-      setSelectedPartner(
-        DUMMY_PARTNER_DETAILS[partnerName] || {
-          partner_name: partnerName,
-          domain: "Strategic Enterprise & Academic Partner",
-          partner_overview: `Active university-industry collaboration with ${partnerName} supporting experiential learning, hackathons, and direct placements.`,
-          student_engagements: [
-            { program: "Campus Hackathon & Technology Immersion", students_enrolled: 120, status: "Active", avg_rating: 4.8 },
-          ],
-          faculty_engagements: [
-            { faculty: "Lead Faculty Coordinator", department: "Engineering", role: "Industry Liaison", status: "Active" },
-          ],
-          posted_opportunities: [
-            { title: "Campus Technology Intern", type: "Internship", stipend: "₹40,000/mo", location: "Hybrid" },
-          ],
-          placement_drives: [
-            { drive_title: `${partnerName} Campus Drive`, passing_year: 2025, offers_made: 25, status: "Completed" },
-          ],
-          research_and_consultancy: [
-            { title: "Collaborative Research Initiative", grant_amount: "₹10.0 Lakhs", duration_months: 12, status: "Active" },
-          ],
-          outcome_metrics: {
-            total_students_trained: 150,
-            total_certifications_issued: 120,
-            total_placements_secured: 35,
-          },
-        }
-      );
+      setSelectedPartner(data);
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to load partner details"));
     }
   }
 
@@ -466,60 +282,44 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
     try {
       const res = await api.createInterventionPlan(newPlan, token);
       setInterventionPlans((prev) => [res, ...prev]);
-    } catch {
-      const localPlan: InterventionPlan = {
-        id: `plan-local-${Date.now()}`,
-        title: newPlan.title,
-        skill_cluster: newPlan.skill_cluster,
-        department: newPlan.department || "Computer Science & Engineering",
-        target_students_count: newPlan.target_students_count || 40,
-        baseline_supply_index: newPlan.baseline_supply_index || 45,
-        target_supply_index: newPlan.target_supply_index || 85,
-        selected_learning_programs: newPlan.selected_learning_programs || [],
-        selected_workshops: newPlan.selected_workshops || [],
-        selected_mentorship: newPlan.selected_mentorship || [],
-        status: newPlan.status || "planned",
-        notes: newPlan.notes || "",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      setInterventionPlans((prev) => [localPlan, ...prev]);
+      setShowInterventionModal(false);
+      setNewPlan({
+        title: "",
+        skill_cluster: "DevOps & Cloud Native",
+        department: "Computer Science & Engineering",
+        target_students_count: 40,
+        baseline_supply_index: 45,
+        target_supply_index: 85,
+        selected_learning_programs: ["Docker Foundations & Containers"],
+        selected_workshops: ["Hands-on Cloud Lab"],
+        selected_mentorship: ["Industry Cloud Architect"],
+        status: "planned",
+        notes: "",
+      });
+      toast.success("Skill Gap Intervention Plan created successfully!");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to create intervention plan"));
     }
-    setShowInterventionModal(false);
-    setNewPlan({
-      title: "",
-      skill_cluster: "DevOps & Cloud Native",
-      department: "Computer Science & Engineering",
-      target_students_count: 40,
-      baseline_supply_index: 45,
-      target_supply_index: 85,
-      selected_learning_programs: ["Docker Foundations & Containers"],
-      selected_workshops: ["Hands-on Cloud Lab"],
-      selected_mentorship: ["Industry Cloud Architect"],
-      status: "planned",
-      notes: "",
-    });
-    toast.success("Skill Gap Intervention Plan created successfully!");
   }
 
   async function handleUpdateInterventionStatus(planId: string, newStatus: string) {
     try {
       const res = await api.updateInterventionPlan(planId, { status: newStatus }, token);
       setInterventionPlans((prev) => prev.map((p) => (p.id === planId ? res : p)));
-    } catch {
-      setInterventionPlans((prev) => prev.map((p) => (p.id === planId ? { ...p, status: newStatus } : p)));
+      toast.success(`Plan updated to ${newStatus}`);
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to update plan"));
     }
-    toast.success(`Plan updated to ${newStatus}`);
   }
 
   async function handleDeleteIntervention(planId: string) {
     try {
       await api.deleteInterventionPlan(planId, token);
-    } catch {
-      // Local fallback
+      setInterventionPlans((prev) => prev.filter((p) => p.id !== planId));
+      toast.success("Intervention plan deleted");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to delete plan"));
     }
-    setInterventionPlans((prev) => prev.filter((p) => p.id !== planId));
-    toast.success("Intervention plan deleted");
   }
 
   async function handleCreateActionPlan(e: React.FormEvent) {
@@ -531,34 +331,21 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
     try {
       const res = await api.createActionPlan(newAction, token);
       setActionPlans((prev) => [res, ...prev]);
-    } catch {
-      const localAction: InstitutionActionPlan = {
-        id: `act-local-${Date.now()}`,
-        title: newAction.title,
-        action_type: newAction.action_type,
-        related_department: newAction.related_department || "Computer Science & Engineering",
-        source_insight: newAction.source_insight,
-        priority: newAction.priority || "high",
-        owner: newAction.owner || "Dean of Academics",
-        status: newAction.status || "planned",
-        outcome_notes: newAction.outcome_notes || "",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-      setActionPlans((prev) => [localAction, ...prev]);
+      setShowActionModal(false);
+      setNewAction({
+        title: "",
+        action_type: "curriculum",
+        related_department: "Computer Science & Engineering",
+        source_insight: "",
+        priority: "high",
+        owner: "Dean of Academics",
+        status: "planned",
+        outcome_notes: "",
+      });
+      toast.success("Institutional Action Plan saved!");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to create action plan"));
     }
-    setShowActionModal(false);
-    setNewAction({
-      title: "",
-      action_type: "curriculum",
-      related_department: "Computer Science & Engineering",
-      source_insight: "",
-      priority: "high",
-      owner: "Dean of Academics",
-      status: "planned",
-      outcome_notes: "",
-    });
-    toast.success("Institutional Action Plan saved!");
   }
 
   function exportCSV(report: InstitutionReportResponse) {
