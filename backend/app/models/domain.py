@@ -40,6 +40,7 @@ class EvidenceType(str, enum.Enum):
     competition = "competition"
     certification = "certification"
     micro_credential = "micro_credential"
+    digilocker_credential = "digilocker_credential"
 
 
 class ExtractionStatus(str, enum.Enum):
@@ -185,6 +186,18 @@ class Student(Timestamped, Base):
     recruiter_evidence_consent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     role = Role.student.value
     evidence: Mapped[list["Evidence"]] = relationship(back_populates="student", cascade="all, delete-orphan")
+
+
+class StudentDigiLockerAccount(Timestamped, Base):
+    __tablename__ = "student_digilocker_accounts"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    digilocker_id_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    apaar_id_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    is_linked: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    linked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    last_sync_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
 
 class Recruiter(Timestamped, Base):

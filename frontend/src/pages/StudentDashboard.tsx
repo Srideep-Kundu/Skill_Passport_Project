@@ -19,6 +19,7 @@ import type {
 } from "../api";
 import { ErrorState } from "../components/AsyncState";
 import { EvidenceUpload } from "./EvidenceUpload";
+import { DigiLockerVerification } from "../components/DigiLockerVerification";
 import { EvidenceLifecycle } from "../components/EvidenceLifecycle";
 import { ExternalJobs } from "../components/ExternalJobs";
 import { InternshipMatches } from "../components/InternshipMatches";
@@ -537,6 +538,13 @@ export function StudentDashboard({
       {/* 3. EVIDENCE & RESUMES TAB */}
       {activeTab === "evidence" && (
         <div className="space-y-8">
+          <DigiLockerVerification
+            token={token}
+            onEvidenceImported={() => {
+              setEvidenceRefresh((v) => v + 1);
+              void loadData();
+            }}
+          />
           <ResumeIntelligence
             token={token}
             onChanged={() => {

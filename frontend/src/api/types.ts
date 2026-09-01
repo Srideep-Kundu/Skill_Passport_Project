@@ -1432,3 +1432,58 @@ export interface InstitutionReportResponse {
   csv_export_url?: string | null;
 }
 
+export interface DigiLockerDocMetadata {
+  issuer_id: string;
+  issuer_name: string;
+  doc_type: string;
+  doc_id: string;
+  doc_name: string;
+  issued_date: string;
+  signature_verified: boolean;
+  cert_sha256: string;
+  apaar_id_hash?: string | null;
+}
+
+export interface DigiLockerDocument {
+  doc_id: string;
+  issuer_id: string;
+  issuer_name: string;
+  doc_type: string;
+  title: string;
+  issued_date: string;
+  sample_preview: string;
+  verifiable_skills: string[];
+  metadata: DigiLockerDocMetadata;
+}
+
+export interface DigiLockerStatus {
+  is_linked: boolean;
+  linked_at?: string | null;
+  last_sync_at?: string | null;
+  masked_aadhaar?: string | null;
+  available_documents_count: number;
+  imported_credentials_count: number;
+}
+
+export interface DigiLockerAuthParams {
+  auth_url: string;
+  state: string;
+  client_id: string;
+}
+
+export interface AadhaarOtpGenerateResponse {
+  reference_id: string;
+  masked_aadhaar: string;
+  message: string;
+}
+
+export interface DigiLockerImportResult {
+  evidence_id: string;
+  title: string;
+  status: string;
+  verification_tier: string;
+  signature_verified: boolean;
+  message: string;
+}
+
+

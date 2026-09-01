@@ -15,6 +15,11 @@ import type {
   CareerGoals,
   CareerGuidanceOverview,
   CourseEnrollment,
+  AadhaarOtpGenerateResponse,
+  DigiLockerAuthParams,
+  DigiLockerDocument,
+  DigiLockerImportResult,
+  DigiLockerStatus,
   EvidenceDetail,
   EvidenceSubmission,
   EvidenceSummary,
@@ -350,4 +355,14 @@ export const api = {
   // LinkedIn Direct URL Import
   importLinkedInUrl: (profile_url: string, token: string) => request<ProfessionalProfile>("/linkedin/imports/import-url", { method: "POST", body: JSON.stringify({ profile_url }) }, token),
   saveLinkedInProfile: (profile: ProfessionalProfile, token: string) => request<EvidenceSummary>("/linkedin/imports/save-profile", { method: "POST", body: JSON.stringify(profile) }, token),
+
+  // DigiLocker Verifiable Credential Engine
+  getDigiLockerAuthUrl: (token: string, redirectUri?: string) => request<DigiLockerAuthParams>(`/digilocker/auth-url${redirectUri ? `?redirect_uri=${encodeURIComponent(redirectUri)}` : ""}`, {}, token),
+  submitDigiLockerCallback: (code: string, state: string, token: string, aadhaar_number?: string, apaar_id?: string) => request<DigiLockerStatus>("/digilocker/callback", { method: "POST", body: JSON.stringify({ code, state, aadhaar_number, apaar_id }) }, token),
+  generateAadhaarOtp: (aadhaar_number: string, token: string) => request<AadhaarOtpGenerateResponse>("/digilocker/aadhaar/generate-otp", { method: "POST", body: JSON.stringify({ aadhaar_number }) }, token),
+  verifyAadhaarOtp: (reference_id: string, otp: string, token: string, aadhaar_number?: string) => request<DigiLockerStatus>("/digilocker/aadhaar/verify-otp", { method: "POST", body: JSON.stringify({ reference_id, otp, aadhaar_number }) }, token),
+  getDigiLockerStatus: (token: string) => request<DigiLockerStatus>("/digilocker/status", {}, token),
+  getDigiLockerDocuments: (token: string) => request<DigiLockerDocument[]>("/digilocker/documents", {}, token),
+  importDigiLockerCredential: (doc_id: string, token: string, custom_title?: string) => request<DigiLockerImportResult>("/digilocker/import", { method: "POST", body: JSON.stringify({ doc_id, custom_title }) }, token),
+  unlinkDigiLocker: (token: string) => request<DigiLockerStatus>("/digilocker/unlink", { method: "DELETE" }, token),
 };

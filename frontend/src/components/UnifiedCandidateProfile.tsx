@@ -22,6 +22,9 @@ function sourceIcon(type: string) {
       return <GitBranch className="h-3.5 w-3.5 text-[#B08D57]" />;
     case "linkedin_export":
       return <FileArchive className="h-3.5 w-3.5 text-[#B08D57]" />;
+    case "digilocker":
+    case "digilocker_credential":
+      return <Award className="h-3.5 w-3.5 text-[#4F6F5A]" />;
     case "resume":
       return <FileText className="h-3.5 w-3.5 text-[#B08D57]" />;
     case "project":

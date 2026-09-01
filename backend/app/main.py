@@ -24,6 +24,7 @@ from app.api import (
     career_guidance,
     collaborations,
     copilot,
+    digilocker,
     documents,
     evidence,
     external_job_matches,
@@ -111,6 +112,7 @@ app.include_router(automation_policies.router)
 app.include_router(automation_policies.queue_router)
 app.include_router(job_discoveries.router)
 app.include_router(passport.router)
+app.include_router(digilocker.router)
 app.include_router(evidence.router)
 app.include_router(external_job_matches.router)
 app.include_router(external_jobs.router)
