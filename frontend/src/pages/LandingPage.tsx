@@ -33,121 +33,130 @@ export function LandingPage({ defaultAuthOpen = false }: LandingPageProps) {
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-[#F7F5F0] text-[#111827] selection:bg-[#111827] selection:text-white font-['Inter',sans-serif]">
+    <div className="relative min-h-screen w-full bg-[#021A2F] dark:bg-[#0B0F17] text-[#FFFFFF] selection:bg-[#FFFFFF] selection:text-[#0B0F17] font-['Inter',sans-serif] transition-colors duration-250">
       {/* ========================================================================= */}
-      {/* 1. CINEMATIC HERO SECTION (EXACT PRESERVED HERO - DO NOT MODIFY)          */}
+      {/* 1. CINEMATIC EDITORIAL HERO SECTION                                       */}
       {/* ========================================================================= */}
       <div className="relative min-h-screen w-full overflow-hidden flex flex-col justify-between">
-        {/* Full-bleed Background Video Layer (High Visibility & Vivid Landscape) */}
+        {/* Fullscreen Looping Background Video */}
         <video
           autoPlay={!prefersReducedMotion}
           loop
           muted
           playsInline
-          className="absolute inset-0 h-full w-full object-cover z-0 opacity-100"
-          src="https://designerstephen.github.io/public-assets/videos/serene-art-hero.mp4"
+          className="absolute inset-0 h-full w-full object-cover z-0 opacity-90 dark:opacity-40 transition-opacity duration-300 pointer-events-none"
+          src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4"
         />
 
-        {/* Subtle Non-Obtrusive Legibility Overlay (Maximizes Video Visibility) */}
-        <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-b from-white/30 via-transparent to-white/30" />
+        {/* Subtle Dark Legibility Overlay (Alpha 0.2) */}
+        <div className="pointer-events-none absolute inset-0 z-[1] bg-black/20 dark:bg-black/45 transition-colors duration-300" />
 
-        {/* 3-Column Distributed Navigation Bar (Max-width: 1280px, px: 32px, py: 24px) */}
+        {/* 3-Column Distributed Navigation Bar */}
         <header className="relative z-20 w-full">
-          <nav className="mx-auto grid w-full max-w-[1280px] grid-cols-2 md:grid-cols-3 items-center px-8 py-6">
-            {/* Left Column: Brand logo using 'Instrument Serif' at 30px with ® superscript */}
+          <nav className="mx-auto flex w-full max-w-7xl items-center justify-between px-8 py-6">
+            {/* Left Column: Brand logo in Instrument Serif */}
             <div className="flex items-center justify-start">
               <a
                 href="#home"
-                className="font-['Inter',sans-serif] text-[26px] font-semibold tracking-tight text-[#0f172a] leading-none flex items-center select-none"
+                className="text-[30px] font-normal tracking-tight text-white leading-none flex items-center select-none"
+                style={{ fontFamily: "var(--font-display)" }}
               >
-                Lumina Intel<sup className="text-[12px] font-mono ml-1 text-slate-500 font-normal">®</sup>
+                Velorah<sup className="text-xs font-mono ml-0.5 text-slate-300">®</sup>
               </a>
             </div>
 
-            {/* Center Column: Hidden on mobile. 4 links using 'Inter' 14px Medium, spacing: 40px */}
-            <div className="hidden md:flex items-center justify-center gap-[40px] text-[14px] font-medium text-slate-700">
+            {/* Center Column: 5 Nav Links */}
+            <div className="hidden md:flex items-center justify-center gap-10 text-sm font-medium text-slate-300">
+              <a
+                href="#home"
+                onClick={() => setActiveSection("home")}
+                className={`transition-colors hover:text-white ${activeSection === "home" ? "text-white font-semibold" : ""}`}
+              >
+                Home
+              </a>
               <a
                 href="#problem"
                 onClick={() => setActiveSection("problem")}
-                className={`transition-colors hover:text-[#0f172a] ${activeSection === "problem" ? "text-[#0f172a] font-semibold" : ""}`}
+                className={`transition-colors hover:text-white ${activeSection === "problem" ? "text-white font-semibold" : ""}`}
               >
-                The Problem
+                Studio
               </a>
               <a
                 href="#pipeline"
                 onClick={() => setActiveSection("pipeline")}
-                className={`transition-colors hover:text-[#0f172a] ${activeSection === "pipeline" ? "text-[#0f172a] font-semibold" : ""}`}
+                className={`transition-colors hover:text-white ${activeSection === "pipeline" ? "text-white font-semibold" : ""}`}
               >
-                Verification Engine
+                About
               </a>
               <a
                 href="#matching"
                 onClick={() => setActiveSection("matching")}
-                className={`transition-colors hover:text-[#0f172a] ${activeSection === "matching" ? "text-[#0f172a] font-semibold" : ""}`}
+                className={`transition-colors hover:text-white ${activeSection === "matching" ? "text-white font-semibold" : ""}`}
               >
-                Explainable Matching
+                Journal
               </a>
               <a
                 href="#ecosystem"
                 onClick={() => setActiveSection("ecosystem")}
-                className={`transition-colors hover:text-[#0f172a] ${activeSection === "ecosystem" ? "text-[#0f172a] font-semibold" : ""}`}
+                className={`transition-colors hover:text-white ${activeSection === "ecosystem" ? "text-white font-semibold" : ""}`}
               >
-                Ecosystem
+                Reach Us
               </a>
             </div>
 
-            {/* Right Column: Sign In + Pill-shaped CTA button with Royal Indigo/Purple Gradient */}
-            <div className="flex items-center justify-end gap-5">
+            {/* Right Column: Sign In + Liquid Glass CTA */}
+            <div className="flex items-center justify-end gap-3 sm:gap-4">
               <button
                 type="button"
                 onClick={() => openAuth("login")}
-                className="text-[14px] font-medium text-slate-700 hover:text-black px-2 py-1.5 transition-colors cursor-pointer"
+                className="text-sm font-medium text-slate-200 hover:text-white px-2 py-1.5 transition-colors cursor-pointer"
               >
                 Sign In
               </button>
               <button
                 type="button"
                 onClick={() => openAuth("register")}
-                className="pill-btn pill-btn-sm text-[13px] px-6 py-2.5 bg-[#000000] text-white hover:scale-105 shadow-md transition-all duration-200 cursor-pointer"
+                className="liquid-glass rounded-full px-6 py-2.5 text-sm text-white hover:scale-[1.03] transition-all duration-200 cursor-pointer font-medium"
               >
-                Find my dream
+                Begin Journey
               </button>
             </div>
           </nav>
         </header>
 
-        {/* Hero Content Area: Centered Vertically and Horizontally. Max-width: 1280px */}
-        <main className="relative z-10 flex flex-1 flex-col items-center justify-center text-center px-6 py-16 max-w-[1280px] mx-auto my-auto w-full">
-          {/* Staggered Entrance Item 01: Heading */}
+        {/* Hero Section: Vertically & Horizontally Centered */}
+        <main className="relative z-10 flex flex-1 flex-col items-center justify-center text-center px-6 pt-24 pb-32 max-w-7xl mx-auto my-auto w-full">
+          {/* Staggered Entrance 01: H1 */}
           <div className="animate-fade-rise flex flex-col items-center">
             <h1
-              className="font-['Inter',sans-serif] font-medium text-[44px] sm:text-[60px] md:text-[76px] leading-[1.05] tracking-tight text-[#0f172a] max-w-[1000px] text-balance"
+              className="text-5xl sm:text-7xl md:text-8xl leading-[0.95] tracking-[-2.46px] max-w-7xl font-normal text-white text-balance"
+              style={{ fontFamily: "var(--font-display)" }}
             >
-              Where evidence becomes opportunity.
+              Where <em className="not-italic text-slate-300">dreams</em> rise <em className="not-italic text-slate-300">through the silence.</em>
             </h1>
           </div>
 
-          {/* Staggered Entrance Item 02: Paragraph */}
+          {/* Staggered Entrance 02: Paragraph */}
           <p
-            className="animate-fade-rise-delay mt-6 max-w-[670px] text-[16px] sm:text-[18px] font-normal leading-[1.625] text-slate-700 text-balance"
+            className="animate-fade-rise-delay mt-8 max-w-2xl text-base sm:text-lg font-normal leading-relaxed text-slate-300 text-balance"
           >
-            Turn resumes, code repositories, and assessments into evidence-linked skill records—then discover opportunities through transparent, deterministic matching.
+            We're designing tools for deep thinkers, bold creators, and quiet rebels. Amid the chaos, we build digital spaces for sharp focus and inspired work.
           </p>
 
-          {/* Staggered Entrance Item 03: Main CTA Button */}
-          <div className="animate-fade-rise-delay-2 mt-[40px] flex flex-wrap items-center justify-center gap-4">
+          {/* Staggered Entrance 03: Main CTA Button */}
+          <div className="animate-fade-rise-delay-2 mt-12 flex items-center justify-center">
             <button
               type="button"
               onClick={() => openAuth("register")}
-              className="pill-btn text-[16px] px-12 py-4 bg-[#000000] text-white hover:scale-105 shadow-xl transition-all duration-200 cursor-pointer font-medium"
+              className="liquid-glass rounded-full px-14 py-5 text-base text-white hover:scale-[1.03] shadow-2xl transition-all duration-200 cursor-pointer font-medium"
             >
-              Find my dream
+              Begin Journey
             </button>
           </div>
         </main>
 
         {/* Bottom Editorial Status Bar */}
-        <div className="relative z-10 border-t border-slate-200/60 px-8 py-4 max-w-[1280px] mx-auto w-full flex flex-col sm:flex-row items-center justify-between text-[11px] font-mono text-slate-600 gap-2">
+        <div className="relative z-10 border-t border-white/10 px-8 py-4 max-w-7xl mx-auto w-full flex flex-col sm:flex-row items-center justify-between text-[11px] font-mono text-slate-300 gap-2">
           <span>DETERMINISTIC COMPUTE ENGINE · PERSISTED FORMULA VERSION</span>
           <span>PGVECTOR COSINE EMBEDDINGS + EVIDENCE PROVENANCE</span>
         </div>

@@ -319,7 +319,7 @@ export function AuthPage({
 
   return (
     <div className={`relative w-full text-[#111827] font-['Inter',sans-serif] ${isModal ? "" : "min-h-screen py-12 px-6 flex items-center justify-center bg-[#F7F5F0]"}`}>
-      {/* Modal Close Button */}
+      {/* Top Right Close Button */}
       {onClose && (
         <button
           type="button"
@@ -787,6 +787,84 @@ export function AuthPage({
               width="100%"
               text={mode === "login" ? "signin_with" : "signup_with"}
             />
+          </div>
+
+          {/* One-Click Instant Demo Persona Workspaces */}
+          <div className="mt-8 pt-6 border-t border-[#E5E1D8]">
+            <div className="font-mono text-[10px] uppercase tracking-widest text-[#B08D57] font-semibold mb-3 flex items-center justify-between">
+              <span>Instant Demo Access</span>
+              <span className="text-[#64748B] lowercase font-normal">click to explore</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSession(
+                    { access_token: "demo-inst-token", token_type: "bearer", role: "institution" },
+                    "National Institute of Technology"
+                  );
+                  toast.success("Entered University & Institution Intelligence Workspace");
+                  if (onClose) onClose();
+                }}
+                className="p-2.5 rounded-lg border border-[#E5E1D8] bg-[#F7F5F0] hover:border-[#B08D57] text-left transition-all cursor-pointer shadow-2xs"
+              >
+                <div className="text-xs font-semibold text-[#111827] flex items-center gap-1.5">
+                  Institution Hub
+                </div>
+                <div className="text-[10px] text-[#64748B] font-mono mt-0.5">Dean of Academics</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSession(
+                    { access_token: "demo-fac-token", token_type: "bearer", role: "academician" },
+                    "Dr. Arvind Rao"
+                  );
+                  toast.success("Entered Faculty & Academician Portal");
+                  if (onClose) onClose();
+                }}
+                className="p-2.5 rounded-lg border border-[#E5E1D8] bg-[#F7F5F0] hover:border-[#B08D57] text-left transition-all cursor-pointer shadow-2xs"
+              >
+                <div className="text-xs font-semibold text-[#111827] flex items-center gap-1.5">
+                  Faculty Portal
+                </div>
+                <div className="text-[10px] text-[#64748B] font-mono mt-0.5">Professor & AI Lead</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSession(
+                    { access_token: "demo-stu-token", token_type: "bearer", role: "student" },
+                    "Maya Rivera"
+                  );
+                  toast.success("Entered Student Evidence Workspace");
+                  if (onClose) onClose();
+                }}
+                className="p-2.5 rounded-lg border border-[#E5E1D8] bg-[#F7F5F0] hover:border-[#B08D57] text-left transition-all cursor-pointer shadow-2xs"
+              >
+                <div className="text-xs font-semibold text-[#111827] flex items-center gap-1.5">
+                  Student Dossier
+                </div>
+                <div className="text-[10px] text-[#64748B] font-mono mt-0.5">Candidate / Portfolio</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSession(
+                    { access_token: "demo-rec-token", token_type: "bearer", role: "recruiter" },
+                    "Acme Labs"
+                  );
+                  toast.success("Entered Recruiter Candidate Workspace");
+                  if (onClose) onClose();
+                }}
+                className="p-2.5 rounded-lg border border-[#E5E1D8] bg-[#F7F5F0] hover:border-[#B08D57] text-left transition-all cursor-pointer shadow-2xs"
+              >
+                <div className="text-xs font-semibold text-[#111827] flex items-center gap-1.5">
+                  Recruiter Suite
+                </div>
+                <div className="text-[10px] text-[#64748B] font-mono mt-0.5">Talent Acquisition</div>
+              </button>
+            </div>
           </div>
         </div>
       </div>
