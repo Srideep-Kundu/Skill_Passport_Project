@@ -292,3 +292,43 @@ export function EditorialTextTabs({ tabs, activeTab, onChange, className = "" }:
     </div>
   );
 }
+
+export function EditorialCard({
+  children,
+  className = "",
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={`border border-[#E5E1D8] bg-[#FFFFFF] rounded-[16px] shadow-[0_8px_30px_rgba(17,24,39,0.04)] text-[#111827] ${className}`}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function EditorialBadge({
+  children,
+  variant = "default",
+  className = "",
+}: {
+  children: React.ReactNode;
+  variant?: "default" | "gold" | "success" | "muted";
+  className?: string;
+}) {
+  const variantStyles = {
+    default: "border border-[#E5E1D8] bg-[#F7F5F0] text-[#475569]",
+    gold: "border border-[#B08D57]/40 bg-[rgba(176,141,87,0.08)] text-[#B08D57] font-semibold",
+    success: "border border-[#86EFAC]/60 bg-[#DCFCE7] text-[#166534] font-semibold",
+    muted: "border border-[#E5E1D8] bg-[#FFFFFF] text-[#64748B]",
+  }[variant];
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-full ${variantStyles} ${className}`}
+    >
+      {children}
+    </span>
+  );
+}

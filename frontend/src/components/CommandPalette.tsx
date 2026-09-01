@@ -8,9 +8,14 @@ import {
   Briefcase,
   Compass,
   ListTodo,
-  Send,
   Activity,
   Search,
+  BadgeCheck,
+  Target,
+  Users2,
+  TrendingUp,
+  Layers,
+  BarChart3,
 } from "lucide-react";
 import type { StudentTab, RecruiterTab } from "../App";
 
@@ -102,13 +107,13 @@ export function CommandPalette({
 
                   <Command.Item
                     onSelect={() => {
-                      onSelectStudentTab("github");
+                      onSelectStudentTab("gaps");
                       onOpenChange(false);
                     }}
                     className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-[#475569] hover:text-[#111827] hover:bg-[#F7F5F0] cursor-pointer transition-colors"
                   >
-                    <Award className="h-3.5 w-3.5 text-[#B08D57]" />
-                    <span>GitHub Verification</span>
+                    <Activity className="h-3.5 w-3.5 text-[#B08D57]" />
+                    <span>Skill Gaps & Goals</span>
                   </Command.Item>
 
                   <Command.Item
@@ -130,18 +135,7 @@ export function CommandPalette({
                     className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-[#475569] hover:text-[#111827] hover:bg-[#F7F5F0] cursor-pointer transition-colors"
                   >
                     <Compass className="h-3.5 w-3.5 text-[#B08D57]" />
-                    <span>Job Discovery Market</span>
-                  </Command.Item>
-
-                  <Command.Item
-                    onSelect={() => {
-                      onSelectStudentTab("gaps");
-                      onOpenChange(false);
-                    }}
-                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-[#475569] hover:text-[#111827] hover:bg-[#F7F5F0] cursor-pointer transition-colors"
-                  >
-                    <Activity className="h-3.5 w-3.5 text-[#B08D57]" />
-                    <span>Skill Gaps & Goals</span>
+                    <span>Live Opportunity Discovery</span>
                   </Command.Item>
 
                   <Command.Item
@@ -209,7 +203,73 @@ export function CommandPalette({
                     className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-[#475569] hover:text-[#111827] hover:bg-[#F7F5F0] cursor-pointer transition-colors"
                   >
                     <LayoutDashboard className="h-3.5 w-3.5 text-[#B08D57]" />
-                    <span>Dashboard Overview</span>
+                    <span>Overview</span>
+                  </Command.Item>
+
+                  <Command.Item
+                    onSelect={() => {
+                      onSelectRecruiterTab("evidence_graph");
+                      onOpenChange(false);
+                    }}
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-[#475569] hover:text-[#111827] hover:bg-[#F7F5F0] cursor-pointer transition-colors"
+                  >
+                    <BadgeCheck className="h-3.5 w-3.5 text-[#B08D57]" />
+                    <span>Evidence Graph</span>
+                  </Command.Item>
+
+                  <Command.Item
+                    onSelect={() => {
+                      onSelectRecruiterTab("discovery");
+                      onOpenChange(false);
+                    }}
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-[#475569] hover:text-[#111827] hover:bg-[#F7F5F0] cursor-pointer transition-colors"
+                  >
+                    <Compass className="h-3.5 w-3.5 text-[#B08D57]" />
+                    <span>Talent Discovery</span>
+                  </Command.Item>
+
+                  <Command.Item
+                    onSelect={() => {
+                      onSelectRecruiterTab("matches");
+                      onOpenChange(false);
+                    }}
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-[#475569] hover:text-[#111827] hover:bg-[#F7F5F0] cursor-pointer transition-colors"
+                  >
+                    <Target className="h-3.5 w-3.5 text-[#B08D57]" />
+                    <span>Explainable Matches</span>
+                  </Command.Item>
+
+                  <Command.Item
+                    onSelect={() => {
+                      onSelectRecruiterTab("comparison");
+                      onOpenChange(false);
+                    }}
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-[#475569] hover:text-[#111827] hover:bg-[#F7F5F0] cursor-pointer transition-colors"
+                  >
+                    <Users2 className="h-3.5 w-3.5 text-[#B08D57]" />
+                    <span>Candidate Comparison</span>
+                  </Command.Item>
+
+                  <Command.Item
+                    onSelect={() => {
+                      onSelectRecruiterTab("skills");
+                      onOpenChange(false);
+                    }}
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-[#475569] hover:text-[#111827] hover:bg-[#F7F5F0] cursor-pointer transition-colors"
+                  >
+                    <TrendingUp className="h-3.5 w-3.5 text-[#B08D57]" />
+                    <span>Skill Intelligence</span>
+                  </Command.Item>
+
+                  <Command.Item
+                    onSelect={() => {
+                      onSelectRecruiterTab("pipeline");
+                      onOpenChange(false);
+                    }}
+                    className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-[#475569] hover:text-[#111827] hover:bg-[#F7F5F0] cursor-pointer transition-colors"
+                  >
+                    <Layers className="h-3.5 w-3.5 text-[#B08D57]" />
+                    <span>Talent Pipeline</span>
                   </Command.Item>
 
                   <Command.Item
@@ -219,30 +279,30 @@ export function CommandPalette({
                     }}
                     className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-[#475569] hover:text-[#111827] hover:bg-[#F7F5F0] cursor-pointer transition-colors"
                   >
-                    <ListTodo className="h-3.5 w-3.5 text-[#B08D57]" />
-                    <span>Your Internships</span>
+                    <Briefcase className="h-3.5 w-3.5 text-[#B08D57]" />
+                    <span>Internship Management</span>
                   </Command.Item>
 
                   <Command.Item
                     onSelect={() => {
-                      onSelectRecruiterTab("post_job");
+                      onSelectRecruiterTab("applications");
                       onOpenChange(false);
                     }}
                     className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-[#475569] hover:text-[#111827] hover:bg-[#F7F5F0] cursor-pointer transition-colors"
                   >
-                    <Send className="h-3.5 w-3.5 text-[#B08D57]" />
-                    <span>Post New Internship</span>
+                    <FileText className="h-3.5 w-3.5 text-[#B08D57]" />
+                    <span>Candidate Applications</span>
                   </Command.Item>
 
                   <Command.Item
                     onSelect={() => {
-                      onSelectRecruiterTab("candidates");
+                      onSelectRecruiterTab("analytics");
                       onOpenChange(false);
                     }}
                     className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-xs text-[#475569] hover:text-[#111827] hover:bg-[#F7F5F0] cursor-pointer transition-colors"
                   >
-                    <Activity className="h-3.5 w-3.5 text-[#B08D57]" />
-                    <span>Ranked Candidates</span>
+                    <BarChart3 className="h-3.5 w-3.5 text-[#B08D57]" />
+                    <span>Analytics & Insights</span>
                   </Command.Item>
                 </>
               )}
