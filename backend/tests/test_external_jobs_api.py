@@ -18,6 +18,7 @@ from app.models import (
     Skill,
     Student,
 )
+from app.services import external_jobs_service
 from app.services.external_jobs_service import ExternalJobSyncResult
 
 
@@ -104,7 +105,7 @@ async def test_external_job_api_filters_provenance_and_role_boundaries(
     assert greenhouse_entry["status"] == "disabled"
     assert greenhouse_entry["active_jobs_count"] == 1
     indeed_entry = next(p for p in provider_data if p["provider"] == "indeed")
-    assert indeed_entry["status"] == "unavailable"
+    assert indeed_entry["status"] == "disabled"
 
 
 @pytest.mark.asyncio
@@ -156,16 +157,23 @@ async def test_provider_health_uses_non_fixture_sync_evidence_in_demo(
         await session.commit()
         token = create_access_token(student.id, "student")
 
+    provider_settings = SimpleNamespace(
+        environment="demo",
+        yc_source_keys=[],
+        greenhouse_board_tokens=["live-board"],
+        lever_site_tokens=[],
+        ashby_job_board_names=[],
+    )
+    monkeypatch.setattr(external_jobs_api, "get_settings", lambda: provider_settings)
     monkeypatch.setattr(
         external_jobs_api,
+        "provider_sync_evidence",
+        lambda session: external_jobs_service.provider_sync_evidence(session),
+    )
+    monkeypatch.setattr(
+        external_jobs_service,
         "get_settings",
-        lambda: SimpleNamespace(
-            environment="demo",
-            yc_source_keys=[],
-            greenhouse_board_tokens=["live-board"],
-            lever_site_tokens=[],
-            ashby_job_board_names=[],
-        ),
+        lambda: provider_settings,
     )
     response = await client.get(
         "/external-jobs/providers",
@@ -175,6 +183,8 @@ async def test_provider_health_uses_non_fixture_sync_evidence_in_demo(
     greenhouse = next(
         item for item in response.json() if item["provider"] == "greenhouse"
     )
-    assert greenhouse["status"] == "live"
+    # Stored jobs do not prove a live sync. The fixture remains explicit even
+    # when a non-fixture-shaped row also exists without sync audit evidence.
+    assert greenhouse["status"] == "fixture"
     assert greenhouse["active_jobs_count"] == 2
 

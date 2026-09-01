@@ -16,6 +16,7 @@ from app.models import (
     AssessmentQuestion,
     LearningCourse,
     PlacementDrive,
+    Skill,
 )
 
 
@@ -147,9 +148,14 @@ async def test_assessment_flow_and_passport_sync(ecosystem_client):
 
     # Seed an assessment
     async with factory() as session:
+        fastapi_skill = Skill(canonical_name="FastAPI", category="Backend", aliases=[])
+        session.add(fastapi_skill)
+        await session.flush()
         ass = Assessment(
             title="FastAPI Diagnostic",
+            assessment_type="technical",
             canonical_skill_name="FastAPI",
+            skill_id=fastapi_skill.id,
             category="Backend",
             difficulty="intermediate",
             duration_minutes=15,
@@ -159,6 +165,7 @@ async def test_assessment_flow_and_passport_sync(ecosystem_client):
         await session.flush()
         q1 = AssessmentQuestion(
             assessment_id=ass.id,
+            competency_skill_id=fastapi_skill.id,
             question_text="What does FastAPI use for data validation?",
             question_type="mcq",
             options=["Pydantic", "Django ORM", "Flask-WTF", "None"],

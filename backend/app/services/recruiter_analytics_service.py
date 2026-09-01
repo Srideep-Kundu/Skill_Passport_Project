@@ -12,13 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import (
     Internship,
     InternshipEngagement,
-    InternshipRequirement,
     PlacementDrive,
     PlacementRegistration,
-    Skill,
-    StudentSkill,
 )
 from app.schemas.contracts import APIModel
+from app.services.demand_supply_service import recruiter_demand_analytics
 
 
 class RecruiterSkillMetric(APIModel):
@@ -89,63 +87,53 @@ async def get_recruiter_skill_analytics(
     accepted = len([r for r in registrations if r.status == "accepted"]) + len([e for e in engagements if e.status == "completed"])
 
     funnel: list[dict[str, str | int]] = [
-        {"stage": "Applications Received", "count": max(total_apps, 18)},
-        {"stage": "Skill-Matched Shortlist", "count": max(shortlisted, 12)},
-        {"stage": "Technical Interviews", "count": max(interviews, 7)},
-        {"stage": "Offers Extended", "count": max(offered, 4)},
-        {"stage": "Offers Accepted", "count": max(accepted, 3)},
+        {"stage": "Applications Received", "count": total_apps},
+        {"stage": "Skill-Matched Shortlist", "count": shortlisted},
+        {"stage": "Technical Interviews", "count": interviews},
+        {"stage": "Offers Extended", "count": offered},
+        {"stage": "Offers Accepted", "count": accepted},
     ]
 
     # 3. Top Demanded Skills vs Supply
     # Aggregate skill demand from requirements
-    req_skills_stmt = (
-        select(Skill.canonical_name, func.count(InternshipRequirement.id))
-        .join(InternshipRequirement, InternshipRequirement.skill_id == Skill.id)
-        .join(Internship, Internship.id == InternshipRequirement.internship_id)
-        .where(Internship.recruiter_id == recruiter_id)
-        .group_by(Skill.canonical_name)
-    )
-    req_rows = (await session.execute(req_skills_stmt)).all()
-
+    demand = await recruiter_demand_analytics(session, recruiter_id)
     skill_metrics: list[RecruiterSkillMetric] = []
-    default_skills = [("Python", 4), ("FastAPI", 3), ("SQL", 3), ("Docker", 2), ("React", 2), ("Redis", 2)]
-    combined_skills = req_rows if req_rows else default_skills
-
-    for s_name, count in combined_skills:
-        supply_count = (
-            await session.scalar(
-                select(func.count(StudentSkill.student_id))
-                .join(Skill, Skill.id == StudentSkill.skill_id)
-                .where(Skill.canonical_name.ilike(s_name))
-            )
-        ) or 1
-        ratio = round(supply_count / max(count, 1), 2)
+    for row in demand.skills:
+        ratio = round(row.candidate_supply / row.demand_count, 2)
         status = "high_demand_shortage" if ratio < 1.5 else "balanced" if ratio < 3.5 else "abundant_supply"
 
         skill_metrics.append(
             RecruiterSkillMetric(
-                skill_name=s_name,
-                required_in_postings_count=count,
-                applicant_pool_count=supply_count,
+                skill_name=row.skill_name,
+                required_in_postings_count=row.demand_count,
+                applicant_pool_count=row.candidate_supply,
                 supply_demand_ratio=ratio,
                 market_status=status,
             )
         )
 
     gaps: list[dict[str, str | int]] = [
-        {"skill": "Docker & Containerization", "gap_percentage": "62%", "impact": "High (Delays backend onboarding)"},
-        {"skill": "System Architecture & Async Queues", "gap_percentage": "54%", "impact": "High (Microservice scaling)"},
-        {"skill": "CI/CD & Automated Testing", "gap_percentage": "41%", "impact": "Medium (Code quality)"},
+        {
+            "skill": row.skill_name,
+            "gap_percentage": (
+                f"{round(100 * max(row.gap, 0) / row.demand_count)}%"
+                if row.demand_count
+                else "0%"
+            ),
+            "impact": "Shortage" if row.gap > 0 else "Covered",
+        }
+        for row in demand.skills
+        if row.gap > 0
     ]
 
     return RecruiterAnalyticsOverview(
         company_name=company_name,
-        active_postings=max(total_postings, 2),
-        total_applicants=max(total_apps, 18),
-        shortlisted_candidates=max(shortlisted, 12),
-        interviews_scheduled=max(interviews, 7),
-        offers_extended=max(offered, 4),
-        offers_accepted=max(accepted, 3),
+        active_postings=total_postings,
+        total_applicants=total_apps,
+        shortlisted_candidates=shortlisted,
+        interviews_scheduled=interviews,
+        offers_extended=offered,
+        offers_accepted=accepted,
         top_demanded_skills=skill_metrics,
         most_common_applicant_gaps=gaps,
         recruitment_funnel=funnel,

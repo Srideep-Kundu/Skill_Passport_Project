@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 from uuid import UUID
 
@@ -17,6 +18,7 @@ from app.services.matching_service import (
 )
 
 router = APIRouter(tags=["matches"])
+logger = logging.getLogger(__name__)
 
 
 @router.get("/students/me/matches", response_model=PaginatedResponse[MatchResponse])
@@ -36,7 +38,7 @@ async def my_matches(
                 await seed_sih_ecosystem()
                 internships = (await session.scalars(select(Internship).order_by(Internship.created_at))).all()
             except Exception:
-                pass
+                logger.warning("Optional demo match seed failed")
         matches = await persisted_student_matches(session, principal.id)
         internship_titles = {internship.id: internship.title for internship in internships}
         items = []
@@ -48,6 +50,7 @@ async def my_matches(
                     )
                 )
             except Exception:
+                logger.warning("Skipping invalid persisted match response")
                 continue
         return PaginatedResponse(page=page, page_size=page_size, total=len(items), items=items[(page - 1) * page_size : page * page_size])
     except Exception:

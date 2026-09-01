@@ -22,6 +22,7 @@ from app.schemas.contracts import (
     IndustryPartnershipOverview,
     InstitutionAlertsResponse,
     InstitutionAnalyticsOverview,
+    InstitutionDemandSupplyAnalytics,
     InstitutionReportResponse,
     InternshipMonitoringOverview,
     InterventionPlanCreate,
@@ -32,8 +33,25 @@ from app.schemas.contracts import (
     PlacementMonitoringOverview,
 )
 from app.services import institution_analytics_service as svc
+from app.services.demand_supply_service import institution_demand_supply_analytics
 
 router = APIRouter(prefix="/institution", tags=["institution"])
+
+
+@router.get("/demand-supply", response_model=InstitutionDemandSupplyAnalytics)
+async def get_demand_supply(
+    institution: Annotated[Institution, Depends(require_role("institution"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    department: str | None = Query(None, min_length=1, max_length=120),
+    cohort_year: int | None = Query(None, ge=2000, le=2100),
+) -> InstitutionDemandSupplyAnalytics:
+    """Compare persisted market demand with this institution's scoped supply."""
+    return await institution_demand_supply_analytics(
+        session,
+        institution.id,
+        department=department.strip() if department else None,
+        cohort_year=cohort_year,
+    )
 
 
 @router.get("/analytics", response_model=InstitutionAnalyticsOverview)
@@ -82,7 +100,8 @@ async def get_intervention_recommendations(
     principal: Annotated[Institution | Admin, Depends(require_role("institution", "admin"))],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> list[InterventionRecommendation]:
-    return await svc.get_intervention_recommendations(session)
+    inst_id = principal.id if isinstance(principal, Institution) else None
+    return await svc.get_intervention_recommendations(session, inst_id)
 
 
 @router.get("/interventions", response_model=list[InterventionPlanResponse])

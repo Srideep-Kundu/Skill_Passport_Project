@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -22,6 +23,8 @@ from app.models import (
     VerificationTier,
 )
 from app.services.embeddings import cosine_similarity
+
+logger = logging.getLogger(__name__)
 
 SCORE_VERSION = "v2-embedding-accounting"
 TIER_MULTIPLIER = {VerificationTier.verified.value: 1.0, VerificationTier.partially_verified.value: 0.85, VerificationTier.unverified.value: 0.65}
@@ -200,6 +203,13 @@ async def _possessed(session: AsyncSession, student_id: UUID) -> list[PossessedS
     return [PossessedSkill(UUID(str(row["skill_id"])), UUID(str(row["source_evidence_id"])), float(row["effective_confidence"]), str(row["verification_tier"]), _usable_embedding(row), row["embedding_fingerprint"], float(row["extraction_confidence"])) for row in rows]
 
 
+async def possessed_matching_inputs(
+    session: AsyncSession, student_id: UUID
+) -> list[PossessedSkill]:
+    """Load the restricted, evidence-backed inputs shared by every matcher."""
+    return await _possessed(session, student_id)
+
+
 def _usable_embedding(row: Any) -> list[float] | None:
     settings = get_settings()
     if not settings.semantic_matching_enabled or row["embedding_provider"] != settings.embedding_provider or row["embedding_model"] != settings.embedding_model or row["embedding_dimension"] != settings.embedding_dimension:
@@ -376,6 +386,7 @@ async def recompute_matches_for_internship(session: AsyncSession, internship_id:
             if match is not None:
                 matches.append(match)
         except Exception:
+            logger.warning("Skipping candidate whose persisted match could not be recomputed")
             continue
     return sorted(matches, key=lambda match: (-float(match.final_score), str(match.student_id)))
 
@@ -396,6 +407,7 @@ async def recompute_external_job_matches_for_student(session: AsyncSession, stud
         try:
             computed.append(await compute_and_persist_external_job_match(session, student_id, job_id))
         except Exception:
+            logger.warning("Skipping external job whose persisted match could not be recomputed")
             continue
     return [match for match in computed if match is not None]
 

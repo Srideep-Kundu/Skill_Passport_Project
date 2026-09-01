@@ -17,6 +17,14 @@ Use the offline account `maya@example.demo` and the fixture instructions in [DEM
 | 4:20–4:45 | Open the Lever application and **Tracking**. | “This timeline is explicit: approved, prepared, manual apply chosen, user-reported submitted, then user-reported in review. It never claims provider confirmation.” |
 | 4:45–5:00 | Return to passport or explanation. | “The differentiator is evidence-first, deterministic matching: every score can be reconciled, every gap is visible, and protected profile data is outside the matching boundary.” |
 
+## Current SIH feature extensions
+
+- **Student:** deterministic soft-skill and aptitude assessments create evidence-backed competency provenance; verified learning, internship, and collaboration completions can update the Passport; placement and job applications share one **My Applications** timeline; Passport shares support revocable public views, PDF export, and QR access.
+- **Recruiter:** create canonical-skill learning programs, internships, internal placement jobs, and collaboration projects; manage hiring stages and mentor feedback; inspect company-scoped demand analytics and evidence-backed candidate explanations.
+- **Faculty:** receive recruiter invitations, manage applications and collaboration workspaces, and record validated outcomes that feed faculty provenance.
+- **Institution:** durable institution membership scopes analytics; demand/supply compares persisted opportunity requirements with evidence-backed student supply; governed imports and explicit mappings support students, placements, and learning completions. Empty datasets remain empty rather than receiving demo percentages.
+- **Providers:** YC, Greenhouse, Lever, and Ashby are live-capable when configured and successfully synced. Provider health distinguishes configured, fixture, degraded, disabled, and live states. Indeed and Jobsuit are unavailable pending partner access. No application is silently submitted; assisted/manual handling remains the default and controlled submission remains capability- and approval-gated.
+
 ## Backup plan
 
 - **API or network unavailable:** use the already-open demo tab or the recruiter screenshot/recording; do not claim a live update occurred.

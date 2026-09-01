@@ -29,6 +29,7 @@ from app.schemas.contracts import (
     StudentRegistration,
     TokenResponse,
 )
+from app.services.demand_supply_service import resolve_institution_id_by_name
 from app.services.rate_limit_service import enforce_rate_limit
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -72,7 +73,16 @@ async def register_student(payload: StudentRegistration, request: Request, sessi
     await enforce_rate_limit("registration", _request_subject(request), get_settings().registration_rate_limit_per_minute)
     if await _email_taken(session, payload.email):
         raise HTTPException(status.HTTP_409_CONFLICT, "An account with this email already exists.")
-    student = Student(email=payload.email.casefold(), password_hash=hash_password(payload.password), full_name=payload.full_name, university=payload.university, graduation_year=payload.graduation_year)
+    institution_id = await resolve_institution_id_by_name(session, payload.university)
+    student = Student(
+        email=payload.email.casefold(),
+        password_hash=hash_password(payload.password),
+        full_name=payload.full_name,
+        university=payload.university,
+        graduation_year=payload.graduation_year,
+        institution_id=institution_id,
+        cohort_year=payload.graduation_year,
+    )
     session.add(student)
     await session.flush()
     session.add(AccountEmail(email=student.email, account_id=student.id, role=Role.student))
@@ -172,6 +182,8 @@ async def login(payload: LoginRequest, request: Request, session: Annotated[Asyn
     institution = (await session.scalars(select(Institution).where(Institution.email == email))).first()
     admin = (await session.scalars(select(Admin).where(Admin.email == email))).first()
     for account in (student, recruiter, academician, institution, admin):
+        if isinstance(account, Student) and account.account_status != "active":
+            continue
         if account is not None and verify_password(payload.password, account.password_hash):
             role = cast(Literal["student", "recruiter", "admin", "academician", "institution"], account.role)
             return TokenResponse(access_token=create_access_token(account.id, role), role=role)
@@ -215,6 +227,11 @@ async def login_with_google(
     # Fallback search directly in tables in case AccountEmail was migrated
     student = (await session.scalars(select(Student).where(Student.email == email))).first()
     if student is not None:
+        if student.account_status != "active":
+            raise HTTPException(
+                status.HTTP_403_FORBIDDEN,
+                "This invited account must be activated before sign-in.",
+            )
         session.add(AccountEmail(email=email, account_id=student.id, role=Role.student))
         await session.commit()
         return TokenResponse(access_token=create_access_token(student.id, Role.student), role="student")

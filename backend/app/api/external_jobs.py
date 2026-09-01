@@ -4,7 +4,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import ColumnElement, case, func, or_, select
+from sqlalchemy import ColumnElement, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -20,7 +20,10 @@ from app.schemas.contracts import (
     PaginatedResponse,
     ProviderStatusItem,
 )
-from app.services.external_jobs_service import sync_external_jobs
+from app.services.external_jobs_service import (
+    provider_sync_evidence,
+    sync_external_jobs,
+)
 from app.services.job_providers import (
     ProviderError,
     ProviderNotFound,
@@ -86,32 +89,7 @@ async def list_providers(
 ) -> list[ProviderStatusItem]:
     del principal
     settings = get_settings()
-
-    non_fixture = (
-        func.coalesce(ExternalJob.raw_metadata["fixture"].as_string(), "")
-        != "offline_demo"
-    )
-    # Stored demo rows alone never prove provider health. Track successful
-    # non-fixture records independently from aggregate display counts.
-    rows = (
-        await session.execute(
-            select(
-                ExternalJob.provider,
-                func.count(ExternalJob.id).label("count"),
-                func.max(ExternalJob.last_synced_at).label("last_synced"),
-                func.sum(case((non_fixture, 1), else_=0)).label("live_count"),
-                func.max(
-                    case((non_fixture, ExternalJob.last_synced_at), else_=None)
-                ).label("last_live_synced"),
-            )
-            .where(ExternalJob.is_active.is_(True))
-            .group_by(ExternalJob.provider)
-        )
-    ).all()
-    stats: dict[str, tuple[int, datetime | None, int, datetime | None]] = {
-        str(row[0]): (int(row[1]), row[2], int(row[3] or 0), row[4])
-        for row in rows
-    }
+    evidence = await provider_sync_evidence(session)
 
     provider_defs = [
         ("yc", "YC Startup Jobs", "YC STARTUP", settings.yc_source_keys, "Public YC startup source"),
@@ -122,36 +100,27 @@ async def list_providers(
 
     items: list[ProviderStatusItem] = []
     for key, name, badge_label, configured_sources, reason in provider_defs:
-        count, last_synced, live_count, last_live_synced = stats.get(
-            key, (0, None, 0, None)
-        )
-        if not configured_sources:
-            provider_status = "disabled"
-            status_reason = "No approved provider source identifiers are configured"
-        elif live_count and last_live_synced is not None:
-            provider_status = "live"
-            status_reason = None
-            last_synced = last_live_synced
-        elif settings.environment.casefold() == "demo" and count:
-            provider_status = "fixture"
-            status_reason = "Offline demo fixture data; no live provider health is implied"
-        elif last_synced is None:
-            provider_status = "configured"
-            status_reason = "Configured, but no successful sync is recorded"
-        else:
-            provider_status = "degraded"
-            status_reason = "No successful non-fixture sync is recorded"
+        del configured_sources
+        state = evidence[key]
         items.append(
             ProviderStatusItem(
                 provider=key,
                 name=name,
-                status=provider_status,
+                status=state.status,
+                enabled=state.enabled,
+                configured=state.configured,
+                fixture=state.fixture,
                 badge_label=badge_label,
-                search_supported=bool(configured_sources),
+                search_supported=state.enabled,
                 status_tracking_supported=False,
-                active_jobs_count=count,
-                last_synced_at=last_synced,
-                reason=status_reason or reason if provider_status != "live" else None,
+                active_jobs_count=state.active_jobs_count,
+                last_attempt_at=state.last_attempt_at,
+                last_success_at=state.last_success_at,
+                last_item_count=state.last_item_count,
+                last_latency_ms=state.last_latency_ms,
+                latest_error_category=state.latest_error_category,
+                last_synced_at=state.last_success_at,
+                reason=state.message if state.status != "live" else reason,
             )
         )
     items.extend(
@@ -159,7 +128,10 @@ async def list_providers(
             ProviderStatusItem(
                 provider="indeed",
                 name="Indeed",
-                status="unavailable",
+                status="disabled",
+                enabled=False,
+                configured=False,
+                fixture=False,
                 badge_label="INDEED",
                 search_supported=False,
                 status_tracking_supported=False,
@@ -168,7 +140,10 @@ async def list_providers(
             ProviderStatusItem(
                 provider="jobsuit",
                 name="Jobsuit.ai",
-                status="unavailable",
+                status="disabled",
+                enabled=False,
+                configured=False,
+                fixture=False,
                 badge_label="JOBSUIT",
                 search_supported=False,
                 status_tracking_supported=False,
@@ -203,7 +178,7 @@ async def list_external_jobs(
             await seed_demo_data()
             await seed_sih_ecosystem()
         except Exception:
-            pass
+            logger.exception("Optional demo job seed failed")
     filters: list[ColumnElement[bool]] = [ExternalJob.is_active.is_(active)]
     if provider and provider.strip() and provider.strip().casefold() != "all":
         filters.append(ExternalJob.provider == provider.strip().casefold())

@@ -37,6 +37,14 @@ class ProviderPayloadError(ProviderError):
     safe_message = "The job source returned an unexpected response."
 
 
+class ProviderConfigurationError(ProviderError):
+    safe_message = "The job source is not configured correctly."
+
+
+class ProviderAuthenticationError(ProviderError):
+    safe_message = "The job source rejected its configured access."
+
+
 class ProviderSubmissionUnsupported(ProviderError):
     safe_message = "This provider does not support machine application submission."
 
@@ -229,6 +237,9 @@ class ProviderSearchPage:
 class JobProvider(ABC):
     name: str
     capabilities: ProviderCapabilities
+    # Test/demo adapters must opt in explicitly. A configured public adapter is
+    # never treated as live merely because it returned fixture-shaped data.
+    is_fixture: ClassVar[bool] = False
 
     @abstractmethod
     async def search_jobs(
@@ -569,6 +580,8 @@ class GreenhouseJobProvider(JobProvider):
                 raise ProviderError() from error
             if response.status_code == 429:
                 raise ProviderRateLimited()
+            if response.status_code in {401, 403}:
+                raise ProviderAuthenticationError()
             if response.status_code == 404:
                 raise ProviderNotFound()
             if response.status_code >= 500:
@@ -836,6 +849,8 @@ class LeverJobProvider(JobProvider):
             raise ProviderError() from error
         if response.status_code == 429:
             raise ProviderRateLimited()
+        if response.status_code in {401, 403}:
+            raise ProviderAuthenticationError()
         if response.status_code == 404:
             raise ProviderNotFound()
         if response.status_code >= 500:
@@ -1291,6 +1306,8 @@ class AshbyJobProvider(JobProvider):
                 raise ProviderError() from error
             if response.status_code == 429:
                 raise ProviderRateLimited()
+            if response.status_code in {401, 403}:
+                raise ProviderAuthenticationError()
             if response.status_code == 404:
                 raise ProviderNotFound()
             if response.status_code >= 500:
@@ -1628,6 +1645,8 @@ class YCJobProvider(JobProvider):
     ) -> ProviderSearchPage:
         # 1. Try Algolia HN jobs search API
         hits: list[dict[str, Any]] = []
+        valid_response = False
+        last_error: Exception | None = None
         try:
             async with httpx.AsyncClient(
                 timeout=httpx.Timeout(10.0, connect=5.0),
@@ -1641,10 +1660,21 @@ class YCJobProvider(JobProvider):
                 if response.status_code == 200:
                     data = response.json()
                     if isinstance(data, dict) and isinstance(data.get("hits"), list):
+                        valid_response = True
                         hits = [h for h in data["hits"] if isinstance(h, dict)]
-        except (httpx.HTTPError, ValueError):
+                    else:
+                        last_error = ProviderPayloadError()
+                elif response.status_code == 429:
+                    last_error = ProviderRateLimited()
+                elif response.status_code in {401, 403}:
+                    last_error = ProviderAuthenticationError()
+                elif response.status_code >= 500:
+                    last_error = ProviderError()
+                else:
+                    last_error = ProviderPayloadError()
+        except (httpx.HTTPError, ValueError) as error:
             logger.warning("YC Algolia job lookup failed", extra={"source_key": source_key})
-            hits = []
+            last_error = error
 
         # 2. Fallback to Firebase HN job stories if needed
         if not hits:
@@ -1658,25 +1688,44 @@ class YCJobProvider(JobProvider):
                     if stories_resp.status_code == 200:
                         story_ids = stories_resp.json()
                         if isinstance(story_ids, list):
+                            valid_response = True
                             for story_id in story_ids[:20]:
                                 item_resp = await client.get(f"{self._firebase_base}/item/{story_id}.json")
                                 if item_resp.status_code == 200 and isinstance(item_resp.json(), dict):
                                     hits.append(item_resp.json())
-            except (httpx.HTTPError, ValueError):
+                        else:
+                            last_error = ProviderPayloadError()
+                    elif stories_resp.status_code == 429:
+                        last_error = ProviderRateLimited()
+                    elif stories_resp.status_code in {401, 403}:
+                        last_error = ProviderAuthenticationError()
+                    elif stories_resp.status_code >= 500:
+                        last_error = ProviderError()
+                    else:
+                        last_error = ProviderPayloadError()
+            except (httpx.HTTPError, ValueError) as error:
                 logger.warning("YC Firebase job lookup failed", extra={"source_key": source_key})
+                last_error = error
 
         if not hits:
+            if not valid_response:
+                if isinstance(last_error, ProviderError):
+                    raise last_error
+                if last_error is not None:
+                    raise ProviderError() from last_error
+                raise ProviderError()
             return ProviderSearchPage(jobs=(), next_cursor=None)
 
         jobs: list[NormalizedExternalJob] = []
         for hit in hits:
             try:
                 jobs.append(self._normalize_item(hit, source_key=source_key))
-            except (KeyError, ProviderError, TypeError, ValueError):
+            except (KeyError, ProviderError, TypeError, ValueError) as error:
                 logger.warning(
-                    "Skipping malformed YC job record",
+                    "Rejecting malformed YC job response",
                     extra={"source_key": source_key},
                 )
+                raise ProviderPayloadError() from error
                 continue
 
         filtered = [job for job in jobs if self._matches(job, filters)]
@@ -1802,6 +1851,7 @@ class DeterministicTestApplicationProvider(JobProvider):
     """Test/dev-only adapter; never register it as a real provider integration."""
 
     name = "test_application"
+    is_fixture = True
     capabilities = ProviderCapabilities(
         search=False, detail_fetch=False, auto_apply=True, status_tracking=False
     )
