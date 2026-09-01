@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ShieldCheck,
   Award,
@@ -65,6 +66,18 @@ export function DigiLockerVerification({ token, onEvidenceImported }: DigiLocker
   useEffect(() => {
     void loadStatusAndDocs();
   }, [loadStatusAndDocs]);
+
+  // Lock background scrolling and keep viewport centered when modal is open
+  useEffect(() => {
+    if (showConnectModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [showConnectModal]);
 
   const handleSendRealOtp = async () => {
     const cleanDigits = aadhaarInput.replace(/\D/g, "");
@@ -332,110 +345,112 @@ export function DigiLockerVerification({ token, onEvidenceImported }: DigiLocker
         </div>
       </div>
 
-      {/* Real-Time UIDAI Aadhaar Verification Modal */}
-      {showConnectModal && (
-        <div className="fixed inset-0 z-50 bg-[#0F172A]/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="w-full max-w-md border border-[#E5E1D8] bg-[#FFFFFF] shadow-2xl p-6 rounded-[16px] space-y-4 text-[#111827]">
-            <div className="flex items-center justify-between border-b border-[#E5E1D8] pb-3">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-[#4F6F5A]" />
-                <h4 className="text-base font-semibold text-[#111827]">
-                  Real-Time Aadhaar Verification
-                </h4>
-              </div>
-              <span className="font-mono text-[10px] bg-[rgba(79,111,90,0.12)] text-[#4F6F5A] border border-[#4F6F5A]/30 px-2 py-0.5 rounded-full font-bold uppercase">
-                UIDAI Live Gateway
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              <p className="text-xs text-[#475569] leading-relaxed">
-                Enter your 12-digit Aadhaar number. A <strong className="text-[#111827]">real SMS OTP</strong> will be dispatched to your Aadhaar-registered mobile phone.
-              </p>
-
-              {/* Aadhaar Input Field */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-mono font-bold text-[#64748B]">
-                  12-Digit Aadhaar Card Number
-                </label>
-                <input
-                  type="text"
-                  value={aadhaarInput}
-                  disabled={Boolean(referenceId) || isSendingOtp}
-                  onChange={(e) => setAadhaarInput(formatAadhaar(e.target.value))}
-                  placeholder="XXXX XXXX XXXX"
-                  maxLength={14}
-                  className="w-full rounded-md border border-[#E5E1D8] bg-[#F7F5F0] px-3 py-2 text-sm font-mono tracking-widest text-[#111827] focus:border-[#B08D57] focus:outline-none"
-                />
+      {/* Real-Time UIDAI Aadhaar Verification Modal via Portal (True Viewport Centering) */}
+      {showConnectModal &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-[#0F172A]/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+            <div className="w-full max-w-md border border-[#E5E1D8] bg-[#FFFFFF] shadow-2xl p-6 rounded-[16px] space-y-4 text-[#111827] my-auto">
+              <div className="flex items-center justify-between border-b border-[#E5E1D8] pb-3">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-[#4F6F5A]" />
+                  <h4 className="text-base font-semibold text-[#111827]">
+                    Real-Time Aadhaar Verification
+                  </h4>
+                </div>
+                <span className="font-mono text-[10px] bg-[rgba(79,111,90,0.12)] text-[#4F6F5A] border border-[#4F6F5A]/30 px-2 py-0.5 rounded-full font-bold uppercase">
+                  UIDAI Live Gateway
+                </span>
               </div>
 
-              {/* OTP Field if OTP is sent */}
-              {referenceId && (
-                <div className="space-y-2 pt-2 border-t border-[#E5E1D8]">
-                  <label className="block text-xs font-mono font-bold text-[#4F6F5A] flex items-center gap-1">
-                    <KeyRound className="h-3.5 w-3.5" /> Enter 6-Digit SMS OTP
+              <div className="space-y-3">
+                <p className="text-xs text-[#475569] leading-relaxed">
+                  Enter your 12-digit Aadhaar number. A <strong className="text-[#111827]">real SMS OTP</strong> will be dispatched to your Aadhaar-registered mobile phone.
+                </p>
+
+                {/* Aadhaar Input Field */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-mono font-bold text-[#64748B]">
+                    12-Digit Aadhaar Card Number
                   </label>
                   <input
                     type="text"
-                    value={otpInput}
-                    onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="Enter 6-digit OTP"
-                    maxLength={6}
-                    autoFocus
-                    className="w-full rounded-md border-2 border-[#4F6F5A] bg-[#FFFFFF] px-3 py-2 text-sm font-mono tracking-widest text-[#111827] focus:outline-none"
+                    value={aadhaarInput}
+                    disabled={Boolean(referenceId) || isSendingOtp}
+                    onChange={(e) => setAadhaarInput(formatAadhaar(e.target.value))}
+                    placeholder="XXXX XXXX XXXX"
+                    maxLength={14}
+                    className="w-full rounded-md border border-[#E5E1D8] bg-[#F7F5F0] px-3 py-2 text-sm font-mono tracking-widest text-[#111827] focus:border-[#B08D57] focus:outline-none"
                   />
-                  <p className="text-[11px] font-mono text-[#4F6F5A]">
-                    {otpSentMessage || "UIDAI SMS OTP sent to your phone."}
-                  </p>
                 </div>
-              )}
-            </div>
 
-            <div className="pt-3 flex items-center justify-between border-t border-[#E5E1D8]">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowConnectModal(false);
-                  setReferenceId(null);
-                }}
-                className="font-mono text-xs font-bold text-[#64748B] hover:text-[#111827] cursor-pointer"
-              >
-                Cancel
-              </button>
+                {/* OTP Field if OTP is sent */}
+                {referenceId && (
+                  <div className="space-y-2 pt-2 border-t border-[#E5E1D8]">
+                    <label className="block text-xs font-mono font-bold text-[#4F6F5A] flex items-center gap-1">
+                      <KeyRound className="h-3.5 w-3.5" /> Enter 6-Digit SMS OTP
+                    </label>
+                    <input
+                      type="text"
+                      value={otpInput}
+                      onChange={(e) => setOtpInput(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                      placeholder="Enter 6-digit OTP"
+                      maxLength={6}
+                      autoFocus
+                      className="w-full rounded-md border-2 border-[#4F6F5A] bg-[#FFFFFF] px-3 py-2 text-sm font-mono tracking-widest text-[#111827] focus:outline-none"
+                    />
+                    <p className="text-[11px] font-mono text-[#4F6F5A]">
+                      {otpSentMessage || "UIDAI SMS OTP sent to your phone."}
+                    </p>
+                  </div>
+                )}
+              </div>
 
-              {!referenceId ? (
-                <LiquidGlassButton
-                  onClick={() => void handleSendRealOtp()}
-                  disabled={isSendingOtp || aadhaarInput.replace(/\D/g, "").length !== 12}
-                  size="sm"
+              <div className="pt-3 flex items-center justify-between border-t border-[#E5E1D8]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowConnectModal(false);
+                    setReferenceId(null);
+                  }}
+                  className="font-mono text-xs font-bold text-[#64748B] hover:text-[#111827] cursor-pointer"
                 >
-                  {isSendingOtp ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5" />}
-                  <span>Send Real UIDAI OTP</span>
-                </LiquidGlassButton>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void handleSendRealOtp()}
-                    disabled={isSendingOtp}
-                    className="font-mono text-[11px] text-[#B08D57] hover:underline cursor-pointer"
-                  >
-                    Resend OTP
-                  </button>
+                  Cancel
+                </button>
+
+                {!referenceId ? (
                   <LiquidGlassButton
-                    onClick={() => void handleVerifyRealOtp()}
-                    disabled={isVerifyingOtp || otpInput.replace(/\D/g, "").length !== 6}
+                    onClick={() => void handleSendRealOtp()}
+                    disabled={isSendingOtp || aadhaarInput.replace(/\D/g, "").length !== 12}
                     size="sm"
                   >
-                    {isVerifyingOtp ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                    <span>Verify & Link</span>
+                    {isSendingOtp ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <KeyRound className="h-3.5 w-3.5" />}
+                    <span>Send Real UIDAI OTP</span>
                   </LiquidGlassButton>
-                </div>
-              )}
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void handleSendRealOtp()}
+                      disabled={isSendingOtp}
+                      className="font-mono text-[11px] text-[#B08D57] hover:underline cursor-pointer"
+                    >
+                      Resend OTP
+                    </button>
+                    <LiquidGlassButton
+                      onClick={() => void handleVerifyRealOtp()}
+                      disabled={isVerifyingOtp || otpInput.replace(/\D/g, "").length !== 6}
+                      size="sm"
+                    >
+                      {isVerifyingOtp ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                      <span>Verify & Link</span>
+                    </LiquidGlassButton>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

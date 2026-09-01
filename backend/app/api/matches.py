@@ -38,6 +38,17 @@ async def my_matches(
             except Exception:
                 pass
         matches = await persisted_student_matches(session, principal.id)
+        if (not matches or len(matches) < len(internships)) and internships:
+            for internship in internships:
+                try:
+                    await compute_and_persist_match(session, principal.id, internship.id)
+                except Exception:
+                    pass
+            try:
+                await session.commit()
+            except Exception:
+                await session.rollback()
+            matches = await persisted_student_matches(session, principal.id)
         internship_titles = {internship.id: internship.title for internship in internships}
         items = []
         for match in sorted(matches, key=lambda m: (-float(m.final_score), str(m.internship_id))):

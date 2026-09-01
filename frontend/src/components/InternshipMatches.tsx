@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   Target,
   Search,
@@ -17,7 +18,6 @@ import {
   FileCheck2,
   Briefcase,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
 import { ApiError, api } from "../api";
@@ -562,15 +562,10 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
       )}
 
       {/* EXPLANATION DETAIL MODAL */}
-      <AnimatePresence>
-        {activeExplanationMatch && (
-          <div className="fixed inset-0 z-50 bg-[#0F172A]/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-2xl border border-[#E5E1D8] bg-[#FFFFFF] shadow-[0_20px_50px_rgba(17,24,39,0.15)] p-6 sm:p-8 space-y-6 text-[#111827] rounded-[16px]"
-            >
+      {activeExplanationMatch &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-[#0F172A]/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+            <div className="w-full max-w-2xl border border-[#E5E1D8] bg-[#FFFFFF] shadow-[0_20px_50px_rgba(17,24,39,0.15)] p-6 sm:p-8 space-y-6 text-[#111827] rounded-[16px] my-auto">
               <div className="flex items-start justify-between border-b border-[#E5E1D8] pb-4">
                 <div>
                   <span className="font-mono text-[10px] uppercase tracking-wider text-[#B08D57] font-semibold">
@@ -659,6 +654,12 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
                         </div>
                       </div>
                     ))}
+                  {(!activeExplanationMatch.explanation?.items ||
+                    activeExplanationMatch.explanation.items.filter((i) => i.status !== "missing").length === 0) && (
+                    <p className="text-xs font-mono text-[#64748B] p-3 bg-[#F7F5F0] rounded-[12px] border border-[#E5E1D8]">
+                      No exact matched skills currently registered. Upload project evidence or transcripts to match requirements.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -699,21 +700,16 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
                   Close Explanation
                 </LiquidGlassButton>
               </div>
-            </motion.div>
-          </div>
+            </div>
+          </div>,
+          document.body
         )}
-      </AnimatePresence>
 
       {/* APPLICATION PREPARATION MODAL */}
-      <AnimatePresence>
-        {applicationInReview && (
-          <div className="fixed inset-0 z-50 bg-[#0F172A]/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-2xl border border-[#E5E1D8] bg-[#FFFFFF] shadow-[0_20px_50px_rgba(17,24,39,0.15)] p-6 sm:p-8 space-y-4 rounded-[16px] text-[#111827]"
-            >
+      {applicationInReview &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-[#0F172A]/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+            <div className="w-full max-w-2xl border border-[#E5E1D8] bg-[#FFFFFF] shadow-[0_20px_50px_rgba(17,24,39,0.15)] p-6 sm:p-8 space-y-4 rounded-[16px] text-[#111827] my-auto">
               <div className="flex items-center justify-between border-b border-[#E5E1D8] pb-3">
                 <div className="flex items-center gap-2">
                   <FileCheck2 className="h-5 w-5 text-[#B08D57]" />
@@ -745,10 +741,10 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
                   Done Reviewing
                 </button>
               </div>
-            </motion.div>
-          </div>
+            </div>
+          </div>,
+          document.body
         )}
-      </AnimatePresence>
     </div>
   );
 }

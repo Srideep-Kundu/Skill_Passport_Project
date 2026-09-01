@@ -1719,10 +1719,10 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
 
           {/* New Intervention Plan Modal */}
           {showInterventionModal && (
-            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
               <form
                 onSubmit={handleCreateIntervention}
-                className="bg-[#FFFFFF] rounded-md p-6 md:p-8 max-w-lg w-full border border-[#E5E1D8] shadow-2xl space-y-4 text-[#111827] font-sans"
+                className="bg-[#FFFFFF] rounded-md p-6 md:p-8 max-w-lg w-full border border-[#E5E1D8] shadow-2xl space-y-4 text-[#111827] font-sans my-auto"
               >
                 <div className="flex items-center justify-between pb-3 border-b border-[#E5E1D8]">
                   <h3 className="text-lg font-bold text-[#111827]">Create Skill Gap Intervention Plan</h3>
@@ -1795,10 +1795,10 @@ export function InstitutionDashboard({ token, activeTab: propTab, onTabChange }:
 
           {/* New Action Plan Modal */}
           {showActionModal && (
-            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
               <form
                 onSubmit={handleCreateActionPlan}
-                className="bg-[#FFFFFF] rounded-md p-6 md:p-8 max-w-lg w-full border border-[#E5E1D8] shadow-2xl space-y-4 text-[#111827] font-sans"
+                className="bg-[#FFFFFF] rounded-md p-6 md:p-8 max-w-lg w-full border border-[#E5E1D8] shadow-2xl space-y-4 text-[#111827] font-sans my-auto"
               >
                 <div className="flex items-center justify-between pb-3 border-b border-[#E5E1D8]">
                   <h3 className="text-lg font-bold text-[#111827]">Create Institutional Action Plan</h3>

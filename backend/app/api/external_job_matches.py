@@ -116,8 +116,22 @@ async def recommended_external_job_matches(
         filters: list[ColumnElement[bool]] = [
             ExternalJobMatch.student_id == principal.id,
             ExternalJob.is_active.is_(True),
-            ExternalJobMatch.final_score >= get_settings().external_job_min_match_score,
         ]
+        has_good_matches = bool(
+            (
+                await session.scalar(
+                    select(func.count())
+                    .select_from(ExternalJobMatch)
+                    .where(
+                        ExternalJobMatch.student_id == principal.id,
+                        ExternalJobMatch.final_score >= get_settings().external_job_min_match_score,
+                    )
+                )
+            )
+            or 0
+        )
+        if has_good_matches:
+            filters.append(ExternalJobMatch.final_score >= get_settings().external_job_min_match_score)
         if provider and provider.strip() and provider.strip().casefold() != "all":
             filters.append(ExternalJob.provider == provider.strip().casefold())
         if location and location.strip():

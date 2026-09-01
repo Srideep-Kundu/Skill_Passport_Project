@@ -155,6 +155,11 @@ export function App() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Ensure every tab change automatically scrolls to the top of the viewport
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [studentTab, recruiterTab, academicianTab, institutionTab]);
+
   if (!session) {
     return <LandingPage />;
   }

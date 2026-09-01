@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   RefreshCw,
   ExternalLink,
@@ -14,7 +15,7 @@ import {
   ListFilter,
   FileCheck2,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
 
 import { ApiError, api } from "../api";
@@ -194,17 +195,6 @@ export function ExternalJobs({ token }: { token: string }) {
     try {
       setPreparingJobId(job.id);
       const match = matchesByJobId[job.id];
-      if (!match) {
-        toast.info("Calculating match verification for this role...");
-        await api.recomputeExternalJobMatches(token);
-        const refreshed = await api.externalJobMatches(token, { page: 1, pageSize: 100 });
-        const found = refreshed.items.find((m) => m.external_job_id === job.id);
-        if (found) {
-          const app = await api.createApplication(job.id, found.id, token);
-          setApplicationInReview(app);
-          return;
-        }
-      }
       const matchId = match ? match.id : job.id;
       const app = await api.createApplication(job.id, matchId, token);
       setApplicationInReview(app);
@@ -530,15 +520,10 @@ export function ExternalJobs({ token }: { token: string }) {
       )}
 
       {/* SAVED DISCOVERY RULES MODAL */}
-      <AnimatePresence>
-        {showSavedRules && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto font-sans">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.97 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.97 }}
-              className="w-full max-w-2xl rounded-md border border-[#E5E1D8] bg-[#FFFFFF] shadow-2xl p-6 space-y-5 text-[#111827]"
-            >
+      {showSavedRules &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-[#0F172A]/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto font-sans">
+            <div className="w-full max-w-2xl rounded-md border border-[#E5E1D8] bg-[#FFFFFF] shadow-2xl p-6 space-y-5 text-[#111827] my-auto">
               <div className="flex items-center justify-between border-b border-[#E5E1D8] pb-4">
                 <div className="flex items-center gap-2">
                   <ListFilter className="h-4 w-4 text-[#B08D57]" />
@@ -552,7 +537,7 @@ export function ExternalJobs({ token }: { token: string }) {
                 <button
                   type="button"
                   onClick={() => setShowSavedRules(false)}
-                  className="text-[#64748B] hover:text-[#111827] p-1"
+                  className="text-[#64748B] hover:text-[#111827] p-1 cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -568,21 +553,16 @@ export function ExternalJobs({ token }: { token: string }) {
                   Done
                 </EditorialButton>
               </div>
-            </motion.div>
-          </div>
+            </div>
+          </div>,
+          document.body
         )}
-      </AnimatePresence>
 
       {/* MATCH EXPLANATION MODAL */}
-      <AnimatePresence>
-        {activeExplanationMatch && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto font-sans">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.97 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.97 }}
-              className="w-full max-w-xl rounded-md border border-[#E5E1D8] bg-[#FFFFFF] shadow-2xl p-6 space-y-5 text-[#111827]"
-            >
+      {activeExplanationMatch &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-[#0F172A]/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto font-sans">
+            <div className="w-full max-w-xl rounded-md border border-[#E5E1D8] bg-[#FFFFFF] shadow-2xl p-6 space-y-5 text-[#111827] my-auto">
               <div className="flex items-start justify-between border-b border-[#E5E1D8] pb-4">
                 <div className="space-y-1">
                   <span className="font-mono text-[10px] uppercase tracking-wider text-[#64748B]">
@@ -601,7 +581,7 @@ export function ExternalJobs({ token }: { token: string }) {
                 <button
                   type="button"
                   onClick={() => setActiveExplanationMatch(null)}
-                  className="text-[#64748B] hover:text-[#111827] p-1"
+                  className="text-[#64748B] hover:text-[#111827] p-1 cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -653,6 +633,12 @@ export function ExternalJobs({ token }: { token: string }) {
                     </div>
                   </div>
                 ))}
+                {(!activeExplanationMatch.explanation?.items ||
+                  activeExplanationMatch.explanation.items.length === 0) && (
+                  <p className="text-xs font-mono text-[#64748B] p-3 bg-[#F7F5F0] rounded-[12px] border border-[#E5E1D8]">
+                    No exact matched skills currently registered. Upload project evidence or transcripts to match requirements.
+                  </p>
+                )}
               </div>
 
               <div className="pt-2 flex justify-end">
@@ -663,21 +649,16 @@ export function ExternalJobs({ token }: { token: string }) {
                   Close
                 </EditorialButton>
               </div>
-            </motion.div>
-          </div>
+            </div>
+          </div>,
+          document.body
         )}
-      </AnimatePresence>
 
       {/* APPLICATION PREPARATION MODAL */}
-      <AnimatePresence>
-        {applicationInReview && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto font-sans">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.97 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.97 }}
-              className="w-full max-w-2xl rounded-md border border-[#E5E1D8] bg-[#FFFFFF] shadow-2xl p-6 space-y-4 text-[#111827]"
-            >
+      {applicationInReview &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] bg-[#0F172A]/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto font-sans">
+            <div className="w-full max-w-2xl rounded-md border border-[#E5E1D8] bg-[#FFFFFF] shadow-2xl p-6 space-y-4 text-[#111827] my-auto">
               <div className="flex items-center justify-between border-b border-[#E5E1D8] pb-4">
                 <div className="flex items-center gap-2">
                   <FileCheck2 className="h-4 w-4 text-[#B08D57]" />
@@ -691,7 +672,7 @@ export function ExternalJobs({ token }: { token: string }) {
                 <button
                   type="button"
                   onClick={() => setApplicationInReview(null)}
-                  className="text-[#64748B] hover:text-[#111827] p-1"
+                  className="text-[#64748B] hover:text-[#111827] p-1 cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -711,10 +692,10 @@ export function ExternalJobs({ token }: { token: string }) {
                   Done Reviewing
                 </EditorialButton>
               </div>
-            </motion.div>
-          </div>
+            </div>
+          </div>,
+          document.body
         )}
-      </AnimatePresence>
     </div>
   );
 }

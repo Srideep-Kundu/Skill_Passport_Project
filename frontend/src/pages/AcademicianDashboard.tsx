@@ -1596,8 +1596,8 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
 
       {/* MODAL 2: APPLY / PROPOSAL SUBMISSION MODAL */}
       {showApplyModal && applyingOpportunity && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#FFFFFF] rounded-md p-6 md:p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-[#E5E1D8] shadow-2xl space-y-6 text-[#111827] font-sans">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#FFFFFF] rounded-md p-6 md:p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto border border-[#E5E1D8] shadow-2xl space-y-6 text-[#111827] font-sans my-auto">
             <div className="flex justify-between items-start pb-4 border-b border-[#E5E1D8]">
               <div>
                 <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-xs bg-[rgba(176,141,87,0.08)] text-[#B08D57] border border-[#B08D57]/30">
@@ -1711,8 +1711,8 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
 
       {/* MODAL 3: APPLICATION DETAIL VIEW */}
       {selectedAppDetail && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#FFFFFF] rounded-md p-6 md:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-[#E5E1D8] shadow-2xl space-y-6 text-[#111827] font-sans">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#FFFFFF] rounded-md p-6 md:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-[#E5E1D8] shadow-2xl space-y-6 text-[#111827] font-sans my-auto">
             <div className="flex justify-between items-start pb-4 border-b border-[#E5E1D8]">
               <div>
                 <span className={`px-2.5 py-0.5 rounded-xs text-[10px] font-mono border uppercase ${getStatusBadge(selectedAppDetail.status)}`}>
@@ -1769,8 +1769,8 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
 
       {/* MODAL 4: NOTIFICATIONS MODAL */}
       {showNotificationsModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#FFFFFF] rounded-md p-6 max-w-lg w-full border border-[#E5E1D8] shadow-2xl space-y-4 text-[#111827] font-sans">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#FFFFFF] rounded-md p-6 max-w-lg w-full border border-[#E5E1D8] shadow-2xl space-y-4 text-[#111827] font-sans my-auto">
             <div className="flex justify-between items-center pb-3 border-b border-[#E5E1D8]">
               <h3 className="text-sm font-bold text-[#111827] flex items-center gap-2 font-mono">
                 <Bell className="h-4 w-4 text-[#B08D57]" /> Notifications & Alerts
