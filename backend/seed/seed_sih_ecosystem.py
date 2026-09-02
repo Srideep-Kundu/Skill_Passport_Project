@@ -41,6 +41,13 @@ _NOW = datetime.now(UTC)
 DEMO_PASSWORD_HASH = hash_password("demo123")
 
 
+async def _ensure_account_email(session, email: str, account_id: uuid.UUID, role: Role) -> None:
+    existing = await session.scalar(select(AccountEmail.email).where(AccountEmail.email == email))
+    if not existing:
+        session.add(AccountEmail(email=email, account_id=account_id, role=role))
+        await session.flush()
+
+
 async def seed_sih_ecosystem():
     async with SessionLocal() as session:
         # 1. Seed Assessments
@@ -745,12 +752,13 @@ async def seed_sih_ecosystem():
                 )
                 session.add(st)
                 await session.flush()
-                session.add(AccountEmail(email=st.email, account_id=st.id, role=Role.student))
             else:
+                st.password_hash = DEMO_PASSWORD_HASH
                 st.full_name = cand["full_name"]
                 st.university = cand["university"]
                 st.recruiter_evidence_consent = True
                 await session.flush()
+            await _ensure_account_email(session, st.email, st.id, Role.student)
 
             seeded_students.append(st)
 
@@ -801,7 +809,7 @@ async def seed_sih_ecosystem():
             )
             session.add(st_poly)
             await session.flush()
-            session.add(AccountEmail(email=st_poly.email, account_id=st_poly.id, role=Role.student))
+            await _ensure_account_email(session, st_poly.email, st_poly.id, Role.student)
 
         # 1. RECRUITER DEMO ACCOUNT: Arjun Mehta (recruiter.demo@technova.com / demo123)
         rec_demo = (await session.scalars(select(Recruiter).where(Recruiter.email == "recruiter.demo@technova.com"))).first()
@@ -813,12 +821,14 @@ async def seed_sih_ecosystem():
             )
             session.add(rec_demo)
             await session.flush()
-            session.add(AccountEmail(email=rec_demo.email, account_id=rec_demo.id, role=Role.recruiter))
         else:
+            rec_demo.password_hash = DEMO_PASSWORD_HASH
             rec_demo.company_name = "TechNova AI Solutions"
             await session.flush()
+        await _ensure_account_email(session, rec_demo.email, rec_demo.id, Role.recruiter)
 
-        if not await session.scalar(select(Recruiter.id).where(Recruiter.email == "recruiter@example.demo")):
+        rec_ex = (await session.scalars(select(Recruiter).where(Recruiter.email == "recruiter@example.demo"))).first()
+        if not rec_ex:
             rec_ex = Recruiter(
                 email="recruiter@example.demo",
                 password_hash=DEMO_PASSWORD_HASH,
@@ -826,7 +836,10 @@ async def seed_sih_ecosystem():
             )
             session.add(rec_ex)
             await session.flush()
-            session.add(AccountEmail(email=rec_ex.email, account_id=rec_ex.id, role=Role.recruiter))
+        else:
+            rec_ex.password_hash = DEMO_PASSWORD_HASH
+            await session.flush()
+        await _ensure_account_email(session, rec_ex.email, rec_ex.id, Role.recruiter)
 
         # Seed TechNova Internships
         existing_internships = (await session.scalars(select(Internship).where(Internship.recruiter_id == rec_demo.id))).all()
@@ -938,9 +951,12 @@ async def seed_sih_ecosystem():
             )
             session.add(fac_demo)
             await session.flush()
-            session.add(AccountEmail(email=fac_demo.email, account_id=fac_demo.id, role=Role.academician))
-            session.add(AccountEmail(email="faculty@example.demo", account_id=fac_demo.id, role=Role.academician))
-            session.add(AccountEmail(email="faculty.advisor@university.demo", account_id=fac_demo.id, role=Role.academician))
+        else:
+            fac_demo.password_hash = DEMO_PASSWORD_HASH
+            await session.flush()
+        await _ensure_account_email(session, fac_demo.email, fac_demo.id, Role.academician)
+        await _ensure_account_email(session, "faculty@example.demo", fac_demo.id, Role.academician)
+        await _ensure_account_email(session, "faculty.advisor@university.demo", fac_demo.id, Role.academician)
 
         fac_ex = (await session.scalars(select(Academician).where(Academician.email == "faculty@example.demo"))).first()
         if not fac_ex:
@@ -1236,13 +1252,15 @@ async def seed_sih_ecosystem():
             )
             session.add(inst_demo)
             await session.flush()
-            session.add(AccountEmail(email=inst_demo.email, account_id=inst_demo.id, role=Role.institution))
         else:
+            inst_demo.password_hash = DEMO_PASSWORD_HASH
             inst_demo.institution_name = "National Institute of Technology Demo University"
             inst_demo.departments = ["Computer Science", "Information Technology", "Electronics", "Mechanical"]
             await session.flush()
+        await _ensure_account_email(session, inst_demo.email, inst_demo.id, Role.institution)
 
-        if not await session.scalar(select(Institution.id).where(Institution.email == "dean@example.demo")):
+        inst_dean = (await session.scalars(select(Institution).where(Institution.email == "dean@example.demo"))).first()
+        if not inst_dean:
             inst_dean = Institution(
                 email="dean@example.demo",
                 password_hash=DEMO_PASSWORD_HASH,
@@ -1253,7 +1271,10 @@ async def seed_sih_ecosystem():
             )
             session.add(inst_dean)
             await session.flush()
-            session.add(AccountEmail(email=inst_dean.email, account_id=inst_dean.id, role=Role.institution))
+        else:
+            inst_dean.password_hash = DEMO_PASSWORD_HASH
+            await session.flush()
+        await _ensure_account_email(session, inst_dean.email, inst_dean.id, Role.institution)
 
         await session.commit()
         print("SIH Ecosystem seed completed successfully.")
