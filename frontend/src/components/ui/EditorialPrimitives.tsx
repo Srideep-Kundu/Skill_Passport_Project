@@ -81,8 +81,8 @@ export function EditorialButton({
   ...props
 }: EditorialButtonProps) {
   const sizeClasses = {
-    sm: "px-4 py-1.5 text-xs",
-    md: "px-6 py-2 text-sm",
+    sm: "px-4.5 py-1.5 text-[13.5px]",
+    md: "px-6 py-2 text-[14.5px]",
   }[size];
 
   const variantClasses = {

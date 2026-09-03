@@ -270,34 +270,34 @@ export function SkillAssessments({ token, onAssessmentCompleted }: Props) {
             key={ass.id}
             className="border border-[#E5E1D8] bg-[#FFFFFF] p-6 rounded-md flex flex-col justify-between space-y-4 hover:border-[#E5E1D8] transition-colors"
           >
-            <div className="space-y-2">
-              <div className="flex items-center justify-between font-mono text-[10px] uppercase text-[#64748B]">
-                <span className="border border-[#E5E1D8] px-2 py-0.5 rounded-xs">{ass.category}</span>
-                <span className="flex items-center gap-1 text-[#B08D57]">
-                  <Clock className="h-3 w-3" />
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between font-mono text-xs uppercase text-[#64748B]">
+                <span className="border border-[#E5E1D8] bg-[#F7F5F0] px-2.5 py-0.5 rounded-xs font-semibold text-[#1e293b]">{ass.category}</span>
+                <span className="flex items-center gap-1.5 text-[#B08D57] font-medium">
+                  <Clock className="h-3.5 w-3.5" />
                   <span>{ass.duration_minutes} mins</span>
                 </span>
               </div>
               <h3
-                className="text-xl font-normal text-[#111827]"
+                className="text-2xl font-normal text-[#111827]"
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 {ass.title}
               </h3>
-              <p className="text-xs text-[#475569] leading-relaxed">
+              <p className="text-sm text-[#334155] leading-relaxed">
                 Targeted skill validation for <strong className="text-[#111827] font-mono">{ass.canonical_skill_name}</strong>. Pass threshold: {ass.passing_score}%.
               </p>
             </div>
 
-            <div className="pt-4 border-t border-[#E5E1D8] flex items-center justify-between font-mono text-xs">
-              <span className="text-[#64748B]">
+            <div className="pt-4 border-t border-[#E5E1D8] flex items-center justify-between font-mono text-sm">
+              <span className="text-[#475569] font-medium">
                 {ass.question_count || 5} Questions
               </span>
               <EditorialButton
                 variant="primary"
                 onClick={() => handleStartAssessment(ass.id)}
               >
-                <Play className="h-3 w-3 mr-1" />
+                <Play className="h-3.5 w-3.5 mr-1" />
                 <span>Start Test</span>
               </EditorialButton>
             </div>

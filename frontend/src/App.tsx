@@ -329,7 +329,7 @@ export function App() {
           {/* Navigation Links */}
           <nav className="space-y-1">
             {!isCollapsed && (
-              <div className="text-[11px] font-mono uppercase tracking-widest text-[#0f172a] px-3 py-1.5 mb-1.5 font-bold">
+              <div className="text-xs font-mono uppercase tracking-wider text-[#0f172a] px-3 py-1.5 mb-1.5 font-bold">
                 Workspace
               </div>
             )}
@@ -346,7 +346,7 @@ export function App() {
                       setMobileMenuOpen(false);
                     }}
                     title={isCollapsed ? item.label : undefined}
-                    className={`w-full flex items-center rounded-lg text-xs transition-all duration-200 cursor-pointer ${
+                    className={`w-full flex items-center rounded-lg text-[13.5px] leading-snug transition-all duration-200 cursor-pointer ${
                       isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
                     } ${
                       isActive
@@ -372,7 +372,7 @@ export function App() {
                       setMobileMenuOpen(false);
                     }}
                     title={isCollapsed ? item.label : undefined}
-                    className={`w-full flex items-center rounded-lg text-xs transition-all duration-200 cursor-pointer ${
+                    className={`w-full flex items-center rounded-lg text-[13.5px] leading-snug transition-all duration-200 cursor-pointer ${
                       isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
                     } ${
                       isActive
@@ -398,7 +398,7 @@ export function App() {
                       setMobileMenuOpen(false);
                     }}
                     title={isCollapsed ? item.label : undefined}
-                    className={`w-full flex items-center rounded-lg text-xs transition-all duration-200 cursor-pointer ${
+                    className={`w-full flex items-center rounded-lg text-[13.5px] leading-snug transition-all duration-200 cursor-pointer ${
                       isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
                     } ${
                       isActive
@@ -424,7 +424,7 @@ export function App() {
                       setMobileMenuOpen(false);
                     }}
                     title={isCollapsed ? item.label : undefined}
-                    className={`w-full flex items-center rounded-lg text-xs transition-all duration-200 cursor-pointer ${
+                    className={`w-full flex items-center rounded-lg text-[13.5px] leading-snug transition-all duration-200 cursor-pointer ${
                       isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
                     } ${
                       isActive
