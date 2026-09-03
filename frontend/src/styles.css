@@ -85,7 +85,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 html {
-  font-size: 19px;
+  font-size: 21px;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -96,7 +96,8 @@ body {
   background-color: var(--bg-page);
   color: var(--text-primary);
   font-family: var(--font-body);
-  font-size: 1.075rem;
+  font-size: 1.125rem;
+  font-weight: 500;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -110,23 +111,38 @@ html, body, button, input, select, textarea, optgroup, p, span, a, label, h1, h2
 
 h1, h2, h3, h4, h5, h6, .font-display, .font-serif-display {
   font-family: var(--font-display);
+  font-weight: 600;
+  color: #0f172a;
 }
 
-/* Enhanced font readability floors for micro-labels & badges */
-.text-\[9px\] {
-  font-size: 11px !important;
-}
-
-.text-\[10px\] {
-  font-size: 12px !important;
+/* High-visibility readability floors for labels, navigation, badges, chips */
+.text-\[9px\], .text-\[10px\] {
+  font-size: 13px !important;
+  font-weight: 600 !important;
 }
 
 .text-\[11px\] {
-  font-size: 12.5px !important;
+  font-size: 13.5px !important;
+  font-weight: 600 !important;
 }
 
 .text-xs {
-  font-size: 0.85rem !important;
+  font-size: 0.925rem !important;
+  font-weight: 550 !important;
+}
+
+.text-sm {
+  font-size: 1.05rem !important;
+}
+
+.text-base {
+  font-size: 1.15rem !important;
+}
+
+/* High-visibility contrast improvements for secondary and subtitle text */
+p, .text-\[\#475569\], .text-\[\#64748B\] {
+  color: #1e293b;
+  font-weight: 450;
 }
 
 /* ========================================================================= */
