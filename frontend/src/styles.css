@@ -110,7 +110,8 @@ html, body, button, input, select, textarea, optgroup, p, span, a, label, h1, h2
 
 h1, h2, h3, h4, h5, h6, .font-display, .font-serif-display {
   font-family: var(--font-display);
-  font-weight: 600;
+  font-weight: 400;
+  letter-spacing: -0.015em;
 }
 
 /* ========================================================================= */
