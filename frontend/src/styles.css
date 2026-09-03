@@ -84,6 +84,11 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+html {
+  font-size: 17px;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -91,6 +96,8 @@ body {
   background-color: var(--bg-page);
   color: var(--text-primary);
   font-family: var(--font-body);
+  font-size: 1.025rem;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   selection-background-color: #111827;
