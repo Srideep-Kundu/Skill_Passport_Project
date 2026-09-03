@@ -85,7 +85,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 html {
-  font-size: 17px;
+  font-size: 19px;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -96,8 +96,8 @@ body {
   background-color: var(--bg-page);
   color: var(--text-primary);
   font-family: var(--font-body);
-  font-size: 1.025rem;
-  line-height: 1.55;
+  font-size: 1.075rem;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   selection-background-color: #111827;
@@ -110,6 +110,23 @@ html, body, button, input, select, textarea, optgroup, p, span, a, label, h1, h2
 
 h1, h2, h3, h4, h5, h6, .font-display, .font-serif-display {
   font-family: var(--font-display);
+}
+
+/* Enhanced font readability floors for micro-labels & badges */
+.text-\[9px\] {
+  font-size: 11px !important;
+}
+
+.text-\[10px\] {
+  font-size: 12px !important;
+}
+
+.text-\[11px\] {
+  font-size: 12.5px !important;
+}
+
+.text-xs {
+  font-size: 0.85rem !important;
 }
 
 /* ========================================================================= */
