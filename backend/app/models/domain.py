@@ -1162,5 +1162,60 @@ class FacultyVideo(Timestamped, Base):
     faculty: Mapped[Academician] = relationship()
 
 
+class TrainingProgram(Timestamped, Base):
+    __tablename__ = "training_programs"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    faculty_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("academicians.id", ondelete="CASCADE"), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    objective: Mapped[str] = mapped_column(Text, nullable=False)
+    program_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    target_cohort: Mapped[str] = mapped_column(String(160), nullable=False)
+    target_department: Mapped[str] = mapped_column(String(120), nullable=False)
+    target_year: Mapped[str] = mapped_column(String(64), nullable=False)
+    target_skills: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    expected_participants: Mapped[int] = mapped_column(Integer, nullable=False)
+    prerequisites: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    trainer_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    trainer_name: Mapped[str | None] = mapped_column(String(200))
+    trainer_organization: Mapped[str | None] = mapped_column(String(255))
+    trainer_reference_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    infrastructure_requirements: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    budget_breakdown: Mapped[dict[str, float]] = mapped_column(Json, default=dict, nullable=False)
+    total_estimated_budget: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    confirmed_funding: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    funding_gap: Mapped[float] = mapped_column(Numeric(12, 2), default=0, nullable=False)
+    start_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    end_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    notice_period_days: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    notice_status: Mapped[str] = mapped_column(String(16), default="CRITICAL", nullable=False)
+    preparation_tasks: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    marketing_kit: Mapped[dict[str, str]] = mapped_column(Json, default=dict, nullable=False)
+    campaign_metrics: Mapped[dict[str, int]] = mapped_column(Json, default=dict, nullable=False)
+    execution_metrics: Mapped[dict[str, Any]] = mapped_column(Json, default=dict, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), default="planned", nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    faculty: Mapped[Academician] = relationship()
+    outcomes: Mapped[list["TrainingOutcomeMetric"]] = relationship(
+        back_populates="training", cascade="all, delete-orphan"
+    )
+
+
+class TrainingOutcomeMetric(Timestamped, Base):
+    __tablename__ = "training_outcome_metrics"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    training_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("training_programs.id", ondelete="CASCADE"), nullable=False, index=True)
+    skill_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    cohort_name: Mapped[str | None] = mapped_column(String(200))
+    pre_readiness_score: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
+    post_readiness_score: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
+    improvement_percentage: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
+    attendance_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    feedback_rating: Mapped[float] = mapped_column(Numeric(3, 2), default=0, nullable=False)
+    evidence_records_created: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    training: Mapped[TrainingProgram] = relationship(back_populates="outcomes")
+
+
 
 

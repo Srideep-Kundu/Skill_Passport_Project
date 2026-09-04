@@ -32,6 +32,8 @@ from app.models import (
     Skill,
     Student,
     StudentSkill,
+    TrainingOutcomeMetric,
+    TrainingProgram,
     UserDocument,
     VerificationTier,
 )
@@ -1602,6 +1604,84 @@ async def seed_sih_ecosystem():
                         end_date=_NOW + timedelta(weeks=22),
                     )
                 )
+
+        # Account-scoped Training & Workshop Planner demo records.
+        training_titles = set((await session.scalars(select(TrainingProgram.title).where(TrainingProgram.faculty_id == fac_demo.id))).all())
+        common_marketing = {
+            "poster_content": "Register now through the Lumina Intel faculty training portal.",
+            "email_announcement": "Subject: Faculty training registration is now open.",
+            "whatsapp_announcement": "Training registrations are open. Seats are limited.",
+            "linkedin_caption": "Closing measured skill gaps through faculty-industry training.",
+            "registration_page_copy": "Review prerequisites and reserve your seat.",
+        }
+        if "Applied MLOps & Production Deployment Workshop" not in training_titles:
+            session.add(TrainingProgram(
+                faculty_id=fac_demo.id, title="Applied MLOps & Production Deployment Workshop",
+                objective="Close measured gaps in containerized model serving, CI/CD, monitoring, and production operations.",
+                program_type="Hands-on Workshop", target_cohort="CSE placement-ready cohort",
+                target_department="Computer Science Engineering", target_year="3rd & 4th Year",
+                target_skills=["MLOps", "Docker", "Cloud Deployment"], expected_participants=80,
+                prerequisites=["Python", "Git", "Machine Learning fundamentals"], trainer_type="Industry Professional",
+                trainer_name="Aarav Menon", trainer_organization="TechNova AI Solutions",
+                infrastructure_requirements=[
+                    {"item": "Computer Lab", "required": 80, "available": 60, "gap": 20, "status": "GAP"},
+                    {"item": "GPU Lab", "required": 1, "available": 12, "gap": 0, "status": "AVAILABLE"},
+                    {"item": "High-speed Internet", "required": 1, "available": 1, "gap": 0, "status": "AVAILABLE"},
+                ],
+                budget_breakdown={"trainer_fee": 20000, "venue": 5000, "food": 10000, "certificates": 2000, "marketing": 3000, "equipment": 5000, "software": 5000},
+                total_estimated_budget=50000, confirmed_funding=25000, funding_gap=25000,
+                start_date=_NOW + timedelta(days=35), end_date=_NOW + timedelta(days=37), notice_period_days=35, notice_status="GOOD",
+                preparation_tasks=[
+                    {"id": "approval", "title": "Institution approval", "status": "completed"},
+                    {"id": "trainer", "title": "Trainer confirmation", "status": "completed"},
+                    {"id": "infrastructure", "title": "Provision overflow cloud workstations", "status": "in_progress"},
+                    {"id": "marketing", "title": "Launch publicity", "status": "pending"},
+                    {"id": "registration", "title": "Confirm participant list", "status": "pending"},
+                ],
+                marketing_kit=common_marketing,
+                campaign_metrics={"emails_sent": 240, "whatsapp_recipients": 190, "linkedin_views": 820, "poster_scans": 74, "registrations": 68, "confirmed_participants": 61},
+                execution_metrics={"registered_count": 68, "attended_count": 0, "completed_count": 0, "attendance_rate": 0, "average_feedback_rating": 0, "certificates_issued": 0},
+                status="registration_open",
+            ))
+        if "Explainable AI Faculty Development Program" not in training_titles:
+            fdp_training = TrainingProgram(
+                faculty_id=fac_demo.id, title="Explainable AI Faculty Development Program",
+                objective="Enable faculty to design auditable AI coursework and supervise responsible student projects.",
+                program_type="FDP", target_cohort="Engineering faculty", target_department="All Engineering Departments",
+                target_year="Faculty", target_skills=["Explainable AI", "Responsible AI"], expected_participants=45,
+                prerequisites=["Machine Learning fundamentals"], trainer_type="Professional Society",
+                trainer_name="Dr. Meera Iyer", trainer_organization="IEEE Computer Society",
+                infrastructure_requirements=[{"item": "Auditorium", "required": 1, "available": 1, "gap": 0, "status": "AVAILABLE"}],
+                budget_breakdown={"trainer_fee": 30000, "venue": 5000, "food": 12000, "certificates": 3000, "marketing": 2000, "equipment": 0, "software": 3000},
+                total_estimated_budget=55000, confirmed_funding=55000, funding_gap=0,
+                start_date=_NOW - timedelta(days=45), end_date=_NOW - timedelta(days=43), notice_period_days=0, notice_status="CRITICAL",
+                preparation_tasks=[{"id": "complete", "title": "Program delivered", "status": "completed"}],
+                marketing_kit=common_marketing,
+                campaign_metrics={"emails_sent": 130, "whatsapp_recipients": 85, "linkedin_views": 420, "poster_scans": 31, "registrations": 45, "confirmed_participants": 43},
+                execution_metrics={"registered_count": 45, "attended_count": 43, "completed_count": 41, "attendance_rate": 95.6, "average_feedback_rating": 4.7, "certificates_issued": 41},
+                status="completed",
+            )
+            session.add(fdp_training)
+            await session.flush()
+            session.add(TrainingOutcomeMetric(training_id=fdp_training.id, skill_name="Explainable AI", cohort_name="Engineering faculty", pre_readiness_score=46, post_readiness_score=78, improvement_percentage=32, attendance_count=43, feedback_rating=4.7, evidence_records_created=0))
+
+        # Keep reruns deterministic and clean previously seeded account data.
+        seeded_training_titles = {
+            "Applied MLOps & Production Deployment Workshop",
+            "Explainable AI Faculty Development Program",
+        }
+        seeded_trainings = (
+            await session.scalars(
+                select(TrainingProgram).where(
+                    TrainingProgram.faculty_id == fac_demo.id,
+                    TrainingProgram.title.in_(seeded_training_titles),
+                )
+            )
+        ).all()
+        for seeded_training in seeded_trainings:
+            marketing_kit = dict(seeded_training.marketing_kit or {})
+            marketing_kit["whatsapp_announcement"] = "Training registrations are open. Seats are limited."
+            seeded_training.marketing_kit = marketing_kit
 
         # Seed Faculty Video Masterclasses
         existing_videos = (await session.scalars(select(FacultyVideo))).all()

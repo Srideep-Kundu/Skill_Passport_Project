@@ -106,6 +106,7 @@ export type RecruiterTab =
   | "analytics";
 export type AcademicianTab =
   | "collaboration_funding_hub"
+  | "training_planner"
   | "opportunities"
   | "videos"
   | "applications"
@@ -220,6 +221,7 @@ export function App() {
   // 11 Faculty / Academician Portal navigation tabs
   const academicianNavItems: { id: AcademicianTab; label: string; icon: React.ReactNode }[] = [
     { id: "collaboration_funding_hub", label: "Collaboration & Funding", icon: <Handshake className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "training_planner", label: "Training Planner", icon: <Award className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "opportunities", label: "Opportunities", icon: <Briefcase className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "videos", label: "Video Lectures", icon: <Video className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "applications", label: "My Applications", icon: <FileText className="h-4 w-4 shrink-0" aria-hidden="true" /> },

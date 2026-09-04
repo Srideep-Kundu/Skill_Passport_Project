@@ -82,6 +82,11 @@ import type {
   StudentRegistration,
   TeamSuggestion,
   TeamSuggestionRequest,
+  TrainingProgram,
+  TrainingProgramCreateInput,
+  TrainingProgramUpdateInput,
+  TrainingRecommendation,
+  RecordOutcomesInput,
   VerificationResult,
   VerifyResetTokenRequest,
   VerifyResetTokenResponse,
@@ -426,4 +431,15 @@ export const api = {
     return res.json() as Promise<FacultyVideo>;
   },
   deleteFacultyVideo: (videoId: string, token: string) => request<void>(`/academician/videos/${encodeURIComponent(videoId)}`, { method: "DELETE" }, token),
+
+  // Faculty Training & Workshop Planner
+  getTrainingRecommendations: (token: string) => request<TrainingRecommendation[]>("/academician/training-recommendations", {}, token),
+  getFacultyTrainings: async (token: string, status?: string) => {
+    const result = await request<{ items: TrainingProgram[] }>(`/academician/trainings${status ? `?status=${encodeURIComponent(status)}` : ""}`, {}, token);
+    return result.items;
+  },
+  createTrainingProgram: (input: TrainingProgramCreateInput, token: string) => request<TrainingProgram>("/academician/trainings", { method: "POST", body: JSON.stringify(input) }, token),
+  getTrainingProgramDetail: (id: string, token: string) => request<TrainingProgram>(`/academician/trainings/${encodeURIComponent(id)}`, {}, token),
+  updateTrainingProgram: (id: string, input: TrainingProgramUpdateInput, token: string) => request<TrainingProgram>(`/academician/trainings/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) }, token),
+  recordTrainingOutcomes: (id: string, input: RecordOutcomesInput, token: string) => request<TrainingProgram>(`/academician/trainings/${encodeURIComponent(id)}/record-outcomes`, { method: "POST", body: JSON.stringify(input) }, token),
 };

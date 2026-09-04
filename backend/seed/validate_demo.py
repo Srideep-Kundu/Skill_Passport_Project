@@ -23,6 +23,8 @@ from app.models import (
     SavedFacultyOpportunity,
     Student,
     StudentSkill,
+    TrainingOutcomeMetric,
+    TrainingProgram,
     VerificationCheck,
 )
 from sqlalchemy import func, select
@@ -162,6 +164,31 @@ async def validate_demo() -> None:
                 CollaborationWorkspace.status == "active",
             ),
             "accepted faculty proposal active collaboration",
+        )
+        await _require(
+            session,
+            select(TrainingProgram.id).where(
+                TrainingProgram.faculty_id == faculty_demo.id,
+                TrainingProgram.status == "registration_open",
+                TrainingProgram.funding_gap > 0,
+            ),
+            "faculty training planner active program",
+        )
+        measured_training = await _require(
+            session,
+            select(TrainingProgram.id).where(
+                TrainingProgram.faculty_id == faculty_demo.id,
+                TrainingProgram.status == "completed",
+            ),
+            "faculty training planner completed program",
+        )
+        await _require(
+            session,
+            select(TrainingOutcomeMetric.id).where(
+                TrainingOutcomeMetric.training_id == measured_training,
+                TrainingOutcomeMetric.evidence_records_created == 0,
+            ),
+            "training outcome without automatic passport verification",
         )
         await _require(session, select(AutomationPolicy.id).where(AutomationPolicy.student_id == maya.id, AutomationPolicy.enabled.is_(True)), "automation policy")
         await _require(session, select(Application.id).where(Application.student_id == maya.id, Application.status == ApplicationStatus.approval_pending), "approval-pending review")

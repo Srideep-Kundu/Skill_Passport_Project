@@ -35,6 +35,12 @@ from app.schemas.contracts import (
     FacultyProjectFeedbackRequest,
     FacultyVideoCreate,
     FacultyVideoResponse,
+    TrainingOutcomeCreateRequest,
+    TrainingProgramCreateRequest,
+    TrainingProgramListResponse,
+    TrainingProgramResponse,
+    TrainingProgramUpdateRequest,
+    TrainingRecommendationResponse,
     WorkspaceDeliverableSubmit,
     WorkspaceDiscussionPostCreate,
     WorkspaceFeedbackSubmit,
@@ -42,7 +48,7 @@ from app.schemas.contracts import (
     WorkspaceTaskCreate,
     WorkspaceTaskUpdate,
 )
-from app.services import academician_service
+from app.services import academician_service, training_planner_service
 
 router = APIRouter(prefix="/academician", tags=["academician"])
 
@@ -565,4 +571,73 @@ async def delete_faculty_video(
         raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+# Training & Workshop Planner
+@router.get("/training-recommendations", response_model=list[TrainingRecommendationResponse])
+async def get_training_recommendations(
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[TrainingRecommendationResponse]:
+    return await training_planner_service.recommendations(session, faculty.id)
+
+
+@router.get("/trainings", response_model=TrainingProgramListResponse)
+async def get_training_programs(
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    status_filter: str | None = Query(default=None, alias="status", max_length=32),
+) -> TrainingProgramListResponse:
+    return await training_planner_service.list_all(session, faculty.id, status_filter)
+
+
+@router.post("/trainings", response_model=TrainingProgramResponse, status_code=status.HTTP_201_CREATED)
+async def create_training_program(
+    payload: TrainingProgramCreateRequest,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> TrainingProgramResponse:
+    try:
+        return await training_planner_service.create(session, faculty.id, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+
+
+@router.get("/trainings/{training_id}", response_model=TrainingProgramResponse)
+async def get_training_program(
+    training_id: UUID,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> TrainingProgramResponse:
+    try:
+        return await training_planner_service.get(session, faculty.id, training_id)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.patch("/trainings/{training_id}", response_model=TrainingProgramResponse)
+async def update_training_program(
+    training_id: UUID,
+    payload: TrainingProgramUpdateRequest,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> TrainingProgramResponse:
+    try:
+        return await training_planner_service.update(session, faculty.id, training_id, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.post("/trainings/{training_id}/record-outcomes", response_model=TrainingProgramResponse)
+async def record_training_outcomes(
+    training_id: UUID,
+    payload: TrainingOutcomeCreateRequest,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> TrainingProgramResponse:
+    try:
+        return await training_planner_service.record_outcomes(session, faculty.id, training_id, payload)
+    except ValueError as exc:
+        code = status.HTTP_404_NOT_FOUND if "not found" in str(exc) else status.HTTP_422_UNPROCESSABLE_ENTITY
+        raise HTTPException(code, str(exc)) from exc
 

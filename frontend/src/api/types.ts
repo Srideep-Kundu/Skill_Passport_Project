@@ -1586,5 +1586,114 @@ export interface FacultyVideoListResponse {
   subjects: string[];
 }
 
+export interface TrainingRecommendation {
+  title: string;
+  why_recommended: string;
+  target_students: string;
+  target_skill: string;
+  gap_percentage: number;
+  suggested_duration_days: number;
+  estimated_participants: number;
+  recommended_trainer: string;
+  recommended_trainer_org: string;
+  infrastructure_needed: string[];
+  estimated_cost: number;
+  suggested_collaborators: string[];
+  action_cta: string;
+}
+
+export interface TrainingOutcomeMetric {
+  id: string;
+  training_id: string;
+  skill_name: string;
+  cohort_name?: string | null;
+  pre_readiness_score: number;
+  post_readiness_score: number;
+  improvement_percentage: number;
+  attendance_count: number;
+  feedback_rating: number;
+  evidence_records_created: number;
+  created_at: string;
+}
+
+export interface TrainingProgram {
+  id: string;
+  faculty_id: string;
+  title: string;
+  objective: string;
+  program_type: string;
+  target_cohort: string;
+  target_department: string;
+  target_year: string;
+  target_skill: string;
+  target_skills: string[];
+  expected_participants: number;
+  prerequisites: string[];
+  trainer_type: string;
+  trainer_name?: string | null;
+  trainer_organization?: string | null;
+  expert_id?: string | null;
+  infrastructure_requirements: string[];
+  infrastructure_comparison: Array<{ item: string; required: number; available: number; gap: number; status: string }>;
+  capacity_diagnostic?: { required_systems: number; available_systems: number; capacity_gap: number; recommendation: string } | null;
+  budget_breakdown: Record<string, number>;
+  total_estimated_budget: number;
+  confirmed_funding: number;
+  funding_gap: number;
+  start_date?: string | null;
+  end_date?: string | null;
+  notice_period_days: number;
+  notice_status: "GOOD" | "TIGHT" | "CRITICAL";
+  preparation_tasks: Array<{ id: string; title: string; status: string }>;
+  marketing_kit: Record<string, string>;
+  campaign_metrics: Record<string, number>;
+  execution_metrics: Record<string, number>;
+  status: string;
+  outcomes: TrainingOutcomeMetric[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TrainingProgramCreateInput {
+  title: string;
+  objective: string;
+  program_type?: "Training Program" | "Hands-on Workshop" | "FDP" | "Industry Talk" | "Certification Program" | "Placement Preparation";
+  target_cohort?: string;
+  target_department?: string;
+  target_year?: string;
+  target_skill?: string;
+  expected_participants?: number;
+  prerequisites?: string[];
+  trainer_type?: "Internal Faculty" | "External Expert" | "Industry Professional" | "Professional Society" | "Freelance Trainer";
+  trainer_name?: string;
+  trainer_organization?: string;
+  expert_id?: string | null;
+  infrastructure_requirements?: string[];
+  lab_systems_required?: number;
+  lab_systems_available?: number;
+  budget_breakdown?: Record<string, number>;
+  confirmed_funding?: number;
+  start_date?: string | null;
+  end_date?: string | null;
+}
+
+export interface RecordOutcomesInput {
+  skill_name: string;
+  pre_score: number;
+  post_score: number;
+  cohort_name?: string;
+  registered_count?: number;
+  attendance_count?: number;
+  completion_count?: number;
+  feedback_rating?: number;
+}
+
+export interface TrainingProgramUpdateInput {
+  status?: "draft" | "planned" | "registration_open" | "in_progress" | "completed" | "cancelled";
+  preparation_tasks?: Array<{ id: string; title: string; status: string }>;
+  confirmed_funding?: number;
+  campaign_metrics?: Record<string, number>;
+}
+
 
 

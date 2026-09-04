@@ -1977,5 +1977,127 @@ class FacultyVideoListResponse(APIModel):
     subjects: list[str]
 
 
+# Faculty Training & Workshop Planner
+class TrainingRecommendationResponse(APIModel):
+    title: str
+    why_recommended: str
+    target_students: str
+    target_skill: str
+    gap_percentage: float
+    suggested_duration_days: int
+    estimated_participants: int
+    recommended_trainer: str
+    recommended_trainer_org: str
+    infrastructure_needed: list[str]
+    estimated_cost: float
+    suggested_collaborators: list[str]
+    action_cta: str = "Plan training"
+
+
+class TrainingProgramCreateRequest(APIModel):
+    title: str = Field(min_length=3, max_length=255)
+    objective: str = Field(min_length=10, max_length=5000)
+    program_type: Literal["Training Program", "Hands-on Workshop", "FDP", "Industry Talk", "Certification Program", "Placement Preparation"] = "Hands-on Workshop"
+    target_cohort: str = Field(default="Department cohort", min_length=2, max_length=160)
+    target_department: str = Field(default="Computer Science & Engineering", min_length=2, max_length=120)
+    target_year: str = Field(default="3rd & 4th Year", min_length=2, max_length=64)
+    target_skill: str = Field(default="Industry Readiness", min_length=2, max_length=500)
+    expected_participants: int = Field(default=60, ge=1, le=5000)
+    prerequisites: list[str] = Field(default_factory=list, max_length=30)
+    trainer_type: Literal["Internal Faculty", "External Expert", "Industry Professional", "Professional Society", "Freelance Trainer"] = "External Expert"
+    trainer_name: str | None = Field(default=None, max_length=200)
+    trainer_organization: str | None = Field(default=None, max_length=255)
+    expert_id: UUID | None = None
+    infrastructure_requirements: list[str] = Field(default_factory=list, max_length=30)
+    lab_systems_required: int = Field(default=0, ge=0, le=5000)
+    lab_systems_available: int = Field(default=0, ge=0, le=5000)
+    budget_breakdown: dict[str, float] = Field(default_factory=dict)
+    confirmed_funding: float = Field(default=0, ge=0, le=1_000_000_000)
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+
+    @field_validator("budget_breakdown")
+    @classmethod
+    def validate_budget(cls, value: dict[str, float]) -> dict[str, float]:
+        if len(value) > 30 or any(amount < 0 or amount > 1_000_000_000 for amount in value.values()):
+            raise ValueError("budget items must be non-negative and within supported limits")
+        return value
+
+
+class TrainingOutcomeCreateRequest(APIModel):
+    skill_name: str = Field(min_length=2, max_length=120)
+    pre_score: float = Field(ge=0, le=100)
+    post_score: float = Field(ge=0, le=100)
+    cohort_name: str | None = Field(default=None, max_length=200)
+    registered_count: int | None = Field(default=None, ge=0, le=5000)
+    attendance_count: int = Field(default=0, ge=0, le=5000)
+    completion_count: int | None = Field(default=None, ge=0, le=5000)
+    feedback_rating: float = Field(default=0, ge=0, le=5)
+
+
+class TrainingProgramUpdateRequest(APIModel):
+    status: Literal["draft", "planned", "registration_open", "in_progress", "completed", "cancelled"] | None = None
+    preparation_tasks: list[dict[str, Any]] | None = Field(default=None, max_length=30)
+    confirmed_funding: float | None = Field(default=None, ge=0, le=1_000_000_000)
+    campaign_metrics: dict[str, int] | None = None
+
+
+class TrainingOutcomeResponse(APIModel):
+    id: UUID
+    training_id: UUID
+    skill_name: str
+    cohort_name: str | None = None
+    pre_readiness_score: float
+    post_readiness_score: float
+    improvement_percentage: float
+    attendance_count: int
+    feedback_rating: float
+    evidence_records_created: int
+    created_at: datetime
+
+
+class TrainingProgramResponse(APIModel):
+    id: UUID
+    faculty_id: UUID
+    title: str
+    objective: str
+    program_type: str
+    target_cohort: str
+    target_department: str
+    target_year: str
+    target_skill: str
+    target_skills: list[str]
+    expected_participants: int
+    prerequisites: list[str]
+    trainer_type: str
+    trainer_name: str | None = None
+    trainer_organization: str | None = None
+    expert_id: UUID | None = None
+    infrastructure_requirements: list[str]
+    infrastructure_comparison: list[dict[str, Any]]
+    capacity_diagnostic: dict[str, Any] | None = None
+    budget_breakdown: dict[str, float]
+    total_estimated_budget: float
+    confirmed_funding: float
+    funding_gap: float
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    notice_period_days: int
+    notice_status: Literal["GOOD", "TIGHT", "CRITICAL"]
+    preparation_tasks: list[dict[str, Any]]
+    marketing_kit: dict[str, str]
+    campaign_metrics: dict[str, int]
+    execution_metrics: dict[str, Any]
+    status: str
+    outcomes: list[TrainingOutcomeResponse]
+    created_at: datetime
+    updated_at: datetime
+
+
+class TrainingProgramListResponse(APIModel):
+    total: int
+    items: list[TrainingProgramResponse]
+
+
 
 

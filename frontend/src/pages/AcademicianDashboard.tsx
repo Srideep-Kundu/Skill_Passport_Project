@@ -49,6 +49,7 @@ import type {
 } from "../api/types";
 import { toast } from "sonner";
 import { FacultyCollaborationFundingHub } from "../components/faculty/FacultyCollaborationFundingHub";
+import { TrainingPlannerHub } from "../components/faculty/TrainingPlannerHub";
 
 export interface AcademicianDashboardProps {
   token: string;
@@ -58,6 +59,7 @@ export interface AcademicianDashboardProps {
 
 export type AcademicianTabType =
   | "collaboration_funding_hub"
+  | "training_planner"
   | "opportunities"
   | "videos"
   | "applications"
@@ -614,6 +616,7 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
 
   const navTabs = [
     { id: "collaboration_funding_hub", label: "Collaboration & Funding Hub", icon: Handshake },
+    { id: "training_planner", label: "Training & Workshop Planner", icon: GraduationCap },
     { id: "opportunities", label: "Opportunities", icon: Briefcase, count: opportunities.length },
     { id: "videos", label: "Video Lectures", icon: Video, count: ownVideos.length },
     { id: "applications", label: "My Applications", icon: FileText, count: applications.length },
@@ -738,6 +741,13 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
             setSelectedWorkspace(workspaces.find((workspace) => workspace.id === workspaceId) || null);
             setActiveTab("workspaces");
           }}
+        />
+      )}
+
+      {activeTab === "training_planner" && (
+        <TrainingPlannerHub
+          token={token}
+          onNavigateToFundingHub={() => setActiveTab("collaboration_funding_hub")}
         />
       )}
 
