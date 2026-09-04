@@ -47,8 +47,6 @@ import type {
   FacultyVideo,
 } from "../api/types";
 import { toast } from "sonner";
-import { CollaborationFundingHub } from "../components/faculty/CollaborationFundingHub";
-import { TrainingPlannerHub } from "../components/faculty/TrainingPlannerHub";
 
 export interface AcademicianDashboardProps {
   token: string;
@@ -58,8 +56,6 @@ export interface AcademicianDashboardProps {
 
 export type AcademicianTabType =
   | "opportunities"
-  | "collaboration_funding"
-  | "training_planner"
   | "videos"
   | "applications"
   | "workspaces"
@@ -594,8 +590,6 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
 
   const navTabs = [
     { id: "opportunities", label: "Opportunities", icon: Briefcase, count: opportunities.length },
-    { id: "collaboration_funding", label: "Collaboration & Funding", icon: Sparkles },
-    { id: "training_planner", label: "Training Planner", icon: Award },
     { id: "videos", label: "Video Lectures", icon: Video, count: ownVideos.length },
     { id: "applications", label: "My Applications", icon: FileText, count: applications.length },
     { id: "workspaces", label: "Workspaces", icon: Layers, count: workspaces.length },
@@ -853,26 +847,6 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
               ))}
           </div>
         </div>
-      )}
-
-      {/* TAB: COLLABORATION & FUNDING HUB */}
-      {activeTab === "collaboration_funding" && (
-        <CollaborationFundingHub
-          token={token}
-          onNavigateToTrainingPlanner={(_trainingTitle) => {
-            setActiveTab("training_planner");
-          }}
-        />
-      )}
-
-      {/* TAB: TRAINING & WORKSHOP PLANNER */}
-      {activeTab === "training_planner" && (
-        <TrainingPlannerHub
-          token={token}
-          onNavigateToFundingHub={(_partnerOrFunding) => {
-            setActiveTab("collaboration_funding");
-          }}
-        />
       )}
 
       {/* TAB 1.5: FACULTY VIDEO LECTURES & MASTERCLASSES (MATCHES RESUME INTELLIGENCE) */}
