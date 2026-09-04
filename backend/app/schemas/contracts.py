@@ -100,6 +100,43 @@ class GoogleAuthRequest(APIModel):
     company_name: str | None = Field(default=None, max_length=255)
 
 
+class ForgotPasswordRequest(APIModel):
+    email: str = Field(min_length=3, max_length=320)
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        return _validate_email_field(v)
+
+
+class ForgotPasswordResponse(APIModel):
+    message: str
+    email: str
+    dev_reset_url: str | None = None
+    dev_token: str | None = None
+
+
+class VerifyResetTokenRequest(APIModel):
+    token: str = Field(min_length=1)
+
+
+class VerifyResetTokenResponse(APIModel):
+    valid: bool
+    email: str | None = None
+    role: str | None = None
+    message: str | None = None
+
+
+class ResetPasswordRequest(APIModel):
+    token: str = Field(min_length=1)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class ResetPasswordResponse(APIModel):
+    message: str
+    email: str | None = None
+
+
 class AcademicianRegistration(APIModel):
     email: str = Field(min_length=3, max_length=320)
     password: str = Field(min_length=8, max_length=128)

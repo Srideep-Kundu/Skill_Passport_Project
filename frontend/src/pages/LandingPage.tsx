@@ -12,8 +12,26 @@ export function LandingPage({ defaultAuthOpen = false }: LandingPageProps) {
   const prefersReducedMotion = useReducedMotion();
   const [authModalOpen, setAuthModalOpen] = useState(defaultAuthOpen);
   const [authRole, setAuthRole] = useState<"student" | "recruiter" | "academician" | "institution">("student");
-  const [authMode, setAuthMode] = useState<"login" | "register">("login");
+  const [authMode, setAuthMode] = useState<"login" | "register" | "forgot_password" | "reset_password">("login");
   const [activeSection, setActiveSection] = useState<string>("home");
+
+  // Check URL parameters for direct reset token or reset mode link
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get("token");
+      const modeParam = params.get("mode");
+      if (token || modeParam === "reset_password") {
+        setAuthMode("reset_password");
+        setAuthModalOpen(true);
+      } else if (modeParam === "forgot_password") {
+        setAuthMode("forgot_password");
+        setAuthModalOpen(true);
+      }
+    } catch {
+      // Ignore URL parsing errors
+    }
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -24,7 +42,7 @@ export function LandingPage({ defaultAuthOpen = false }: LandingPageProps) {
   }, [authModalOpen]);
 
   const openAuth = (
-    mode: "login" | "register" = "login",
+    mode: "login" | "register" | "forgot_password" | "reset_password" = "login",
     role: "student" | "recruiter" | "academician" | "institution" = "student"
   ) => {
     setAuthMode(mode);

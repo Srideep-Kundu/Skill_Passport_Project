@@ -8,13 +8,17 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from uuid import UUID
+
 from app.core.config import get_settings
 from app.core.db import get_session
 from app.core.security import (
     create_access_token,
+    create_password_reset_token,
     current_principal,
     hash_password,
     verify_password,
+    verify_password_reset_token,
 )
 from app.models import (
     Academician,
@@ -27,13 +31,20 @@ from app.models import (
 )
 from app.schemas.contracts import (
     AcademicianRegistration,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
     GoogleAuthRequest,
     InstitutionRegistration,
     LoginRequest,
     RecruiterRegistration,
+    ResetPasswordRequest,
+    ResetPasswordResponse,
     StudentRegistration,
     TokenResponse,
+    VerifyResetTokenRequest,
+    VerifyResetTokenResponse,
 )
+from app.services.email_service import send_password_reset_email
 from app.services.rate_limit_service import enforce_rate_limit
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -181,6 +192,134 @@ async def login(payload: LoginRequest, request: Request, session: Annotated[Asyn
             role = cast(Literal["student", "recruiter", "admin", "academician", "institution"], account.role)
             return TokenResponse(access_token=create_access_token(account.id, role), role=role)
     raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid email or password")
+
+
+async def _find_account_by_email(
+    session: AsyncSession, email: str
+) -> tuple[Any, str | None, str | None]:
+    normalized = email.strip().casefold()
+    student = (await session.scalars(select(Student).where(Student.email == normalized))).first()
+    if student is not None:
+        return student, "student", student.full_name
+    recruiter = (await session.scalars(select(Recruiter).where(Recruiter.email == normalized))).first()
+    if recruiter is not None:
+        return recruiter, "recruiter", recruiter.company_name
+    academician = (await session.scalars(select(Academician).where(Academician.email == normalized))).first()
+    if academician is not None:
+        return academician, "academician", academician.full_name
+    institution = (await session.scalars(select(Institution).where(Institution.email == normalized))).first()
+    if institution is not None:
+        return institution, "institution", institution.institution_name
+    admin = (await session.scalars(select(Admin).where(Admin.email == normalized))).first()
+    if admin is not None:
+        return admin, "admin", "Administrator"
+    return None, None, None
+
+
+async def _find_account_by_id_and_role(
+    session: AsyncSession, account_id: UUID, role: str
+) -> Any:
+    if role == "student":
+        return (await session.scalars(select(Student).where(Student.id == account_id))).first()
+    elif role == "recruiter":
+        return (await session.scalars(select(Recruiter).where(Recruiter.id == account_id))).first()
+    elif role == "academician":
+        return (await session.scalars(select(Academician).where(Academician.id == account_id))).first()
+    elif role == "institution":
+        return (await session.scalars(select(Institution).where(Institution.id == account_id))).first()
+    elif role == "admin":
+        return (await session.scalars(select(Admin).where(Admin.id == account_id))).first()
+    return None
+
+
+@router.post("/forgot-password", response_model=ForgotPasswordResponse)
+async def forgot_password(
+    payload: ForgotPasswordRequest,
+    request: Request,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ForgotPasswordResponse:
+    settings = get_settings()
+    await enforce_rate_limit(
+        "forgot_password",
+        _request_subject(request),
+        settings.forgot_password_rate_limit_per_minute,
+    )
+    email = payload.email.strip().casefold()
+    account, role, name = await _find_account_by_email(session, email)
+
+    dev_reset_url = None
+    dev_token = None
+
+    if account is not None and role is not None:
+        token = create_password_reset_token(
+            subject=account.id,
+            role=role,
+            email=email,
+        )
+        email_result = await send_password_reset_email(
+            to_email=email,
+            reset_token=token,
+            recipient_name=name,
+        )
+        if settings.environment != "production":
+            dev_reset_url = email_result.get("reset_url")
+            dev_token = token
+
+    # Always return a consistent user-facing message to prevent email enumeration
+    return ForgotPasswordResponse(
+        message="If an account with this email exists, a password reset link has been sent.",
+        email=email,
+        dev_reset_url=dev_reset_url,
+        dev_token=dev_token,
+    )
+
+
+@router.post("/verify-reset-token", response_model=VerifyResetTokenResponse)
+async def verify_reset_token(
+    payload: VerifyResetTokenRequest,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> VerifyResetTokenResponse:
+    subject_id, role, email = verify_password_reset_token(payload.token)
+    account = await _find_account_by_id_and_role(session, subject_id, role)
+    if account is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Account associated with this password reset link no longer exists.",
+        )
+    return VerifyResetTokenResponse(
+        valid=True,
+        email=email,
+        role=role,
+        message="Password reset token is valid.",
+    )
+
+
+@router.post("/reset-password", response_model=ResetPasswordResponse)
+async def reset_password(
+    payload: ResetPasswordRequest,
+    request: Request,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ResetPasswordResponse:
+    await enforce_rate_limit(
+        "reset_password",
+        _request_subject(request),
+        get_settings().login_rate_limit_per_minute,
+    )
+    subject_id, role, email = verify_password_reset_token(payload.token)
+    account = await _find_account_by_id_and_role(session, subject_id, role)
+    if account is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Account associated with this password reset link no longer exists.",
+        )
+
+    account.password_hash = hash_password(payload.new_password)
+    await session.commit()
+
+    return ResetPasswordResponse(
+        message="Password has been successfully updated. You can now sign in with your new password.",
+        email=email,
+    )
 
 
 @router.post("/google", response_model=TokenResponse)

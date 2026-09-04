@@ -503,6 +503,66 @@ class Settings(BaseSettings):
             "SKILL_PASSPORT_LINKEDIN_MAX_UPLOAD_BYTES", "LINKEDIN_MAX_UPLOAD_BYTES"
         ),
     )
+    frontend_url: str = Field(
+        default="http://localhost:5173",
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_FRONTEND_URL", "FRONTEND_URL"
+        ),
+    )
+    smtp_host: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("SKILL_PASSPORT_SMTP_HOST", "SMTP_HOST"),
+    )
+    smtp_port: int = Field(
+        default=587,
+        validation_alias=AliasChoices("SKILL_PASSPORT_SMTP_PORT", "SMTP_PORT"),
+    )
+    smtp_username: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_SMTP_USERNAME", "SMTP_USER", "SMTP_USERNAME"
+        ),
+    )
+    smtp_password: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_SMTP_PASSWORD", "SMTP_PASS", "SMTP_PASSWORD"
+        ),
+    )
+    smtp_from_email: str = Field(
+        default="noreply@skillpassport.dev",
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_SMTP_FROM_EMAIL", "SMTP_FROM_EMAIL"
+        ),
+    )
+    smtp_from_name: str = Field(
+        default="Lumina Intel Verification",
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_SMTP_FROM_NAME", "SMTP_FROM_NAME"
+        ),
+    )
+    smtp_use_tls: bool = Field(
+        default=True,
+        validation_alias=AliasChoices("SKILL_PASSPORT_SMTP_USE_TLS", "SMTP_USE_TLS"),
+    )
+    smtp_use_ssl: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("SKILL_PASSPORT_SMTP_USE_SSL", "SMTP_USE_SSL"),
+    )
+    password_reset_expire_minutes: int = Field(
+        default=30,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_PASSWORD_RESET_EXPIRE_MINUTES",
+            "PASSWORD_RESET_EXPIRE_MINUTES",
+        ),
+    )
+    forgot_password_rate_limit_per_minute: int = Field(
+        default=5,
+        validation_alias=AliasChoices(
+            "SKILL_PASSPORT_FORGOT_PASSWORD_RATE_LIMIT_PER_MINUTE",
+            "FORGOT_PASSWORD_RATE_LIMIT_PER_MINUTE",
+        ),
+    )
 
     @field_validator("jwt_secret")
     @classmethod

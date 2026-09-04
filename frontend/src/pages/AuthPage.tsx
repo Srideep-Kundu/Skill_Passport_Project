@@ -1,20 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { X } from "lucide-react";
+import {
+  X,
+  KeyRound,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  Sparkles,
+  ArrowLeft,
+  Mail,
+} from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import { ApiError, api } from "../api";
+import type { ForgotPasswordResponse } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 
-type Mode = "login" | "register";
+type Mode = "login" | "register" | "forgot_password" | "reset_password";
 type RegistrationRole = "student" | "recruiter" | "academician" | "institution";
 
 export interface AuthPageProps {
   isModal?: boolean;
   initialMode?: Mode;
   initialRole?: RegistrationRole;
+  initialResetToken?: string;
   onClose?: () => void;
 }
 
@@ -125,26 +136,61 @@ const registerInstitutionSchema = z.object({
   state: z.string().min(2, "State is required"),
 });
 
+const forgotPasswordSchema = z.object({
+  email: emailSchema,
+});
+
+const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1, "Password reset token is required"),
+    newPassword: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string().min(8, "Password must be at least 8 characters"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+
 type LoginFormData = z.infer<typeof loginSchema>;
 type RegisterStudentFormData = z.infer<typeof registerStudentSchema>;
 type RegisterRecruiterFormData = z.infer<typeof registerRecruiterSchema>;
 type RegisterAcademicianFormData = z.infer<typeof registerAcademicianSchema>;
 type RegisterInstitutionFormData = z.infer<typeof registerInstitutionSchema>;
+type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
+type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
 export function AuthPage({
   isModal = false,
   initialMode = "login",
   initialRole = "student",
+  initialResetToken = "",
   onClose,
 }: AuthPageProps) {
   const { setSession } = useAuth();
   const [mode, setMode] = useState<Mode>(initialMode);
   const [role, setRole] = useState<RegistrationRole>(initialRole);
   const [error, setError] = useState<string | null>(null);
+  const [forgotSuccessData, setForgotSuccessData] = useState<ForgotPasswordResponse | null>(null);
+  const [showNewPassword, setShowNewPassword] = useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
 
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
+  });
+
+  const forgotPasswordForm = useForm<ForgotPasswordFormData>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: { email: "" },
+  });
+
+  const resetPasswordForm = useForm<ResetPasswordFormData>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: {
+      token: initialResetToken,
+      newPassword: "",
+      confirmPassword: "",
+    },
   });
 
   const studentForm = useForm<RegisterStudentFormData>({
@@ -180,6 +226,25 @@ export function AuthPage({
     },
   });
 
+  // URL query parameter auto-detection
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlToken = params.get("token") || initialResetToken;
+      const urlMode = params.get("mode");
+      if (urlToken || urlMode === "reset_password") {
+        setMode("reset_password");
+        if (urlToken) {
+          resetPasswordForm.setValue("token", urlToken);
+        }
+      } else if (urlMode === "forgot_password") {
+        setMode("forgot_password");
+      }
+    } catch {
+      // Ignore URL parsing errors
+    }
+  }, [initialResetToken, resetPasswordForm]);
+
   async function handleLoginSubmit(data: LoginFormData) {
     setError(null);
     try {
@@ -192,6 +257,48 @@ export function AuthPage({
       setError(msg);
       toast.error(msg);
     }
+  }
+
+  async function handleForgotPasswordSubmit(data: ForgotPasswordFormData) {
+    setError(null);
+    try {
+      const resp = await api.forgotPassword({ email: data.email });
+      setForgotSuccessData(resp);
+      toast.success("Password reset instructions sent!");
+    } catch (caught) {
+      const msg = caught instanceof ApiError ? caught.detail : "Unable to process password reset request.";
+      setError(msg);
+      toast.error(msg);
+    }
+  }
+
+  async function handleResetPasswordSubmit(data: ResetPasswordFormData) {
+    setError(null);
+    try {
+      const resp = await api.resetPassword({
+        token: data.token,
+        new_password: data.newPassword,
+      });
+      toast.success(resp.message || "Password has been successfully updated!");
+      if (resp.email) {
+        loginForm.setValue("email", resp.email);
+      }
+      loginForm.setValue("password", "");
+      resetPasswordForm.reset();
+      setMode("login");
+      setForgotSuccessData(null);
+    } catch (caught) {
+      const msg = caught instanceof ApiError ? caught.detail : "Failed to reset password. Link may have expired.";
+      setError(msg);
+      toast.error(msg);
+    }
+  }
+
+  function handleDirectLocalReset(token: string) {
+    resetPasswordForm.setValue("token", token);
+    setForgotSuccessData(null);
+    setError(null);
+    setMode("reset_password");
   }
 
   async function handleStudentRegisterSubmit(data: RegisterStudentFormData) {
@@ -342,10 +449,18 @@ export function AuthPage({
             className="text-3xl sm:text-4xl font-normal leading-[1.05] tracking-tight text-[#111827]"
             style={{ fontFamily: "var(--font-display)" }}
           >
-            {mode === "login" ? "Welcome back to your passport." : "Build your evidence-backed identity."}
+            {mode === "login"
+              ? "Welcome back to your passport."
+              : mode === "register"
+              ? "Build your evidence-backed identity."
+              : mode === "forgot_password"
+              ? "Recover your account access."
+              : "Set a new secure password."}
           </h2>
           <p className="text-sm leading-relaxed text-[#475569]">
-            Access auditable skill telemetry, verifiable project credentials, and explainable internship matching.
+            {mode === "forgot_password" || mode === "reset_password"
+              ? "Password resets are verified with single-purpose cryptographic tokens and strict expiration windows."
+              : "Access auditable skill telemetry, verifiable project credentials, and explainable internship matching."}
           </p>
 
           <div className="space-y-4 pt-5 border-t border-[#E5E1D8] text-xs font-mono text-[#475569]">
@@ -370,7 +485,11 @@ export function AuthPage({
           <div className="flex border-b border-[#E5E1D8] mb-6">
             <button
               type="button"
-              onClick={() => { setMode("login"); setError(null); }}
+              onClick={() => {
+                setMode("login");
+                setError(null);
+                setForgotSuccessData(null);
+              }}
               className={`pb-3 px-4 font-mono text-xs uppercase tracking-wider transition-colors cursor-pointer ${
                 mode === "login"
                   ? "text-[#111827] border-b-2 border-[#111827] font-semibold"
@@ -381,7 +500,11 @@ export function AuthPage({
             </button>
             <button
               type="button"
-              onClick={() => { setMode("register"); setError(null); }}
+              onClick={() => {
+                setMode("register");
+                setError(null);
+                setForgotSuccessData(null);
+              }}
               className={`pb-3 px-4 font-mono text-xs uppercase tracking-wider transition-colors cursor-pointer ${
                 mode === "register"
                   ? "text-[#111827] border-b-2 border-[#111827] font-semibold"
@@ -390,6 +513,16 @@ export function AuthPage({
             >
               Create Account
             </button>
+            {mode === "forgot_password" && (
+              <span className="pb-3 px-4 font-mono text-xs uppercase tracking-wider text-[#111827] border-b-2 border-[#111827] font-semibold">
+                Forgot Password
+              </span>
+            )}
+            {mode === "reset_password" && (
+              <span className="pb-3 px-4 font-mono text-xs uppercase tracking-wider text-[#111827] border-b-2 border-[#111827] font-semibold">
+                Reset Password
+              </span>
+            )}
           </div>
 
           {/* LOGIN VIEW */}
@@ -474,9 +607,24 @@ export function AuthPage({
                 </div>
 
                 <div>
-                  <label htmlFor="login-password" className="block text-xs font-mono uppercase tracking-wider text-[#475569] mb-1.5">
-                    Password
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label htmlFor="login-password" className="block text-xs font-mono uppercase tracking-wider text-[#475569]">
+                      Password
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const cur = loginForm.getValues("email");
+                        if (cur) forgotPasswordForm.setValue("email", cur);
+                        setError(null);
+                        setForgotSuccessData(null);
+                        setMode("forgot_password");
+                      }}
+                      className="text-xs font-mono text-[#64748B] hover:text-[#111827] transition-colors cursor-pointer hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
                   <input
                     id="login-password"
                     {...loginForm.register("password")}
@@ -825,32 +973,297 @@ export function AuthPage({
             </div>
           )}
 
-          {/* Social Auth Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#E5E1D8]" />
-            </div>
-            <div className="relative flex justify-center text-[10px] uppercase font-mono tracking-widest text-[#64748B]">
-              <span className="bg-[#FFFFFF] px-3">Or continue with</span>
-            </div>
-          </div>
+          {/* FORGOT PASSWORD VIEW */}
+          {mode === "forgot_password" && (
+            <div className="space-y-5">
+              {forgotSuccessData ? (
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 space-y-2">
+                    <div className="flex items-center gap-2 text-emerald-800 font-semibold text-sm">
+                      <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                      Password Reset Email Dispatched
+                    </div>
+                    <p className="text-xs text-[#475569] leading-relaxed">
+                      We have generated a secure password reset link for{" "}
+                      <strong className="text-[#111827]">{forgotSuccessData.email}</strong>.
+                      Please check your mailbox to complete the reset process.
+                    </p>
+                  </div>
 
-          {/* Google OAuth Button */}
-          <div className="flex flex-col items-center justify-center w-full min-h-[44px]">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => {
-                setError("Google authentication was unsuccessful.");
-                toast.error("Google authentication failed.");
-              }}
-              useOneTap={false}
-              theme="filled_black"
-              shape="rectangular"
-              size="large"
-              width="100%"
-              text={mode === "login" ? "signin_with" : "signup_with"}
-            />
-          </div>
+                  {forgotSuccessData.dev_token && (
+                    <div className="rounded-xl border border-[#B08D57]/40 bg-[#B08D57]/10 p-4 space-y-2.5">
+                      <div className="font-mono text-[11px] uppercase tracking-wider text-[#B08D57] font-bold flex items-center gap-1.5">
+                        <Sparkles className="h-4 w-4" />
+                        Local Development Quick-Access Link
+                      </div>
+                      <p className="text-xs text-[#475569] leading-relaxed">
+                        Running locally without an external SMTP server? Click the button below to directly open the password reset form with your generated token:
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => handleDirectLocalReset(forgotSuccessData.dev_token!)}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg bg-[#111827] text-white text-xs font-medium hover:bg-[#1E293B] transition-colors cursor-pointer shadow-xs"
+                      >
+                        <KeyRound className="h-3.5 w-3.5" />
+                        Proceed to Reset Password Form
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="pt-2 flex items-center justify-between border-t border-[#E5E1D8]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForgotSuccessData(null);
+                        setError(null);
+                      }}
+                      className="text-xs font-mono text-[#64748B] hover:text-[#111827] transition-colors cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Mail className="h-3.5 w-3.5" />
+                      Send to a different email
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode("login");
+                        setError(null);
+                      }}
+                      className="text-xs font-medium text-[#111827] hover:underline transition-all cursor-pointer flex items-center gap-1"
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5" />
+                      Back to Sign In
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <form
+                  onSubmit={forgotPasswordForm.handleSubmit(handleForgotPasswordSubmit)}
+                  className="space-y-4"
+                >
+                  <div>
+                    <label
+                      htmlFor="forgot-email"
+                      className="block text-xs font-mono uppercase tracking-wider text-[#475569] mb-1.5"
+                    >
+                      Registered Email Address
+                    </label>
+                    <input
+                      id="forgot-email"
+                      {...forgotPasswordForm.register("email")}
+                      type="email"
+                      placeholder="user@example.com"
+                      className="w-full rounded-lg border border-[#E5E1D8] bg-[#FFFFFF] px-3.5 py-2.5 text-sm text-[#111827] placeholder:text-[#64748B] transition-colors"
+                    />
+                    {forgotPasswordForm.formState.errors.email && (
+                      <span className="text-xs text-[#B4534B] mt-1 block">
+                        {forgotPasswordForm.formState.errors.email.message}
+                      </span>
+                    )}
+                  </div>
+
+                  {error && (
+                    <div
+                      role="alert"
+                      className="rounded-lg border border-[#B4534B]/30 bg-[rgba(180,83,75,0.10)] p-3 text-xs text-[#B4534B]"
+                    >
+                      {error}
+                    </div>
+                  )}
+
+                  <div className="pt-2 space-y-3">
+                    <button
+                      type="submit"
+                      disabled={forgotPasswordForm.formState.isSubmitting}
+                      className="pill-btn w-full py-3.5 shadow-md hover:shadow-lg transition-all"
+                    >
+                      {forgotPasswordForm.formState.isSubmitting
+                        ? "Sending Reset Link..."
+                        : "Send Password Reset Link"}
+                    </button>
+
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode("login");
+                          setError(null);
+                        }}
+                        className="text-xs font-mono text-[#64748B] hover:text-[#111827] transition-colors cursor-pointer inline-flex items-center gap-1"
+                      >
+                        <ArrowLeft className="h-3.5 w-3.5" />
+                        Back to Sign In
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
+
+          {/* RESET PASSWORD VIEW */}
+          {mode === "reset_password" && (
+            <div className="space-y-5">
+              <form
+                onSubmit={resetPasswordForm.handleSubmit(handleResetPasswordSubmit)}
+                className="space-y-4"
+              >
+                <div>
+                  <label
+                    htmlFor="reset-token"
+                    className="block text-xs font-mono uppercase tracking-wider text-[#475569] mb-1.5"
+                  >
+                    Reset Token / Verification Code
+                  </label>
+                  <input
+                    id="reset-token"
+                    {...resetPasswordForm.register("token")}
+                    type="text"
+                    placeholder="Paste your reset token or use the email link"
+                    className="w-full rounded-lg border border-[#E5E1D8] bg-[#FFFFFF] px-3.5 py-2.5 text-xs font-mono text-[#111827] placeholder:text-[#64748B] transition-colors"
+                  />
+                  {resetPasswordForm.formState.errors.token && (
+                    <span className="text-xs text-[#B4534B] mt-1 block">
+                      {resetPasswordForm.formState.errors.token.message}
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="new-password"
+                    className="block text-xs font-mono uppercase tracking-wider text-[#475569] mb-1.5"
+                  >
+                    New Password (Min. 8 characters)
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="new-password"
+                      {...resetPasswordForm.register("newPassword")}
+                      type={showNewPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      className="w-full rounded-lg border border-[#E5E1D8] bg-[#FFFFFF] px-3.5 py-2.5 pr-10 text-sm text-[#111827] placeholder:text-[#64748B] transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword((prev) => !prev)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] hover:text-[#111827] transition-colors cursor-pointer"
+                    >
+                      {showNewPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  {resetPasswordForm.formState.errors.newPassword && (
+                    <span className="text-xs text-[#B4534B] mt-1 block">
+                      {resetPasswordForm.formState.errors.newPassword.message}
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="confirm-password"
+                    className="block text-xs font-mono uppercase tracking-wider text-[#475569] mb-1.5"
+                  >
+                    Confirm New Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="confirm-password"
+                      {...resetPasswordForm.register("confirmPassword")}
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      className="w-full rounded-lg border border-[#E5E1D8] bg-[#FFFFFF] px-3.5 py-2.5 pr-10 text-sm text-[#111827] placeholder:text-[#64748B] transition-colors"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword((prev) => !prev)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] hover:text-[#111827] transition-colors cursor-pointer"
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  {resetPasswordForm.formState.errors.confirmPassword && (
+                    <span className="text-xs text-[#B4534B] mt-1 block">
+                      {resetPasswordForm.formState.errors.confirmPassword.message}
+                    </span>
+                  )}
+                </div>
+
+                {error && (
+                  <div
+                    role="alert"
+                    className="rounded-lg border border-[#B4534B]/30 bg-[rgba(180,83,75,0.10)] p-3 text-xs text-[#B4534B]"
+                  >
+                    {error}
+                  </div>
+                )}
+
+                <div className="pt-2 space-y-3">
+                  <button
+                    type="submit"
+                    disabled={resetPasswordForm.formState.isSubmitting}
+                    className="pill-btn w-full py-3.5 shadow-md hover:shadow-lg transition-all"
+                  >
+                    {resetPasswordForm.formState.isSubmitting
+                      ? "Updating Password..."
+                      : "Save New Password & Continue"}
+                  </button>
+
+                  <div className="text-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode("login");
+                        setError(null);
+                      }}
+                      className="text-xs font-mono text-[#64748B] hover:text-[#111827] transition-colors cursor-pointer inline-flex items-center gap-1"
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5" />
+                      Back to Sign In
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Social Auth (Login & Register Only) */}
+          {(mode === "login" || mode === "register") && (
+            <>
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[#E5E1D8]" />
+                </div>
+                <div className="relative flex justify-center text-[10px] uppercase font-mono tracking-widest text-[#64748B]">
+                  <span className="bg-[#FFFFFF] px-3">Or continue with</span>
+                </div>
+              </div>
+
+              {/* Google OAuth Button */}
+              <div className="flex flex-col items-center justify-center w-full min-h-[44px]">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={() => {
+                    setError("Google authentication was unsuccessful.");
+                    toast.error("Google authentication failed.");
+                  }}
+                  useOneTap={false}
+                  theme="filled_black"
+                  shape="rectangular"
+                  size="large"
+                  width="100%"
+                  text={mode === "login" ? "signin_with" : "signup_with"}
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
 

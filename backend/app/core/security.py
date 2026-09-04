@@ -41,6 +41,71 @@ def create_access_token(subject: UUID, role: str | Role) -> str:
     )
 
 
+def create_password_reset_token(
+    subject: UUID,
+    role: str | Role,
+    email: str,
+    expires_minutes: int | None = None,
+) -> str:
+    settings = get_settings()
+    expire_delta = (
+        expires_minutes
+        if expires_minutes is not None
+        else settings.password_reset_expire_minutes
+    )
+    role_str = role.value if hasattr(role, "value") else str(role)
+    expires = datetime.now(UTC) + timedelta(minutes=expire_delta)
+    return jwt.encode(
+        {
+            "sub": str(subject),
+            "role": role_str.lower(),
+            "email": email.strip().casefold(),
+            "purpose": "password_reset",
+            "exp": expires,
+        },
+        settings.jwt_secret,
+        settings.jwt_algorithm,
+    )
+
+
+def verify_password_reset_token(token: str) -> tuple[UUID, str, str]:
+    """
+    Verifies the password reset token and returns (subject_id, role, email).
+    Raises HTTPException with appropriate status codes on failure.
+    """
+    settings = get_settings()
+    try:
+        payload = jwt.decode(
+            token,
+            settings.jwt_secret,
+            algorithms=[settings.jwt_algorithm],
+        )
+        if payload.get("purpose") != "password_reset":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid password reset token.",
+            )
+        subject_str = payload.get("sub")
+        role = payload.get("role")
+        email = payload.get("email")
+        if not subject_str or not role or not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Incomplete password reset token data.",
+            )
+        return UUID(subject_str), str(role).lower(), str(email).strip().casefold()
+    except jwt.ExpiredSignatureError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password reset link has expired. Please request a new one.",
+        ) from error
+    except (JWTError, ValueError) as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or malformed password reset link.",
+        ) from error
+
+
 async def current_principal(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
     session: Annotated[AsyncSession, Depends(get_session)],

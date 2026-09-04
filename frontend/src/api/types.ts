@@ -30,6 +30,38 @@ export interface GoogleAuthRequest {
   company_name?: string;
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+  email: string;
+  dev_reset_url?: string;
+  dev_token?: string;
+}
+
+export interface VerifyResetTokenRequest {
+  token: string;
+}
+
+export interface VerifyResetTokenResponse {
+  valid: boolean;
+  email?: string;
+  role?: string;
+  message?: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  new_password: string;
+}
+
+export interface ResetPasswordResponse {
+  message: string;
+  email?: string;
+}
+
 export interface AcademicianRegistration {
   email: string;
   password: string;
