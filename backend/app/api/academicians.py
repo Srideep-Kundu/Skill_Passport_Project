@@ -432,14 +432,14 @@ async def get_own_faculty_videos(
 
 @router.post("/videos/upload", response_model=FacultyVideoResponse, status_code=status.HTTP_201_CREATED)
 async def upload_faculty_video(
-    file: Annotated[UploadFile, File(...)],
-    title: Annotated[str, Form(...)],
-    description: Annotated[str, Form("")] = "",
-    subject: Annotated[str, Form("General")] = "General",
-    department: Annotated[str, Form("")] = "",
-    duration_minutes: Annotated[int, Form(30)] = 30,
-    skills_covered: Annotated[str, Form("")] = "",
-    notes_markdown: Annotated[str | None, Form(None)] = None,
+    file: Annotated[UploadFile, File()],
+    title: Annotated[str, Form()],
+    description: Annotated[str, Form()] = "",
+    subject: Annotated[str, Form()] = "General",
+    department: Annotated[str, Form()] = "",
+    duration_minutes: Annotated[int, Form()] = 30,
+    skills_covered: Annotated[str, Form()] = "",
+    notes_markdown: Annotated[str | None, Form()] = None,
     faculty: Annotated[Academician, Depends(require_role("academician"))] = None,
     session: Annotated[AsyncSession, Depends(get_session)] = None,
 ) -> FacultyVideoResponse:

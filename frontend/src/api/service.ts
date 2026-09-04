@@ -36,6 +36,7 @@ import type {
   FacultyNotification,
   FacultyOpportunity,
   FacultyPassport,
+  FacultyPassportUpdate,
   FacultyVideo,
   FacultyVideoCreateInput,
   FacultyVideoListResponse,
