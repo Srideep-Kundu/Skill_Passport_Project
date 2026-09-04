@@ -3,7 +3,7 @@ import asyncio
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from app.core.db import SessionLocal
 from app.core.security import hash_password
@@ -748,7 +748,13 @@ async def seed_sih_ecosystem():
 
         seeded_students = []
         for cand in candidate_definitions:
-            st = (await session.scalars(select(Student).where(Student.email == cand["email"]))).first()
+            st = (
+                await session.scalars(
+                    select(Student).where(
+                        or_(Student.email == cand["email"], Student.github_username == cand["github"])
+                    )
+                )
+            ).first()
             if not st:
                 st = Student(
                     email=cand["email"],
@@ -1169,7 +1175,13 @@ async def seed_sih_ecosystem():
             challenges = (await session.scalars(select(InnovationChallenge))).all()
             if challenges:
                 c1 = challenges[0]
-                student_maya = (await session.scalars(select(Student).where(Student.email == "maya@example.demo"))).first()
+                student_maya = (
+                    await session.scalars(
+                        select(Student).where(
+                            or_(Student.email == "maya@example.demo", Student.github_username == "demo-maya")
+                        )
+                    )
+                ).first()
                 if student_maya:
                     session.add(
                         ProjectApplication(
@@ -1182,19 +1194,19 @@ async def seed_sih_ecosystem():
                             score_or_grade="A+ (Outstanding)",
                         )
                     )
-                if len(challenges) > 1:
-                    c2 = challenges[1]
-                    session.add(
-                        ProjectApplication(
-                            challenge_id=c2.id,
-                            student_id=student_maya.id,
-                            team_members=["Rahul Sharma", "Priya Sharma", "Elena Rostova", "Vikram Reddy"],
-                            status="completed",
-                            submission_url="https://github.com/demo-rahul/smart-skill-recommender",
-                            feedback="[Academic Advisor Feedback by Dr. Ananya Sharma]: Completed project demonstrating real-time caching and recommendation inference.",
-                            score_or_grade="A (Excellent)",
+                    if len(challenges) > 1:
+                        c2 = challenges[1]
+                        session.add(
+                            ProjectApplication(
+                                challenge_id=c2.id,
+                                student_id=student_maya.id,
+                                team_members=["Rahul Sharma", "Priya Sharma", "Elena Rostova", "Vikram Reddy"],
+                                status="completed",
+                                submission_url="https://github.com/demo-rahul/smart-skill-recommender",
+                                feedback="[Academic Advisor Feedback by Dr. Ananya Sharma]: Completed project demonstrating real-time caching and recommendation inference.",
+                                score_or_grade="A (Excellent)",
+                            )
                         )
-                    )
 
             # Seed Document Vault entries for Dr. Ananya Sharma
             session.add_all([
@@ -1416,17 +1428,17 @@ $$\\text{Final Score} = \\text{clamp}(0.65 \\cdot D + 0.25 \\cdot S + 0.10 \\cdo
             await session.flush()
         await _ensure_account_email(session, inst_demo.email, inst_demo.id, Role.institution)
 
-            # 8. Seed Professional Societies, Experts, Funding, Training Programs & Proposals
+        # 8. Seed Professional Societies, Experts, Funding, Training Programs & Proposals
         existing_soc = (await session.scalars(select(ProfessionalSociety))).first()
         if not existing_soc:
             soc_ieee = ProfessionalSociety(
                 name="IEEE Computer Society",
+                short_name="IEEE_CS",
                 description="The premier global community for computer science and engineering leaders, researchers, and educators, advancing technology for humanity.",
                 website="https://www.computer.org",
                 logo_url="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80",
                 domains=["AI & Machine Learning", "Cloud Computing", "Cybersecurity", "Robotics", "IoT"],
                 membership_fee="₹4,500/year (Faculty) · ₹1,200/year (Student Branch)",
-                membership_requirements="Open to engineering faculty, researchers, and accredited student chapter branches.",
                 benefits=[
                     "Access to IEEE Xplore Digital Library & Transactions",
                     "Distinguished Visitor Speaker Program travel grants",
@@ -1439,26 +1451,26 @@ $$\\text{Final Score} = \\text{clamp}(0.65 \\cdot D + 0.25 \\cdot S + 0.10 \\cdo
                     "Faculty Immersion Research Fellowship",
                     "IEEE Standards in Education Workshop",
                 ],
-                funding_sponsorship_details="Direct grant support up to ₹1,00,000 for approved student hackathons and faculty-led technical workshops with co-branding.",
                 expert_speakers=[
                     {"name": "Dr. Arvind Swaminathan", "topic": "Scalable MLOps & Generative AI", "org": "Google Cloud / IEEE Senior Member"},
                     {"name": "Prof. S. Ranganathan", "topic": "Quantum Computing & Post-Quantum Cryptography", "org": "IIT Madras / IEEE Fellow"},
                 ],
                 previous_collaborations=[
-                    {"year": "2025", "title": "National Conference on Edge AI & IoT", "participants": 240, "outcome": "18 Research papers indexed in IEEE Xplore"},
-                    {"year": "2024", "title": "Hands-on Microservices Architecture FDP", "participants": 85, "outcome": "85 Faculty certifications issued"},
+                    "National Conference on Edge AI & IoT (240 participants, 18 papers indexed)",
+                    "Hands-on Microservices Architecture FDP (85 certifications issued)",
                 ],
-                contact_details={"email": "india-office@computer.org", "phone": "+91-80-4123-5600", "regional_chair": "Dr. P. V. Ramana"},
-                proposal_requirements="Requires structured proposal including workshop objectives, syllabus outline, expected participants (min 40), and institutional infrastructure readiness.",
+                contact_email="india-office@computer.org",
+                proposal_guidelines="Requires structured proposal including workshop objectives, syllabus outline, expected participants (min 40), and institutional infrastructure readiness.",
+                sponsorship_available=True,
             )
             soc_acm = ProfessionalSociety(
                 name="ACM - Association for Computing Machinery",
+                short_name="ACM",
                 description="World's largest educational and scientific computing society, delivering resources that advance computing as a science and a profession.",
                 website="https://www.acm.org",
                 logo_url="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&q=80",
                 domains=["Algorithms", "Data Science", "Computer Vision", "Software Engineering", "AI Ethics"],
                 membership_fee="₹3,800/year (Professional) · ₹950/year (Student)",
-                membership_requirements="Accredited institution faculty and computer science student members.",
                 benefits=[
                     "ACM Digital Library full-text research database",
                     "ACM Distinguished Speakers Program (free speaker honorarium)",
@@ -1470,25 +1482,25 @@ $$\\text{Final Score} = \\text{clamp}(0.65 \\cdot D + 0.25 \\cdot S + 0.10 \\cdo
                     "ACM-W Regional Celebration of Women in Computing",
                     "Summer Research Institute for Undergraduate Scholars",
                 ],
-                funding_sponsorship_details="Sponsorship grants up to ₹80,000 for collegiate coding hackathons and competitive programming bootcamps.",
                 expert_speakers=[
                     {"name": "Dr. Meenakshi Sundaram", "topic": "Algorithmic Fairness & Responsible AI", "org": "ACM India Council"},
                     {"name": "Vikramaditya Roy", "topic": "Zero-Trust Architectures & Secure Software", "org": "Cisco Labs / ACM Member"},
                 ],
                 previous_collaborations=[
-                    {"year": "2025", "title": "Regional ACM Collegiate Programming Boot Camp", "participants": 180, "outcome": "3 Teams qualified for Regional Finals"},
+                    "Regional ACM Collegiate Programming Boot Camp (180 participants)",
                 ],
-                contact_details={"email": "acm-india@acm.org", "phone": "+91-20-6712-4000", "coordinator": "Anuradha T."},
-                proposal_requirements="Submit minimum 3 weeks prior with session timeline, prerequisite skills, and target student cohort.",
+                contact_email="acm-india@acm.org",
+                proposal_guidelines="Submit minimum 3 weeks prior with session timeline, prerequisite skills, and target student cohort.",
+                sponsorship_available=True,
             )
             soc_aws = ProfessionalSociety(
                 name="AWS Academy",
+                short_name="AWS_ACADEMY",
                 description="Equips higher education institutions with free, ready-to-teach cloud computing curriculum that prepares students to pursue industry-recognized AWS Certifications.",
                 website="https://aws.amazon.com/training/awsacademy",
                 logo_url="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80",
                 domains=["Cloud Computing", "DevOps", "Solutions Architecture", "Machine Learning", "Data Engineering"],
                 membership_fee="₹0 (Free Institutional Partnership)",
-                membership_requirements="Accredited college/university status with at least 1 certified faculty educator.",
                 benefits=[
                     "Free AWS Cloud Credits ($10,000 institutional pool for student sandboxes)",
                     "Complete ready-to-teach curricula and hands-on lab environments",
@@ -1501,25 +1513,25 @@ $$\\text{Final Score} = \\text{clamp}(0.65 \\cdot D + 0.25 \\cdot S + 0.10 \\cdo
                     "AWS Academy Machine Learning Foundations (20h)",
                     "AWS Academy Cloud Operations & CI/CD (30h)",
                 ],
-                funding_sponsorship_details="Provides up to $10,000 in cloud credits for university labs + funding for annual student cloud hackathons.",
                 expert_speakers=[
                     {"name": "Pooja Kulkarni", "topic": "Cloud-Native Microservices & Serverless Scaling", "org": "AWS Solutions Architect Lead"},
                     {"name": "Nitin Verma", "topic": "Building Enterprise Data Lakes on AWS", "org": "AWS Senior Specialist"},
                 ],
                 previous_collaborations=[
-                    {"year": "2025", "title": "AWS Cloud Architecting Cohort 2025", "participants": 120, "outcome": "94 Students certified AWS Cloud Practitioner"},
+                    "AWS Cloud Architecting Cohort 2025 (120 participants, 94 certified)",
                 ],
-                contact_details={"email": "aws-academy-india@amazon.com", "phone": "+91-80-6789-0000", "regional_lead": "Kavita Rao"},
-                proposal_requirements="Faculty must complete educator accreditation before onboarding the cohort.",
+                contact_email="aws-academy-india@amazon.com",
+                proposal_guidelines="Faculty must complete educator accreditation before onboarding the cohort.",
+                sponsorship_available=True,
             )
             soc_google = ProfessionalSociety(
                 name="Google Cloud for Education",
+                short_name="GCP_EDU",
                 description="Brings Google Cloud computing tools, certifications, and high-performance computing grants to higher education classrooms and research labs.",
                 website="https://edu.google.com/programs/cloud-learning",
                 logo_url="https://images.unsplash.com/photo-1573164713988-8665fc963095?w=800&q=80",
                 domains=["Cloud Computing", "AI & Machine Learning", "BigQuery", "Kubernetes", "DevOps"],
                 membership_fee="₹0 (Free Academic Tier)",
-                membership_requirements="Higher education faculty in CS/IT/Data Science departments.",
                 benefits=[
                     "$5,000 Google Cloud & Vertex AI credits per semester",
                     "Google Cloud Computing Foundations curriculum access",
@@ -1531,24 +1543,24 @@ $$\\text{Final Score} = \\text{clamp}(0.65 \\cdot D + 0.25 \\cdot S + 0.10 \\cdo
                     "Vertex AI & GenAI Faculty Workshop Series",
                     "Kubernetes Engine Hands-on Boot Camp",
                 ],
-                funding_sponsorship_details="Research compute grants from $5,000 to $25,000 for faculty-supervised student research.",
                 expert_speakers=[
                     {"name": "Dr. Arvind Swaminathan", "topic": "Enterprise Generative AI & LLM Fine-tuning", "org": "Google Cloud Architect"},
                 ],
                 previous_collaborations=[
-                    {"year": "2025", "title": "Vertex AI & MLOps Student Sprint", "participants": 95, "outcome": "65 Model deployment pipelines created"},
+                    "Vertex AI & MLOps Student Sprint (95 participants, 65 pipelines built)",
                 ],
-                contact_details={"email": "cloud-edu-india@google.com", "phone": "+91-124-456-7890", "lead": "Rohan Deshmukh"},
-                proposal_requirements="Submit student lab size, syllabus alignment, and target Google Cloud certification exam goals.",
+                contact_email="cloud-edu-india@google.com",
+                proposal_guidelines="Submit student lab size, syllabus alignment, and target Google Cloud certification exam goals.",
+                sponsorship_available=True,
             )
             soc_csi = ProfessionalSociety(
                 name="CSI - Computer Society of India",
+                short_name="CSI",
                 description="The oldest and largest association of IT and computer professionals in India, fostering software engineering knowledge and student chapter excellence.",
                 website="https://www.csi-india.org",
                 logo_url="https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&q=80",
                 domains=["Software Engineering", "Cybersecurity", "IoT", "Full Stack Development", "IT Governance"],
                 membership_fee="₹2,200/year (Faculty) · ₹750/year (Student Chapter)",
-                membership_requirements="Active faculty or college institutional membership.",
                 benefits=[
                     "CSI Communications Monthly Technical Magazine",
                     "Annual CSI National Student Convention hosting rights",
@@ -1560,15 +1572,15 @@ $$\\text{Final Score} = \\text{clamp}(0.65 \\cdot D + 0.25 \\cdot S + 0.10 \\cdo
                     "State-Level Hackathon & Project Expo",
                     "Cyber Defense & Ethical Hacking Bootcamp",
                 ],
-                funding_sponsorship_details="Sponsorship support up to ₹50,000 for technical paper presentations and coding symposia.",
                 expert_speakers=[
                     {"name": "Dr. Rajesh Khanna", "topic": "Embedded Systems, Edge IoT & Automation", "org": "CSI National Executive"},
                 ],
                 previous_collaborations=[
-                    {"year": "2024", "title": "State Level Web & App Development Sprint", "participants": 150, "outcome": "30 Open Source apps built"},
+                    "State Level Web & App Development Sprint (150 participants)",
                 ],
-                contact_details={"email": "hq@csi-india.org", "phone": "+91-22-2823-0000", "sec": "Prof. S. Joshi"},
-                proposal_requirements="Requires endorsement from Department Head and minimum 50 registered student participants.",
+                contact_email="hq@csi-india.org",
+                proposal_guidelines="Requires endorsement from Department Head and minimum 50 registered student participants.",
+                sponsorship_available=True,
             )
             session.add_all([soc_ieee, soc_acm, soc_aws, soc_google, soc_csi])
             await session.flush()
@@ -1579,102 +1591,72 @@ $$\\text{Final Score} = \\text{clamp}(0.65 \\cdot D + 0.25 \\cdot S + 0.10 \\cdo
             exp1 = IndustryExpert(
                 name="Dr. Arvind Swaminathan",
                 organization="Google Cloud & IEEE Senior Member",
-                designation="Principal AI & MLOps Architect",
-                expertise=["Machine Learning", "MLOps", "Generative AI", "Python", "Cloud Architecture"],
+                title="Principal AI & MLOps Architect",
+                expertise_tags=["Machine Learning", "MLOps", "Generative AI", "Python", "Cloud Architecture"],
                 experience_years=15,
                 bio="15+ years architecting enterprise machine learning pipelines, distributed model training, and LLM serving infrastructures at scale.",
                 avatar_url="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&q=80",
                 email="arvind.swaminathan@gmail.com",
-                linkedin_url="https://linkedin.com/in/arvind-swaminathan-ai",
-                availability="Weekends & Hybrid / Remote Keynotes",
+                availability="available",
                 speaking_fee="Free for Academic FDPs / ₹15,000 for Corporate Sessions",
-                topics_offered=[
-                    "Production MLOps: CI/CD for Machine Learning",
-                    "Retrieval-Augmented Generation (RAG) Architecture Patterns",
-                    "Deploying LLMs with Low Latency & High Throughput",
-                ],
                 rating=4.9,
-                sessions_delivered=32,
+                past_sessions_count=32,
             )
             exp2 = IndustryExpert(
                 name="Pooja Kulkarni",
                 organization="AWS Solutions Architecture India",
-                designation="VP of Cloud Infrastructure & DevOps",
-                expertise=["Cloud Architecture", "AWS", "Docker", "Kubernetes", "DevOps", "Microservices"],
+                title="VP of Cloud Infrastructure & DevOps",
+                expertise_tags=["Cloud Architecture", "AWS", "Docker", "Kubernetes", "DevOps", "Microservices"],
                 experience_years=12,
                 bio="Veteran cloud architect specializing in resilient Kubernetes clusters, serverless migration, and cost optimization for high-scale applications.",
                 avatar_url="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&q=80",
                 email="pooja.kulkarni@amazon.com",
-                linkedin_url="https://linkedin.com/in/pooja-kulkarni-cloud",
-                availability="Flexible on Fridays & Saturdays",
+                availability="available",
                 speaking_fee="₹12,000 / Academic Honorarium",
-                topics_offered=[
-                    "Designing Fault-Tolerant Distributed Microservices",
-                    "Kubernetes in Production: Helm, Ingress, and Canary Deployments",
-                    "Infrastructure as Code with Terraform & AWS CDK",
-                ],
                 rating=4.85,
-                sessions_delivered=28,
+                past_sessions_count=28,
             )
             exp3 = IndustryExpert(
                 name="Vikramaditya Roy",
                 organization="Cisco CyberDefense Research Labs",
-                designation="Director of Security Engineering",
-                expertise=["Cybersecurity", "OAuth", "Zero-Trust", "Application Security", "Penetration Testing"],
+                title="Director of Security Engineering",
+                expertise_tags=["Cybersecurity", "OAuth", "Zero-Trust", "Application Security", "Penetration Testing"],
                 experience_years=18,
                 bio="Leading authority in Zero-Trust network architectures, cryptographic protocols, and offensive/defensive security engineering.",
                 avatar_url="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&q=80",
                 email="v.roy@cisco.com",
-                linkedin_url="https://linkedin.com/in/vikramaditya-roy-sec",
-                availability="Remote Sessions & Guest Webinars",
+                availability="available",
                 speaking_fee="Free for Student Chapter Symposia",
-                topics_offered=[
-                    "Zero-Trust Architecture & Identity Federation",
-                    "OWASP Top 10 API Security Vulnerabilities & Remediation",
-                    "Threat Modeling for Modern Cloud Applications",
-                ],
                 rating=4.92,
-                sessions_delivered=45,
+                past_sessions_count=45,
             )
             exp4 = IndustryExpert(
                 name="Priya Sharma",
                 organization="Atlassian Design Systems",
-                designation="Staff Frontend Engineer & UI Architect",
-                expertise=["React", "TypeScript", "Frontend Architecture", "Web Accessibility", "Tailwind CSS"],
+                title="Staff Frontend Engineer & UI Architect",
+                expertise_tags=["React", "TypeScript", "Frontend Architecture", "Web Accessibility", "Tailwind CSS"],
                 experience_years=9,
                 bio="Frontend architect building enterprise UI libraries, micro-frontend compositions, and accessible user interfaces used by millions.",
                 avatar_url="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&q=80",
                 email="priya.sharma@atlassian.com",
-                linkedin_url="https://linkedin.com/in/priya-sharma-frontend",
-                availability="Saturday Mornings & Online Workshops",
+                availability="available",
                 speaking_fee="₹10,000 Honorarium / Waived for Non-profit Bootcamps",
-                topics_offered=[
-                    "React 18 Concurrent Features & High-Performance Rendering",
-                    "Building Enterprise Design Systems with Strict TypeScript",
-                    "State Management: Zustand, TanStack Query, and Redux Toolkit",
-                ],
                 rating=4.88,
-                sessions_delivered=22,
+                past_sessions_count=22,
             )
             exp5 = IndustryExpert(
                 name="Dr. Rajesh Khanna",
                 organization="National Robotics & Sensor Research Center",
-                designation="Chief Research Scientist",
-                expertise=["IoT", "Embedded Systems", "Robotics", "Python", "Data Processing"],
+                title="Chief Research Scientist",
+                expertise_tags=["IoT", "Embedded Systems", "Robotics", "Python", "Data Processing"],
                 experience_years=22,
                 bio="Pioneer in embedded sensor telemetry, real-time operating systems, and autonomous robotics with over 40 patents.",
                 avatar_url="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&q=80",
                 email="rajesh.khanna@drdo.res.in",
-                linkedin_url="https://linkedin.com/in/dr-rajesh-khanna",
-                availability="On-Campus Keynotes & Lab Demonstrations",
+                availability="available",
                 speaking_fee="Academic Travel Grant / Standard Institutional Per Diem",
-                topics_offered=[
-                    "Next-Gen IoT Architectures & Edge Intelligence",
-                    "ROS2 Fundamentals for Autonomous Robotics",
-                    "Real-Time Embedded Systems Design with FreeRTOS",
-                ],
                 rating=4.95,
-                sessions_delivered=56,
+                past_sessions_count=56,
             )
             session.add_all([exp1, exp2, exp3, exp4, exp5])
             await session.flush()
@@ -1684,105 +1666,95 @@ $$\\text{Final Score} = \\text{clamp}(0.65 \\cdot D + 0.25 \\cdot S + 0.10 \\cdo
         if not existing_funding:
             fund1 = FundingOpportunity(
                 title="AICTE Modernization and Removal of Obsolescence (MODROBS)",
-                organization="All India Council for Technical Education (AICTE)",
-                funding_type="Lab Modernization & Infrastructure",
+                funding_organization="All India Council for Technical Education (AICTE)",
+                grant_type="infrastructure_grant",
                 amount="₹20,00,000",
                 amount_numeric=2000000.0,
                 deadline=_NOW + timedelta(days=45),
                 eligibility="AICTE approved engineering colleges with accredited UG programs and minimum 3 years standing.",
-                domains=["AI & Machine Learning", "Cloud Computing", "Robotics", "IoT", "Cybersecurity"],
-                supported_event_types=["Infrastructure Upgrade", "Specialized GPU Lab", "High-Performance Computing Sandbox"],
+                supported_domains=["AI & Machine Learning", "Cloud Computing", "Robotics", "IoT", "Cybersecurity"],
                 required_documents=[
                     "Detailed Project Report (DPR) with equipment cost estimates",
                     "Institutional Accreditation Certificate (NAAC/NBA)",
                     "Faculty Coordinator Endorsement Letter",
                     "Curriculum modernization mapping table",
                 ],
-                why_recommended="Addresses acute institutional GPU & Lab capacity gaps; enables student cohorts to execute intensive AI/ML model deployment exercises.",
+                match_reason_template="Addresses acute institutional GPU & Lab capacity gaps; enables student cohorts to execute intensive AI/ML model deployment exercises.",
                 source_url="https://www.aicte-india.org/schemes/institutional-development-schemes/modrobs",
-                contact_email="modrobs@aicte-india.org",
                 is_active=True,
             )
             fund2 = FundingOpportunity(
                 title="DST SERB Core Research Grant (CRG) - Applied Engineering",
-                organization="Science and Engineering Research Board (SERB), Dept of Science & Technology",
-                funding_type="Research & Innovation Grant",
+                funding_organization="Science and Engineering Research Board (SERB), Dept of Science & Technology",
+                grant_type="research_grant",
                 amount="₹45,00,000",
                 amount_numeric=4500000.0,
                 deadline=_NOW + timedelta(days=60),
                 eligibility="Regular faculty members with Ph.D. in engineering, computer science, or interdisciplinary sciences.",
-                domains=["Machine Learning", "Distributed Systems", "Quantum Computing", "Data Science"],
-                supported_event_types=["Research Grant", "Faculty-Student Research Fellowship", "Patent Filing"],
+                supported_domains=["Machine Learning", "Distributed Systems", "Quantum Computing", "Data Science"],
                 required_documents=[
                     "Complete Research Proposal with Methodology & Milestones",
                     "Principal Investigator Bio-sketch & Publication Record",
                     "Host Institute Endorsement Certificate",
                     "Budget Breakdown & Manpower Justification",
                 ],
-                why_recommended="Matches Dr. Ananya Sharma's research in predictive analytics and high-concurrency microservices, providing 3-year research fellow funding.",
+                match_reason_template="Matches your department's research in predictive analytics and high-concurrency microservices, providing 3-year research fellow funding.",
                 source_url="https://serbonline.in/SERB/crg",
-                contact_email="crg@serb.gov.in",
                 is_active=True,
             )
             fund3 = FundingOpportunity(
                 title="IEEE Student Branch Technical Activity & Workshop Grant",
-                organization="IEEE Computer Society India Council",
-                funding_type="Workshop & Student Event Sponsorship",
+                funding_organization="IEEE Computer Society India Council",
+                grant_type="workshop_grant",
                 amount="₹75,000",
                 amount_numeric=75000.0,
                 deadline=_NOW + timedelta(days=25),
                 eligibility="Active IEEE Student Branches with designated faculty counselor.",
-                domains=["Machine Learning", "Cloud Computing", "Cybersecurity", "Python"],
-                supported_event_types=["Technical Workshop", "Hackathon", "Hands-on Bootcamp", "Distinguished Lecture"],
+                supported_domains=["Machine Learning", "Cloud Computing", "Cybersecurity", "Python"],
                 required_documents=[
                     "Workshop Schedule & Syllabus Outline",
                     "Faculty Counselor Recommendation",
                     "Itemized Budget Sheet (Trainer honorarium, catering, kits)",
                     "Target Student Registration List (min 50 students)",
                 ],
-                why_recommended="Perfect match to fund the upcoming 2-Day Applied Machine Learning & MLOps Workshop, covering trainer honorarium and student certificates.",
+                match_reason_template="Matches your planned 2-Day Applied Machine Learning & MLOps Workshop, covering trainer honorarium and student certificates.",
                 source_url="https://ieeeindiacouncil.org/grants",
-                contact_email="grants@ieeeindiacouncil.org",
                 is_active=True,
             )
             fund4 = FundingOpportunity(
                 title="AWS Cloud Credit Grant for Academic Instruction & Research",
-                organization="Amazon Web Services (AWS)",
-                funding_type="Cloud Compute Credits",
+                funding_organization="Amazon Web Services (AWS)",
+                grant_type="cloud_credits",
                 amount="₹8,25,000 ($10,000 USD Credits)",
                 amount_numeric=825000.0,
                 deadline=_NOW + timedelta(days=35),
                 eligibility="Accredited higher education educators delivering cloud, data science, or software engineering courses.",
-                domains=["Cloud Computing", "Docker", "DevOps", "AI & Machine Learning", "Data Processing"],
-                supported_event_types=["Cloud Lab Sandboxes", "Student Hackathons", "Capstone Projects"],
+                supported_domains=["Cloud Computing", "Docker", "DevOps", "AI & Machine Learning", "Data Processing"],
                 required_documents=[
                     "Course Syllabus & Lab Requirement Specification",
                     "Number of enrolled students (min 60 students)",
                     "Educator AWS Account ID",
                 ],
-                why_recommended="Resolves the institutional capacity bottleneck for systems lacking local GPU/Docker hardware by provisioning on-demand cloud workspaces.",
+                match_reason_template="Resolves the institutional capacity bottleneck for systems lacking local GPU/Docker hardware by provisioning on-demand cloud workspaces.",
                 source_url="https://aws.amazon.com/grants/educate",
-                contact_email="aws-edu-grants@amazon.com",
                 is_active=True,
             )
             fund5 = FundingOpportunity(
                 title="AICTE ATAL Faculty Development Programme (FDP) Grant",
-                organization="AICTE Training and Learning (ATAL) Academy",
-                funding_type="Faculty Development Program",
+                funding_organization="AICTE Training and Learning (ATAL) Academy",
+                grant_type="fdp_grant",
                 amount="₹3,50,000",
                 amount_numeric=350000.0,
                 deadline=_NOW + timedelta(days=20),
                 eligibility="AICTE approved institutions with eligible faculty coordinators.",
-                domains=["Artificial Intelligence", "Cloud Computing", "Cybersecurity", "Internet of Things"],
-                supported_event_types=["5-Day National FDP", "Pedagogy & Curriculum Workshop"],
+                supported_domains=["Artificial Intelligence", "Cloud Computing", "Cybersecurity", "Internet of Things"],
                 required_documents=[
                     "Institutional Proposal signed by Principal/Director",
                     "List of internal & external resource persons",
                     "Proposed 5-Day Session Timeline & Hands-on Lab plan",
                 ],
-                why_recommended="Enables faculty to host a 5-day state-of-the-art Generative AI and Microservices workshop with full AICTE financial sponsorship.",
+                match_reason_template="Enables faculty to host a 5-day state-of-the-art Generative AI and Microservices workshop with full AICTE financial sponsorship.",
                 source_url="https://www.aicte-india.org/atal",
-                contact_email="atal@aicte-india.org",
                 is_active=True,
             )
             session.add_all([fund1, fund2, fund3, fund4, fund5])
@@ -1794,92 +1766,94 @@ $$\\text{Final Score} = \\text{clamp}(0.65 \\cdot D + 0.25 \\cdot S + 0.10 \\cdo
             tp_completed = TrainingProgram(
                 faculty_id=fac_demo.id,
                 title="Applied Machine Learning & MLOps Workshop",
-                objective="Bridge student skill gaps in production model deployment, FastAPI serving, and Docker containerization.",
-                program_type="Hands-on Workshop",
+                description="Bridge student skill gaps in production model deployment, FastAPI serving, and Docker containerization.",
+                program_type="skill_gap_workshop",
                 target_department="Computer Science & Engineering",
                 target_year="3rd & 4th Year",
-                target_skill="Machine Learning",
+                target_skills=["Machine Learning", "MLOps", "Docker", "FastAPI"],
                 expected_participants=80,
-                prerequisites=["Python Core", "Basic Linear Algebra", "Git Fundamentals"],
-                trainer_type="External Expert",
+                trainer_type="external_expert",
                 trainer_name="Dr. Arvind Swaminathan (Google Cloud)",
-                trainer_organization="Google Cloud & IEEE",
-                infrastructure_requirements=["Computer Lab with 80 systems", "Docker Runtime", "High-speed Internet (100 Mbps)", "Projector & Audio"],
-                capacity_diagnostic={"required_systems": 80, "available_systems": 60, "capacity_gap": 20, "recommendation": "Run in two batches or provision AWS Cloud Sandboxes."},
-                budget_breakdown={"trainer_fee": 20000, "venue_costs": 5000, "certificates": 2000, "refreshments": 10000, "marketing_materials": 3000, "equipment_rental": 5000},
-                total_estimated_budget=45000.0,
-                confirmed_funding=25000.0,
+                infrastructure_required=[
+                    {"item": "Computer Workstations", "required": 80, "available": 60, "gap": 20},
+                    {"item": "Docker Runtime & GPUs", "required": 80, "available": 40, "gap": 40},
+                ],
+                infrastructure_resolution="Run in two lab sessions with AWS Cloud Sandboxes.",
+                budget_total=45000.0,
+                budget_breakdown={"trainer_fee": 20000, "venue_costs": 5000, "certificates": 2000, "refreshments": 10000, "marketing": 3000, "infra": 5000},
                 funding_gap=20000.0,
                 start_date=_NOW - timedelta(days=10),
                 end_date=_NOW - timedelta(days=8),
-                notice_period_days=41,
-                notice_status="GOOD",
+                preparation_days=41,
+                notice_period_status="good",
                 marketing_kit={
                     "event_description": "Join us for an intensive 2-day hands-on workshop on Applied Machine Learning & MLOps. Learn to train, containerize with Docker, and deploy neural network APIs with FastAPI.",
                     "poster_content": "🚀 MASTER APPLIED MACHINE LEARNING & MLOPS\n📅 2-Day Intensive Hands-on Workshop\n🎤 Trainer: Dr. Arvind Swaminathan (Google Cloud)\n💡 Build Real-World Model Deployment Pipelines & Earn Verified Skill Badges!",
                     "linkedin_caption": "Excited to announce our upcoming 2-Day Applied ML & MLOps Workshop at NIT Demo University in collaboration with IEEE! Our students will build production FastAPI model serving endpoints and Dockerized pipelines. #MachineLearning #MLOps #FastAPI #Cloud #EngineeringEducation",
                     "email_announcement": "Subject: [Action Required] Register for Applied Machine Learning & MLOps Workshop\n\nDear CSE 3rd & 4th Year Students,\n\nWe are pleased to host an intensive hands-on workshop designed to bridge critical MLOps and cloud deployment skills. Please register before Friday.",
                     "whatsapp_announcement": "📢 *Applied ML & MLOps 2-Day Workshop*\n🗓 Date: Starting Saturday\n🎯 Hands-on: Docker, FastAPI, Model Inference\n🔗 Register at: https://lumina.portal/workshops/mlops-2026",
-                    "registration_page_copy": "Master end-to-end Machine Learning deployment with industry architects from Google Cloud and IEEE.",
+                    "registration_description": "Master end-to-end Machine Learning deployment with industry architects from Google Cloud and IEEE.",
                 },
-                campaign_metrics={"emails_sent": 1200, "page_views": 623, "registrations": 184, "confirmed_participants": 156},
-                execution_metrics={"registered_count": 184, "attended_count": 156, "completed_count": 148, "attendance_rate": 84.7, "average_feedback_rating": 4.6, "certificates_issued": 148},
+                registered_count=184,
+                attended_count=156,
+                completed_count=148,
+                feedback_rating=4.6,
+                pre_workshop_readiness=41.0,
+                post_workshop_readiness=72.0,
                 status="completed",
             )
             session.add(tp_completed)
             await session.flush()
 
-            # Add pre/post outcome metric
-            m_skill = skill_map.get("Machine Learning")
-            if m_skill:
-                session.add(
-                    TrainingOutcomeMetric(
-                        training_id=tp_completed.id,
-                        skill_id=m_skill.id,
-                        skill_name="Machine Learning",
-                        cohort_name="CSE 3rd & 4th Year Cohort (80 students)",
-                        pre_readiness_score=41.0,
-                        post_readiness_score=72.0,
-                        improvement_percentage=31.0,
-                        evidence_records_created=148,
-                    )
+            session.add(
+                TrainingOutcomeMetric(
+                    training_id=tp_completed.id,
+                    skill_name="Machine Learning",
+                    before_readiness=41.0,
+                    after_readiness=72.0,
+                    delta_readiness=31.0,
+                    students_impacted=148,
                 )
+            )
 
             # Active/Upcoming Program
             tp_upcoming = TrainingProgram(
                 faculty_id=fac_demo.id,
                 title="Cloud-Native Microservices & Docker Boot Camp",
-                objective="Develop container orchestration, Redis caching, and automated CI/CD deployment proficiencies.",
-                program_type="Certification Training",
+                description="Develop container orchestration, Redis caching, and automated CI/CD deployment proficiencies.",
+                program_type="certification_bootcamp",
                 target_department="Computer Science & Information Technology",
                 target_year="2nd & 3rd Year",
-                target_skill="Docker",
+                target_skills=["Docker", "Cloud Architecture", "DevOps"],
                 expected_participants=90,
-                prerequisites=["Basic Linux commands", "Python/Node.js"],
-                trainer_type="Industry Professional",
+                trainer_type="industry_expert",
                 trainer_name="Pooja Kulkarni (AWS Solutions Architecture)",
-                trainer_organization="AWS Academy",
-                infrastructure_requirements=["Computer Lab with 90 systems", "AWS Educate Cloud Sandboxes", "Projector"],
-                capacity_diagnostic={"required_systems": 90, "available_systems": 90, "capacity_gap": 0, "recommendation": "Institutional capacity sufficient for single cohort."},
-                budget_breakdown={"trainer_fee": 15000, "venue_costs": 4000, "certificates": 3000, "refreshments": 8000, "marketing_materials": 2000, "equipment_rental": 0},
-                total_estimated_budget=32000.0,
-                confirmed_funding=32000.0,
+                infrastructure_required=[
+                    {"item": "Computer Workstations", "required": 90, "available": 90, "gap": 0},
+                ],
+                infrastructure_resolution="Institutional capacity sufficient for single cohort.",
+                budget_total=32000.0,
+                budget_breakdown={"trainer_fee": 15000, "venue": 4000, "certificates": 3000, "refreshments": 8000, "marketing": 2000},
                 funding_gap=0.0,
                 start_date=_NOW + timedelta(days=18),
                 end_date=_NOW + timedelta(days=20),
-                notice_period_days=18,
-                notice_status="GOOD",
+                preparation_days=18,
+                notice_period_status="good",
                 marketing_kit={
                     "event_description": "Master containerization and microservices with Docker, Kubernetes, and AWS Academy blueprints.",
                     "poster_content": "🐳 CLOUD-NATIVE MICROSERVICES & DOCKER BOOT CAMP\nMaster Containers, AWS Cloud Sandboxes & CI/CD Pipelines!",
                     "linkedin_caption": "Preparing our students for top cloud engineering roles with AWS Academy. Register now! #DevOps #Docker #AWS",
                     "email_announcement": "Subject: Register for Cloud-Native Microservices & Docker Boot Camp",
                     "whatsapp_announcement": "🐳 *Docker & Cloud Microservices Boot Camp*\nRegister now for hands-on container training.",
-                    "registration_page_copy": "Hands-on containerization and cloud orchestration bootcamp.",
+                    "registration_description": "Hands-on containerization and cloud orchestration bootcamp.",
                 },
-                campaign_metrics={"emails_sent": 850, "page_views": 410, "registrations": 112, "confirmed_participants": 90},
-                execution_metrics={"registered_count": 112, "attended_count": 0, "completed_count": 0, "attendance_rate": 0.0, "average_feedback_rating": 0.0, "certificates_issued": 0},
-                status="registration_open",
+                registered_count=112,
+                attended_count=0,
+                completed_count=0,
+                feedback_rating=0.0,
+                pre_workshop_readiness=35.0,
+                post_workshop_readiness=35.0,
+                status="scheduled",
             )
             session.add(tp_upcoming)
             await session.flush()
@@ -1891,19 +1865,18 @@ $$\\text{Final Score} = \\text{clamp}(0.65 \\cdot D + 0.25 \\cdot S + 0.10 \\cdo
             p1 = FacultyProposal(
                 faculty_id=fac_demo.id,
                 society_id=ieee_soc.id if ieee_soc else None,
-                partner_organization="IEEE Computer Society",
-                proposal_type="Workshop Grant",
                 title="Grant Application: Applied Machine Learning & MLOps Hands-on Workshop 2026",
                 objective="Support student workshop on end-to-end model deployment, Docker containerization, and ethical AI auditing.",
-                target_cohort="B.Tech Computer Science & Engineering (3rd Year)",
+                event_type="workshop",
+                target_audience="B.Tech Computer Science & Engineering (3rd Year)",
                 expected_participants=80,
-                proposed_start_date=_NOW + timedelta(days=30),
-                proposed_end_date=_NOW + timedelta(days=32),
+                required_funding="₹45,000",
+                funding_amount_numeric=45000.0,
                 duration_days=2,
-                required_infrastructure="Computer Lab with 60 workstations, 100 Mbps Internet, Projector, and AWS Cloud Lab Credits.",
-                budget_requested=45000.0,
-                budget_breakdown={"trainer_fee": 20000, "venue_costs": 5000, "certificates": 2000, "refreshments": 10000, "marketing": 3000, "lab_setup": 5000},
-                expected_outcomes="80+ Students achieve verified MLOps competencies; 15 prototype models deployed to live endpoints; IEEE student branch co-branded certificates issued.",
+                proposed_dates="15-16 October 2026",
+                infrastructure_needed=["Computer Lab with 60 workstations", "100 Mbps Internet", "AWS Cloud Credits"],
+                expected_outcomes=["80+ Students achieve verified MLOps competencies", "15 prototype models deployed", "IEEE certificates issued"],
+                budget_breakdown={"trainer_fee": 20000, "venue": 5000, "certificates": 2000, "refreshments": 10000, "marketing": 3000, "lab_setup": 5000},
                 status="under_review",
                 submitted_at=_NOW - timedelta(days=5),
             )
@@ -1911,12 +1884,11 @@ $$\\text{Final Score} = \\text{clamp}(0.65 \\cdot D + 0.25 \\cdot S + 0.10 \\cdo
             await session.flush()
 
             session.add_all([
-                ProposalEvent(proposal_id=p1.id, status="draft", notes="Proposal initial draft composed by Dr. Ananya Sharma.", created_at=_NOW - timedelta(days=7)),
-                ProposalEvent(proposal_id=p1.id, status="submitted", notes="Proposal submitted to IEEE Computer Society India Council for review.", created_at=_NOW - timedelta(days=5)),
-                ProposalEvent(proposal_id=p1.id, status="under_review", notes="Proposal under technical evaluation by IEEE Education Grants Committee.", created_at=_NOW - timedelta(days=3)),
+                ProposalEvent(proposal_id=p1.id, status="draft", note="Proposal initial draft composed by Dr. Ananya Sharma.", actor_name="Dr. Ananya Sharma", created_at=_NOW - timedelta(days=7)),
+                ProposalEvent(proposal_id=p1.id, status="submitted", note="Proposal submitted to IEEE Computer Society India Council for review.", actor_name="Dr. Ananya Sharma", created_at=_NOW - timedelta(days=5)),
+                ProposalEvent(proposal_id=p1.id, status="under_review", note="Proposal under technical evaluation by IEEE Education Grants Committee.", actor_name="IEEE Section Reviewer", created_at=_NOW - timedelta(days=3)),
             ])
             await session.flush()
-
         await session.commit()
         print("SIH Ecosystem seed completed successfully.")
 
