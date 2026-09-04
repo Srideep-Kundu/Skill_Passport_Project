@@ -1,14 +1,14 @@
 """Add institution faculty job postings and interview lifecycle applications.
 
-Revision ID: 0024_faculty_recruitment
-Revises: 0023_digilocker_credentials
+Revision ID: 0026_faculty_recruitment
+Revises: 0025_training_planner
 """
 
 import sqlalchemy as sa
 from alembic import op
 
-revision = "0024_faculty_recruitment"
-down_revision = "0023_digilocker_credentials"
+revision = "0026_faculty_recruitment"
+down_revision = "0025_training_planner"
 branch_labels = None
 depends_on = None
 
