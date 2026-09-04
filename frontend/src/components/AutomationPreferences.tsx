@@ -29,7 +29,8 @@ const safeDefaultPolicy = {
 };
 
 function QueueItem({ item }: { item: AutomationQueueItem }) {
-  const missing = item.explanation.items.filter((entry) => entry.status === "missing").map((entry) => entry.skill_name);
+  const explanationItems = Array.isArray(item?.explanation?.items) ? item.explanation.items : [];
+  const missing = explanationItems.filter((entry) => entry?.status === "missing").map((entry) => entry?.skill_name || "");
   return (
     <li className="rounded-sm border border-[#E5E1D8] bg-[#F7F5F0] p-4 space-y-2 text-[#111827] font-sans">
       <div className="flex flex-wrap items-start justify-between gap-2">
@@ -254,8 +255,8 @@ export function AutomationPreferences({ token }: { token: string }) {
         api.automationPolicies(token),
         api.automationReviewQueue(token),
       ]);
-      setPolicies(policyPage.items);
-      setQueue(reviewQueue.items);
+      setPolicies(Array.isArray(policyPage?.items) ? policyPage.items : []);
+      setQueue(Array.isArray(reviewQueue?.items) ? reviewQueue.items : []);
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.detail : "Automation preferences could not be loaded.");
     }

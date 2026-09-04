@@ -31,11 +31,16 @@ import { RecruiterTalentPipeline } from "../components/recruiter/RecruiterTalent
 import { RecruiterTalentDiscovery } from "../components/recruiter/RecruiterTalentDiscovery";
 import { RecruiterApplications } from "../components/recruiter/RecruiterApplications";
 import { RecruiterAnalytics } from "../components/recruiter/RecruiterAnalytics";
+import { RecruiterProjectAssessments } from "../components/recruiter/RecruiterProjectAssessments";
 
 const recruiterHeaderMap: Record<RecruiterTab, { title: string; subtitle: string }> = {
   overview: {
     title: "Evidence-Based Talent Intelligence Platform",
     subtitle: "Real-time candidate discovery, verified skill provenance, and deterministic matching without demographic bias.",
+  },
+  project_assessments: {
+    title: "Automated GitHub Project Assessment & Ranking",
+    subtitle: "Submit candidate GitHub repositories for automated code analysis, multi-dimensional scoring, and candidate shortlisting.",
   },
   evidence_graph: {
     title: "Candidate Evidence Graph & Provenance",
@@ -109,10 +114,11 @@ export function RecruiterDashboard({
     try {
       setError(null);
       const response = await api.internships(token, internshipPage);
-      setInternships(response.items);
-      setInternshipTotal(response.total);
-      if (response.items.length > 0 && !selected) {
-        setSelected(response.items[0]);
+      const items = Array.isArray(response?.items) ? response.items : [];
+      setInternships(items);
+      setInternshipTotal(response?.total || 0);
+      if (items.length > 0 && !selected) {
+        setSelected(items[0]);
       }
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.detail : "Internships could not be loaded.");
@@ -128,7 +134,8 @@ export function RecruiterDashboard({
     setMatches(null);
     setExplanation(null);
     try {
-      setMatches((await api.internshipMatches(internship.id, token)).items);
+      const matchRes = await api.internshipMatches(internship.id, token);
+      setMatches(Array.isArray(matchRes?.items) ? matchRes.items : []);
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.detail : "Candidates could not be loaded.");
     }
@@ -445,6 +452,9 @@ export function RecruiterDashboard({
               </div>
             </div>
           )}
+
+          {/* TAB: PROJECT ASSESSMENTS */}
+          {activeTab === "project_assessments" && <RecruiterProjectAssessments token={token} />}
 
           {/* TAB 2: EVIDENCE GRAPH */}
           {activeTab === "evidence_graph" && <RecruiterEvidenceGraph />}

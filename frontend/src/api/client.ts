@@ -16,7 +16,7 @@ export function errorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000").replace(/\/$/, "");
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
 
 function getErrorDetail(payload: unknown): string {
   if (typeof payload === "object" && payload !== null && "detail" in payload) {

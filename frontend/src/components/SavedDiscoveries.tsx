@@ -13,7 +13,8 @@ export function SavedDiscoveries({ token }: { token: string }) {
   const load = useCallback(async () => {
     try {
       setError(null);
-      setDiscoveries((await api.jobDiscoveries(token)).items);
+      const res = await api.jobDiscoveries(token);
+      setDiscoveries(Array.isArray(res?.items) ? res.items : []);
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.detail : "Saved discoveries could not be loaded.");
     }

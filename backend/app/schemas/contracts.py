@@ -1975,6 +1975,7 @@ class FacultyVideoListResponse(APIModel):
     items: list[FacultyVideoResponse]
     faculty_names: list[str]
     subjects: list[str]
+    institutions: list[str] = Field(default_factory=list)
 
 
 # Faculty Training & Workshop Planner
@@ -2099,5 +2100,274 @@ class TrainingProgramListResponse(APIModel):
     items: list[TrainingProgramResponse]
 
 
+class FacultyMemberContributionSummary(APIModel):
+    faculty_id: UUID | None = None
+    faculty_name: str
+    faculty_institution: str
+    faculty_designation: str
+    department: str
+    total_videos: int
+    total_views: int
+    avg_views_per_video: float
+    skills_taught: list[str] = Field(default_factory=list)
+    value_score: float
+    value_rank: int
+    value_tier: str
+    latest_upload_at: datetime | None = None
+    videos: list[FacultyVideoResponse] = Field(default_factory=list)
 
+
+class InstitutionFacultyVideosResponse(APIModel):
+    institution_name: str
+    total_videos: int
+    total_faculty_contributors: int
+    total_video_views: int
+    avg_views_per_faculty: float
+    top_faculty_contributor: str | None = None
+    faculty_contributions: list[FacultyMemberContributionSummary] = Field(default_factory=list)
+    all_videos: list[FacultyVideoResponse] = Field(default_factory=list)
+
+
+# =============================================================================
+# AUTOMATED GITHUB PROJECT ASSESSMENT CONTRACTS
+# =============================================================================
+
+class ProjectAssessmentCreateRequest(APIModel):
+    student_id: UUID | None = None
+    project_title: str = Field(min_length=2, max_length=255)
+    repository_url: str = Field(min_length=10, max_length=2048)
+
+
+class ProjectAssessmentCategoryResponse(APIModel):
+    id: UUID
+    category_name: str
+    score: int
+    feedback: str
+
+
+class ProjectAssessmentQuestionItem(APIModel):
+    id: str
+    question: str
+    options: list[str]
+    category: str = "Technical Implementation"
+    difficulty: str = "medium"
+    correct_answer: str | None = None
+    explanation: str | None = None
+    student_selected_option: str | None = None
+    is_correct: bool | None = None
+
+
+class ProjectAssessmentAnswerSubmitRequest(APIModel):
+    answers: dict[str, str]
+
+
+class ProjectAssessmentResponse(APIModel):
+    id: UUID
+    student_id: UUID | None = None
+    recruiter_id: UUID
+    candidate_name: str | None = None
+    candidate_email: str | None = None
+    candidate_university: str | None = None
+    candidate_github_username: str | None = None
+    student_name: str | None = None
+    student_email: str | None = None
+    student_university: str | None = None
+    project_title: str
+    repository_url: str
+    repository_provider: str = "github"
+    status: str
+    overall_score: int = 0
+    assessment_summary: str | None = None
+    strengths: list[str] = Field(default_factory=list)
+    improvements: list[str] = Field(default_factory=list)
+    technologies: list[str] = Field(default_factory=list)
+    repository_metadata: dict[str, Any] = Field(default_factory=dict)
+    questions: list[ProjectAssessmentQuestionItem] = Field(default_factory=list)
+    questions_count: int = 0
+    student_answers: dict[str, str] = Field(default_factory=dict)
+    is_shortlisted: bool = False
+    shortlist_notes: str | None = None
+    error_message: str | None = None
+    category_scores: list[ProjectAssessmentCategoryResponse] = Field(default_factory=list)
+    created_at: datetime
+    updated_at: datetime
+    completed_at: datetime | None = None
+
+
+class ProjectAssessmentSummaryResponse(APIModel):
+    id: UUID
+    student_id: UUID | None = None
+    candidate_name: str | None = None
+    candidate_email: str | None = None
+    candidate_university: str | None = None
+    student_name: str | None = None
+    student_email: str | None = None
+    student_university: str | None = None
+    project_title: str
+    repository_url: str
+    repository_provider: str = "github"
+    status: str
+    overall_score: int = 0
+    questions_count: int = 0
+    is_shortlisted: bool = False
+    technologies: list[str] = Field(default_factory=list)
+    created_at: datetime
+    completed_at: datetime | None = None
+
+
+class ProjectAssessmentListResponse(APIModel):
+    total: int
+    items: list[ProjectAssessmentResponse]
+
+
+class ProjectAssessmentShortlistRequest(APIModel):
+    is_shortlisted: bool
+    shortlist_notes: str | None = None
+
+
+class CandidateOptionResponse(APIModel):
+    id: UUID
+    student_id: UUID | None = None
+    full_name: str
+    email: str
+    university: str | None = None
+    github_username: str | None = None
+
+
+# =============================================================================
+# INSTITUTION FACULTY RECRUITMENT & INTERVIEW CONTRACTS
+# =============================================================================
+
+class InstitutionFacultyJobCreate(APIModel):
+    title: str = Field(min_length=3, max_length=255)
+    department: str = Field(min_length=2, max_length=128)
+    designation: str = Field(min_length=2, max_length=128)
+    employment_type: str = Field(default="Full-time", max_length=64)
+    min_experience_years: int = Field(default=3, ge=0, le=50)
+    qualification_required: str = Field(default="Ph.D. or Master's in relevant field", max_length=255)
+    skills_required: list[str] = Field(default_factory=list)
+    research_areas: list[str] = Field(default_factory=list)
+    salary_range_lpa: str = Field(default="Competitive", max_length=128)
+    location: str = Field(default="Campus", max_length=255)
+    openings_count: int = Field(default=1, ge=1, le=100)
+    deadline: datetime | None = None
+    description: str = Field(default="", max_length=10000)
+    responsibilities: list[str] = Field(default_factory=list)
+    benefits: list[str] = Field(default_factory=list)
+    status: str = Field(default="open", max_length=32)
+
+
+class InstitutionFacultyJobUpdate(APIModel):
+    title: str | None = Field(default=None, min_length=3, max_length=255)
+    department: str | None = None
+    designation: str | None = None
+    employment_type: str | None = None
+    min_experience_years: int | None = Field(default=None, ge=0, le=50)
+    qualification_required: str | None = None
+    skills_required: list[str] | None = None
+    research_areas: list[str] | None = None
+    salary_range_lpa: str | None = None
+    location: str | None = None
+    openings_count: int | None = Field(default=None, ge=1, le=100)
+    deadline: datetime | None = None
+    description: str | None = None
+    responsibilities: list[str] | None = None
+    benefits: list[str] | None = None
+    status: str | None = None
+
+
+class InstitutionFacultyJobResponse(APIModel):
+    id: UUID
+    institution_id: UUID
+    institution_name: str
+    title: str
+    department: str
+    designation: str
+    employment_type: str
+    min_experience_years: int
+    qualification_required: str
+    skills_required: list[str]
+    research_areas: list[str]
+    salary_range_lpa: str
+    location: str
+    openings_count: int
+    deadline: datetime | None = None
+    description: str
+    responsibilities: list[str]
+    benefits: list[str]
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    applications_count: int = 0
+    has_applied: bool = False
+    my_application_status: str | None = None
+
+
+class InstitutionFacultyJobListResponse(APIModel):
+    total: int
+    items: list[InstitutionFacultyJobResponse]
+    departments: list[str] = Field(default_factory=list)
+    designations: list[str] = Field(default_factory=list)
+    institutions: list[str] = Field(default_factory=list)
+
+
+class FacultyJobApplicationCreate(APIModel):
+    job_id: UUID
+    statement_of_purpose: str = Field(min_length=10, max_length=10000)
+    research_statement: str | None = Field(default=None, max_length=10000)
+    teaching_philosophy: str | None = Field(default=None, max_length=10000)
+    current_institution: str = Field(default="", max_length=255)
+    current_designation: str = Field(default="", max_length=128)
+    years_of_experience: int = Field(default=0, ge=0, le=60)
+    notice_period_days: int = Field(default=30, ge=0, le=365)
+    cv_url: str | None = Field(default=None, max_length=2048)
+
+
+class FacultyJobApplicationResponse(APIModel):
+    id: UUID
+    job_id: UUID
+    faculty_id: UUID
+    status: str
+    statement_of_purpose: str
+    research_statement: str | None = None
+    teaching_philosophy: str | None = None
+    current_institution: str
+    current_designation: str
+    years_of_experience: int
+    notice_period_days: int
+    cv_url: str | None = None
+    interview_details: dict[str, Any] = Field(default_factory=dict)
+    applied_at: datetime
+    updated_at: datetime
+    faculty_name: str | None = None
+    faculty_email: str | None = None
+    faculty_department: str | None = None
+    faculty_designation: str | None = None
+    faculty_research_areas: list[str] = Field(default_factory=list)
+    job_title: str | None = None
+    institution_name: str | None = None
+    department: str | None = None
+    designation: str | None = None
+
+
+class FacultyJobApplicationListResponse(APIModel):
+    total: int
+    items: list[FacultyJobApplicationResponse]
+
+
+class InterviewScheduleRequest(APIModel):
+    scheduled_at: datetime
+    mode: str = Field(default="online", max_length=32)  # online, offline
+    meeting_link: str | None = Field(default=None, max_length=2048)
+    venue: str | None = Field(default=None, max_length=255)
+    panel_members: list[str] = Field(default_factory=list)
+    instructions: str | None = Field(default=None, max_length=5000)
+
+
+class InterviewDecisionRequest(APIModel):
+    status: str = Field(min_length=2, max_length=40)  # offered, rejected, shortlisted, interview_scheduled
+    rating: float | None = Field(default=None, ge=1.0, le=5.0)
+    feedback: str | None = Field(default=None, max_length=5000)
+    notes: str | None = Field(default=None, max_length=5000)
+    offer_details: dict[str, Any] | None = None
 

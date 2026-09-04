@@ -31,6 +31,10 @@ import {
   ShieldCheck,
   Upload,
   Handshake,
+  Star,
+  MapPin,
+  Send,
+  Check,
 } from "lucide-react";
 import { api } from "../api/service";
 import { errorMessage } from "../api/client";
@@ -46,6 +50,9 @@ import type {
   FacultyAdvisedProject,
   UserDocument,
   FacultyVideo,
+  InstitutionFacultyJob,
+  FacultyJobApplication,
+  FacultyJobApplicationCreatePayload,
 } from "../api/types";
 import { toast } from "sonner";
 import { FacultyCollaborationFundingHub } from "../components/faculty/FacultyCollaborationFundingHub";
@@ -62,6 +69,7 @@ export type AcademicianTabType =
   | "training_planner"
   | "opportunities"
   | "videos"
+  | "faculty_jobs"
   | "applications"
   | "workspaces"
   | "passport"
@@ -73,6 +81,163 @@ export type AcademicianTabType =
   | "history";
 
 type TabType = AcademicianTabType;
+
+const DUMMY_FACULTY_JOBS: InstitutionFacultyJob[] = [
+  {
+    id: "fjob-001",
+    institution_id: "inst-001",
+    institution_name: "Indian Institute of Science & Technology",
+    title: "Professor & Chair of Artificial Intelligence",
+    department: "Computer Science & Engineering",
+    designation: "Full Professor",
+    employment_type: "Full-time Tenure Track",
+    min_experience_years: 8,
+    qualification_required: "Ph.D. in Computer Science, AI or Machine Learning",
+    skills_required: ["Foundation Models", "PyTorch", "High Performance Computing", "Grant Writing"],
+    research_areas: ["Deep Learning", "Natural Language Processing", "Neuro-symbolic AI"],
+    salary_range_lpa: "26 - 36 LPA",
+    location: "Bangalore Main Campus",
+    openings_count: 2,
+    deadline: "2026-11-30T18:30:00Z",
+    description: "Lead cutting-edge research in deep neural architectures, supervise doctoral scholars, and guide curriculum modernization.",
+    responsibilities: ["Direct the Advanced AI Lab", "Deliver M.Tech & Ph.D. core electives", "Secure national R&D grants"],
+    benefits: ["Research Seed Grant ₹15 Lakhs", "Subsidized Campus Villa", "Annual International Conference Sponsorship"],
+    status: "open",
+    created_at: new Date(Date.now() - 7 * 86400000).toISOString(),
+    updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+    applications_count: 2,
+    has_applied: true,
+  },
+  {
+    id: "fjob-002",
+    institution_id: "inst-001",
+    institution_name: "Indian Institute of Science & Technology",
+    title: "Associate Professor in Cloud & Distributed Systems",
+    department: "Information Technology",
+    designation: "Associate Professor",
+    employment_type: "Full-time",
+    min_experience_years: 5,
+    qualification_required: "Ph.D. in Computer Science / IT or equivalent",
+    skills_required: ["Kubernetes", "Distributed Consensus", "Go", "Cloud Architecture"],
+    research_areas: ["Serverless Architectures", "Edge Computing", "Distributed Ledger Systems"],
+    salary_range_lpa: "18 - 25 LPA",
+    location: "Bangalore Main Campus",
+    openings_count: 3,
+    deadline: "2026-12-15T18:30:00Z",
+    description: "Teach distributed systems, establish cloud testbeds, and collaborate with industry hyperscaler partners.",
+    responsibilities: ["Teach Cloud & Distributed Computing", "Facilitate industry-funded capstones", "Publish in Tier-1 conferences"],
+    benefits: ["Faculty Development Grant", "Health & Medical Coverage for Family", "Performance Incentives"],
+    status: "open",
+    created_at: new Date(Date.now() - 14 * 86400000).toISOString(),
+    updated_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+    applications_count: 1,
+    has_applied: false,
+  },
+  {
+    id: "fjob-003",
+    institution_id: "inst-001",
+    institution_name: "Indian Institute of Science & Technology",
+    title: "Assistant Professor in Cybersecurity & Cryptography",
+    department: "Electronics & Communication",
+    designation: "Assistant Professor",
+    employment_type: "Full-time",
+    min_experience_years: 2,
+    qualification_required: "Ph.D. or Master's with exceptional research record",
+    skills_required: ["Post-Quantum Cryptography", "Network Security", "Zero Trust Architectures"],
+    research_areas: ["Cyber-Physical Security", "Homomorphic Encryption"],
+    salary_range_lpa: "14 - 19 LPA",
+    location: "Bangalore Main Campus",
+    openings_count: 1,
+    deadline: "2026-10-31T18:30:00Z",
+    description: "Develop hands-on cybersecurity laboratories, lead cyber defense competitions, and instruct network security.",
+    responsibilities: ["Mentor undergraduate engineering students", "Establish Cyber Range Lab", "Publish high-impact papers"],
+    benefits: ["Relocation Allowance", "Laptop & Hardware Grant", "Sabbatical Policy"],
+    status: "open",
+    created_at: new Date(Date.now() - 20 * 86400000).toISOString(),
+    updated_at: new Date(Date.now() - 10 * 86400000).toISOString(),
+    applications_count: 1,
+    has_applied: false,
+  },
+];
+
+const DUMMY_FACULTY_APPLICATIONS: FacultyJobApplication[] = [
+  {
+    id: "fapp-001",
+    job_id: "fjob-001",
+    faculty_id: "fac-001",
+    status: "interview_scheduled",
+    statement_of_purpose: "I am passionate about building robust foundation models and advancing transformer efficiency in academic settings.",
+    research_statement: "Published 14 papers in NeurIPS/ICLR on attention mechanisms and gradient optimization.",
+    teaching_philosophy: "Active student-centric problem based learning through collaborative code laboratories.",
+    current_institution: "National University of Tech",
+    current_designation: "Associate Professor",
+    years_of_experience: 9,
+    notice_period_days: 45,
+    cv_url: "https://example.com/cv-dr-sharma.pdf",
+    applied_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+    updated_at: new Date(Date.now() - 1 * 86400000).toISOString(),
+    faculty_name: "Dr. Ananya Sharma",
+    faculty_email: "dr.ananya@nit.demo",
+    faculty_department: "Computer Science Engineering",
+    faculty_designation: "Associate Professor",
+    faculty_research_areas: ["Deep Learning", "Computer Vision", "NLP"],
+    job_title: "Professor & Chair of Artificial Intelligence",
+    institution_name: "Indian Institute of Science & Technology",
+    department: "Computer Science & Engineering",
+    designation: "Full Professor",
+    interview_details: {
+      scheduled_at: new Date(Date.now() + 3 * 86400000).toISOString(),
+      mode: "online",
+      meeting_link: "https://meet.google.com/xyz-recruitment-panel",
+      venue: "Virtual Boardroom",
+      panel_members: ["Dean of Academics", "Prof. K. Raman (External AI Expert)", "HOD Computing"],
+      instructions: "Please prepare a 20-minute presentation on your 3-year research plan followed by technical Q&A with the committee.",
+      status: "scheduled",
+    },
+  },
+  {
+    id: "fapp-002",
+    job_id: "fjob-002",
+    faculty_id: "fac-001",
+    status: "offered",
+    statement_of_purpose: "With over 9 years in distributed systems, I aim to establish a state-of-the-art cloud testbed and mentor graduate students.",
+    research_statement: "Focus on cloud-native orchestration, edge latency optimization, and microservice telemetry.",
+    teaching_philosophy: "Hands-on engineering rigor paired with theoretical fundamentals and open-source contribution.",
+    current_institution: "National University of Tech",
+    current_designation: "Associate Professor",
+    years_of_experience: 9,
+    notice_period_days: 30,
+    cv_url: "https://example.com/cv-dr-sharma.pdf",
+    applied_at: new Date(Date.now() - 12 * 86400000).toISOString(),
+    updated_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+    faculty_name: "Dr. Ananya Sharma",
+    faculty_email: "dr.ananya@nit.demo",
+    faculty_department: "Computer Science Engineering",
+    faculty_designation: "Associate Professor",
+    faculty_research_areas: ["Distributed Systems", "Cloud Computing"],
+    job_title: "Associate Professor in Cloud & Distributed Systems",
+    institution_name: "Indian Institute of Science & Technology",
+    department: "Information Technology",
+    designation: "Associate Professor",
+    interview_details: {
+      scheduled_at: new Date(Date.now() - 4 * 86400000).toISOString(),
+      mode: "offline",
+      venue: "Main Campus Senate Hall, Academic Block A",
+      panel_members: ["Vice Chancellor", "Dean of Faculty Affairs", "HOD Information Technology"],
+      status: "completed",
+      rating: 4.8,
+      feedback: "Outstanding pedagogical clarity, exceptional research agenda, and demonstrated leadership in industry-funded projects.",
+      notes: "Unanimous committee recommendation for appointment as Associate Professor.",
+      decision: "offered",
+      decision_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+      offer_details: {
+        designation: "Associate Professor in Cloud & Distributed Systems",
+        base_salary_lpa: 24.5,
+        joining_date: "2026-11-15",
+      },
+    },
+  },
+];
 
 export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }: AcademicianDashboardProps) {
   const [internalTab, setInternalTab] = useState<TabType>("opportunities");
@@ -96,6 +261,27 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
   const [historyItems, setHistoryItems] = useState<FacultyCollaborationHistoryItem[]>([]);
   const [advisedProjects, setAdvisedProjects] = useState<FacultyAdvisedProject[]>([]);
   const [documents, setDocuments] = useState<UserDocument[]>([]);
+
+  // Faculty Openings & Recruitment State
+  const [facultyVacancies, setFacultyVacancies] = useState<InstitutionFacultyJob[]>([]);
+  const [myFacultyApplications, setMyFacultyApplications] = useState<FacultyJobApplication[]>([]);
+  const [subTabJobs, setSubTabJobs] = useState<"browse" | "my_applications">("browse");
+  const [jobSearchQuery, setJobSearchQuery] = useState("");
+  const [jobDeptFilter, setJobDeptFilter] = useState("all");
+  const [selectedJobForApply, setSelectedJobForApply] = useState<InstitutionFacultyJob | null>(null);
+  const [selectedApplicationDetail, setSelectedApplicationDetail] = useState<FacultyJobApplication | null>(null);
+  const [showApplyJobModal, setShowApplyJobModal] = useState(false);
+  const [submittingJobApp, setSubmittingJobApp] = useState(false);
+  const [applyJobForm, setApplyJobForm] = useState({
+    statement_of_purpose: "",
+    research_statement: "",
+    teaching_philosophy: "",
+    current_institution: "",
+    current_designation: "",
+    years_of_experience: 5,
+    notice_period_days: 30,
+    cv_url: "",
+  });
 
   // Filters & State
   const [oppTypeFilter, setOppTypeFilter] = useState<string>("all");
@@ -176,6 +362,8 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
         advRes,
         docsRes,
         vidsRes,
+        facJobsRes,
+        facAppsRes,
       ] = await Promise.allSettled([
         api.getFacultyPassport(token),
         api.getFacultyOpportunities(token),
@@ -187,6 +375,8 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
         api.getFacultyAdvisedProjects(token),
         api.getUserDocuments(token),
         api.getOwnFacultyVideos(token),
+        api.getOpenFacultyJobs({}, token),
+        api.getMyFacultyApplications(token),
       ]);
 
       if (passRes.status === "fulfilled") {
@@ -202,12 +392,104 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
       if (advRes.status === "fulfilled") setAdvisedProjects(advRes.value);
       if (docsRes.status === "fulfilled") setDocuments(docsRes.value);
       if (vidsRes.status === "fulfilled") setOwnVideos(vidsRes.value);
+
+      if (facJobsRes?.status === "fulfilled" && facJobsRes.value && facJobsRes.value.items?.length > 0) {
+        setFacultyVacancies(facJobsRes.value.items);
+      } else {
+        setFacultyVacancies(DUMMY_FACULTY_JOBS);
+      }
+      if (facAppsRes?.status === "fulfilled" && facAppsRes.value && facAppsRes.value.items?.length > 0) {
+        setMyFacultyApplications(facAppsRes.value.items);
+      } else {
+        setMyFacultyApplications(DUMMY_FACULTY_APPLICATIONS);
+      }
     } catch (err) {
       toast.error(errorMessage(err, "Failed to load faculty portal data"));
+      setFacultyVacancies(DUMMY_FACULTY_JOBS);
+      setMyFacultyApplications(DUMMY_FACULTY_APPLICATIONS);
     } finally {
       setLoading(false);
     }
   }, [token]);
+
+  function handleOpenApplyModal(job: InstitutionFacultyJob) {
+    setSelectedJobForApply(job);
+    setApplyJobForm({
+      statement_of_purpose: `I am keenly interested in joining ${job.institution_name} as ${job.designation} in ${job.department}. My pedagogical focus and research experience in ${job.skills_required?.slice(0, 3).join(", ") || "advanced computational methods"} closely match this institutional opening.`,
+      research_statement: passport?.bio || "Active academic research centered on scalable distributed architectures, student mentorship, and industry-sponsored innovation.",
+      teaching_philosophy: "Promoting participatory problem-solving, project-based engineering labs, and transparent peer evaluation methodologies.",
+      current_institution: passport?.institution_name || "National Institute of Technology Demo University",
+      current_designation: passport?.designation || "Associate Professor",
+      years_of_experience: passport?.years_experience || 7,
+      notice_period_days: 30,
+      cv_url: documents?.[0]?.file_url || "https://example.com/curriculum-vitae.pdf",
+    });
+    setShowApplyJobModal(true);
+  }
+
+  async function handleApplyForJob(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedJobForApply) return;
+    if (!applyJobForm.statement_of_purpose.trim()) {
+      toast.error("Please provide a Statement of Purpose.");
+      return;
+    }
+
+    try {
+      setSubmittingJobApp(true);
+      const payload: FacultyJobApplicationCreatePayload = {
+        job_id: selectedJobForApply.id,
+        statement_of_purpose: applyJobForm.statement_of_purpose.trim(),
+        research_statement: applyJobForm.research_statement.trim() || undefined,
+        teaching_philosophy: applyJobForm.teaching_philosophy.trim() || undefined,
+        current_institution: applyJobForm.current_institution.trim() || undefined,
+        current_designation: applyJobForm.current_designation.trim() || undefined,
+        years_of_experience: Number(applyJobForm.years_of_experience) || 0,
+        notice_period_days: Number(applyJobForm.notice_period_days) || 0,
+        cv_url: applyJobForm.cv_url.trim() || undefined,
+      };
+
+      const created = await api.applyForFacultyJob(payload, token);
+      toast.success(`Application submitted for ${selectedJobForApply.title}!`);
+      setMyFacultyApplications((prev) => [created, ...prev.filter((a) => a.id !== created.id)]);
+      setFacultyVacancies((prev) =>
+        prev.map((j) =>
+          j.id === selectedJobForApply.id
+            ? { ...j, has_applied: true, applications_count: (j.applications_count || 0) + 1 }
+            : j
+        )
+      );
+      setShowApplyJobModal(false);
+      setSubTabJobs("my_applications");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to submit job application"));
+    } finally {
+      setSubmittingJobApp(false);
+    }
+  }
+
+  async function refreshFacultyJobs() {
+    try {
+      const [jobsRes, appsRes] = await Promise.allSettled([
+        api.getOpenFacultyJobs(
+          {
+            department: jobDeptFilter === "all" ? undefined : jobDeptFilter,
+            search: jobSearchQuery.trim() || undefined,
+          },
+          token
+        ),
+        api.getMyFacultyApplications(token),
+      ]);
+      if (jobsRes.status === "fulfilled" && jobsRes.value?.items) {
+        setFacultyVacancies(jobsRes.value.items.length > 0 ? jobsRes.value.items : DUMMY_FACULTY_JOBS);
+      }
+      if (appsRes.status === "fulfilled" && appsRes.value?.items) {
+        setMyFacultyApplications(appsRes.value.items.length > 0 ? appsRes.value.items : DUMMY_FACULTY_APPLICATIONS);
+      }
+    } catch {
+      // Keep existing data
+    }
+  }
 
   useEffect(() => {
     void loadInitialData();
@@ -619,6 +901,7 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
     { id: "training_planner", label: "Training & Workshop Planner", icon: GraduationCap },
     { id: "opportunities", label: "Opportunities", icon: Briefcase, count: opportunities.length },
     { id: "videos", label: "Video Lectures", icon: Video, count: ownVideos.length },
+    { id: "faculty_jobs", label: "Faculty Openings & Interviews", icon: Building2, count: facultyVacancies.length },
     { id: "applications", label: "My Applications", icon: FileText, count: applications.length },
     { id: "workspaces", label: "Workspaces", icon: Layers, count: workspaces.length },
     { id: "passport", label: "Academic Passport", icon: GraduationCap },
@@ -1251,6 +1534,635 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB: FACULTY RECRUITMENT OPENINGS & INTERVIEW PORTAL */}
+      {activeTab === "faculty_jobs" && (
+        <div className="space-y-6">
+          {/* Header & Metrics Banner */}
+          <div className="border border-[#E5E1D8] bg-[#FFFFFF] rounded-md p-6 space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-[#B08D57] mb-1">
+                  <Building2 className="h-3.5 w-3.5" />
+                  <span>University Academic Recruitment</span>
+                </div>
+                <h2
+                  className="text-2xl md:text-3xl font-normal text-[#111827]"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  Faculty Positions & Interview Appointments
+                </h2>
+                <p className="text-xs text-[#475569] mt-1 max-w-2xl font-sans">
+                  Browse professorial, research chair, and tenure-track openings posted by verified academic institutions.
+                  Apply with your academic portfolio, track candidate status, and attend committee video interviews.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void refreshFacultyJobs()}
+                  className="px-3.5 py-1.5 border border-[#E5E1D8] bg-[#F7F5F0] hover:bg-[#E5E1D8] text-[#111827] text-xs font-mono rounded-md transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <Clock className="h-3.5 w-3.5 text-[#B08D57]" />
+                  <span>Refresh Openings</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Metrics Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="p-4 rounded-md border border-[#E5E1D8] bg-[#F7F5F0]">
+                <span className="font-mono text-[10px] text-[#64748B] uppercase tracking-wider block">Open Positions</span>
+                <p className="text-2xl font-normal text-[#111827] mt-1" style={{ fontFamily: "var(--font-display)" }}>
+                  {facultyVacancies.filter((j) => j.status === "open").length}
+                </p>
+              </div>
+              <div className="p-4 rounded-md border border-[#E5E1D8] bg-[#F7F5F0]">
+                <span className="font-mono text-[10px] text-[#64748B] uppercase tracking-wider block">My Applications</span>
+                <p className="text-2xl font-normal text-[#B08D57] mt-1" style={{ fontFamily: "var(--font-display)" }}>
+                  {myFacultyApplications.length}
+                </p>
+              </div>
+              <div className="p-4 rounded-md border border-[#E5E1D8] bg-[#F7F5F0]">
+                <span className="font-mono text-[10px] text-[#64748B] uppercase tracking-wider block">Interviews Scheduled</span>
+                <p className="text-2xl font-normal text-[#2563EB] mt-1" style={{ fontFamily: "var(--font-display)" }}>
+                  {myFacultyApplications.filter((a) => a.status === "interview_scheduled").length}
+                </p>
+              </div>
+              <div className="p-4 rounded-md border border-[#E5E1D8] bg-[#F7F5F0]">
+                <span className="font-mono text-[10px] text-[#64748B] uppercase tracking-wider block">Offers Extended</span>
+                <p className="text-2xl font-normal text-[#166534] mt-1" style={{ fontFamily: "var(--font-display)" }}>
+                  {myFacultyApplications.filter((a) => a.status === "offered").length}
+                </p>
+              </div>
+            </div>
+
+            {/* Sub-tab Switcher Pills */}
+            <div className="flex items-center gap-2 pt-2 border-t border-[#E5E1D8]">
+              <button
+                type="button"
+                onClick={() => setSubTabJobs("browse")}
+                className={`px-4 py-2 rounded-md text-xs font-mono transition-colors cursor-pointer flex items-center gap-2 ${
+                  subTabJobs === "browse"
+                    ? "bg-[#0B0B0A] text-[#FFFFFF] font-medium"
+                    : "border border-[#E5E1D8] bg-[#F7F5F0] text-[#64748B] hover:text-[#111827]"
+                }`}
+              >
+                <Building2 className="h-3.5 w-3.5" />
+                <span>Browse University Openings</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/20">
+                  {facultyVacancies.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSubTabJobs("my_applications")}
+                className={`px-4 py-2 rounded-md text-xs font-mono transition-colors cursor-pointer flex items-center gap-2 relative ${
+                  subTabJobs === "my_applications"
+                    ? "bg-[#0B0B0A] text-[#FFFFFF] font-medium"
+                    : "border border-[#E5E1D8] bg-[#F7F5F0] text-[#64748B] hover:text-[#111827]"
+                }`}
+              >
+                <FileText className="h-3.5 w-3.5" />
+                <span>My Applications & Interview Schedules</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/20">
+                  {myFacultyApplications.length}
+                </span>
+                {myFacultyApplications.some((a) => a.status === "interview_scheduled") && (
+                  <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                )}
+                {myFacultyApplications.some((a) => a.status === "offered") && (
+                  <span className="h-2 w-2 rounded-full bg-amber-500" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* SUB-VIEW 1: BROWSE OPENINGS */}
+          {subTabJobs === "browse" && (
+            <div className="space-y-6">
+              {/* Search & Department Filters */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-2 overflow-x-auto pb-2 md:pb-0">
+                  {[
+                    { id: "all", label: "All Departments" },
+                    { id: "Computer Science & Engineering", label: "CSE & AI" },
+                    { id: "Information Technology", label: "Information Technology" },
+                    { id: "Electronics & Communication", label: "Electronics (ECE)" },
+                  ].map((d) => (
+                    <button
+                      key={d.id}
+                      onClick={() => setJobDeptFilter(d.id)}
+                      className={`px-3.5 py-1.5 rounded-md text-xs font-mono transition-colors cursor-pointer ${
+                        jobDeptFilter === d.id
+                          ? "bg-[#0B0B0A] text-[#FFFFFF] font-medium"
+                          : "border border-[#E5E1D8] bg-[#F7F5F0] text-[#64748B] hover:text-[#111827]"
+                      }`}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="relative min-w-[260px]">
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#64748B]" />
+                  <input
+                    type="text"
+                    placeholder="Search by title, university, research..."
+                    value={jobSearchQuery}
+                    onChange={(e) => setJobSearchQuery(e.target.value)}
+                    className="w-full font-mono text-xs pl-9 pr-4 py-2 rounded-md bg-[#FFFFFF] border border-[#E5E1D8] text-[#111827] placeholder:text-[#64748B] focus:border-[#B08D57] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Vacancies Grid */}
+              {facultyVacancies
+                .filter((j) => jobDeptFilter === "all" || j.department.toLowerCase().includes(jobDeptFilter.toLowerCase()))
+                .filter(
+                  (j) =>
+                    !jobSearchQuery ||
+                    j.title.toLowerCase().includes(jobSearchQuery.toLowerCase()) ||
+                    j.institution_name.toLowerCase().includes(jobSearchQuery.toLowerCase()) ||
+                    j.department.toLowerCase().includes(jobSearchQuery.toLowerCase()) ||
+                    j.research_areas?.some((r) => r.toLowerCase().includes(jobSearchQuery.toLowerCase())) ||
+                    j.skills_required?.some((s) => s.toLowerCase().includes(jobSearchQuery.toLowerCase()))
+                ).length === 0 ? (
+                <div className="p-12 text-center border border-[#E5E1D8] bg-[#FFFFFF] rounded-md space-y-3">
+                  <Building2 className="h-10 w-10 text-[#64748B] mx-auto" />
+                  <h3 className="text-base font-semibold text-[#111827]">No Matching Faculty Openings Found</h3>
+                  <p className="text-xs text-[#64748B] max-w-md mx-auto">
+                    Try clearing your search query or selecting another academic department.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {facultyVacancies
+                    .filter((j) => jobDeptFilter === "all" || j.department.toLowerCase().includes(jobDeptFilter.toLowerCase()))
+                    .filter(
+                      (j) =>
+                        !jobSearchQuery ||
+                        j.title.toLowerCase().includes(jobSearchQuery.toLowerCase()) ||
+                        j.institution_name.toLowerCase().includes(jobSearchQuery.toLowerCase()) ||
+                        j.department.toLowerCase().includes(jobSearchQuery.toLowerCase()) ||
+                        j.research_areas?.some((r) => r.toLowerCase().includes(jobSearchQuery.toLowerCase())) ||
+                        j.skills_required?.some((s) => s.toLowerCase().includes(jobSearchQuery.toLowerCase()))
+                    )
+                    .map((job) => {
+                      const hasApplied =
+                        job.has_applied ||
+                        myFacultyApplications.some((a) => a.job_id === job.id);
+                      const existingApp = myFacultyApplications.find((a) => a.job_id === job.id);
+
+                      return (
+                        <div
+                          key={job.id}
+                          className="bg-[#FFFFFF] rounded-md p-6 border border-[#E5E1D8] flex flex-col justify-between space-y-5 hover:border-[#B08D57]/40 transition-colors shadow-xs"
+                        >
+                          <div className="space-y-4">
+                            {/* University & Designation Header */}
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <div className="inline-flex items-center gap-1.5 font-mono text-[11px] text-[#B08D57] font-medium">
+                                  <Building2 className="h-3.5 w-3.5 shrink-0" />
+                                  <span>{job.institution_name}</span>
+                                </div>
+                                <h3
+                                  className="text-xl font-normal text-[#111827] mt-1 leading-snug"
+                                  style={{ fontFamily: "var(--font-display)" }}
+                                >
+                                  {job.title}
+                                </h3>
+                                <p className="text-xs text-[#475569] font-mono mt-0.5">
+                                  {job.designation} · <span className="text-[#111827] font-medium">{job.department}</span>
+                                </p>
+                              </div>
+
+                              <span className="shrink-0 text-[10px] uppercase font-mono tracking-wider px-2.5 py-1 rounded-xs border border-[#E5E1D8] bg-[#F7F5F0] text-[#111827]">
+                                {job.employment_type}
+                              </span>
+                            </div>
+
+                            {/* Key Highlights Banner */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono p-3 rounded-md bg-[#F7F5F0] border border-[#E5E1D8] text-[#475569]">
+                              <div>
+                                <span className="text-[10px] text-[#64748B] block">Experience</span>
+                                <span className="text-[#111827] font-semibold">{job.min_experience_years}+ Years</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-[#64748B] block">Scale / CTC</span>
+                                <span className="text-[#166534] font-semibold">{job.salary_range_lpa || "Competitive"}</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-[#64748B] block">Openings</span>
+                                <span className="text-[#111827] font-semibold">{job.openings_count} Post{job.openings_count > 1 ? "s" : ""}</span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-[#64748B] block">Location</span>
+                                <span className="text-[#111827] font-semibold truncate block">{job.location || "Campus"}</span>
+                              </div>
+                            </div>
+
+                            {/* Qualification Required */}
+                            {job.qualification_required && (
+                              <div className="text-xs text-[#475569]">
+                                <span className="font-mono text-[11px] font-semibold text-[#111827]">Required Qualification: </span>
+                                <span>{job.qualification_required}</span>
+                              </div>
+                            )}
+
+                            {/* Description Excerpt */}
+                            <p className="text-xs text-[#475569] leading-relaxed line-clamp-3">
+                              {job.description}
+                            </p>
+
+                            {/* Research Areas */}
+                            {job.research_areas && job.research_areas.length > 0 && (
+                              <div>
+                                <span className="text-[10px] font-mono text-[#64748B] uppercase tracking-wider block mb-1.5">
+                                  Research Specializations
+                                </span>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {job.research_areas.map((r, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="px-2 py-0.5 rounded-xs text-[11px] font-mono bg-[rgba(176,141,87,0.08)] text-[#B08D57] border border-[#B08D57]/30"
+                                    >
+                                      {r}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Core Skills Required */}
+                            {job.skills_required && job.skills_required.length > 0 && (
+                              <div>
+                                <span className="text-[10px] font-mono text-[#64748B] uppercase tracking-wider block mb-1.5">
+                                  Competencies & Skills
+                                </span>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {job.skills_required.map((s, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="px-2 py-0.5 rounded-xs text-[11px] font-mono bg-[#FFFFFF] text-[#334155] border border-[#E5E1D8]"
+                                    >
+                                      {s}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Footer Actions */}
+                          <div className="pt-4 border-t border-[#E5E1D8] flex items-center justify-between gap-3 font-mono text-xs">
+                            <div className="flex items-center gap-1.5 text-[#64748B]">
+                              <Calendar className="h-3.5 w-3.5" />
+                              <span>
+                                Deadline: {job.deadline ? new Date(job.deadline).toLocaleDateString() : "Rolling"}
+                              </span>
+                            </div>
+
+                            <div>
+                              {hasApplied ? (
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={`px-3 py-1.5 rounded-md text-xs font-mono border flex items-center gap-1.5 ${
+                                      existingApp?.status === "interview_scheduled"
+                                        ? "bg-blue-50 text-blue-700 border-blue-200"
+                                        : existingApp?.status === "offered"
+                                        ? "bg-amber-50 text-amber-700 border-amber-300"
+                                        : "bg-[#F7F5F0] text-[#111827] border-[#E5E1D8]"
+                                    }`}
+                                  >
+                                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                                    <span>
+                                      {existingApp?.status === "interview_scheduled"
+                                        ? "Interview Scheduled"
+                                        : existingApp?.status === "offered"
+                                        ? "Appointment Offered"
+                                        : "Application Submitted"}
+                                    </span>
+                                  </span>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (existingApp) {
+                                        setSelectedApplicationDetail(existingApp);
+                                      }
+                                      setSubTabJobs("my_applications");
+                                    }}
+                                    className="p-1.5 text-[#B08D57] hover:text-[#9A7B4A] hover:bg-[#F7F5F0] rounded-md cursor-pointer transition-colors"
+                                    title="View Application Details"
+                                  >
+                                    <ArrowUpRight className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenApplyModal(job)}
+                                  className="px-4 py-2 bg-[#0B0B0A] hover:bg-[#111827] text-white text-xs font-mono rounded-md cursor-pointer transition-colors flex items-center gap-1.5 shadow-xs"
+                                >
+                                  <Send className="h-3.5 w-3.5" />
+                                  <span>Apply For Position</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* SUB-VIEW 2: MY APPLICATIONS & INTERVIEWS */}
+          {subTabJobs === "my_applications" && (
+            <div className="space-y-6">
+              {myFacultyApplications.length === 0 ? (
+                <div className="p-12 text-center border border-[#E5E1D8] bg-[#FFFFFF] rounded-md space-y-3">
+                  <FileText className="h-10 w-10 text-[#64748B] mx-auto" />
+                  <h3 className="text-base font-semibold text-[#111827]">No Applications Submitted Yet</h3>
+                  <p className="text-xs text-[#64748B] max-w-md mx-auto">
+                    You have not applied for any academic appointments. Browse open faculty positions to submit your application.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setSubTabJobs("browse")}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#0B0B0A] hover:bg-[#111827] text-white text-xs font-mono rounded-md cursor-pointer transition-colors"
+                  >
+                    <Building2 className="h-3.5 w-3.5" />
+                    <span>Browse University Openings</span>
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {myFacultyApplications.map((app) => {
+                    const isInterviewScheduled = app.status === "interview_scheduled" && app.interview_details;
+                    const isOffered = app.status === "offered" && app.interview_details?.offer_details;
+
+                    return (
+                      <div
+                        key={app.id}
+                        className={`bg-[#FFFFFF] rounded-md p-6 border space-y-6 transition-all shadow-xs ${
+                          isOffered
+                            ? "border-[#B08D57] ring-1 ring-[#B08D57]/30"
+                            : isInterviewScheduled
+                            ? "border-blue-400 ring-1 ring-blue-400/20"
+                            : "border-[#E5E1D8]"
+                        }`}
+                      >
+                        {/* Top Meta Bar */}
+                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`px-2.5 py-0.5 rounded-xs text-[10px] font-mono uppercase tracking-wider border font-medium ${
+                                  app.status === "offered"
+                                    ? "bg-amber-100 text-amber-900 border-amber-300"
+                                    : app.status === "interview_scheduled"
+                                    ? "bg-blue-100 text-blue-900 border-blue-300"
+                                    : app.status === "shortlisted"
+                                    ? "bg-purple-100 text-purple-900 border-purple-300"
+                                    : app.status === "rejected"
+                                    ? "bg-rose-100 text-rose-900 border-rose-300"
+                                    : "bg-[#F7F5F0] text-[#475569] border-[#E5E1D8]"
+                                }`}
+                              >
+                                {app.status === "interview_scheduled"
+                                  ? "Interview Scheduled"
+                                  : app.status === "offered"
+                                  ? "Appointment Offered 🎉"
+                                  : app.status.replace("_", " ")}
+                              </span>
+
+                              <span className="text-xs font-mono text-[#64748B]">
+                                Applied: {new Date(app.applied_at).toLocaleDateString()}
+                              </span>
+                            </div>
+
+                            <h3
+                              className="text-2xl font-normal text-[#111827] mt-2"
+                              style={{ fontFamily: "var(--font-display)" }}
+                            >
+                              {app.job_title || "Faculty Position"}
+                            </h3>
+
+                            <p className="text-xs text-[#475569] font-mono">
+                              <span className="text-[#B08D57] font-semibold">{app.institution_name}</span> · {app.department} · {app.designation}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedApplicationDetail(app)}
+                              className="px-3.5 py-1.5 text-xs font-mono rounded-md border border-[#E5E1D8] bg-[#F7F5F0] hover:bg-[#E5E1D8] text-[#111827] cursor-pointer transition-colors flex items-center gap-1.5"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              <span>View Submitted Dossier</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Submitted Details Snapshot */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-md bg-[#F7F5F0] border border-[#E5E1D8] text-xs font-mono">
+                          <div>
+                            <span className="text-[10px] text-[#64748B] block">Current Affiliation</span>
+                            <span className="text-[#111827] font-medium">{app.current_institution || "Academic Institution"}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-[#64748B] block">Current Rank</span>
+                            <span className="text-[#111827] font-medium">{app.current_designation || "Faculty Member"}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-[#64748B] block">Experience</span>
+                            <span className="text-[#111827] font-medium">{app.years_of_experience || 0} Years</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-[#64748B] block">Notice Period</span>
+                            <span className="text-[#111827] font-medium">{app.notice_period_days || 0} Days</span>
+                          </div>
+                        </div>
+
+                        {/* Statement of Purpose Excerpt */}
+                        <div className="text-xs space-y-1">
+                          <span className="font-mono text-[10px] text-[#64748B] uppercase tracking-wider block">
+                            Statement of Purpose
+                          </span>
+                          <p className="text-[#475569] leading-relaxed line-clamp-2 italic">
+                            "{app.statement_of_purpose}"
+                          </p>
+                        </div>
+
+                        {/* EXCLUSIVE PROMINENT INTERVIEW SCHEDULE BANNER */}
+                        {isInterviewScheduled && app.interview_details && (
+                          <div className="p-5 rounded-md bg-blue-50/70 border border-blue-200 text-[#1E293B] space-y-4 shadow-xs">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-blue-200/80">
+                              <div className="flex items-center gap-2">
+                                <div className="p-2 rounded-md bg-blue-600 text-white">
+                                  <Video className="h-4 w-4" />
+                                </div>
+                                <div>
+                                  <h4 className="text-sm font-semibold text-blue-950">
+                                    Official Selection Committee Interview
+                                  </h4>
+                                  <p className="text-xs text-blue-700">
+                                    {app.interview_details.mode === "online" ? "Virtual Video Panel" : "Campus Senate Boardroom"}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2 text-xs font-mono font-medium text-blue-900 bg-blue-100/80 px-3 py-1.5 rounded-md border border-blue-200">
+                                <Calendar className="h-3.5 w-3.5 text-blue-600" />
+                                <span>
+                                  {app.interview_details.scheduled_at
+                                    ? new Date(app.interview_details.scheduled_at).toLocaleString(undefined, {
+                                        dateStyle: "medium",
+                                        timeStyle: "short",
+                                      })
+                                    : "Scheduled"}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                              {app.interview_details.panel_members && app.interview_details.panel_members.length > 0 && (
+                                <div>
+                                  <span className="font-mono text-[10px] text-blue-800 uppercase tracking-wider block mb-1 font-semibold">
+                                    Evaluation Committee Panel
+                                  </span>
+                                  <ul className="list-disc list-inside space-y-0.5 text-blue-950">
+                                    {app.interview_details.panel_members.map((p, idx) => (
+                                      <li key={idx}>{p}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+
+                              <div>
+                                <span className="font-mono text-[10px] text-blue-800 uppercase tracking-wider block mb-1 font-semibold">
+                                  Instructions & Agenda
+                                </span>
+                                <p className="text-blue-950 leading-relaxed">
+                                  {app.interview_details.instructions || "Please arrive 5 minutes early with your research presentation."}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Meeting Link Action */}
+                            {app.interview_details.mode === "online" && app.interview_details.meeting_link && (
+                              <div className="pt-2 flex flex-wrap items-center gap-3">
+                                <a
+                                  href={app.interview_details.meeting_link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-5 py-2.5 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-medium rounded-md shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
+                                >
+                                  <Video className="h-4 w-4" />
+                                  <span>Join Video Interview Room</span>
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </a>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(app.interview_details?.meeting_link || "");
+                                    toast.success("Interview meeting link copied to clipboard!");
+                                  }}
+                                  className="px-3.5 py-2.5 bg-white border border-blue-300 hover:bg-blue-100/50 text-blue-900 text-xs font-mono rounded-md transition-colors cursor-pointer"
+                                >
+                                  Copy Meeting Link
+                                </button>
+                              </div>
+                            )}
+
+                            {app.interview_details.mode === "offline" && app.interview_details.venue && (
+                              <div className="pt-2 flex items-center gap-2 text-xs font-mono text-blue-900">
+                                <MapPin className="h-4 w-4 text-blue-600 shrink-0" />
+                                <span><strong>Campus Venue:</strong> {app.interview_details.venue}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* EXCLUSIVE PROMINENT FORMAL OFFER BANNER */}
+                        {isOffered && app.interview_details?.offer_details && (
+                          <div className="p-5 rounded-md bg-[rgba(176,141,87,0.08)] border border-[#B08D57]/40 text-[#111827] space-y-4 shadow-xs">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#B08D57]/20">
+                              <div className="flex items-center gap-2">
+                                <div className="p-2 rounded-md bg-[#B08D57] text-white">
+                                  <Award className="h-4 w-4" />
+                                </div>
+                                <div>
+                                  <h4
+                                    className="text-base font-normal text-[#111827]"
+                                    style={{ fontFamily: "var(--font-display)" }}
+                                  >
+                                    Official Faculty Appointment Offered
+                                  </h4>
+                                  <p className="text-xs text-[#64748B]">
+                                    Congratulations! The academic selection board has extended an offer of appointment.
+                                  </p>
+                                </div>
+                              </div>
+
+                              {app.interview_details.rating && (
+                                <div className="flex items-center gap-1.5 font-mono text-xs text-[#B08D57] font-semibold bg-[#FFFFFF] px-3 py-1 rounded-md border border-[#B08D57]/30">
+                                  <Star className="h-3.5 w-3.5 fill-[#B08D57] text-[#B08D57]" />
+                                  <span>Committee Evaluation: {app.interview_details.rating.toFixed(1)} / 5.0</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono p-3.5 rounded-md bg-white border border-[#E5E1D8]">
+                              <div>
+                                <span className="text-[10px] text-[#64748B] block">Offered Designation</span>
+                                <span className="text-[#111827] font-semibold">
+                                  {app.interview_details.offer_details.designation}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-[#64748B] block">Annual Scale / CTC</span>
+                                <span className="text-[#166534] font-semibold">
+                                  ₹{app.interview_details.offer_details.base_salary_lpa} LPA
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-[10px] text-[#64748B] block">Expected Joining Date</span>
+                                <span className="text-[#111827] font-semibold">
+                                  {app.interview_details.offer_details.joining_date}
+                                </span>
+                              </div>
+                            </div>
+
+                            {app.interview_details.feedback && (
+                              <div className="text-xs space-y-1 bg-white/60 p-3 rounded-md border border-[#E5E1D8]">
+                                <span className="font-mono text-[10px] text-[#B08D57] uppercase tracking-wider block font-semibold">
+                                  Committee Recommendation & Feedback
+                                </span>
+                                <p className="text-[#475569] leading-relaxed italic">
+                                  "{app.interview_details.feedback}"
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -2834,6 +3746,413 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                 className="px-4 py-2 bg-[#0F172A] text-white text-xs font-medium rounded-md cursor-pointer"
               >
                 Close Preview
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 7: APPLY FOR FACULTY OPENING */}
+      {showApplyJobModal && selectedJobForApply && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#FFFFFF] border border-[#E5E1D8] rounded-md max-w-2xl w-full p-6 md:p-8 space-y-6 shadow-2xl my-auto animate-in fade-in-50 zoom-in-95 duration-200 text-[#111827]">
+            <div className="flex justify-between items-start pb-4 border-b border-[#E5E1D8]">
+              <div>
+                <div className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-[#B08D57]">
+                  <Building2 className="h-3 w-3" />
+                  <span>{selectedJobForApply.institution_name}</span>
+                </div>
+                <h3
+                  className="text-2xl font-normal text-[#111827] mt-1"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  Apply: {selectedJobForApply.title}
+                </h3>
+                <p className="text-xs text-[#475569] font-mono mt-0.5">
+                  {selectedJobForApply.designation} · {selectedJobForApply.department} · Scale: {selectedJobForApply.salary_range_lpa || "Competitive"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowApplyJobModal(false)}
+                className="text-[#64748B] hover:text-[#111827] p-1.5 rounded-md hover:bg-[#F7F5F0] cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleApplyForJob} className="space-y-4 text-xs font-sans">
+              <div>
+                <label className="font-mono text-[11px] font-semibold text-[#111827] block mb-1">
+                  Statement of Purpose & Institutional Alignment <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  value={applyJobForm.statement_of_purpose}
+                  onChange={(e) => setApplyJobForm({ ...applyJobForm, statement_of_purpose: e.target.value })}
+                  placeholder="Articulate your motivation, vision for the department, and why your profile fits this appointment..."
+                  className="w-full p-2.5 rounded-md bg-[#F7F5F0] border border-[#E5E1D8] text-[#111827] placeholder:text-[#64748B] focus:border-[#B08D57] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-mono text-[11px] font-semibold text-[#111827] block mb-1">
+                  Research Statement & Doctoral Supervision Agenda
+                </label>
+                <textarea
+                  rows={3}
+                  value={applyJobForm.research_statement}
+                  onChange={(e) => setApplyJobForm({ ...applyJobForm, research_statement: e.target.value })}
+                  placeholder="Outline key research themes, publications, laboratory infrastructure plans, and grant-seeking roadmap..."
+                  className="w-full p-2.5 rounded-md bg-[#F7F5F0] border border-[#E5E1D8] text-[#111827] placeholder:text-[#64748B] focus:border-[#B08D57] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-mono text-[11px] font-semibold text-[#111827] block mb-1">
+                  Teaching Philosophy & Pedagogical Style
+                </label>
+                <textarea
+                  rows={2}
+                  value={applyJobForm.teaching_philosophy}
+                  onChange={(e) => setApplyJobForm({ ...applyJobForm, teaching_philosophy: e.target.value })}
+                  placeholder="Describe your classroom pedagogy, project-based assessment models, and undergraduate mentorship..."
+                  className="w-full p-2.5 rounded-md bg-[#F7F5F0] border border-[#E5E1D8] text-[#111827] placeholder:text-[#64748B] focus:border-[#B08D57] focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="font-mono text-[11px] font-semibold text-[#111827] block mb-1">
+                    Current Institution / Affiliation
+                  </label>
+                  <input
+                    type="text"
+                    value={applyJobForm.current_institution}
+                    onChange={(e) => setApplyJobForm({ ...applyJobForm, current_institution: e.target.value })}
+                    placeholder="e.g. National University of Tech"
+                    className="w-full p-2.5 rounded-md bg-[#F7F5F0] border border-[#E5E1D8] text-[#111827] placeholder:text-[#64748B] focus:border-[#B08D57] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-mono text-[11px] font-semibold text-[#111827] block mb-1">
+                    Current Designation / Rank
+                  </label>
+                  <input
+                    type="text"
+                    value={applyJobForm.current_designation}
+                    onChange={(e) => setApplyJobForm({ ...applyJobForm, current_designation: e.target.value })}
+                    placeholder="e.g. Associate Professor"
+                    className="w-full p-2.5 rounded-md bg-[#F7F5F0] border border-[#E5E1D8] text-[#111827] placeholder:text-[#64748B] focus:border-[#B08D57] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="font-mono text-[11px] font-semibold text-[#111827] block mb-1">
+                    Years of Academic / R&D Experience
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={50}
+                    value={applyJobForm.years_of_experience}
+                    onChange={(e) => setApplyJobForm({ ...applyJobForm, years_of_experience: Number(e.target.value) })}
+                    className="w-full p-2.5 rounded-md bg-[#F7F5F0] border border-[#E5E1D8] text-[#111827] placeholder:text-[#64748B] focus:border-[#B08D57] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-mono text-[11px] font-semibold text-[#111827] block mb-1">
+                    Notice Period / Relocation (Days)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={180}
+                    value={applyJobForm.notice_period_days}
+                    onChange={(e) => setApplyJobForm({ ...applyJobForm, notice_period_days: Number(e.target.value) })}
+                    className="w-full p-2.5 rounded-md bg-[#F7F5F0] border border-[#E5E1D8] text-[#111827] placeholder:text-[#64748B] focus:border-[#B08D57] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-mono text-[11px] font-semibold text-[#111827] block mb-1">
+                  Comprehensive Academic Curriculum Vitae (CV URL / PDF)
+                </label>
+                <input
+                  type="url"
+                  value={applyJobForm.cv_url}
+                  onChange={(e) => setApplyJobForm({ ...applyJobForm, cv_url: e.target.value })}
+                  placeholder="https://example.com/curriculum-vitae.pdf"
+                  className="w-full p-2.5 rounded-md bg-[#F7F5F0] border border-[#E5E1D8] text-[#111827] placeholder:text-[#64748B] focus:border-[#B08D57] focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-4 border-t border-[#E5E1D8] flex items-center justify-end gap-3 font-mono">
+                <button
+                  type="button"
+                  onClick={() => setShowApplyJobModal(false)}
+                  className="px-4 py-2 text-xs text-[#64748B] hover:text-[#111827] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingJobApp}
+                  className="px-5 py-2.5 bg-[#0B0B0A] hover:bg-[#111827] disabled:opacity-50 text-white text-xs rounded-md shadow-xs transition-colors cursor-pointer flex items-center gap-2"
+                >
+                  {submittingJobApp ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Transmitting Dossier...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-3.5 w-3.5" />
+                      <span>Submit Official Faculty Application</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 8: VIEW APPLICATION & INTERVIEW DETAILS */}
+      {selectedApplicationDetail && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#FFFFFF] border border-[#E5E1D8] rounded-md max-w-2xl w-full p-6 md:p-8 space-y-6 shadow-2xl my-auto animate-in fade-in-50 zoom-in-95 duration-200 text-[#111827]">
+            <div className="flex justify-between items-start pb-4 border-b border-[#E5E1D8]">
+              <div>
+                <div className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wider text-[#B08D57]">
+                  <Building2 className="h-3 w-3" />
+                  <span>{selectedApplicationDetail.institution_name}</span>
+                </div>
+                <h3
+                  className="text-2xl font-normal text-[#111827] mt-1"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  {selectedApplicationDetail.job_title || "Faculty Appointment Dossier"}
+                </h3>
+                <p className="text-xs text-[#475569] font-mono mt-0.5">
+                  Department: {selectedApplicationDetail.department} · Designation: {selectedApplicationDetail.designation}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setSelectedApplicationDetail(null)}
+                className="text-[#64748B] hover:text-[#111827] p-1.5 rounded-md hover:bg-[#F7F5F0] cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-1 text-xs font-sans">
+              {/* Status Header Pill */}
+              <div className="flex items-center justify-between p-3 rounded-md bg-[#F7F5F0] border border-[#E5E1D8] font-mono">
+                <span className="text-[#64748B]">Application Lifecycle Status:</span>
+                <span
+                  className={`px-3 py-1 rounded-xs text-xs font-semibold uppercase tracking-wider border ${
+                    selectedApplicationDetail.status === "offered"
+                      ? "bg-amber-100 text-amber-900 border-amber-300"
+                      : selectedApplicationDetail.status === "interview_scheduled"
+                      ? "bg-blue-100 text-blue-900 border-blue-300"
+                      : "bg-white text-[#111827] border-[#E5E1D8]"
+                  }`}
+                >
+                  {selectedApplicationDetail.status.replace("_", " ")}
+                </span>
+              </div>
+
+              {/* INTERVIEW APPOINTMENT DETAILS (IF SCHEDULED) */}
+              {selectedApplicationDetail.interview_details && (
+                <div className="p-4 rounded-md bg-blue-50 border border-blue-200 text-blue-950 space-y-3 font-sans">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Video className="h-4 w-4 text-blue-700" />
+                      <span className="font-semibold text-xs text-blue-950 uppercase tracking-wider font-mono">
+                        Interview Panel Details
+                      </span>
+                    </div>
+                    {selectedApplicationDetail.interview_details.scheduled_at && (
+                      <span className="font-mono text-xs text-blue-800 font-medium">
+                        {new Date(selectedApplicationDetail.interview_details.scheduled_at).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                    <div>
+                      <span className="text-blue-700 block text-[10px]">Mode:</span>
+                      <strong className="capitalize">{selectedApplicationDetail.interview_details.mode}</strong>
+                    </div>
+                    <div>
+                      <span className="text-blue-700 block text-[10px]">Venue / Room:</span>
+                      <span>{selectedApplicationDetail.interview_details.venue || "Virtual"}</span>
+                    </div>
+                  </div>
+
+                  {selectedApplicationDetail.interview_details.panel_members && selectedApplicationDetail.interview_details.panel_members.length > 0 && (
+                    <div>
+                      <span className="text-[10px] font-mono text-blue-800 block mb-1">Committee Members:</span>
+                      <ul className="list-disc list-inside space-y-0.5 text-xs text-blue-950">
+                        {selectedApplicationDetail.interview_details.panel_members.map((p, i) => (
+                          <li key={i}>{p}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {selectedApplicationDetail.interview_details.instructions && (
+                    <div>
+                      <span className="text-[10px] font-mono text-blue-800 block mb-1">Instructions:</span>
+                      <p className="text-xs text-blue-950 leading-relaxed">
+                        {selectedApplicationDetail.interview_details.instructions}
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedApplicationDetail.interview_details.mode === "online" && selectedApplicationDetail.interview_details.meeting_link && (
+                    <div className="pt-2">
+                      <a
+                        href={selectedApplicationDetail.interview_details.meeting_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-medium cursor-pointer transition-colors"
+                      >
+                        <Video className="h-3.5 w-3.5" />
+                        <span>Launch Video Interview Room</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* FORMAL OFFER DETAILS (IF EXTENDED) */}
+              {selectedApplicationDetail.status === "offered" && selectedApplicationDetail.interview_details?.offer_details && (
+                <div className="p-4 rounded-md bg-amber-50 border border-amber-200 text-amber-950 space-y-3 font-sans">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Award className="h-4 w-4 text-amber-700" />
+                      <span className="font-semibold text-xs text-amber-950 uppercase tracking-wider font-mono">
+                        Official Appointment Terms
+                      </span>
+                    </div>
+                    {selectedApplicationDetail.interview_details.rating && (
+                      <span className="font-mono text-xs text-amber-800 font-semibold">
+                        Rating: {selectedApplicationDetail.interview_details.rating} / 5.0
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-xs font-mono">
+                    <div>
+                      <span className="text-amber-700 block text-[10px]">Rank:</span>
+                      <strong>{selectedApplicationDetail.interview_details.offer_details.designation}</strong>
+                    </div>
+                    <div>
+                      <span className="text-amber-700 block text-[10px]">CTC (LPA):</span>
+                      <strong className="text-emerald-700">₹{selectedApplicationDetail.interview_details.offer_details.base_salary_lpa} LPA</strong>
+                    </div>
+                    <div>
+                      <span className="text-amber-700 block text-[10px]">Joining Date:</span>
+                      <strong>{selectedApplicationDetail.interview_details.offer_details.joining_date}</strong>
+                    </div>
+                  </div>
+
+                  {selectedApplicationDetail.interview_details.feedback && (
+                    <div>
+                      <span className="text-[10px] font-mono text-amber-800 block mb-1">Committee Commendation:</span>
+                      <p className="text-xs text-amber-950 italic">
+                        "{selectedApplicationDetail.interview_details.feedback}"
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Submitted Academic Credentials */}
+              <div className="space-y-3 pt-2">
+                <div className="grid grid-cols-2 gap-3 p-3 rounded-md bg-[#F7F5F0] border border-[#E5E1D8] font-mono text-xs">
+                  <div>
+                    <span className="text-[#64748B] block text-[10px]">Current Affiliation:</span>
+                    <span className="text-[#111827] font-semibold">{selectedApplicationDetail.current_institution || "Academic Institution"}</span>
+                  </div>
+                  <div>
+                    <span className="text-[#64748B] block text-[10px]">Current Designation:</span>
+                    <span className="text-[#111827] font-semibold">{selectedApplicationDetail.current_designation || "Faculty Member"}</span>
+                  </div>
+                  <div>
+                    <span className="text-[#64748B] block text-[10px]">Years of Experience:</span>
+                    <span className="text-[#111827] font-semibold">{selectedApplicationDetail.years_of_experience || 0} Years</span>
+                  </div>
+                  <div>
+                    <span className="text-[#64748B] block text-[10px]">Notice Period:</span>
+                    <span className="text-[#111827] font-semibold">{selectedApplicationDetail.notice_period_days || 0} Days</span>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="font-mono text-[10px] text-[#64748B] uppercase tracking-wider block mb-1">
+                    Statement of Purpose
+                  </span>
+                  <div className="p-3 rounded-md bg-[#F7F5F0] border border-[#E5E1D8] text-[#111827] leading-relaxed">
+                    {selectedApplicationDetail.statement_of_purpose}
+                  </div>
+                </div>
+
+                {selectedApplicationDetail.research_statement && (
+                  <div>
+                    <span className="font-mono text-[10px] text-[#64748B] uppercase tracking-wider block mb-1">
+                      Research Agenda & Laboratory Strategy
+                    </span>
+                    <div className="p-3 rounded-md bg-[#F7F5F0] border border-[#E5E1D8] text-[#111827] leading-relaxed">
+                      {selectedApplicationDetail.research_statement}
+                    </div>
+                  </div>
+                )}
+
+                {selectedApplicationDetail.teaching_philosophy && (
+                  <div>
+                    <span className="font-mono text-[10px] text-[#64748B] uppercase tracking-wider block mb-1">
+                      Teaching Philosophy & Pedagogy
+                    </span>
+                    <div className="p-3 rounded-md bg-[#F7F5F0] border border-[#E5E1D8] text-[#111827] leading-relaxed">
+                      {selectedApplicationDetail.teaching_philosophy}
+                    </div>
+                  </div>
+                )}
+
+                {selectedApplicationDetail.cv_url && (
+                  <div className="pt-2">
+                    <a
+                      href={selectedApplicationDetail.cv_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs font-mono text-[#B08D57] hover:underline"
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      <span>View Submitted Curriculum Vitae Document</span>
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-[#E5E1D8] flex justify-end font-mono">
+              <button
+                type="button"
+                onClick={() => setSelectedApplicationDetail(null)}
+                className="px-4 py-2 bg-[#0B0B0A] hover:bg-[#111827] text-white text-xs rounded-md cursor-pointer"
+              >
+                Close Dossier
               </button>
             </div>
           </div>

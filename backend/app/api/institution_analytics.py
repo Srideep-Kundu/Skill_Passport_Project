@@ -18,19 +18,29 @@ from app.schemas.contracts import (
     CurriculumRecommendationItem,
     DepartmentDetailAnalytics,
     FacultyEngagementOverview,
+    FacultyJobApplicationListResponse,
+    FacultyJobApplicationResponse,
     IndustryPartnerDetail,
     IndustryPartnershipOverview,
     InstitutionAlertsResponse,
     InstitutionAnalyticsOverview,
+    InstitutionFacultyJobCreate,
+    InstitutionFacultyJobListResponse,
+    InstitutionFacultyJobResponse,
+    InstitutionFacultyJobUpdate,
+    InstitutionFacultyVideosResponse,
     InstitutionReportResponse,
     InternshipMonitoringOverview,
     InterventionPlanCreate,
     InterventionPlanResponse,
     InterventionPlanUpdate,
     InterventionRecommendation,
+    InterviewDecisionRequest,
+    InterviewScheduleRequest,
     LearningEffectivenessOverview,
     PlacementMonitoringOverview,
 )
+from app.services import faculty_recruitment_service as recruit_svc
 from app.services import institution_analytics_service as svc
 
 router = APIRouter(prefix="/institution", tags=["institution"])
@@ -158,6 +168,17 @@ async def get_faculty_engagement(
     return await svc.get_faculty_engagement_analytics(session, inst_id)
 
 
+@router.get("/faculty-videos", response_model=InstitutionFacultyVideosResponse)
+async def get_faculty_video_contributions(
+    principal: Annotated[Institution | Admin, Depends(require_role("institution", "admin"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> InstitutionFacultyVideosResponse:
+    """Retrieve and rank all faculty video lectures for this institution by teacher name and value."""
+    inst_id = principal.id if isinstance(principal, Institution) else None
+    inst_name = principal.institution_name if isinstance(principal, Institution) else None
+    return await svc.get_institution_faculty_video_contributions(session, inst_id, inst_name)
+
+
 @router.get("/curriculum-recommendations", response_model=list[CurriculumRecommendationItem])
 async def get_curriculum_recommendations(
     principal: Annotated[Institution | Admin, Depends(require_role("institution", "admin"))],
@@ -276,3 +297,118 @@ async def get_report(
 ) -> InstitutionReportResponse:
     inst_id = principal.id if isinstance(principal, Institution) else None
     return await svc.generate_institution_report(session, report_type, inst_id)
+
+
+# =============================================================================
+# FACULTY RECRUITMENT & INTERVIEW LIFECYCLE ENDPOINTS
+# =============================================================================
+
+@router.post("/faculty-jobs", response_model=InstitutionFacultyJobResponse, status_code=status.HTTP_201_CREATED)
+async def create_faculty_job(
+    payload: InstitutionFacultyJobCreate,
+    principal: Annotated[Institution | Admin, Depends(require_role("institution", "admin"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> InstitutionFacultyJobResponse:
+    if not isinstance(principal, Institution):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Only institution principals can post faculty vacancies")
+    return await recruit_svc.create_faculty_job(
+        session=session,
+        institution_id=principal.id,
+        institution_name=principal.institution_name,
+        payload=payload,
+    )
+
+
+@router.get("/faculty-jobs", response_model=InstitutionFacultyJobListResponse)
+async def list_institution_faculty_jobs(
+    principal: Annotated[Institution | Admin, Depends(require_role("institution", "admin"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> InstitutionFacultyJobListResponse:
+    if not isinstance(principal, Institution):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Only institution principals can view their faculty vacancies")
+    return await recruit_svc.list_institution_faculty_jobs(session, principal.id)
+
+
+@router.put("/faculty-jobs/{job_id}", response_model=InstitutionFacultyJobResponse)
+async def update_faculty_job(
+    job_id: UUID,
+    payload: InstitutionFacultyJobUpdate,
+    principal: Annotated[Institution | Admin, Depends(require_role("institution", "admin"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> InstitutionFacultyJobResponse:
+    if not isinstance(principal, Institution):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Only institution principals can update faculty vacancies")
+    try:
+        return await recruit_svc.update_faculty_job(session, principal.id, job_id, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.delete("/faculty-jobs/{job_id}")
+async def delete_faculty_job(
+    job_id: UUID,
+    principal: Annotated[Institution | Admin, Depends(require_role("institution", "admin"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> dict[str, bool]:
+    if not isinstance(principal, Institution):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Only institution principals can delete faculty vacancies")
+    try:
+        await recruit_svc.delete_faculty_job(session, principal.id, job_id)
+        return {"ok": True}
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.get("/faculty-jobs/{job_id}/applications", response_model=FacultyJobApplicationListResponse)
+async def list_job_applications(
+    job_id: UUID,
+    principal: Annotated[Institution | Admin, Depends(require_role("institution", "admin"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyJobApplicationListResponse:
+    if not isinstance(principal, Institution):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Only institution principals can view applications")
+    try:
+        return await recruit_svc.list_applications_for_job(session, principal.id, job_id)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.get("/faculty-job-applications", response_model=FacultyJobApplicationListResponse)
+async def list_all_institution_applications(
+    principal: Annotated[Institution | Admin, Depends(require_role("institution", "admin"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyJobApplicationListResponse:
+    if not isinstance(principal, Institution):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Only institution principals can view applications")
+    return await recruit_svc.list_all_applications_for_institution(session, principal.id)
+
+
+@router.post("/faculty-job-applications/{application_id}/schedule-interview", response_model=FacultyJobApplicationResponse)
+async def schedule_interview(
+    application_id: UUID,
+    payload: InterviewScheduleRequest,
+    principal: Annotated[Institution | Admin, Depends(require_role("institution", "admin"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyJobApplicationResponse:
+    if not isinstance(principal, Institution):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Only institution principals can schedule interviews")
+    try:
+        return await recruit_svc.schedule_faculty_interview(session, principal.id, application_id, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.post("/faculty-job-applications/{application_id}/decision", response_model=FacultyJobApplicationResponse)
+async def record_decision(
+    application_id: UUID,
+    payload: InterviewDecisionRequest,
+    principal: Annotated[Institution | Admin, Depends(require_role("institution", "admin"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyJobApplicationResponse:
+    if not isinstance(principal, Institution):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Only institution principals can record hiring decisions")
+    try:
+        return await recruit_svc.record_interview_decision(session, principal.id, application_id, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+

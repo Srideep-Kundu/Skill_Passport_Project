@@ -28,6 +28,9 @@ from app.schemas.contracts import (
     FacultyCollaborationHistoryItem,
     FacultyEventRegistrationCreate,
     FacultyEventRegistrationResponse,
+    FacultyJobApplicationCreate,
+    FacultyJobApplicationListResponse,
+    FacultyJobApplicationResponse,
     FacultyNotificationResponse,
     FacultyOpportunityResponse,
     FacultyPassportResponse,
@@ -35,6 +38,8 @@ from app.schemas.contracts import (
     FacultyProjectFeedbackRequest,
     FacultyVideoCreate,
     FacultyVideoResponse,
+    InstitutionFacultyJobListResponse,
+    InstitutionFacultyJobResponse,
     TrainingOutcomeCreateRequest,
     TrainingProgramCreateRequest,
     TrainingProgramListResponse,
@@ -49,6 +54,7 @@ from app.schemas.contracts import (
     WorkspaceTaskUpdate,
 )
 from app.services import academician_service, training_planner_service
+from app.services import faculty_recruitment_service as recruit_svc
 
 router = APIRouter(prefix="/academician", tags=["academician"])
 
@@ -641,3 +647,48 @@ async def record_training_outcomes(
         code = status.HTTP_404_NOT_FOUND if "not found" in str(exc) else status.HTTP_422_UNPROCESSABLE_ENTITY
         raise HTTPException(code, str(exc)) from exc
 
+
+# ============================================================================
+# 8. Faculty Job Openings & Interview Applications
+# ============================================================================
+
+@router.get("/faculty-jobs", response_model=InstitutionFacultyJobListResponse)
+async def list_faculty_vacancies(
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    department: str | None = Query(None),
+    designation: str | None = Query(None),
+    institution_name: str | None = Query(None),
+    search: str | None = Query(None),
+) -> InstitutionFacultyJobListResponse:
+    """Browse open university faculty positions across institutions with application status."""
+    return await recruit_svc.list_open_faculty_jobs(
+        session=session,
+        department=department,
+        designation=designation,
+        institution_name=institution_name,
+        search=search,
+        faculty_id=faculty.id,
+    )
+
+
+@router.post("/faculty-jobs/apply", response_model=FacultyJobApplicationResponse, status_code=status.HTTP_201_CREATED)
+async def apply_for_faculty_position(
+    payload: FacultyJobApplicationCreate,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyJobApplicationResponse:
+    """Apply for an open university faculty position with Statement of Purpose and credentials."""
+    try:
+        return await recruit_svc.apply_for_faculty_job(session, faculty.id, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+
+
+@router.get("/faculty-jobs/my-applications", response_model=FacultyJobApplicationListResponse)
+async def get_my_faculty_applications(
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyJobApplicationListResponse:
+    """View all positions applied to by this faculty member, along with scheduled interviews and decisions."""
+    return await recruit_svc.list_faculty_own_applications(session, faculty.id)

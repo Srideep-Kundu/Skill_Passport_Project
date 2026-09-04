@@ -84,6 +84,7 @@ export type StudentTab =
   | "evidence"
   | "gaps"
   | "assessments"
+  | "project_assessments"
   | "learning"
   | "placements"
   | "collaborations"
@@ -98,6 +99,7 @@ export type RecruiterTab =
   | "matches"
   | "candidates"
   | "comparison"
+  | "project_assessments"
   | "skills"
   | "pipeline"
   | "internships"
@@ -109,6 +111,7 @@ export type AcademicianTab =
   | "training_planner"
   | "opportunities"
   | "videos"
+  | "faculty_jobs"
   | "applications"
   | "workspaces"
   | "passport"
@@ -204,9 +207,10 @@ export function App() {
     { id: "teams", label: "Team Formation", icon: <Users className="h-4 w-4 shrink-0" aria-hidden="true" /> },
   ];
 
-  // 10 Lumina Intel Recruiter navigation tabs
+  // 11 Lumina Intel Recruiter navigation tabs
   const recruiterNavItems: { id: RecruiterTab; label: string; icon: React.ReactNode }[] = [
     { id: "overview", label: "Overview", icon: <LayoutDashboard className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "project_assessments", label: "Project Assessment", icon: <Code2 className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "evidence_graph", label: "Evidence Graph", icon: <BadgeCheck className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "discovery", label: "Talent Discovery", icon: <Compass className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "matches", label: "Explainable Matches", icon: <Target className="h-4 w-4 shrink-0" aria-hidden="true" /> },
@@ -218,12 +222,13 @@ export function App() {
     { id: "analytics", label: "Analytics & Insights", icon: <BarChart3 className="h-4 w-4 shrink-0" aria-hidden="true" /> },
   ];
 
-  // 11 Faculty / Academician Portal navigation tabs
+  // 12 Faculty / Academician Portal navigation tabs
   const academicianNavItems: { id: AcademicianTab; label: string; icon: React.ReactNode }[] = [
     { id: "collaboration_funding_hub", label: "Collaboration & Funding", icon: <Handshake className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "training_planner", label: "Training Planner", icon: <Award className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "opportunities", label: "Opportunities", icon: <Briefcase className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "videos", label: "Video Lectures", icon: <Video className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "faculty_jobs", label: "Faculty Openings & Interviews", icon: <Building2 className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "applications", label: "My Applications", icon: <FileText className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "workspaces", label: "Workspaces", icon: <Layers className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "passport", label: "Academic Passport", icon: <GraduationCap className="h-4 w-4 shrink-0" aria-hidden="true" /> },
@@ -243,7 +248,7 @@ export function App() {
     { id: "skills", label: "Skill & Curriculum Gap", icon: <TrendingUp className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "internships", label: "Internship Funnel", icon: <Briefcase className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "placements", label: "Placement Outcomes", icon: <Award className="h-4 w-4 shrink-0" aria-hidden="true" /> },
-    { id: "faculty", label: "Faculty Immersion", icon: <GraduationCap className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "faculty", label: "Faculty & Masterclasses", icon: <GraduationCap className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "partnerships", label: "Corporate Partnerships", icon: <Layers className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "interventions", label: "Action Plans", icon: <Sparkles className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "reports", label: "Institutional Reports", icon: <Download className="h-4 w-4 shrink-0" aria-hidden="true" /> },

@@ -1584,6 +1584,292 @@ export interface FacultyVideoListResponse {
   items: FacultyVideo[];
   faculty_names: string[];
   subjects: string[];
+  institutions?: string[];
+}
+
+export interface FacultyMemberContributionSummary {
+  faculty_id?: string | null;
+  faculty_name: string;
+  faculty_institution: string;
+  faculty_designation: string;
+  department: string;
+  total_videos: number;
+  total_views: number;
+  avg_views_per_video: number;
+  skills_taught: string[];
+  value_score: number;
+  value_rank: number;
+  value_tier: string;
+  latest_upload_at?: string | null;
+  videos: FacultyVideo[];
+}
+
+export interface InstitutionFacultyVideosResponse {
+  institution_name: string;
+  total_videos: number;
+  total_faculty_contributors: number;
+  total_video_views: number;
+  avg_views_per_faculty: number;
+  top_faculty_contributor?: string | null;
+  faculty_contributions: FacultyMemberContributionSummary[];
+  all_videos: FacultyVideo[];
+}
+
+// =========================================================================
+// Automated Project Assessment Types
+// =========================================================================
+
+export type ProjectAssessmentStatus =
+  | "pending"
+  | "scanning"
+  | "analyzing"
+  | "generating"
+  | "ready"
+  | "completed"
+  | "failed";
+
+export interface ProjectAssessmentQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  category?: string;
+  difficulty?: string;
+  correct_answer?: string | null;
+  explanation?: string | null;
+  student_selected_option?: string | null;
+  is_correct?: boolean | null;
+}
+
+export interface ProjectAssessmentCategory {
+  id: string;
+  category_name: string;
+  score: number;
+  max_score?: number;
+  weight?: number;
+  feedback?: string | null;
+  metrics?: Record<string, any>;
+}
+
+export interface ProjectAssessment {
+  id: string;
+  student_id?: string | null;
+  student_name?: string;
+  student_email?: string;
+  student_university?: string | null;
+  candidate_name?: string | null;
+  candidate_email?: string | null;
+  candidate_university?: string | null;
+  recruiter_id: string;
+  project_title: string;
+  repository_url: string;
+  repository_provider: string;
+  status: ProjectAssessmentStatus;
+  overall_score?: number | null;
+  assessment_summary?: string | null;
+  strengths: string[];
+  improvements: string[];
+  technologies: string[];
+  repo_metadata?: Record<string, any>;
+  repository_metadata?: Record<string, any>;
+  questions?: ProjectAssessmentQuestion[];
+  questions_count?: number;
+  student_answers?: Record<string, string>;
+  is_shortlisted: boolean;
+  shortlist_notes?: string | null;
+  error_message?: string | null;
+  created_at: string;
+  updated_at: string;
+  completed_at?: string | null;
+  category_scores: ProjectAssessmentCategory[];
+}
+
+export interface ProjectAssessmentSummary {
+  id: string;
+  student_id?: string | null;
+  student_name?: string;
+  student_email?: string;
+  student_university?: string | null;
+  candidate_name?: string | null;
+  candidate_email?: string | null;
+  candidate_university?: string | null;
+  project_title: string;
+  repository_url: string;
+  repository_provider: string;
+  status: ProjectAssessmentStatus;
+  overall_score?: number | null;
+  questions_count?: number;
+  is_shortlisted: boolean;
+  technologies: string[];
+  created_at: string;
+  completed_at?: string | null;
+}
+
+export interface ProjectAssessmentList {
+  total: number;
+  items: ProjectAssessmentSummary[];
+}
+
+export interface ProjectAssessmentCreatePayload {
+  student_id?: string | null;
+  project_title: string;
+  repository_url: string;
+}
+
+export interface ProjectAssessmentShortlistPayload {
+  is_shortlisted: boolean;
+  notes?: string;
+}
+
+export interface ProjectAssessmentSubmitPayload {
+  answers: Record<string, string>;
+}
+
+export interface CandidateOption {
+  id?: string;
+  student_id: string;
+  full_name: string;
+  email: string;
+  university?: string | null;
+}
+
+// ============================================================================
+// University Faculty Recruitment & Interview Types
+// ============================================================================
+
+export interface InstitutionFacultyJob {
+  id: string;
+  institution_id: string;
+  institution_name: string;
+  title: string;
+  department: string;
+  designation: string;
+  employment_type: string;
+  min_experience_years: number;
+  qualification_required: string;
+  skills_required: string[];
+  research_areas: string[];
+  salary_range_lpa: string;
+  location: string;
+  openings_count: number;
+  deadline?: string | null;
+  description: string;
+  responsibilities: string[];
+  benefits: string[];
+  status: string;
+  created_at: string;
+  updated_at: string;
+  applications_count?: number;
+  has_applied?: boolean;
+  my_application_status?: string | null;
+}
+
+export interface InstitutionFacultyJobListResponse {
+  total: number;
+  items: InstitutionFacultyJob[];
+  departments: string[];
+  designations: string[];
+  institutions: string[];
+}
+
+export interface InstitutionFacultyJobCreatePayload {
+  title: string;
+  department: string;
+  designation: string;
+  employment_type?: string;
+  min_experience_years?: number;
+  qualification_required?: string;
+  skills_required?: string[];
+  research_areas?: string[];
+  salary_range_lpa?: string;
+  location?: string;
+  openings_count?: number;
+  deadline?: string | null;
+  description?: string;
+  responsibilities?: string[];
+  benefits?: string[];
+  status?: string;
+}
+
+export interface FacultyJobInterviewDetails {
+  scheduled_at?: string;
+  mode?: "online" | "offline" | string;
+  meeting_link?: string | null;
+  venue?: string | null;
+  panel_members?: string[];
+  instructions?: string | null;
+  status?: string;
+  rating?: number;
+  feedback?: string;
+  notes?: string;
+  decision_at?: string;
+  decision?: string;
+  offer_details?: {
+    designation?: string;
+    base_salary_lpa?: number | string;
+    joining_date?: string;
+    [key: string]: any;
+  } | null;
+}
+
+export interface FacultyJobApplication {
+  id: string;
+  job_id: string;
+  faculty_id: string;
+  status: "applied" | "shortlisted" | "interview_scheduled" | "offered" | "rejected" | string;
+  statement_of_purpose: string;
+  research_statement?: string | null;
+  teaching_philosophy?: string | null;
+  current_institution: string;
+  current_designation: string;
+  years_of_experience: number;
+  notice_period_days: number;
+  cv_url?: string | null;
+  interview_details: FacultyJobInterviewDetails;
+  applied_at: string;
+  updated_at: string;
+  faculty_name?: string | null;
+  faculty_email?: string | null;
+  faculty_department?: string | null;
+  faculty_designation?: string | null;
+  faculty_research_areas?: string[];
+  job_title?: string | null;
+  institution_name?: string | null;
+  department?: string | null;
+  designation?: string | null;
+}
+
+export interface FacultyJobApplicationListResponse {
+  total: number;
+  items: FacultyJobApplication[];
+}
+
+export interface FacultyJobApplicationCreatePayload {
+  job_id: string;
+  statement_of_purpose: string;
+  research_statement?: string | null;
+  teaching_philosophy?: string | null;
+  current_institution?: string;
+  current_designation?: string;
+  years_of_experience?: number;
+  notice_period_days?: number;
+  cv_url?: string | null;
+}
+
+export interface InterviewSchedulePayload {
+  scheduled_at: string;
+  mode?: "online" | "offline" | string;
+  meeting_link?: string | null;
+  venue?: string | null;
+  panel_members?: string[];
+  instructions?: string | null;
+}
+
+export interface InterviewDecisionPayload {
+  status: "offered" | "rejected" | "shortlisted" | string;
+  rating?: number | null;
+  feedback?: string | null;
+  notes?: string | null;
+  offer_details?: Record<string, any> | null;
 }
 
 export interface TrainingRecommendation {
@@ -1694,6 +1980,8 @@ export interface TrainingProgramUpdateInput {
   confirmed_funding?: number;
   campaign_metrics?: Record<string, number>;
 }
+
+
 
 
 

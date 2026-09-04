@@ -132,7 +132,7 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
           sortBy,
         });
 
-        setMatches(response.items);
+        setMatches(Array.isArray(response?.items) ? response.items : []);
       } catch (err) {
         setError(err instanceof ApiError ? err.detail : "Failed to load internship matches.");
       } finally {
@@ -170,7 +170,8 @@ export function InternshipMatches({ token, onNavigateToDiscovery }: InternshipMa
     setPreparingMatchId(match.id);
     try {
       const apps = await api.applications(token);
-      let app = apps.items.find((a) => a.external_job_id === match.external_job_id);
+      const safeApps = Array.isArray(apps?.items) ? apps.items : [];
+      let app = safeApps.find((a) => a.external_job_id === match.external_job_id);
 
       if (!app) {
         app = await api.createApplication(match.external_job_id, match.id, token);

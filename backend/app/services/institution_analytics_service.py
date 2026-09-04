@@ -15,6 +15,7 @@ from sqlalchemy.sql.elements import ColumnElement
 from app.models import (
     Application,
     ApplicationTrackingStatus,
+    FacultyVideo,
     Institution,
     InstitutionActionPlan,
     InstitutionInterventionPlan,
@@ -39,12 +40,15 @@ from app.schemas.contracts import (
     DepartmentDetailAnalytics,
     DepartmentMetric,
     FacultyEngagementOverview,
+    FacultyMemberContributionSummary,
+    FacultyVideoResponse,
     IndustryPartnerDetail,
     IndustryPartnershipOverview,
     IndustryPartnerSummary,
     InstitutionAlertItem,
     InstitutionAlertsResponse,
     InstitutionAnalyticsOverview,
+    InstitutionFacultyVideosResponse,
     InstitutionReportResponse,
     InstitutionSkillDistribution,
     InternshipMonitoringOverview,
@@ -1737,4 +1741,162 @@ async def generate_institution_report(
         columns=columns,
         rows=rows,
         csv_export_url=None,
+    )
+
+
+async def get_institution_faculty_video_contributions(
+    session: AsyncSession,
+    institution_id: UUID | None = None,
+    institution_name: str | None = None,
+) -> InstitutionFacultyVideosResponse:
+    """Retrieve and rank faculty video masterclasses for a university portal by teacher name and value."""
+    resolved_inst_name = "National Institute of Technology Demo University"
+    if institution_id:
+        inst = await session.get(Institution, institution_id)
+        if inst and inst.institution_name:
+            resolved_inst_name = inst.institution_name
+    elif institution_name and institution_name.strip():
+        resolved_inst_name = institution_name.strip()
+
+    stmt = select(FacultyVideo).where(FacultyVideo.is_published == True)  # noqa: E712
+    all_videos_list = list((await session.scalars(stmt.order_by(FacultyVideo.created_at.desc()))).all())
+
+    norm_name = resolved_inst_name.lower().strip()
+    inst_videos = [
+        v for v in all_videos_list
+        if norm_name in (v.faculty_institution or "").lower()
+        or (v.faculty_institution or "").lower() in norm_name
+    ]
+
+    if not inst_videos and len(norm_name.split()) > 1:
+        key_words = [w for w in norm_name.split() if len(w) > 3 and w not in {"demo", "university", "institute"}]
+        if key_words:
+            inst_videos = [
+                v for v in all_videos_list
+                if any(kw in (v.faculty_institution or "").lower() for kw in key_words)
+            ]
+
+    active_videos = inst_videos if inst_videos else all_videos_list
+
+    faculty_groups: dict[str, list[FacultyVideo]] = {}
+    for v in active_videos:
+        key = v.faculty_name.strip() if v.faculty_name else "Unknown Faculty"
+        if key not in faculty_groups:
+            faculty_groups[key] = []
+        faculty_groups[key].append(v)
+
+    faculty_contributions: list[FacultyMemberContributionSummary] = []
+    for f_name, f_videos in faculty_groups.items():
+        total_vids = len(f_videos)
+        total_views = sum(v.views_count for v in f_videos)
+        avg_views = round(total_views / total_vids, 1) if total_vids > 0 else 0.0
+
+        all_skills: set[str] = set()
+        for v in f_videos:
+            for s in (v.skills_covered or []):
+                if s and s.strip():
+                    all_skills.add(s.strip())
+        skills_taught = sorted(list(all_skills))
+
+        # Teacher Value Score: 1.0 per student view + 50.0 per lecture + 15.0 per distinct skill taught
+        value_score = round((total_views * 1.0) + (total_vids * 50.0) + (len(skills_taught) * 15.0), 1)
+
+        first_v = f_videos[0]
+        dept = first_v.department or "Engineering & Computing"
+        desig = first_v.faculty_designation or "Faculty Member"
+        inst_affiliation = first_v.faculty_institution or resolved_inst_name
+        latest_date = max((v.created_at for v in f_videos if v.created_at), default=None)
+
+        converted_videos = [
+            FacultyVideoResponse(
+                id=v.id,
+                faculty_id=v.faculty_id,
+                faculty_name=v.faculty_name,
+                faculty_institution=v.faculty_institution,
+                faculty_designation=v.faculty_designation,
+                title=v.title,
+                description=v.description,
+                video_url=v.video_url,
+                thumbnail_url=v.thumbnail_url,
+                duration_minutes=v.duration_minutes,
+                subject=v.subject,
+                department=v.department,
+                skills_covered=v.skills_covered or [],
+                notes_markdown=v.notes_markdown,
+                views_count=v.views_count,
+                is_published=v.is_published,
+                created_at=v.created_at,
+            )
+            for v in f_videos
+        ]
+
+        faculty_contributions.append(
+            FacultyMemberContributionSummary(
+                faculty_id=first_v.faculty_id,
+                faculty_name=f_name,
+                faculty_institution=inst_affiliation,
+                faculty_designation=desig,
+                department=dept,
+                total_videos=total_vids,
+                total_views=total_views,
+                avg_views_per_video=avg_views,
+                skills_taught=skills_taught,
+                value_score=value_score,
+                value_rank=0,
+                value_tier="",
+                latest_upload_at=latest_date,
+                videos=converted_videos,
+            )
+        )
+
+    # Sort descending by value_score, then total_views
+    faculty_contributions.sort(key=lambda f: (f.value_score, f.total_views, f.total_videos), reverse=True)
+
+    for idx, f_contrib in enumerate(faculty_contributions, start=1):
+        f_contrib.value_rank = idx
+        if idx == 1:
+            f_contrib.value_tier = "Top Value Faculty Leader ⭐"
+        elif idx == 2:
+            f_contrib.value_tier = "Distinguished Academic Contributor 🎖️"
+        elif idx == 3:
+            f_contrib.value_tier = "High Impact Educator 🚀"
+        else:
+            f_contrib.value_tier = "Active Knowledge Creator 💡"
+
+    total_views_sum = sum(v.views_count for v in active_videos)
+    total_faculty_count = len(faculty_contributions)
+    avg_views_per_fac = round(total_views_sum / total_faculty_count, 1) if total_faculty_count > 0 else 0.0
+
+    all_converted_videos = [
+        FacultyVideoResponse(
+            id=v.id,
+            faculty_id=v.faculty_id,
+            faculty_name=v.faculty_name,
+            faculty_institution=v.faculty_institution,
+            faculty_designation=v.faculty_designation,
+            title=v.title,
+            description=v.description,
+            video_url=v.video_url,
+            thumbnail_url=v.thumbnail_url,
+            duration_minutes=v.duration_minutes,
+            subject=v.subject,
+            department=v.department,
+            skills_covered=v.skills_covered or [],
+            notes_markdown=v.notes_markdown,
+            views_count=v.views_count,
+            is_published=v.is_published,
+            created_at=v.created_at,
+        )
+        for v in active_videos
+    ]
+
+    return InstitutionFacultyVideosResponse(
+        institution_name=resolved_inst_name,
+        total_videos=len(active_videos),
+        total_faculty_contributors=total_faculty_count,
+        total_video_views=total_views_sum,
+        avg_views_per_faculty=avg_views_per_fac,
+        top_faculty_contributor=faculty_contributions[0].faculty_name if faculty_contributions else None,
+        faculty_contributions=faculty_contributions,
+        all_videos=all_converted_videos,
     )

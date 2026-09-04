@@ -69,13 +69,17 @@ async def get_faculty_videos(
     session: Annotated[AsyncSession, Depends(get_session)],
     faculty_name: str | None = Query(default=None, description="Filter specifically by Faculty Name"),
     subject: str | None = Query(default=None, description="Filter by Subject / Domain"),
+    university: str | None = Query(default=None, description="Filter by University / Institution"),
+    institution: str | None = Query(default=None, description="Alias for university"),
     search: str | None = Query(default=None, description="Keyword search in title, notes, faculty"),
 ) -> FacultyVideoListResponse:
-    """Retrieve published faculty video lectures with filtering by Faculty Name and Subject."""
+    """Retrieve published faculty video lectures with filtering by Faculty Name, University, and Subject."""
+    target_inst = university or institution
     return await academician_service.list_faculty_videos_catalog(
         session=session,
         faculty_name=faculty_name,
         subject=subject,
+        institution=target_inst,
         search=search,
     )
 

@@ -1217,5 +1217,124 @@ class TrainingOutcomeMetric(Timestamped, Base):
     training: Mapped[TrainingProgram] = relationship(back_populates="outcomes")
 
 
+# =========================================================================
+# Automated GitHub Project Assessment Models for Recruiters & Students
+# =========================================================================
+
+class ProjectAssessmentStatus(str, enum.Enum):
+    pending = "pending"
+    scanning = "scanning"
+    analyzing = "analyzing"
+    generating = "generating"
+    ready = "ready"
+    completed = "completed"
+    failed = "failed"
 
 
+class ProjectAssessment(Timestamped, Base):
+    __tablename__ = "project_assessments"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    student_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), nullable=True, index=True)
+    recruiter_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("recruiters.id", ondelete="CASCADE"), nullable=False, index=True)
+    project_title: Mapped[str] = mapped_column(String(255), nullable=False)
+    repository_url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    repository_provider: Mapped[str] = mapped_column(String(32), default="github", nullable=False)
+    status: Mapped[ProjectAssessmentStatus] = mapped_column(
+        Enum(ProjectAssessmentStatus), default=ProjectAssessmentStatus.pending, nullable=False, index=True
+    )
+    overall_score: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    assessment_summary: Mapped[str | None] = mapped_column(Text)
+    strengths: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    improvements: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    technologies: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    repository_metadata: Mapped[dict[str, Any]] = mapped_column(Json, default=dict, nullable=False)
+    is_shortlisted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    shortlist_notes: Mapped[str | None] = mapped_column(Text)
+    error_message: Mapped[str | None] = mapped_column(String(255))
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    student: Mapped[Student | None] = relationship()
+    recruiter: Mapped[Recruiter] = relationship()
+    category_scores: Mapped[list["AssessmentCategoryScore"]] = relationship(
+        back_populates="assessment", cascade="all, delete-orphan"
+    )
+
+
+class AssessmentCategoryScore(Base):
+    __tablename__ = "assessment_category_scores"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    assessment_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("project_assessments.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    category_name: Mapped[str] = mapped_column(String(80), nullable=False)
+    score: Mapped[int] = mapped_column(Integer, nullable=False)
+    feedback: Mapped[str] = mapped_column(Text, nullable=False)
+
+    assessment: Mapped[ProjectAssessment] = relationship(back_populates="category_scores")
+
+
+# =========================================================================
+# University Faculty Recruitment & Job Openings Models
+# =========================================================================
+
+class InstitutionFacultyJob(Base):
+    __tablename__ = "institution_faculty_jobs"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    institution_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("institutions.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    institution_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    department: Mapped[str] = mapped_column(String(128), nullable=False)
+    designation: Mapped[str] = mapped_column(String(128), nullable=False)
+    employment_type: Mapped[str] = mapped_column(String(64), default="Full-time", nullable=False)
+    min_experience_years: Mapped[int] = mapped_column(Integer, default=3, nullable=False)
+    qualification_required: Mapped[str] = mapped_column(String(255), default="Ph.D. or Master's in relevant field", nullable=False)
+    skills_required: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    research_areas: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    salary_range_lpa: Mapped[str] = mapped_column(String(128), default="Competitive", nullable=False)
+    location: Mapped[str] = mapped_column(String(255), default="Campus", nullable=False)
+    openings_count: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    description: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    responsibilities: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    benefits: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), default="open", nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    institution: Mapped[Institution] = relationship()
+    applications: Mapped[list["FacultyJobApplication"]] = relationship(
+        back_populates="job", cascade="all, delete-orphan"
+    )
+
+
+class FacultyJobApplication(Base):
+    __tablename__ = "faculty_job_applications"
+    __table_args__ = (UniqueConstraint("job_id", "faculty_id", name="uq_faculty_job_application"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("institution_faculty_jobs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    faculty_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("academicians.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    status: Mapped[str] = mapped_column(String(40), default="applied", nullable=False, index=True)
+    statement_of_purpose: Mapped[str] = mapped_column(Text, nullable=False)
+    research_statement: Mapped[str | None] = mapped_column(Text)
+    teaching_philosophy: Mapped[str | None] = mapped_column(Text)
+    current_institution: Mapped[str] = mapped_column(String(255), default="", nullable=False)
+    current_designation: Mapped[str] = mapped_column(String(128), default="", nullable=False)
+    years_of_experience: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    notice_period_days: Mapped[int] = mapped_column(Integer, default=30, nullable=False)
+    cv_url: Mapped[str | None] = mapped_column(String(2048))
+    interview_details: Mapped[dict[str, Any]] = mapped_column(Json, default=dict, nullable=False)
+    applied_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    job: Mapped[InstitutionFacultyJob] = relationship(back_populates="applications")
+    faculty: Mapped[Academician] = relationship()

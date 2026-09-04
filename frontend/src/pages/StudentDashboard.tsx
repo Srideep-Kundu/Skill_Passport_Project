@@ -48,6 +48,11 @@ const headerContentMap: Record<StudentTab, { title: string; subtitle: string; ca
     title: "Unified Lumina Intel Passport",
     subtitle: "Consolidated verifiable skill records, cryptographic evidence graph, and verified competencies.",
   },
+  project_assessments: {
+    category: "STUDENT / 04",
+    title: "Skill & Project Assessments",
+    subtitle: "Complete recruiter-assigned GitHub repository evaluations and standardized diagnostic tests.",
+  },
   gaps: {
     category: "STUDENT / 03",
     title: "Career Goals & Skill Gap Analysis",
@@ -55,8 +60,8 @@ const headerContentMap: Record<StudentTab, { title: string; subtitle: string; ca
   },
   assessments: {
     category: "STUDENT / 04",
-    title: "Diagnostic Skill Assessments",
-    subtitle: "Standardized technical testing with automatic scoring and verified Lumina Intel credit.",
+    title: "Skill & Project Assessments",
+    subtitle: "Complete recruiter-assigned GitHub repository evaluations and standardized diagnostic tests.",
   },
   learning: {
     category: "STUDENT / 05",
@@ -143,12 +148,12 @@ export function StudentDashboard({
       ]);
 
       if (nextPassport) setPassport(nextPassport);
-      setMatches(nextMatchPage.items);
-      setRecruiterConsent(nextConsent.recruiter_evidence_consent);
+      setMatches(Array.isArray(nextMatchPage?.items) ? nextMatchPage.items : []);
+      setRecruiterConsent(!!nextConsent?.recruiter_evidence_consent);
       if (nextProfile) setCandidateProfile(nextProfile);
-      setApplications(nextApps.items);
-      setQueueItems(nextQueue.items);
-      setDiscoveries(nextDiscoveries.items);
+      setApplications(Array.isArray(nextApps?.items) ? nextApps.items : []);
+      setQueueItems(Array.isArray(nextQueue?.items) ? nextQueue.items : []);
+      setDiscoveries(Array.isArray(nextDiscoveries?.items) ? nextDiscoveries.items : []);
     } catch (caught) {
       setError(caught instanceof ApiError ? caught.detail : "Dashboard data could not be loaded.");
     } finally {
@@ -535,6 +540,7 @@ export function StudentDashboard({
         </div>
       )}
 
+
       {/* 3. EVIDENCE & RESUMES TAB */}
       {activeTab === "evidence" && (
         <div className="space-y-8">
@@ -621,10 +627,11 @@ export function StudentDashboard({
         />
       )}
 
-      {/* 9. SKILL ASSESSMENTS TAB */}
-      {activeTab === "assessments" && (
+      {/* 9. SKILL ASSESSMENTS TAB (includes both GitHub Project Assessments & Diagnostic Quizzes) */}
+      {(activeTab === "assessments" || activeTab === "project_assessments") && (
         <SkillAssessments
           token={token}
+          defaultMode={activeTab === "project_assessments" ? "projects" : undefined}
           onAssessmentCompleted={() => {
             void loadData();
           }}

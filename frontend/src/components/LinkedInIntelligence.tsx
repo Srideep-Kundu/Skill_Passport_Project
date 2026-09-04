@@ -48,7 +48,8 @@ export function LinkedInIntelligence({
 
   const load = useCallback(async () => {
     try {
-      setImports((await api.linkedinImports(token)).items);
+      const res = await api.linkedinImports(token);
+      setImports(Array.isArray(res?.items) ? res.items : []);
     } catch (caught) {
       setImports([]);
       setMessage(caught instanceof ApiError ? caught.detail : "LinkedIn imports could not be loaded.");

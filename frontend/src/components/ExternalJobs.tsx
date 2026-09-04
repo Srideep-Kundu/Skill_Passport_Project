@@ -138,13 +138,16 @@ export function ExternalJobs({ token }: { token: string }) {
           api.providers(token).catch(() => []),
         ]);
 
-        setJobs(jobsRes.items);
+        setJobs(Array.isArray(jobsRes?.items) ? jobsRes.items : []);
         const matchMap: Record<string, ExternalJobMatch> = {};
-        matchesRes.items.forEach((m) => {
-          matchMap[m.external_job_id] = m;
+        const safeMatches = Array.isArray(matchesRes?.items) ? matchesRes.items : [];
+        safeMatches.forEach((m) => {
+          if (m?.external_job_id) {
+            matchMap[m.external_job_id] = m;
+          }
         });
         setMatchesByJobId(matchMap);
-        setProviders(providersRes);
+        setProviders(Array.isArray(providersRes) ? providersRes : []);
       } catch (err) {
         setError(err instanceof ApiError ? err.detail : "Could not load market opportunities.");
       } finally {

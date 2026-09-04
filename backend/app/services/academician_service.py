@@ -1742,6 +1742,7 @@ async def list_faculty_videos_catalog(
     session: AsyncSession,
     faculty_name: str | None = None,
     subject: str | None = None,
+    institution: str | None = None,
     search: str | None = None,
 ) -> FacultyVideoListResponse:
     stmt = select(FacultyVideo).where(FacultyVideo.is_published == True)  # noqa: E712
@@ -1752,6 +1753,9 @@ async def list_faculty_videos_catalog(
     if subject and subject.strip() and subject.lower() != "all":
         stmt = stmt.where(FacultyVideo.subject.ilike(f"%{subject.strip()}%"))
 
+    if institution and institution.strip() and institution.lower() != "all":
+        stmt = stmt.where(FacultyVideo.faculty_institution.ilike(f"%{institution.strip()}%"))
+
     if search and search.strip():
         term = f"%{search.strip()}%"
         stmt = stmt.where(
@@ -1759,6 +1763,7 @@ async def list_faculty_videos_catalog(
                 FacultyVideo.title.ilike(term),
                 FacultyVideo.description.ilike(term),
                 FacultyVideo.faculty_name.ilike(term),
+                FacultyVideo.faculty_institution.ilike(term),
                 FacultyVideo.subject.ilike(term),
             )
         )
@@ -1766,7 +1771,7 @@ async def list_faculty_videos_catalog(
     stmt = stmt.order_by(FacultyVideo.created_at.desc())
     videos = (await session.scalars(stmt)).all()
 
-    # Get distinct faculty names and subjects for filtering
+    # Get distinct faculty names, subjects, and institutions for filtering
     faculty_names_stmt = (
         select(FacultyVideo.faculty_name)
         .where(FacultyVideo.is_published == True)  # noqa: E712
@@ -1783,11 +1788,20 @@ async def list_faculty_videos_catalog(
     )
     subjects = list((await session.scalars(subjects_stmt)).all())
 
+    institutions_stmt = (
+        select(FacultyVideo.faculty_institution)
+        .where(FacultyVideo.is_published == True)  # noqa: E712
+        .distinct()
+        .order_by(FacultyVideo.faculty_institution)
+    )
+    institutions = [i for i in (await session.scalars(institutions_stmt)).all() if i and i.strip()]
+
     return FacultyVideoListResponse(
         total=len(videos),
         items=[_to_faculty_video_response(v) for v in videos],
         faculty_names=faculty_names,
         subjects=subjects,
+        institutions=institutions,
     )
 
 

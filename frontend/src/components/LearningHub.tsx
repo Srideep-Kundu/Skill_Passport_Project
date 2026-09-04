@@ -6,6 +6,7 @@ import {
   Video,
   BookOpen,
   GraduationCap,
+  Building2,
   Eye,
   Clock,
   Search,
@@ -38,7 +39,9 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
   const [videos, setVideos] = useState<FacultyVideo[]>([]);
   const [facultyNames, setFacultyNames] = useState<string[]>([]);
   const [subjects, setSubjects] = useState<string[]>([]);
+  const [universities, setUniversities] = useState<string[]>([]);
   const [selectedFaculty, setSelectedFaculty] = useState<string>("All");
+  const [selectedUniversity, setSelectedUniversity] = useState<string>("All");
   const [selectedSubject, setSelectedSubject] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [videosLoading, setVideosLoading] = useState(true);
@@ -67,17 +70,27 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
       const data = await api.getFacultyVideosCatalog(token, {
         faculty_name: selectedFaculty,
         subject: selectedSubject,
+        university: selectedUniversity,
         search: searchQuery || undefined,
       });
-      setVideos(data.items);
-      setFacultyNames(data.faculty_names || []);
-      setSubjects(data.subjects || []);
+      const items = Array.isArray(data?.items) ? data.items : [];
+      setVideos(items);
+      setFacultyNames(Array.isArray(data?.faculty_names) ? data.faculty_names : []);
+      setSubjects(Array.isArray(data?.subjects) ? data.subjects : []);
+
+      // Gather distinct universities from server and item metadata
+      const serverUnis = Array.isArray(data?.institutions) ? data.institutions : [];
+      const itemUnis = items
+        .map((v) => v.faculty_institution)
+        .filter((inst): inst is string => Boolean(inst && inst.trim()));
+      const combinedUnis = Array.from(new Set([...serverUnis, ...itemUnis])).sort();
+      setUniversities(combinedUnis);
     } catch (err) {
       toast.error(errorMessage(err, "Failed to load faculty videos"));
     } finally {
       setVideosLoading(false);
     }
-  }, [selectedFaculty, selectedSubject, searchQuery, token]);
+  }, [selectedFaculty, selectedSubject, selectedUniversity, searchQuery, token]);
 
   useEffect(() => {
     if (activeHubView === "courses") {
@@ -211,51 +224,73 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
           ========================================================================= */}
       {activeHubView === "faculty_videos" && (
         <div className="space-y-6">
-          {/* Filter Bar specifically highlighting Filter by Faculty Name */}
+          {/* Filter Bar specifically highlighting Filter by Faculty Name & University */}
           <div className="border border-[#E5E1D8] bg-[#FFFFFF] p-5 rounded-lg shadow-sm space-y-4">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              {/* Filter by Faculty Name Dropdown */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                <label className="text-sm font-semibold text-[#1E293B] flex items-center gap-1.5 whitespace-nowrap">
-                  <GraduationCap className="h-4 w-4 text-[#2563EB]" />
-                  <span>Filter by Faculty:</span>
-                </label>
-                <select
-                  value={selectedFaculty}
-                  onChange={(e) => setSelectedFaculty(e.target.value)}
-                  className="bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A] text-sm rounded-md px-3.5 py-2 font-medium focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] outline-hidden cursor-pointer"
-                >
-                  <option value="All">All Faculty Members ({videos.length})</option>
-                  {facultyNames.map((name) => (
-                    <option key={name} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-3.5">
+                {/* Filter by Faculty Name Dropdown */}
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-semibold text-[#1E293B] flex items-center gap-1.5 whitespace-nowrap">
+                    <GraduationCap className="h-4 w-4 text-[#2563EB]" />
+                    <span>Filter by Faculty:</span>
+                  </label>
+                  <select
+                    value={selectedFaculty}
+                    onChange={(e) => setSelectedFaculty(e.target.value)}
+                    className="bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A] text-sm rounded-md px-3.5 py-2 font-medium focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] outline-hidden cursor-pointer"
+                  >
+                    <option value="All">All Faculty Members ({facultyNames.length || videos.length})</option>
+                    {facultyNames.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              {/* Filter by Subject Dropdown */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                <label className="text-sm font-semibold text-[#1E293B] flex items-center gap-1.5 whitespace-nowrap">
-                  <Filter className="h-4 w-4 text-[#64748B]" />
-                  <span>Subject:</span>
-                </label>
-                <select
-                  value={selectedSubject}
-                  onChange={(e) => setSelectedSubject(e.target.value)}
-                  className="bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A] text-sm rounded-md px-3 py-2 font-medium focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] outline-hidden cursor-pointer"
-                >
-                  <option value="All">All Subjects</option>
-                  {subjects.map((sub) => (
-                    <option key={sub} value={sub}>
-                      {sub}
-                    </option>
-                  ))}
-                </select>
+                {/* Filter by University Dropdown */}
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-semibold text-[#1E293B] flex items-center gap-1.5 whitespace-nowrap">
+                    <Building2 className="h-4 w-4 text-[#2563EB]" />
+                    <span>University:</span>
+                  </label>
+                  <select
+                    value={selectedUniversity}
+                    onChange={(e) => setSelectedUniversity(e.target.value)}
+                    className="bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A] text-sm rounded-md px-3.5 py-2 font-medium focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] outline-hidden cursor-pointer max-w-[240px]"
+                  >
+                    <option value="All">All Universities ({universities.length})</option>
+                    {universities.map((uni) => (
+                      <option key={uni} value={uni}>
+                        {uni}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Filter by Subject Dropdown */}
+                <div className="flex items-center gap-2">
+                  <label className="text-sm font-semibold text-[#1E293B] flex items-center gap-1.5 whitespace-nowrap">
+                    <Filter className="h-4 w-4 text-[#64748B]" />
+                    <span>Subject:</span>
+                  </label>
+                  <select
+                    value={selectedSubject}
+                    onChange={(e) => setSelectedSubject(e.target.value)}
+                    className="bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A] text-sm rounded-md px-3 py-2 font-medium focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] outline-hidden cursor-pointer"
+                  >
+                    <option value="All">All Subjects</option>
+                    {subjects.map((sub) => (
+                      <option key={sub} value={sub}>
+                        {sub}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* Keyword Search */}
-              <div className="relative flex-1 max-w-md">
+              <div className="relative flex-1 max-w-md min-w-[240px]">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#94A3B8]" />
                 <input
                   type="text"
@@ -277,13 +312,21 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
             </div>
 
             {/* Active filter pills */}
-            {(selectedFaculty !== "All" || selectedSubject !== "All" || searchQuery) && (
-              <div className="flex items-center gap-2 pt-2 border-t border-[#F1F5F9] text-xs">
+            {(selectedFaculty !== "All" || selectedUniversity !== "All" || selectedSubject !== "All" || searchQuery) && (
+              <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#F1F5F9] text-xs">
                 <span className="text-[#64748B] font-medium">Active Filters:</span>
                 {selectedFaculty !== "All" && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#EFF6FF] text-[#1E40AF] border border-[#BFDBFE]">
                     Faculty: {selectedFaculty}
                     <button type="button" onClick={() => setSelectedFaculty("All")} className="hover:text-[#1E3A8A] ml-1">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
+                {selectedUniversity !== "All" && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#F0FDF4] text-[#166534] border border-[#BBF7D0]">
+                    University: {selectedUniversity}
+                    <button type="button" onClick={() => setSelectedUniversity("All")} className="hover:text-[#14532D] ml-1">
                       <X className="h-3 w-3" />
                     </button>
                   </span>
@@ -308,10 +351,11 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
                   type="button"
                   onClick={() => {
                     setSelectedFaculty("All");
+                    setSelectedUniversity("All");
                     setSelectedSubject("All");
                     setSearchQuery("");
                   }}
-                  className="text-[#2563EB] hover:underline ml-2 font-medium"
+                  className="text-[#2563EB] hover:underline ml-2 font-medium cursor-pointer"
                 >
                   Clear all
                 </button>
@@ -330,13 +374,14 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
               <Video className="h-10 w-10 text-[#94A3B8] mx-auto mb-3" />
               <h3 className="text-lg font-medium text-[#0F172A]">No Faculty Videos Found</h3>
               <p className="text-sm text-[#64748B] mt-1 max-w-md mx-auto">
-                No video masterclasses match your current filter criteria. Try resetting the faculty or subject filter.
+                No video masterclasses match your current filter criteria. Try resetting the faculty, university, or subject filter.
               </p>
               <EditorialButton
                 variant="secondary"
                 className="mt-4"
                 onClick={() => {
                   setSelectedFaculty("All");
+                  setSelectedUniversity("All");
                   setSelectedSubject("All");
                   setSearchQuery("");
                 }}
@@ -403,6 +448,7 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
                           </div>
                           <div className="text-[11px] text-[#64748B] truncate">
                             {video.faculty_designation || "Faculty Lead"}
+                            {video.faculty_institution ? ` · ${video.faculty_institution}` : ""}
                           </div>
                         </div>
                       </div>

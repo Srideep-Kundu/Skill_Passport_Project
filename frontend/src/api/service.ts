@@ -103,6 +103,7 @@ import type {
   IndustryPartnershipOverview,
   InstitutionActionPlan,
   InstitutionAlertsResponse,
+  InstitutionFacultyVideosResponse,
   InstitutionReportResponse,
   InternshipMonitoringOverview,
   InterventionPlan,
@@ -110,6 +111,20 @@ import type {
   InterventionRecommendation,
   LearningEffectivenessOverview,
   PlacementMonitoringOverview,
+  CandidateOption,
+  ProjectAssessment,
+  ProjectAssessmentCreatePayload,
+  ProjectAssessmentList,
+  ProjectAssessmentShortlistPayload,
+  ProjectAssessmentSubmitPayload,
+  InstitutionFacultyJob,
+  InstitutionFacultyJobListResponse,
+  InstitutionFacultyJobCreatePayload,
+  FacultyJobApplication,
+  FacultyJobApplicationListResponse,
+  FacultyJobApplicationCreatePayload,
+  InterviewSchedulePayload,
+  InterviewDecisionPayload,
 } from "./types";
 
 export const api = {
@@ -352,6 +367,7 @@ export const api = {
   getInternshipMonitoring: (token: string) => request<InternshipMonitoringOverview>("/institution/internships/monitoring", {}, token),
   getPlacementMonitoring: (token: string) => request<PlacementMonitoringOverview>("/institution/placements/monitoring", {}, token),
   getFacultyEngagement: (token: string) => request<FacultyEngagementOverview>("/institution/faculty-engagement", {}, token),
+  getInstitutionFacultyVideos: (token: string) => request<InstitutionFacultyVideosResponse>("/institution/faculty-videos", {}, token),
   getCurriculumRecommendations: (token: string) => request<CurriculumRecommendationItem[]>("/institution/curriculum-recommendations", {}, token),
   getIndustryPartnerships: (token: string) => request<IndustryPartnershipOverview>("/institution/partnerships", {}, token),
   getIndustryPartnerDetail: (partnerName: string, token: string) => request<IndustryPartnerDetail>(`/institution/partnerships/${encodeURIComponent(partnerName)}`, {}, token),
@@ -404,10 +420,15 @@ export const api = {
   unlinkDigiLocker: (token: string) => request<DigiLockerStatus>("/digilocker/unlink", { method: "DELETE" }, token),
 
   // Faculty Video Lectures & Student Discovery
-  getFacultyVideosCatalog: (token?: string, filters?: { faculty_name?: string; subject?: string; search?: string }) => {
+  getFacultyVideosCatalog: (
+    token?: string,
+    filters?: { faculty_name?: string; subject?: string; university?: string; institution?: string; search?: string }
+  ) => {
     const params = new URLSearchParams();
     if (filters?.faculty_name && filters.faculty_name !== "All") params.append("faculty_name", filters.faculty_name);
     if (filters?.subject && filters.subject !== "All") params.append("subject", filters.subject);
+    if (filters?.university && filters.university !== "All") params.append("university", filters.university);
+    if (filters?.institution && filters.institution !== "All") params.append("institution", filters.institution);
     if (filters?.search) params.append("search", filters.search);
     const qs = params.toString() ? `?${params.toString()}` : "";
     return request<FacultyVideoListResponse>(`/learning/faculty-videos${qs}`, {}, token);
@@ -442,4 +463,76 @@ export const api = {
   getTrainingProgramDetail: (id: string, token: string) => request<TrainingProgram>(`/academician/trainings/${encodeURIComponent(id)}`, {}, token),
   updateTrainingProgram: (id: string, input: TrainingProgramUpdateInput, token: string) => request<TrainingProgram>(`/academician/trainings/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(input) }, token),
   recordTrainingOutcomes: (id: string, input: RecordOutcomesInput, token: string) => request<TrainingProgram>(`/academician/trainings/${encodeURIComponent(id)}/record-outcomes`, { method: "POST", body: JSON.stringify(input) }, token),
+
+  // Automated Project Assessments (Recruiter & Student)
+  createProjectAssessment: (input: ProjectAssessmentCreatePayload, token: string) =>
+    request<ProjectAssessment>("/project-assessments", { method: "POST", body: JSON.stringify(input) }, token),
+  getRecruiterProjectAssessments: (token: string, status?: string, search?: string) => {
+    const params = new URLSearchParams();
+    if (status && status !== "all") params.append("status", status);
+    if (search) params.append("search", search);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return request<ProjectAssessmentList>(`/project-assessments${qs}`, {}, token);
+  },
+  getCandidateOptions: (token: string) =>
+    request<CandidateOption[]>("/project-assessments/candidates", {}, token),
+  getProjectAssessmentDetail: (id: string, token: string) =>
+    request<ProjectAssessment>(`/project-assessments/${encodeURIComponent(id)}`, {}, token),
+  retryProjectAssessment: (id: string, token: string) =>
+    request<ProjectAssessment>(`/project-assessments/${encodeURIComponent(id)}/retry`, { method: "POST" }, token),
+  toggleShortlistProjectAssessment: (id: string, input: ProjectAssessmentShortlistPayload, token: string) =>
+    request<ProjectAssessment>(`/project-assessments/${encodeURIComponent(id)}/shortlist`, { method: "POST", body: JSON.stringify(input) }, token),
+  getStudentProjectAssessments: async (token: string) => {
+    const res = await request<any>("/student/project-assessments", {}, token);
+    if (Array.isArray(res)) {
+      return { total: res.length, items: res };
+    }
+    return res as ProjectAssessmentList;
+  },
+  getStudentProjectAssessmentDetail: (id: string, token: string) =>
+    request<ProjectAssessment>(`/student/project-assessments/${encodeURIComponent(id)}`, {}, token),
+  submitStudentProjectAssessment: (id: string, payload: ProjectAssessmentSubmitPayload, token: string) =>
+    request<ProjectAssessment>(`/student/project-assessments/${encodeURIComponent(id)}/submit`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }, token),
+
+  // Institution Faculty Recruitment & Job Openings
+  createFacultyJob: (payload: InstitutionFacultyJobCreatePayload, token: string) =>
+    request<InstitutionFacultyJob>("/institution/faculty-jobs", { method: "POST", body: JSON.stringify(payload) }, token),
+  getInstitutionFacultyJobs: (token: string) =>
+    request<InstitutionFacultyJobListResponse>("/institution/faculty-jobs", {}, token),
+  updateFacultyJob: (jobId: string, payload: Partial<InstitutionFacultyJobCreatePayload>, token: string) =>
+    request<InstitutionFacultyJob>(`/institution/faculty-jobs/${encodeURIComponent(jobId)}`, { method: "PUT", body: JSON.stringify(payload) }, token),
+  deleteFacultyJob: (jobId: string, token: string) =>
+    request<{ ok: boolean }>(`/institution/faculty-jobs/${encodeURIComponent(jobId)}`, { method: "DELETE" }, token),
+  getFacultyJobApplications: (jobId: string, token: string) =>
+    request<FacultyJobApplicationListResponse>(`/institution/faculty-jobs/${encodeURIComponent(jobId)}/applications`, {}, token),
+  getAllInstitutionFacultyApplications: (token: string) =>
+    request<FacultyJobApplicationListResponse>("/institution/faculty-job-applications", {}, token),
+  scheduleFacultyInterview: (applicationId: string, payload: InterviewSchedulePayload, token: string) =>
+    request<FacultyJobApplication>(`/institution/faculty-job-applications/${encodeURIComponent(applicationId)}/schedule-interview`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }, token),
+  recordInterviewDecision: (applicationId: string, payload: InterviewDecisionPayload, token: string) =>
+    request<FacultyJobApplication>(`/institution/faculty-job-applications/${encodeURIComponent(applicationId)}/decision`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }, token),
+
+  // Academician Faculty Job Openings Discovery & Applications
+  getOpenFacultyJobs: (params: { department?: string; designation?: string; institution_name?: string; search?: string }, token: string) => {
+    const q = new URLSearchParams();
+    if (params.department && params.department !== "all") q.append("department", params.department);
+    if (params.designation && params.designation !== "all") q.append("designation", params.designation);
+    if (params.institution_name && params.institution_name !== "all") q.append("institution_name", params.institution_name);
+    if (params.search) q.append("search", params.search);
+    const qs = q.toString() ? `?${q.toString()}` : "";
+    return request<InstitutionFacultyJobListResponse>(`/academician/faculty-jobs${qs}`, {}, token);
+  },
+  applyForFacultyJob: (payload: FacultyJobApplicationCreatePayload, token: string) =>
+    request<FacultyJobApplication>("/academician/faculty-jobs/apply", { method: "POST", body: JSON.stringify(payload) }, token),
+  getMyFacultyApplications: (token: string) =>
+    request<FacultyJobApplicationListResponse>("/academician/faculty-jobs/my-applications", {}, token),
 };

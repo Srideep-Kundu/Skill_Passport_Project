@@ -56,9 +56,10 @@ export function MatchExplanationPanel({
   onClose?: () => void;
 }) {
   const prefersReducedMotion = useReducedMotion();
-  const exactItems = explanation.items.filter((i) => i.status.startsWith("matched_"));
-  const semanticItems = explanation.items.filter((i) => i.status === "semantic_near_match");
-  const missingItems = explanation.items.filter((i) => i.status === "missing");
+  const items = Array.isArray(explanation?.items) ? explanation.items : [];
+  const exactItems = items.filter((i) => i?.status?.startsWith("matched_"));
+  const semanticItems = items.filter((i) => i?.status === "semantic_near_match");
+  const missingItems = items.filter((i) => i?.status === "missing");
 
   return (
     <motion.section
