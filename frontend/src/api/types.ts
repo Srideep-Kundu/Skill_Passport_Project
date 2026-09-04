@@ -769,9 +769,33 @@ export interface FacultyOpportunity {
   required_documents?: string[];
   contact_email?: string | null;
   contact_person?: string | null;
+  discovery_type: "society" | "expert" | "collaborator" | "funding" | string;
+  collaboration_types: string[];
+  website_url?: string | null;
+  profile_metadata: Record<string, unknown>;
   has_applied: boolean;
   application_status?: string | null;
   application_id?: string | null;
+  is_saved: boolean;
+  recommendation_score: number;
+  recommendation_version: string;
+  recommendation_components: Record<string, number>;
+  why_recommended: string[];
+}
+
+export interface FacultyHubFilters {
+  search?: string;
+  discovery_type?: string;
+  domain?: string;
+  deadline_from?: string;
+  deadline_to?: string;
+  minimum_funding?: number;
+  maximum_funding?: number;
+  expertise?: string;
+  collaboration_type?: string;
+  saved_only?: boolean;
+  offset?: number;
+  limit?: number;
 }
 
 export interface FacultyApplication {

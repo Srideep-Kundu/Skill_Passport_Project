@@ -12,17 +12,20 @@ Full Phase 1 and Phase 2 Lifecycle Management:
 - Verifiable Outcomes, Completion Records, and History
 - Industry Review & Recruiter Collaboration
 """
+import re
+import uuid
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TypedDict
 from uuid import UUID
-import uuid
 
-from sqlalchemy import or_, select
+from sqlalchemy import String, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.models import (
     Academician,
+    AuditLog,
     CollaborationWorkspace,
     FacultyApplication,
     FacultyEventRegistration,
@@ -30,7 +33,11 @@ from app.models import (
     FacultyOpportunity,
     FacultyVideo,
     InnovationChallenge,
+    Institution,
+    InstitutionActionPlan,
+    InstitutionInterventionPlan,
     ProjectApplication,
+    SavedFacultyOpportunity,
 )
 from app.schemas.contracts import (
     CollaborationWorkspaceResponse,
@@ -150,10 +157,24 @@ async def update_faculty_passport(
 # 2. Opportunities (List & Single Detail)
 # ============================================================================
 
+
+class FacultyHubRecommendation(TypedDict):
+    score: float
+    components: dict[str, float]
+    reasons: list[str]
+
 def _to_opportunity_response(
     opp: FacultyOpportunity,
     app: FacultyApplication | None = None,
+    *,
+    is_saved: bool = False,
+    recommendation: FacultyHubRecommendation | None = None,
 ) -> FacultyOpportunityResponse:
+    recommendation = recommendation or {
+        "score": 0.0,
+        "components": {},
+        "reasons": [],
+    }
     return FacultyOpportunityResponse(
         id=opp.id,
         title=opp.title,
@@ -174,10 +195,320 @@ def _to_opportunity_response(
         required_documents=opp.required_documents or [],
         contact_email=opp.contact_email,
         contact_person=opp.contact_person,
+        discovery_type=opp.discovery_type or "funding",
+        collaboration_types=opp.collaboration_types or [],
+        website_url=opp.website_url,
+        profile_metadata=opp.profile_metadata or {},
         has_applied=app is not None,
         application_status=app.status if app else None,
         application_id=app.id if app else None,
+        is_saved=is_saved,
+        recommendation_score=recommendation["score"],
+        recommendation_version="faculty-hub-v1",
+        recommendation_components=recommendation["components"],
+        why_recommended=recommendation["reasons"],
     )
+
+
+_RECOMMENDATION_STOP_WORDS = {
+    "and", "for", "from", "the", "with", "into", "program", "opportunity",
+    "faculty", "industry", "research", "student", "students", "systems",
+}
+
+
+def _recommendation_tokens(values: list[str]) -> set[str]:
+    tokens: set[str] = set()
+    for value in values:
+        tokens.update(
+            token
+            for token in re.findall(r"[a-z0-9+#.]+", value.casefold())
+            if len(token) > 1 and token not in _RECOMMENDATION_STOP_WORDS
+        )
+    return tokens
+
+
+def _recommendation_component(
+    opportunity_tokens: set[str], signal_values: list[str]
+) -> tuple[float, list[str]]:
+    signal_tokens = _recommendation_tokens(signal_values)
+    matches = sorted(opportunity_tokens & signal_tokens)
+    if not signal_tokens:
+        return 0.0, []
+    denominator = min(max(len(signal_tokens), 1), 4)
+    return min(len(matches) / denominator, 1.0), matches
+
+
+def build_faculty_hub_recommendation(
+    opportunity: FacultyOpportunity,
+    faculty_expertise: list[str],
+    student_gap_priorities: list[str],
+    institution_priorities: list[str],
+) -> FacultyHubRecommendation:
+    """Return a deterministic, versioned recommendation with traceable reasons."""
+    opportunity_tokens = _recommendation_tokens(
+        [
+            opportunity.title,
+            opportunity.description,
+            opportunity.domain,
+            opportunity.opportunity_type,
+            opportunity.discovery_type,
+            *(opportunity.required_expertise or []),
+            *(opportunity.collaboration_types or []),
+        ]
+    )
+    expertise_score, expertise_matches = _recommendation_component(
+        opportunity_tokens, faculty_expertise
+    )
+    gap_score, gap_matches = _recommendation_component(
+        opportunity_tokens, student_gap_priorities
+    )
+    priority_score, priority_matches = _recommendation_component(
+        opportunity_tokens, institution_priorities
+    )
+    score = round(
+        0.55 * expertise_score + 0.30 * gap_score + 0.15 * priority_score,
+        4,
+    )
+    reasons: list[str] = []
+    if expertise_matches:
+        reasons.append(
+            "Matches faculty expertise: " + ", ".join(expertise_matches[:4]) + "."
+        )
+    if gap_matches:
+        reasons.append(
+            "Supports identified student skill gaps: " + ", ".join(gap_matches[:4]) + "."
+        )
+    if priority_matches:
+        reasons.append(
+            "Aligns with institution priorities: " + ", ".join(priority_matches[:4]) + "."
+        )
+    if not reasons:
+        reasons.append(
+            "Shown as an open catalog opportunity; no direct profile or priority overlap was found."
+        )
+    return {
+        "score": score,
+        "components": {
+            "faculty_expertise": round(expertise_score, 4),
+            "student_skill_gaps": round(gap_score, 4),
+            "institution_priorities": round(priority_score, 4),
+        },
+        "reasons": reasons,
+    }
+
+
+async def _faculty_hub_signals(
+    session: AsyncSession, faculty_id: UUID
+) -> tuple[list[str], list[str], list[str]]:
+    faculty = await session.get(Academician, faculty_id)
+    if not faculty:
+        raise ValueError("Faculty member not found")
+    faculty_expertise = [
+        faculty.department,
+        *(faculty.research_areas or []),
+        *(faculty.technical_skills or []),
+    ]
+
+    institution = (
+        await session.scalars(
+            select(Institution).where(
+                func.lower(Institution.institution_name)
+                == faculty.institution_name.casefold()
+            )
+        )
+    ).first()
+    if institution is None:
+        return faculty_expertise, [], []
+
+    interventions = (
+        await session.scalars(
+            select(InstitutionInterventionPlan).where(
+                InstitutionInterventionPlan.institution_id == institution.id,
+                InstitutionInterventionPlan.status.in_(
+                    ["draft", "planned", "in_progress"]
+                ),
+            )
+        )
+    ).all()
+    actions = (
+        await session.scalars(
+            select(InstitutionActionPlan).where(
+                InstitutionActionPlan.institution_id == institution.id,
+                InstitutionActionPlan.status.in_(["planned", "in_progress"]),
+            )
+        )
+    ).all()
+    student_gap_priorities = [
+        value
+        for plan in interventions
+        for value in [
+            plan.skill_cluster,
+            plan.title,
+            *(plan.selected_learning_programs or []),
+            *(plan.selected_workshops or []),
+            *(plan.selected_mentorship or []),
+        ]
+    ]
+    institution_priorities = [
+        value
+        for action in actions
+        for value in [action.title, action.action_type, action.source_insight]
+    ]
+    return faculty_expertise, student_gap_priorities, institution_priorities
+
+
+async def list_faculty_hub_opportunities(
+    session: AsyncSession,
+    faculty_id: UUID,
+    *,
+    search: str | None = None,
+    discovery_type: str | None = None,
+    domain: str | None = None,
+    deadline_from: datetime | None = None,
+    deadline_to: datetime | None = None,
+    minimum_funding: float | None = None,
+    maximum_funding: float | None = None,
+    expertise: str | None = None,
+    collaboration_type: str | None = None,
+    saved_only: bool = False,
+    offset: int = 0,
+    limit: int = 50,
+) -> list[FacultyOpportunityResponse]:
+    stmt = select(FacultyOpportunity).where(FacultyOpportunity.status == "open")
+    if search:
+        term = f"%{search.strip()}%"
+        stmt = stmt.where(
+            or_(
+                FacultyOpportunity.title.ilike(term),
+                FacultyOpportunity.organization_name.ilike(term),
+                FacultyOpportunity.description.ilike(term),
+                FacultyOpportunity.domain.ilike(term),
+            )
+        )
+    if discovery_type and discovery_type != "all":
+        stmt = stmt.where(FacultyOpportunity.discovery_type == discovery_type)
+    if domain:
+        stmt = stmt.where(FacultyOpportunity.domain.ilike(f"%{domain.strip()}%"))
+    if deadline_from:
+        stmt = stmt.where(FacultyOpportunity.deadline >= deadline_from)
+    if deadline_to:
+        stmt = stmt.where(FacultyOpportunity.deadline <= deadline_to)
+    if minimum_funding is not None:
+        stmt = stmt.where(FacultyOpportunity.stipend_or_grant >= minimum_funding)
+    if maximum_funding is not None:
+        stmt = stmt.where(FacultyOpportunity.stipend_or_grant <= maximum_funding)
+    if expertise:
+        stmt = stmt.where(
+            cast(FacultyOpportunity.required_expertise, String).ilike(
+                f"%{expertise.strip()}%"
+            )
+        )
+    if collaboration_type:
+        stmt = stmt.where(
+            cast(FacultyOpportunity.collaboration_types, String).ilike(
+                f"%{collaboration_type.strip()}%"
+            )
+        )
+
+    saved_ids = set(
+        (
+            await session.scalars(
+                select(SavedFacultyOpportunity.opportunity_id).where(
+                    SavedFacultyOpportunity.faculty_id == faculty_id
+                )
+            )
+        ).all()
+    )
+    if saved_only:
+        if not saved_ids:
+            return []
+        stmt = stmt.where(FacultyOpportunity.id.in_(saved_ids))
+
+    opportunities = (await session.scalars(stmt)).all()
+    apps = (
+        await session.scalars(
+            select(FacultyApplication).where(FacultyApplication.faculty_id == faculty_id)
+        )
+    ).all()
+    app_map = {application.opportunity_id: application for application in apps}
+    signals = await _faculty_hub_signals(session, faculty_id)
+    ranked = [
+        (
+            opportunity,
+            build_faculty_hub_recommendation(opportunity, *signals),
+        )
+        for opportunity in opportunities
+    ]
+    ranked.sort(
+        key=lambda item: (
+            -item[1]["score"],
+            item[0].deadline is None,
+            item[0].deadline or datetime.max.replace(tzinfo=UTC),
+            item[0].title.casefold(),
+            str(item[0].id),
+        )
+    )
+    return [
+        _to_opportunity_response(
+            opportunity,
+            app_map.get(opportunity.id),
+            is_saved=opportunity.id in saved_ids,
+            recommendation=recommendation,
+        )
+        for opportunity, recommendation in ranked[offset : offset + limit]
+    ]
+
+
+async def get_faculty_hub_opportunity(
+    session: AsyncSession, faculty_id: UUID, opportunity_id: UUID
+) -> FacultyOpportunityResponse:
+    results = await list_faculty_hub_opportunities(
+        session, faculty_id, limit=500
+    )
+    for result in results:
+        if result.id == opportunity_id:
+            return result
+    raise ValueError("Hub opportunity not found")
+
+
+async def save_faculty_hub_opportunity(
+    session: AsyncSession, faculty_id: UUID, opportunity_id: UUID
+) -> FacultyOpportunityResponse:
+    opportunity = await session.get(FacultyOpportunity, opportunity_id)
+    if not opportunity or opportunity.status != "open":
+        raise ValueError("Hub opportunity not found")
+    existing = (
+        await session.scalars(
+            select(SavedFacultyOpportunity).where(
+                SavedFacultyOpportunity.faculty_id == faculty_id,
+                SavedFacultyOpportunity.opportunity_id == opportunity_id,
+            )
+        )
+    ).first()
+    if not existing:
+        session.add(
+            SavedFacultyOpportunity(
+                faculty_id=faculty_id, opportunity_id=opportunity_id
+            )
+        )
+        await session.commit()
+    return await get_faculty_hub_opportunity(session, faculty_id, opportunity_id)
+
+
+async def unsave_faculty_hub_opportunity(
+    session: AsyncSession, faculty_id: UUID, opportunity_id: UUID
+) -> None:
+    saved = (
+        await session.scalars(
+            select(SavedFacultyOpportunity).where(
+                SavedFacultyOpportunity.faculty_id == faculty_id,
+                SavedFacultyOpportunity.opportunity_id == opportunity_id,
+            )
+        )
+    ).first()
+    if saved:
+        await session.delete(saved)
+        await session.commit()
 
 
 async def list_faculty_opportunities(
@@ -1217,12 +1548,20 @@ async def list_recruiter_faculty_applications(
 ) -> list[FacultyApplicationResponse]:
     stmt = (
         select(FacultyApplication)
+        .join(FacultyOpportunity, FacultyApplication.opportunity_id == FacultyOpportunity.id)
         .options(
             selectinload(FacultyApplication.opportunity),
             selectinload(FacultyApplication.faculty),
         )
         .order_by(FacultyApplication.applied_at.desc())
     )
+    if recruiter_id:
+        stmt = stmt.where(
+            or_(
+                FacultyOpportunity.created_by_recruiter_id == recruiter_id,
+                FacultyOpportunity.created_by_recruiter_id.is_(None),
+            )
+        )
     apps = (await session.scalars(stmt)).all()
     return [_to_application_response(a) for a in apps]
 
@@ -1231,6 +1570,7 @@ async def update_faculty_application_status_recruiter(
     session: AsyncSession,
     application_id: UUID,
     payload: FacultyApplicationStatusUpdateRequest,
+    recruiter_id: UUID | None = None,
 ) -> FacultyApplicationResponse:
     app = (
         await session.scalars(
@@ -1245,6 +1585,30 @@ async def update_faculty_application_status_recruiter(
     if not app:
         raise ValueError("Faculty application not found")
 
+    if (
+        recruiter_id
+        and app.opportunity
+        and app.opportunity.created_by_recruiter_id
+        and app.opportunity.created_by_recruiter_id != recruiter_id
+    ):
+        raise ValueError("Faculty application not found")
+
+    allowed_transitions = {
+        "draft": {"submitted"},
+        "submitted": {"under_review", "shortlisted", "discussion", "accepted", "rejected"},
+        "under_review": {"shortlisted", "discussion", "accepted", "rejected"},
+        "shortlisted": {"discussion", "accepted", "rejected"},
+        "discussion": {"accepted", "rejected"},
+        "accepted": {"active", "completed"},
+        "active": {"completed"},
+        "rejected": set(),
+        "completed": set(),
+        "withdrawn": set(),
+    }
+    if payload.status != app.status and payload.status not in allowed_transitions.get(app.status, set()):
+        raise ValueError(f"Invalid proposal status transition: {app.status} -> {payload.status}")
+
+    previous_status = app.status
     app.status = payload.status
     if payload.reviewer_notes:
         app.reviewer_notes = payload.reviewer_notes
@@ -1269,6 +1633,19 @@ async def update_faculty_application_status_recruiter(
             title=f"Application Update: {payload.status.replace('_', ' ').capitalize()}",
             message=f"Your proposal for '{app.opportunity.title if app.opportunity else 'opportunity'}' is now {payload.status}.",
             category="application",
+        )
+    )
+    session.add(
+        AuditLog(
+            actor_id=recruiter_id,
+            action="faculty_proposal_status_updated",
+            entity_type="faculty_application",
+            entity_id=app.id,
+            details={
+                "from_status": previous_status,
+                "to_status": payload.status,
+                "workspace_id": str(workspace_id) if workspace_id else None,
+            },
         )
     )
 

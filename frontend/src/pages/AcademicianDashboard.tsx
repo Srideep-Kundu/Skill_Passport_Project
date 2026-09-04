@@ -30,6 +30,7 @@ import {
   Film,
   ShieldCheck,
   Upload,
+  Handshake,
 } from "lucide-react";
 import { api } from "../api/service";
 import { errorMessage } from "../api/client";
@@ -47,6 +48,7 @@ import type {
   FacultyVideo,
 } from "../api/types";
 import { toast } from "sonner";
+import { FacultyCollaborationFundingHub } from "../components/faculty/FacultyCollaborationFundingHub";
 
 export interface AcademicianDashboardProps {
   token: string;
@@ -55,6 +57,7 @@ export interface AcademicianDashboardProps {
 }
 
 export type AcademicianTabType =
+  | "collaboration_funding_hub"
   | "opportunities"
   | "videos"
   | "applications"
@@ -588,7 +591,29 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
     return rawUrl;
   }
 
+  function openProposalForOpportunity(opp: FacultyOpportunity) {
+    setApplyingOpportunity(opp);
+    setProposalForm({
+      proposal_title: `Proposal for ${opp.title}`,
+      proposal_text: "",
+      application_type: opp.opportunity_type,
+      problem_statement: "",
+      methodology: "",
+      timeline_weeks: opp.duration_weeks || 12,
+      budget_requested: opp.stipend_or_grant || 0,
+      industry_support_required: "",
+      deliverables: opp.deliverables?.length
+        ? opp.deliverables
+        : ["Initial Research Charter", "Final Technical Deliverable"],
+      team_members: [],
+      student_researchers: [],
+      is_draft: false,
+    });
+    setShowApplyModal(true);
+  }
+
   const navTabs = [
+    { id: "collaboration_funding_hub", label: "Collaboration & Funding Hub", icon: Handshake },
     { id: "opportunities", label: "Opportunities", icon: Briefcase, count: opportunities.length },
     { id: "videos", label: "Video Lectures", icon: Video, count: ownVideos.length },
     { id: "applications", label: "My Applications", icon: FileText, count: applications.length },
@@ -703,6 +728,18 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
         </div>
         <span className="hidden sm:inline text-[11px] text-[#64748B]">Navigate anytime via the left sidebar</span>
       </div>
+
+      {activeTab === "collaboration_funding_hub" && (
+        <FacultyCollaborationFundingHub
+          token={token}
+          proposals={applications}
+          onCreateProposal={openProposalForOpportunity}
+          onOpenWorkspace={(workspaceId) => {
+            setSelectedWorkspace(workspaces.find((workspace) => workspace.id === workspaceId) || null);
+            setActiveTab("workspaces");
+          }}
+        />
+      )}
 
       {/* TAB 1: OPPORTUNITIES & DISCOVERY */}
       {activeTab === "opportunities" && (

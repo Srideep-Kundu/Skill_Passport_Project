@@ -35,6 +35,7 @@ import type {
   FacultyEventRegistration,
   FacultyNotification,
   FacultyOpportunity,
+  FacultyHubFilters,
   FacultyPassport,
   FacultyPassportUpdate,
   FacultyVideo,
@@ -272,6 +273,25 @@ export const api = {
   getFacultyPublicPassport: (facultyId: string, token: string) => request<FacultyPassport>(`/academician/passport/${encodeURIComponent(facultyId)}`, {}, token),
   getFacultyOpportunities: (token: string, opportunityType?: string) => request<FacultyOpportunity[]>(`/academician/opportunities${opportunityType && opportunityType !== "all" ? `?opportunity_type=${encodeURIComponent(opportunityType)}` : ""}`, {}, token),
   getFacultyOpportunityDetail: (id: string, token: string) => request<FacultyOpportunity>(`/academician/opportunities/${encodeURIComponent(id)}`, {}, token),
+  getFacultyHubOpportunities: (token: string, filters: FacultyHubFilters = {}) => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== "") {
+        const normalizedValue =
+          key === "deadline_from" && /^\d{4}-\d{2}-\d{2}$/.test(String(value))
+            ? `${value}T00:00:00Z`
+            : key === "deadline_to" && /^\d{4}-\d{2}-\d{2}$/.test(String(value))
+              ? `${value}T23:59:59Z`
+              : String(value);
+        params.set(key, normalizedValue);
+      }
+    });
+    const query = params.toString();
+    return request<FacultyOpportunity[]>(`/academician/hub/opportunities${query ? `?${query}` : ""}`, {}, token);
+  },
+  getFacultyHubOpportunity: (id: string, token: string) => request<FacultyOpportunity>(`/academician/hub/opportunities/${encodeURIComponent(id)}`, {}, token),
+  saveFacultyHubOpportunity: (id: string, token: string) => request<FacultyOpportunity>(`/academician/hub/opportunities/${encodeURIComponent(id)}/saved`, { method: "PUT" }, token),
+  unsaveFacultyHubOpportunity: (id: string, token: string) => request<void>(`/academician/hub/opportunities/${encodeURIComponent(id)}/saved`, { method: "DELETE" }, token),
   getFacultyApplications: (token: string, status?: string) => request<FacultyApplication[]>(`/academician/applications/me${status ? `?status=${encodeURIComponent(status)}` : ""}`, {}, token),
   createFacultyApplication: (input: FacultyApplicationCreate, token: string) => request<FacultyApplication>("/academician/applications", { method: "POST", body: JSON.stringify(input) }, token),
   applyFacultyOpportunity: (opportunityId: string, proposalText: string, token: string) => request<FacultyApplication>("/academician/apply", { method: "POST", body: JSON.stringify({ opportunity_id: opportunityId, proposal_text: proposalText }) }, token),

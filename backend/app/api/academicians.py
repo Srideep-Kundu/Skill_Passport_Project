@@ -1,8 +1,18 @@
 """API Router for Academician & Faculty Ecosystem (Passport, Applications, Workspaces, Events, Advising)."""
+from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
@@ -79,6 +89,77 @@ async def get_faculty_public_passport(
 # ============================================================================
 # 2. Opportunity Discovery & Details
 # ============================================================================
+
+@router.get("/hub/opportunities", response_model=list[FacultyOpportunityResponse])
+async def get_collaboration_funding_hub(
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+    search: str | None = Query(default=None, max_length=120),
+    discovery_type: str | None = Query(default=None, max_length=32),
+    domain: str | None = Query(default=None, max_length=120),
+    deadline_from: datetime | None = None,
+    deadline_to: datetime | None = None,
+    minimum_funding: float | None = Query(default=None, ge=0),
+    maximum_funding: float | None = Query(default=None, ge=0),
+    expertise: str | None = Query(default=None, max_length=120),
+    collaboration_type: str | None = Query(default=None, max_length=64),
+    saved_only: bool = False,
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=100),
+) -> list[FacultyOpportunityResponse]:
+    if minimum_funding is not None and maximum_funding is not None and minimum_funding > maximum_funding:
+        raise HTTPException(422, "minimum_funding cannot exceed maximum_funding")
+    if deadline_from and deadline_to and deadline_from > deadline_to:
+        raise HTTPException(422, "deadline_from cannot be after deadline_to")
+    return await academician_service.list_faculty_hub_opportunities(
+        session,
+        faculty.id,
+        search=search,
+        discovery_type=discovery_type,
+        domain=domain,
+        deadline_from=deadline_from,
+        deadline_to=deadline_to,
+        minimum_funding=minimum_funding,
+        maximum_funding=maximum_funding,
+        expertise=expertise,
+        collaboration_type=collaboration_type,
+        saved_only=saved_only,
+        offset=offset,
+        limit=limit,
+    )
+
+
+@router.get("/hub/opportunities/{opportunity_id}", response_model=FacultyOpportunityResponse)
+async def get_collaboration_funding_hub_detail(
+    opportunity_id: UUID,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyOpportunityResponse:
+    try:
+        return await academician_service.get_faculty_hub_opportunity(session, faculty.id, opportunity_id)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.put("/hub/opportunities/{opportunity_id}/saved", response_model=FacultyOpportunityResponse)
+async def save_collaboration_funding_hub_item(
+    opportunity_id: UUID,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyOpportunityResponse:
+    try:
+        return await academician_service.save_faculty_hub_opportunity(session, faculty.id, opportunity_id)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+@router.delete("/hub/opportunities/{opportunity_id}/saved", status_code=status.HTTP_204_NO_CONTENT)
+async def unsave_collaboration_funding_hub_item(
+    opportunity_id: UUID,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> None:
+    await academician_service.unsave_faculty_hub_opportunity(session, faculty.id, opportunity_id)
 
 @router.get("/opportunities", response_model=list[FacultyOpportunityResponse])
 async def get_opportunities(
@@ -401,7 +482,9 @@ async def update_faculty_application_status(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> FacultyApplicationResponse:
     try:
-        return await academician_service.update_faculty_application_status_recruiter(session, application_id, payload)
+        return await academician_service.update_faculty_application_status_recruiter(
+            session, application_id, payload, recruiter.id
+        )
     except ValueError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
 

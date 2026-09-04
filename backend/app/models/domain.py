@@ -902,7 +902,19 @@ class FacultyOpportunity(Timestamped, Base):
     required_documents: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
     contact_email: Mapped[str | None] = mapped_column(String(320))
     contact_person: Mapped[str | None] = mapped_column(String(200))
+    discovery_type: Mapped[str] = mapped_column(String(32), default="funding", nullable=False, index=True)  # society, expert, collaborator, funding
+    collaboration_types: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    website_url: Mapped[str | None] = mapped_column(String(2048))
+    profile_metadata: Mapped[dict[str, Any]] = mapped_column(Json, default=dict, nullable=False)
     created_by_recruiter_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("recruiters.id", ondelete="SET NULL"), index=True)
+
+
+class SavedFacultyOpportunity(Timestamped, Base):
+    __tablename__ = "saved_faculty_opportunities"
+    __table_args__ = (UniqueConstraint("faculty_id", "opportunity_id", name="uq_saved_faculty_opportunity"),)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    faculty_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("academicians.id", ondelete="CASCADE"), nullable=False, index=True)
+    opportunity_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("faculty_opportunities.id", ondelete="CASCADE"), nullable=False, index=True)
 
 
 class FacultyApplication(Base):

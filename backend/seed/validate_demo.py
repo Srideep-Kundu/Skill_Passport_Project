@@ -14,6 +14,7 @@ from app.models import (
     Evidence,
     ExternalJob,
     ExternalJobMatchExplanation,
+    FacultyOpportunity,
     Internship,
     JobDiscovery,
     Match,
@@ -108,6 +109,9 @@ async def validate_demo() -> None:
             raise RuntimeError("Demo validation failed: fairness-pair score equality")
         await _require(session, select(JobDiscovery.id).where(JobDiscovery.student_id == maya.id), "saved discovery")
         await _require(session, select(DiscoveryRecommendation.id), "discovery recommendation")
+        hub_types = set((await session.scalars(select(FacultyOpportunity.discovery_type))).all())
+        if not {"society", "expert", "collaborator", "funding"}.issubset(hub_types):
+            raise RuntimeError("Demo validation failed: faculty collaboration/funding hub catalog")
         await _require(session, select(AutomationPolicy.id).where(AutomationPolicy.student_id == maya.id, AutomationPolicy.enabled.is_(True)), "automation policy")
         await _require(session, select(Application.id).where(Application.student_id == maya.id, Application.status == ApplicationStatus.approval_pending), "approval-pending review")
         tracked = await _require(session, select(Application.id).where(Application.student_id == maya.id, Application.status == ApplicationStatus.submitted), "tracked application")

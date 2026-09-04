@@ -29,6 +29,7 @@ import {
   Download,
   BarChart3,
   Video,
+  Handshake,
 } from "lucide-react";
 import { LandingPage } from "./pages/LandingPage";
 import { useAuth } from "./auth/AuthContext";
@@ -104,6 +105,7 @@ export type RecruiterTab =
   | "applications"
   | "analytics";
 export type AcademicianTab =
+  | "collaboration_funding_hub"
   | "opportunities"
   | "videos"
   | "applications"
@@ -217,6 +219,7 @@ export function App() {
 
   // 11 Faculty / Academician Portal navigation tabs
   const academicianNavItems: { id: AcademicianTab; label: string; icon: React.ReactNode }[] = [
+    { id: "collaboration_funding_hub", label: "Collaboration & Funding", icon: <Handshake className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "opportunities", label: "Opportunities", icon: <Briefcase className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "videos", label: "Video Lectures", icon: <Video className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "applications", label: "My Applications", icon: <FileText className="h-4 w-4 shrink-0" aria-hidden="true" /> },

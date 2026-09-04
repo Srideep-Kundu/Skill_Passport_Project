@@ -465,6 +465,138 @@ async def seed_sih_ecosystem():
                 ),
             ])
 
+        # Collaboration & Funding Hub catalog. Titles are stable idempotency keys
+        # so rerunning the demo seed adds new catalog entries without duplicating them.
+        hub_catalog = [
+            {
+                "title": "IEEE Computer Society Academic Chapter Partnership",
+                "opportunity_type": "society_partnership",
+                "discovery_type": "society",
+                "organization_name": "IEEE Computer Society",
+                "description": "Establish or strengthen an academic chapter with expert talks, student technical activities, standards awareness, and research-community access.",
+                "domain": "Computing & Electrical Engineering",
+                "required_expertise": ["Computer Science", "Artificial Intelligence", "Cloud Computing"],
+                "collaboration_types": ["chapter_partnership", "expert_speaker", "student_workshop"],
+                "website_url": "https://www.computer.org/",
+                "profile_metadata": {"membership_model": "Institutional chapter", "benefits": ["Distinguished visitors", "Technical communities", "Student chapter support"]},
+                "stipend_or_grant": None,
+            },
+            {
+                "title": "ACM SIGCSE Computing Education Collaboration",
+                "opportunity_type": "society_partnership",
+                "discovery_type": "society",
+                "organization_name": "Association for Computing Machinery",
+                "description": "Connect computing faculty with education researchers, curriculum exchange, invited speakers, and teaching-practice working groups.",
+                "domain": "Computer Science Education",
+                "required_expertise": ["Software Engineering", "Data Science", "Computer Science Education"],
+                "collaboration_types": ["professional_society", "curriculum_collaboration", "expert_speaker"],
+                "website_url": "https://www.acm.org/",
+                "profile_metadata": {"community": "SIGCSE", "benefits": ["Curriculum resources", "Peer network", "Conference community"]},
+                "stipend_or_grant": None,
+            },
+            {
+                "title": "CSI Institutional Chapter & Expert Lecture Network",
+                "opportunity_type": "society_partnership",
+                "discovery_type": "society",
+                "organization_name": "Computer Society of India",
+                "description": "Institutional chapter collaboration for technical lectures, faculty networking, student contests, and regional computing events.",
+                "domain": "Information Technology",
+                "required_expertise": ["Information Technology", "Cybersecurity", "Software Engineering"],
+                "collaboration_types": ["institutional_chapter", "expert_speaker", "technical_event"],
+                "website_url": "https://www.csi-india.org/",
+                "profile_metadata": {"coverage": "India", "engagement": "Faculty and student chapter activities"},
+                "stipend_or_grant": None,
+            },
+            {
+                "title": "ISTE Faculty Training & Institutional Membership Network",
+                "opportunity_type": "society_partnership",
+                "discovery_type": "society",
+                "organization_name": "Indian Society for Technical Education",
+                "description": "Discover faculty development, institutional networking, technical education workshops, and training partnerships.",
+                "domain": "Engineering Education",
+                "required_expertise": ["Engineering Education", "Curriculum Design", "Faculty Development"],
+                "collaboration_types": ["professional_society", "faculty_training", "workshop"],
+                "website_url": "https://www.isteonline.in/",
+                "profile_metadata": {"coverage": "India", "audience": "Engineering faculty and institutions"},
+                "stipend_or_grant": None,
+            },
+            {
+                "title": "Explainable AI Expert Speaker & Faculty Trainer",
+                "opportunity_type": "expert_engagement",
+                "discovery_type": "expert",
+                "organization_name": "Responsible AI Practice Network",
+                "description": "Invite an industry research leader for a keynote, hands-on faculty clinic, or multi-session trainer engagement on explainable and responsible AI.",
+                "domain": "Artificial Intelligence",
+                "required_expertise": ["Machine Learning", "Explainable AI", "Responsible AI"],
+                "collaboration_types": ["expert_speaker", "trainer", "faculty_workshop"],
+                "profile_metadata": {"expert_name": "Dr. Meera Iyer", "expert_title": "Principal Responsible AI Scientist", "delivery_modes": ["On-site", "Hybrid"]},
+                "stipend_or_grant": 75000.0,
+            },
+            {
+                "title": "Cloud & MLOps Industry Co-Innovation Partner",
+                "opportunity_type": "industry_collaboration",
+                "discovery_type": "collaborator",
+                "organization_name": "TechNova AI Solutions",
+                "description": "Co-design applied research, student labs, faculty immersion, and proof-of-concept programs with cloud and MLOps engineering teams.",
+                "domain": "Cloud Computing & MLOps",
+                "required_expertise": ["MLOps", "Cloud Architecture", "Machine Learning", "DevOps"],
+                "collaboration_types": ["joint_research", "lab_sponsorship", "faculty_immersion"],
+                "profile_metadata": {"partner_type": "Industry R&D", "available_support": ["Technical mentors", "Cloud credits", "Prototype reviews"]},
+                "stipend_or_grant": 500000.0,
+            },
+            {
+                "title": "National Applied AI Research Catalyst Grant",
+                "opportunity_type": "research_grant",
+                "discovery_type": "funding",
+                "organization_name": "Innovation Research Council (Demo)",
+                "description": "Competitive grant for transparent applied AI, education analytics, and deployable public-interest research prototypes.",
+                "domain": "Applied Artificial Intelligence",
+                "required_expertise": ["Artificial Intelligence", "Explainable AI", "Data Analytics"],
+                "collaboration_types": ["research_grant", "multi_institution_research"],
+                "profile_metadata": {"funding_type": "Grant", "eligible_applicants": "Faculty principal investigators", "cost_share_required": False},
+                "stipend_or_grant": 2000000.0,
+            },
+            {
+                "title": "Industry-Sponsored Emerging Technology Lab",
+                "opportunity_type": "sponsorship",
+                "discovery_type": "funding",
+                "organization_name": "Future Systems Foundation (Demo)",
+                "description": "Institutional sponsorship for equipment, cloud credits, expert trainers, and student upskilling in identified emerging-technology gaps.",
+                "domain": "Cloud, Cybersecurity & Data Engineering",
+                "required_expertise": ["Cloud Computing", "Cybersecurity", "Data Engineering"],
+                "collaboration_types": ["lab_sponsorship", "student_training", "expert_trainer"],
+                "profile_metadata": {"funding_type": "Sponsorship", "support": ["Equipment", "Cloud credits", "Trainer hours"]},
+                "stipend_or_grant": 1000000.0,
+            },
+        ]
+        existing_hub_titles = set((await session.scalars(select(FacultyOpportunity.title))).all())
+        for item in hub_catalog:
+            if item["title"] not in existing_hub_titles:
+                session.add(
+                    FacultyOpportunity(
+                        **item,
+                        duration_weeks=12,
+                        deadline=_NOW + timedelta(days=90),
+                        status="open",
+                    )
+                )
+
+        # Classify legacy faculty opportunities for the unified hub.
+        legacy_opportunities = (await session.scalars(select(FacultyOpportunity))).all()
+        for opportunity in legacy_opportunities:
+            if opportunity.opportunity_type == "research_grant":
+                opportunity.discovery_type = "funding"
+                opportunity.collaboration_types = opportunity.collaboration_types or ["research_grant"]
+            elif opportunity.opportunity_type == "consultancy_request":
+                opportunity.discovery_type = "collaborator"
+                opportunity.collaboration_types = opportunity.collaboration_types or ["consultancy"]
+            elif opportunity.opportunity_type in {"fdp", "industrial_training"}:
+                opportunity.discovery_type = "expert"
+                opportunity.collaboration_types = opportunity.collaboration_types or ["faculty_training"]
+            elif opportunity.opportunity_type in {"industrial_immersion", "faculty_internship"}:
+                opportunity.discovery_type = "collaborator"
+                opportunity.collaboration_types = opportunity.collaboration_types or ["faculty_immersion"]
+
         # 5. Seed Mentorship Sessions & Challenges
         existing_mentor = (await session.scalars(select(MentorshipSession))).first()
         if not existing_mentor:

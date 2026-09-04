@@ -1169,9 +1169,18 @@ class FacultyOpportunityResponse(APIModel):
     required_documents: list[str] = Field(default_factory=list)
     contact_email: str | None = None
     contact_person: str | None = None
+    discovery_type: str = "funding"
+    collaboration_types: list[str] = Field(default_factory=list)
+    website_url: str | None = None
+    profile_metadata: dict[str, Any] = Field(default_factory=dict)
     has_applied: bool = False
     application_status: str | None = None
     application_id: UUID | None = None
+    is_saved: bool = False
+    recommendation_score: float = Field(default=0.0, ge=0.0, le=1.0)
+    recommendation_version: str = "faculty-hub-v1"
+    recommendation_components: dict[str, float] = Field(default_factory=dict)
+    why_recommended: list[str] = Field(default_factory=list)
 
 
 class FacultyApplicationRequest(APIModel):
