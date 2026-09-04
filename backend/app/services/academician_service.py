@@ -13,9 +13,11 @@ Full Phase 1 and Phase 2 Lifecycle Management:
 - Industry Review & Recruiter Collaboration
 """
 from datetime import UTC, datetime
+from pathlib import Path
 from uuid import UUID
+import uuid
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -26,6 +28,7 @@ from app.models import (
     FacultyEventRegistration,
     FacultyNotification,
     FacultyOpportunity,
+    FacultyVideo,
     InnovationChallenge,
     ProjectApplication,
 )
@@ -44,6 +47,10 @@ from app.schemas.contracts import (
     FacultyPassportResponse,
     FacultyPassportUpdateRequest,
     FacultyProjectFeedbackRequest,
+    FacultyVideoCreate,
+    FacultyVideoListResponse,
+    FacultyVideoResponse,
+    FacultyVideoUpdate,
     WorkspaceDeliverableSubmit,
     WorkspaceDiscussionPostCreate,
     WorkspaceFeedbackSubmit,
@@ -1268,3 +1275,203 @@ async def update_faculty_application_status_recruiter(
     await session.commit()
     await session.refresh(app)
     return _to_application_response(app, workspace_id)
+
+
+# ============================================================================
+# 10. Faculty Video Lectures & Masterclasses
+# ============================================================================
+
+def _to_faculty_video_response(v: FacultyVideo) -> FacultyVideoResponse:
+    return FacultyVideoResponse(
+        id=v.id,
+        faculty_id=v.faculty_id,
+        faculty_name=v.faculty_name,
+        faculty_institution=v.faculty_institution,
+        faculty_designation=v.faculty_designation,
+        title=v.title,
+        description=v.description,
+        video_url=v.video_url,
+        thumbnail_url=v.thumbnail_url,
+        duration_minutes=v.duration_minutes,
+        subject=v.subject,
+        department=v.department,
+        skills_covered=v.skills_covered or [],
+        notes_markdown=v.notes_markdown,
+        views_count=v.views_count,
+        is_published=v.is_published,
+        created_at=v.created_at,
+    )
+
+
+async def create_faculty_video(
+    session: AsyncSession,
+    faculty_id: UUID,
+    payload: FacultyVideoCreate,
+) -> FacultyVideoResponse:
+    faculty = await session.get(Academician, faculty_id)
+    if not faculty:
+        raise ValueError("Faculty account not found")
+
+    video = FacultyVideo(
+        faculty_id=faculty.id,
+        faculty_name=faculty.full_name,
+        faculty_institution=faculty.institution_name,
+        faculty_designation=f"{faculty.designation}, {faculty.department}" if faculty.department else faculty.designation,
+        title=payload.title,
+        description=payload.description,
+        video_url=payload.video_url,
+        thumbnail_url=payload.thumbnail_url,
+        duration_minutes=payload.duration_minutes,
+        subject=payload.subject,
+        department=payload.department or faculty.department,
+        skills_covered=payload.skills_covered,
+        notes_markdown=payload.notes_markdown,
+        is_published=payload.is_published,
+    )
+    session.add(video)
+    await session.commit()
+    await session.refresh(video)
+    return _to_faculty_video_response(video)
+
+
+async def list_faculty_own_videos(
+    session: AsyncSession,
+    faculty_id: UUID,
+) -> list[FacultyVideoResponse]:
+    stmt = (
+        select(FacultyVideo)
+        .where(FacultyVideo.faculty_id == faculty_id)
+        .order_by(FacultyVideo.created_at.desc())
+    )
+    videos = (await session.scalars(stmt)).all()
+    return [_to_faculty_video_response(v) for v in videos]
+
+
+async def delete_faculty_video(
+    session: AsyncSession,
+    faculty_id: UUID,
+    video_id: UUID,
+) -> None:
+    video = await session.get(FacultyVideo, video_id)
+    if not video:
+        raise ValueError("Video not found")
+    if video.faculty_id != faculty_id:
+        raise PermissionError("You can only delete your own video lectures")
+    await session.delete(video)
+    await session.commit()
+
+
+async def list_faculty_videos_catalog(
+    session: AsyncSession,
+    faculty_name: str | None = None,
+    subject: str | None = None,
+    search: str | None = None,
+) -> FacultyVideoListResponse:
+    stmt = select(FacultyVideo).where(FacultyVideo.is_published == True)  # noqa: E712
+
+    if faculty_name and faculty_name.strip() and faculty_name.lower() != "all":
+        stmt = stmt.where(FacultyVideo.faculty_name.ilike(f"%{faculty_name.strip()}%"))
+
+    if subject and subject.strip() and subject.lower() != "all":
+        stmt = stmt.where(FacultyVideo.subject.ilike(f"%{subject.strip()}%"))
+
+    if search and search.strip():
+        term = f"%{search.strip()}%"
+        stmt = stmt.where(
+            or_(
+                FacultyVideo.title.ilike(term),
+                FacultyVideo.description.ilike(term),
+                FacultyVideo.faculty_name.ilike(term),
+                FacultyVideo.subject.ilike(term),
+            )
+        )
+
+    stmt = stmt.order_by(FacultyVideo.created_at.desc())
+    videos = (await session.scalars(stmt)).all()
+
+    # Get distinct faculty names and subjects for filtering
+    faculty_names_stmt = (
+        select(FacultyVideo.faculty_name)
+        .where(FacultyVideo.is_published == True)  # noqa: E712
+        .distinct()
+        .order_by(FacultyVideo.faculty_name)
+    )
+    faculty_names = list((await session.scalars(faculty_names_stmt)).all())
+
+    subjects_stmt = (
+        select(FacultyVideo.subject)
+        .where(FacultyVideo.is_published == True)  # noqa: E712
+        .distinct()
+        .order_by(FacultyVideo.subject)
+    )
+    subjects = list((await session.scalars(subjects_stmt)).all())
+
+    return FacultyVideoListResponse(
+        total=len(videos),
+        items=[_to_faculty_video_response(v) for v in videos],
+        faculty_names=faculty_names,
+        subjects=subjects,
+    )
+
+
+async def record_video_view(
+    session: AsyncSession,
+    video_id: UUID,
+) -> int:
+    video = await session.get(FacultyVideo, video_id)
+    if not video:
+        raise ValueError("Video not found")
+    video.views_count += 1
+    await session.commit()
+    return video.views_count
+
+
+async def upload_faculty_video_file(
+    session: AsyncSession,
+    faculty_id: UUID,
+    file_bytes: bytes,
+    original_filename: str,
+    title: str,
+    description: str = "",
+    subject: str = "General",
+    department: str | None = None,
+    duration_minutes: int = 30,
+    skills_covered: list[str] | None = None,
+    notes_markdown: str | None = None,
+) -> FacultyVideoResponse:
+    faculty = await session.get(Academician, faculty_id)
+    if not faculty:
+        raise ValueError("Faculty account not found")
+
+    uploads_dir = Path("/app/uploads/videos") if Path("/app/uploads").exists() else Path("./uploads/videos")
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+
+    safe_name = f"{uuid.uuid4().hex}_{Path(original_filename).name}"
+    file_path = uploads_dir / safe_name
+    with open(file_path, "wb") as f:
+        f.write(file_bytes)
+
+    video_url = f"/uploads/videos/{safe_name}"
+
+    video = FacultyVideo(
+        faculty_id=faculty.id,
+        faculty_name=faculty.full_name,
+        faculty_institution=faculty.institution_name,
+        faculty_designation=f"{faculty.designation}, {faculty.department}" if faculty.department else faculty.designation,
+        title=title,
+        description=description,
+        video_url=video_url,
+        thumbnail_url=None,
+        duration_minutes=duration_minutes,
+        subject=subject,
+        department=department or faculty.department,
+        skills_covered=skills_covered or [],
+        notes_markdown=notes_markdown,
+        is_published=True,
+    )
+    session.add(video)
+    await session.commit()
+    await session.refresh(video)
+    return _to_faculty_video_response(video)
+
+

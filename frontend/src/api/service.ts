@@ -37,6 +37,9 @@ import type {
   FacultyOpportunity,
   FacultyPassport,
   FacultyPassportUpdate,
+  FacultyVideo,
+  FacultyVideoCreateInput,
+  FacultyVideoListResponse,
   GitHubIdentity,
   GoogleAuthRequest,
   InnovationChallenge,
@@ -365,4 +368,33 @@ export const api = {
   getDigiLockerDocuments: (token: string) => request<DigiLockerDocument[]>("/digilocker/documents", {}, token),
   importDigiLockerCredential: (doc_id: string, token: string, custom_title?: string) => request<DigiLockerImportResult>("/digilocker/import", { method: "POST", body: JSON.stringify({ doc_id, custom_title }) }, token),
   unlinkDigiLocker: (token: string) => request<DigiLockerStatus>("/digilocker/unlink", { method: "DELETE" }, token),
+
+  // Faculty Video Lectures & Student Discovery
+  getFacultyVideosCatalog: (token?: string, filters?: { faculty_name?: string; subject?: string; search?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.faculty_name && filters.faculty_name !== "All") params.append("faculty_name", filters.faculty_name);
+    if (filters?.subject && filters.subject !== "All") params.append("subject", filters.subject);
+    if (filters?.search) params.append("search", filters.search);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return request<FacultyVideoListResponse>(`/learning/faculty-videos${qs}`, {}, token);
+  },
+  recordFacultyVideoView: (videoId: string, token?: string) => request<{ views_count: number }>(`/learning/faculty-videos/${encodeURIComponent(videoId)}/view`, { method: "POST" }, token),
+  getOwnFacultyVideos: (token: string) => request<FacultyVideo[]>("/academician/videos", {}, token),
+  createFacultyVideo: (input: FacultyVideoCreateInput, token: string) => request<FacultyVideo>("/academician/videos", { method: "POST", body: JSON.stringify(input) }, token),
+  uploadFacultyVideoFile: async (formData: FormData, token: string) => {
+    const apiBase = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+    const res = await fetch(`${apiBase}/academician/videos/upload`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to upload video" }));
+      throw new Error(err.detail || "Upload failed");
+    }
+    return res.json() as Promise<FacultyVideo>;
+  },
+  deleteFacultyVideo: (videoId: string, token: string) => request<void>(`/academician/videos/${encodeURIComponent(videoId)}`, { method: "DELETE" }, token),
 };

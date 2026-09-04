@@ -39,3 +39,5 @@ postgres-data/
 redis-data/
 uploads/
 backend/uploads/
+tmp/
+

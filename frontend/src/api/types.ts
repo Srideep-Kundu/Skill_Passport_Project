@@ -1486,4 +1486,49 @@ export interface DigiLockerImportResult {
   message: string;
 }
 
+// =========================================================================
+// Faculty Video Lectures & Student Discovery Types
+// =========================================================================
+
+export interface FacultyVideo {
+  id: string;
+  faculty_id: string;
+  faculty_name: string;
+  faculty_institution: string;
+  faculty_designation: string;
+  title: string;
+  description: string;
+  video_url: string;
+  thumbnail_url?: string | null;
+  duration_minutes: number;
+  subject: string;
+  department: string;
+  skills_covered: string[];
+  notes_markdown?: string | null;
+  views_count: number;
+  is_published: boolean;
+  created_at: string;
+}
+
+export interface FacultyVideoCreateInput {
+  title: string;
+  description: string;
+  video_url: string;
+  thumbnail_url?: string | null;
+  duration_minutes: number;
+  subject: string;
+  department?: string;
+  skills_covered: string[];
+  notes_markdown?: string | null;
+  is_published?: boolean;
+}
+
+export interface FacultyVideoListResponse {
+  total: number;
+  items: FacultyVideo[];
+  faculty_names: string[];
+  subjects: string[];
+}
+
+
 

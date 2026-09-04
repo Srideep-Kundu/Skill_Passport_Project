@@ -1874,4 +1874,62 @@ class InstitutionReportResponse(APIModel):
     csv_export_url: str | None = None
 
 
+# =============================================================================
+# FACULTY VIDEO LECTURES & DISCOVERY SCHEMAS
+# =============================================================================
+
+class FacultyVideoCreate(APIModel):
+    title: str = Field(min_length=3, max_length=255)
+    description: str = Field(default="", max_length=5000)
+    video_url: str = Field(min_length=5, max_length=2048)
+    thumbnail_url: str | None = Field(default=None, max_length=2048)
+    duration_minutes: int = Field(default=30, ge=1, le=600)
+    subject: str = Field(default="General", max_length=128)
+    department: str = Field(default="Computer Science", max_length=128)
+    skills_covered: list[str] = Field(default_factory=list)
+    notes_markdown: str | None = None
+    is_published: bool = True
+
+
+class FacultyVideoUpdate(APIModel):
+    title: str | None = Field(default=None, min_length=3, max_length=255)
+    description: str | None = None
+    video_url: str | None = None
+    thumbnail_url: str | None = None
+    duration_minutes: int | None = Field(default=None, ge=1, le=600)
+    subject: str | None = None
+    department: str | None = None
+    skills_covered: list[str] | None = None
+    notes_markdown: str | None = None
+    is_published: bool | None = None
+
+
+class FacultyVideoResponse(APIModel):
+    id: UUID
+    faculty_id: UUID
+    faculty_name: str
+    faculty_institution: str
+    faculty_designation: str
+    title: str
+    description: str
+    video_url: str
+    thumbnail_url: str | None = None
+    duration_minutes: int
+    subject: str
+    department: str
+    skills_covered: list[str]
+    notes_markdown: str | None = None
+    views_count: int
+    is_published: bool
+    created_at: datetime
+
+
+class FacultyVideoListResponse(APIModel):
+    total: int
+    items: list[FacultyVideoResponse]
+    faculty_names: list[str]
+    subjects: list[str]
+
+
+
 

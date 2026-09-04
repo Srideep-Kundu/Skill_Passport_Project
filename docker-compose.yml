@@ -124,6 +124,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
+      - ./backend/app:/app/app
+      - ./backend/seed:/app/seed
       - upload-data:/app/uploads
     depends_on:
       migrate:
@@ -184,6 +186,10 @@ services:
       EMBEDDING_DIMENSION: ${EMBEDDING_DIMENSION:-768}
       DISCOVERY_MAX_ACTIVE_PER_STUDENT: ${DISCOVERY_MAX_ACTIVE_PER_STUDENT:-10}
     command: ["python", "-m", "app.workers.extraction_worker"]
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/seed:/app/seed
+      - upload-data:/app/uploads
     depends_on:
       migrate:
         condition: service_completed_successfully

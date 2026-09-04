@@ -28,6 +28,7 @@ import {
   FileSpreadsheet,
   Download,
   BarChart3,
+  Video,
 } from "lucide-react";
 import { LandingPage } from "./pages/LandingPage";
 import { useAuth } from "./auth/AuthContext";
@@ -104,6 +105,7 @@ export type RecruiterTab =
   | "analytics";
 export type AcademicianTab =
   | "opportunities"
+  | "videos"
   | "applications"
   | "workspaces"
   | "passport"
@@ -213,9 +215,10 @@ export function App() {
     { id: "analytics", label: "Analytics & Insights", icon: <BarChart3 className="h-4 w-4 shrink-0" aria-hidden="true" /> },
   ];
 
-  // 10 Faculty / Academician Portal navigation tabs
+  // 11 Faculty / Academician Portal navigation tabs
   const academicianNavItems: { id: AcademicianTab; label: string; icon: React.ReactNode }[] = [
     { id: "opportunities", label: "Opportunities", icon: <Briefcase className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "videos", label: "Video Lectures", icon: <Video className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "applications", label: "My Applications", icon: <FileText className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "workspaces", label: "Workspaces", icon: <Layers className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "passport", label: "Academic Passport", icon: <GraduationCap className="h-4 w-4 shrink-0" aria-hidden="true" /> },

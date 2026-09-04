@@ -1,12 +1,14 @@
 import logging
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
 from sqlalchemy import text
@@ -118,7 +120,12 @@ app.include_router(collaborations.router)
 app.include_router(documents.router)
 app.include_router(achievements.router)
 app.include_router(recruiter_analytics.router)
-app.include_router(applications.router)
+app.include_router(verification.router)
+
+uploads_dir = Path("/app/uploads") if Path("/app/uploads").exists() else Path("./uploads")
+uploads_dir.mkdir(parents=True, exist_ok=True)
+(uploads_dir / "videos").mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 app.include_router(automation_policies.router)
 app.include_router(automation_policies.queue_router)
 app.include_router(job_discoveries.router)

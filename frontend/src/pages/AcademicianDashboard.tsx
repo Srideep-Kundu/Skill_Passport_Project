@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   GraduationCap,
   Building2,
@@ -21,6 +21,15 @@ import {
   Edit3,
   Bell,
   X,
+  Video,
+  Play,
+  Trash2,
+  Plus,
+  Eye,
+  UploadCloud,
+  Film,
+  ShieldCheck,
+  Upload,
 } from "lucide-react";
 import { api } from "../api/service";
 import { errorMessage } from "../api/client";
@@ -35,6 +44,7 @@ import type {
   FacultyCollaborationHistoryItem,
   FacultyAdvisedProject,
   UserDocument,
+  FacultyVideo,
 } from "../api/types";
 import { toast } from "sonner";
 
@@ -46,6 +56,7 @@ export interface AcademicianDashboardProps {
 
 export type AcademicianTabType =
   | "opportunities"
+  | "videos"
   | "applications"
   | "workspaces"
   | "passport"
@@ -125,6 +136,27 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
 
+  // Faculty Video Lectures State & Drag-and-Drop
+  const [ownVideos, setOwnVideos] = useState<FacultyVideo[]>([]);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const videoFileInputRef = useRef<HTMLInputElement>(null);
+  const [videoForm, setVideoForm] = useState({
+    title: "",
+    description: "",
+    video_url: "",
+    thumbnail_url: "",
+    duration_minutes: 30,
+    subject: "Computer Science",
+    department: "",
+    skills_covered_str: "",
+    notes_markdown: "",
+  });
+  const [savingVideo, setSavingVideo] = useState(false);
+  const [activePreviewVideo, setActivePreviewVideo] = useState<FacultyVideo | null>(null);
+
   const loadInitialData = useCallback(async () => {
     try {
       setLoading(true);
@@ -138,6 +170,7 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
         histRes,
         advRes,
         docsRes,
+        vidsRes,
       ] = await Promise.allSettled([
         api.getFacultyPassport(token),
         api.getFacultyOpportunities(token),
@@ -148,6 +181,7 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
         api.getFacultyCollaborationHistory(token),
         api.getFacultyAdvisedProjects(token),
         api.getUserDocuments(token),
+        api.getOwnFacultyVideos(token),
       ]);
 
       if (passRes.status === "fulfilled") {
@@ -162,6 +196,7 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
       if (histRes.status === "fulfilled") setHistoryItems(histRes.value);
       if (advRes.status === "fulfilled") setAdvisedProjects(advRes.value);
       if (docsRes.status === "fulfilled") setDocuments(docsRes.value);
+      if (vidsRes.status === "fulfilled") setOwnVideos(vidsRes.value);
     } catch (err) {
       toast.error(errorMessage(err, "Failed to load faculty portal data"));
     } finally {
@@ -417,8 +452,145 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
     }
   };
 
+  // Handle Video File Selection (Drag & Drop or File Picker)
+  function handleVideoFileSelect(file: File) {
+    if (!file.type.startsWith("video/") && !file.name.match(/\.(mp4|webm|ogg|mov|mkv|avi)$/i)) {
+      toast.error("Please select a valid video file (.mp4, .webm, .mov, .mkv)");
+      return;
+    }
+    setVideoFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setVideoPreviewUrl(objectUrl);
+
+    // Auto-detect video duration from metadata
+    const tempVideo = document.createElement("video");
+    tempVideo.preload = "metadata";
+    tempVideo.src = objectUrl;
+    tempVideo.onloadedmetadata = () => {
+      const minutes = Math.max(1, Math.round(tempVideo.duration / 60));
+      setVideoForm((prev) => ({
+        ...prev,
+        duration_minutes: minutes,
+        title: prev.title.trim() ? prev.title : file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
+      }));
+    };
+    tempVideo.onerror = () => {
+      // fallback to filename if metadata parse fails
+      setVideoForm((prev) => ({
+        ...prev,
+        title: prev.title.trim() ? prev.title : file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
+      }));
+    };
+  }
+
+  // Handle Video Upload (Form Submit)
+  async function handleCreateVideo(e: React.FormEvent) {
+    e.preventDefault();
+    if (!videoFile && !videoForm.video_url.trim()) {
+      toast.error("Please drag & drop a video file or provide a video URL");
+      return;
+    }
+    if (!videoForm.title.trim()) {
+      toast.error("Please provide a lecture title");
+      return;
+    }
+    try {
+      setSavingVideo(true);
+      const skillsArray = videoForm.skills_covered_str
+        ? videoForm.skills_covered_str.split(",").map((s) => s.trim()).filter(Boolean)
+        : [];
+
+      let created: FacultyVideo;
+      if (videoFile) {
+        const fd = new FormData();
+        fd.append("file", videoFile);
+        fd.append("title", videoForm.title.trim());
+        fd.append("description", videoForm.description.trim());
+        fd.append("subject", videoForm.subject.trim() || "General");
+        fd.append("department", videoForm.department.trim() || passport?.department || "Computer Science");
+        fd.append("duration_minutes", String(Number(videoForm.duration_minutes) || 30));
+        fd.append("skills_covered", videoForm.skills_covered_str || "");
+        if (videoForm.notes_markdown?.trim()) {
+          fd.append("notes_markdown", videoForm.notes_markdown.trim());
+        }
+        created = await api.uploadFacultyVideoFile(fd, token);
+      } else {
+        created = await api.createFacultyVideo(
+          {
+            title: videoForm.title.trim(),
+            description: videoForm.description.trim(),
+            video_url: videoForm.video_url.trim(),
+            thumbnail_url: videoForm.thumbnail_url?.trim() || undefined,
+            duration_minutes: Number(videoForm.duration_minutes) || 30,
+            subject: videoForm.subject.trim() || "General",
+            department: videoForm.department.trim() || passport?.department || "Computer Science",
+            skills_covered: skillsArray,
+            notes_markdown: videoForm.notes_markdown.trim() || undefined,
+            is_published: true,
+          },
+          token
+        );
+      }
+
+      setOwnVideos((prev) => [created, ...prev]);
+      setShowVideoModal(false);
+      setVideoFile(null);
+      setVideoPreviewUrl(null);
+      setVideoForm({
+        title: "",
+        description: "",
+        video_url: "",
+        thumbnail_url: "",
+        duration_minutes: 30,
+        subject: "Computer Science",
+        department: "",
+        skills_covered_str: "",
+        notes_markdown: "",
+      });
+      toast.success("Faculty video lecture published! Students can now access it in the Student Portal.");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to publish video lecture"));
+    } finally {
+      setSavingVideo(false);
+    }
+  }
+
+  async function handleDeleteVideo(videoId: string) {
+    if (!window.confirm("Are you sure you want to remove this video lecture?")) return;
+    try {
+      await api.deleteFacultyVideo(videoId, token);
+      setOwnVideos((prev) => prev.filter((v) => v.id !== videoId));
+      toast.success("Video lecture removed.");
+    } catch (err) {
+      toast.error(errorMessage(err, "Failed to delete video"));
+    }
+  }
+
+  function getEmbedUrl(rawUrl: string): string {
+    if (!rawUrl) return "";
+    try {
+      if (rawUrl.includes("youtube.com/watch")) {
+        const urlObj = new URL(rawUrl);
+        const v = urlObj.searchParams.get("v");
+        if (v) return `https://www.youtube.com/embed/${v}?autoplay=1`;
+      }
+      if (rawUrl.includes("youtu.be/")) {
+        const id = rawUrl.split("youtu.be/")[1]?.split("?")[0];
+        if (id) return `https://www.youtube.com/embed/${id}?autoplay=1`;
+      }
+      if (rawUrl.includes("vimeo.com/")) {
+        const id = rawUrl.split("vimeo.com/")[1]?.split("?")[0];
+        if (id) return `https://player.vimeo.com/video/${id}?autoplay=1`;
+      }
+    } catch {
+      // fallback
+    }
+    return rawUrl;
+  }
+
   const navTabs = [
     { id: "opportunities", label: "Opportunities", icon: Briefcase, count: opportunities.length },
+    { id: "videos", label: "Video Lectures", icon: Video, count: ownVideos.length },
     { id: "applications", label: "My Applications", icon: FileText, count: applications.length },
     { id: "workspaces", label: "Workspaces", icon: Layers, count: workspaces.length },
     { id: "passport", label: "Academic Passport", icon: GraduationCap },
@@ -674,6 +846,366 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                 </div>
               ))}
           </div>
+        </div>
+      )}
+
+      {/* TAB 1.5: FACULTY VIDEO LECTURES & MASTERCLASSES (MATCHES RESUME INTELLIGENCE) */}
+      {activeTab === "videos" && (
+        <div className="space-y-8">
+          <section className="border border-[#E5E1D8] bg-[#FFFFFF] p-6 sm:p-8 rounded-[16px] text-[#111827] font-sans space-y-6 shadow-[0_8px_30px_rgba(17,24,39,0.04)]">
+            {/* Header Bar */}
+            <div className="border-b border-[#E5E1D8] pb-4 flex items-start justify-between gap-4">
+              <div>
+                <div className="font-mono text-[11px] uppercase tracking-widest text-[#B08D57] font-semibold mb-1 flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#B08D57]" />
+                  <span>FACULTY MASTERCLASS ARCHITECTURE</span>
+                </div>
+                <h2 className="text-2xl font-normal text-[#111827] flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
+                  <Video className="h-5 w-5 text-[#B08D57]" />
+                  <span>Video Lecture Intelligence</span>
+                </h2>
+                <p className="text-xs text-[#475569] mt-0.5">
+                  Turn your masterclasses and lecture videos into evidence-backed skills with automatic cryptographic verification.
+                </p>
+              </div>
+
+              {ownVideos.length > 0 && (
+                <span className="badge-success flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3 w-3" />
+                  <span>{ownVideos.length} Masterclasses Published</span>
+                </span>
+              )}
+            </div>
+
+            <input
+              ref={videoFileInputRef}
+              aria-label="Video lecture file"
+              type="file"
+              accept=".mp4,.webm,.mov,.mkv,.avi,video/mp4,video/webm,video/quicktime"
+              onChange={(e) => {
+                const selected = e.target.files?.[0];
+                if (selected) handleVideoFileSelect(selected);
+              }}
+              className="hidden"
+            />
+
+            {/* 1. EMPTY / UPLOAD DROPZONE */}
+            {!videoFile ? (
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) handleVideoFileSelect(file);
+                }}
+                onClick={() => videoFileInputRef.current?.click()}
+                className={`border border-dashed p-10 rounded-[16px] flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+                  isDragging
+                    ? "border-[#B08D57] bg-[rgba(176,141,87,0.10)] scale-[1.005]"
+                    : "border-[#E5E1D8] bg-[#F7F5F0] hover:border-[#B08D57]/60 hover:bg-[#EFEBE3]"
+                }`}
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#E5E1D8] bg-[#FFFFFF] text-[#B08D57] mb-3 shadow-2xs">
+                  <Upload className="h-5 w-5" />
+                </div>
+                <p className="text-sm font-medium text-[#111827]">
+                  Drag & drop your lecture video here, or <span className="underline underline-offset-4 text-[#B08D57]">choose a file</span>
+                </p>
+                <p className="text-xs text-[#475569] mt-1">
+                  Supports video formats (<span className="text-[#111827] font-medium">MP4</span>, <span className="text-[#111827] font-medium">WebM</span>, <span className="text-[#111827] font-medium">MOV</span>, and <span className="text-[#111827] font-medium">MKV</span> up to 500MB)
+                </p>
+              </div>
+            ) : (
+              /* 2. SELECTED FILE CONFIGURATION CARD */
+              <div className="border border-[#E5E1D8] bg-[#F7F5F0] p-6 sm:p-7 rounded-[16px] space-y-5 font-sans">
+                <div className="flex items-center justify-between pb-3 border-b border-[#E5E1D8]">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                      <Film className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-[#111827]">{videoFile.name}</h4>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="font-mono text-xs text-[#64748B]">
+                          {(videoFile.size / (1024 * 1024)).toFixed(1)} MB
+                        </span>
+                        <span className="text-[#CBD5E1]">·</span>
+                        <span className="font-mono text-xs text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-medium">
+                          ~{videoForm.duration_minutes} mins detected
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setVideoFile(null);
+                      setVideoPreviewUrl(null);
+                    }}
+                    className="font-mono text-xs text-rose-600 hover:text-rose-800 underline cursor-pointer"
+                  >
+                    Change video
+                  </button>
+                </div>
+
+                {videoPreviewUrl && (
+                  <div className="max-w-md mx-auto rounded-lg overflow-hidden border border-[#E5E1D8] bg-black">
+                    <video src={videoPreviewUrl} controls className="w-full aspect-video" />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-semibold text-[#1E293B] block mb-1">Lecture Title *</label>
+                    <input
+                      type="text"
+                      required
+                      value={videoForm.title}
+                      onChange={(e) => setVideoForm({ ...videoForm, title: e.target.value })}
+                      placeholder="e.g. Distributed Systems & Microservices Architecture"
+                      className="w-full text-sm p-2.5 rounded-md bg-[#FFFFFF] border border-[#CBD5E1] text-[#0F172A] focus:ring-2 focus:ring-[#B08D57]/20 focus:border-[#B08D57] outline-hidden"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-[#1E293B] block mb-1">Subject / Domain *</label>
+                    <input
+                      type="text"
+                      required
+                      value={videoForm.subject}
+                      onChange={(e) => setVideoForm({ ...videoForm, subject: e.target.value })}
+                      placeholder="e.g. Backend Engineering / AI / DevOps"
+                      className="w-full text-sm p-2.5 rounded-md bg-[#FFFFFF] border border-[#CBD5E1] text-[#0F172A] focus:ring-2 focus:ring-[#B08D57]/20 focus:border-[#B08D57] outline-hidden"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-semibold text-[#1E293B] block mb-1">Duration (Minutes) *</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={600}
+                      required
+                      value={videoForm.duration_minutes}
+                      onChange={(e) => setVideoForm({ ...videoForm, duration_minutes: parseInt(e.target.value) || 30 })}
+                      className="w-full text-sm p-2.5 rounded-md bg-[#FFFFFF] border border-[#CBD5E1] text-[#0F172A] focus:ring-2 focus:ring-[#B08D57]/20 focus:border-[#B08D57] outline-hidden"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-semibold text-[#1E293B] block mb-1">Skills Covered (Comma Separated)</label>
+                    <input
+                      type="text"
+                      value={videoForm.skills_covered_str}
+                      onChange={(e) => setVideoForm({ ...videoForm, skills_covered_str: e.target.value })}
+                      placeholder="Python, FastAPI, Docker, Microservices, PostgreSQL"
+                      className="w-full text-sm p-2.5 rounded-md bg-[#FFFFFF] border border-[#CBD5E1] text-[#0F172A] focus:ring-2 focus:ring-[#B08D57]/20 focus:border-[#B08D57] outline-hidden"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-semibold text-[#1E293B] block mb-1">Professor's Study Notes & Key References (Markdown)</label>
+                    <textarea
+                      rows={3}
+                      value={videoForm.notes_markdown}
+                      onChange={(e) => setVideoForm({ ...videoForm, notes_markdown: e.target.value })}
+                      placeholder="# Lecture Notes&#10;&#10;### 1. Key Concepts...&#10;### 2. Suggested Practice..."
+                      className="w-full text-sm p-2.5 rounded-md bg-[#FFFFFF] border border-[#CBD5E1] text-[#0F172A] font-mono text-xs focus:ring-2 focus:ring-[#B08D57]/20 focus:border-[#B08D57] outline-hidden"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setVideoFile(null);
+                      setVideoPreviewUrl(null);
+                    }}
+                    className="px-4 py-2 text-sm text-[#64748B] hover:text-[#111827] cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCreateVideo}
+                    disabled={savingVideo}
+                    className="px-5 py-2.5 bg-[#B08D57] hover:bg-[#9A7B4A] disabled:opacity-50 text-white text-sm font-medium rounded-md shadow-xs transition-colors cursor-pointer flex items-center gap-2"
+                  >
+                    {savingVideo ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Uploading Video File...</span>
+                      </>
+                    ) : (
+                      <>
+                        <UploadCloud className="h-4 w-4" />
+                        <span>Upload & Publish to Student Hub</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Footer Provenance Note */}
+            <div className="flex items-center gap-2 text-xs text-[#64748B] pt-2 border-t border-[#E5E1D8]">
+              <ShieldCheck className="h-4 w-4 text-[#B08D57]" />
+              <span>Deterministic academic provenance · Indexed for Student Learning Hub</span>
+            </div>
+          </section>
+
+          {/* Quick Metrics Bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-4 rounded-lg border border-[#E5E1D8] bg-[#FFFFFF]">
+              <span className="font-mono text-[10px] text-[#64748B] uppercase tracking-wider block">Lectures Published</span>
+              <p className="text-2xl font-normal text-[#0F172A] mt-1" style={{ fontFamily: "var(--font-display)" }}>
+                {ownVideos.length}
+              </p>
+            </div>
+            <div className="p-4 rounded-lg border border-[#E5E1D8] bg-[#FFFFFF]">
+              <span className="font-mono text-[10px] text-[#64748B] uppercase tracking-wider block">Total Student Views</span>
+              <p className="text-2xl font-normal text-[#B08D57] mt-1" style={{ fontFamily: "var(--font-display)" }}>
+                {ownVideos.reduce((acc, v) => acc + (v.views_count || 0), 0)}
+              </p>
+            </div>
+            <div className="p-4 rounded-lg border border-[#E5E1D8] bg-[#FFFFFF]">
+              <span className="font-mono text-[10px] text-[#64748B] uppercase tracking-wider block">Total Content Duration</span>
+              <p className="text-2xl font-normal text-[#166534] mt-1" style={{ fontFamily: "var(--font-display)" }}>
+                {Math.round(ownVideos.reduce((acc, v) => acc + (v.duration_minutes || 0), 0) / 60 * 10) / 10} Hours
+              </p>
+            </div>
+          </div>
+
+          {/* Videos Grid */}
+          {ownVideos.length === 0 ? (
+            <div className="p-12 text-center border border-[#E5E1D8] bg-[#FFFFFF] rounded-lg space-y-3">
+              <Video className="h-10 w-10 text-[#94A3B8] mx-auto" />
+              <h3 className="text-base font-semibold text-[#0F172A]">No Video Lectures Uploaded Yet</h3>
+              <p className="text-xs text-[#64748B] max-w-md mx-auto">
+                Share your academic expertise by publishing lecture videos with syllabus notes, allowing students to learn directly from you.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowVideoModal(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#0B0B0A] hover:bg-[#111827] text-white text-xs font-mono rounded-md cursor-pointer transition-colors"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Upload First Video</span>
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {ownVideos.map((video) => (
+                <div
+                  key={video.id}
+                  className="border border-[#E2E8F0] bg-[#FFFFFF] rounded-lg overflow-hidden flex flex-col justify-between shadow-xs hover:shadow-md transition-shadow group"
+                >
+                  <div>
+                    {/* Thumbnail */}
+                    <div
+                      onClick={() => setActivePreviewVideo(video)}
+                      className="relative h-44 bg-[#0F172A] cursor-pointer overflow-hidden group/thumb"
+                    >
+                      {video.thumbnail_url ? (
+                        <img
+                          src={video.thumbnail_url}
+                          alt={video.title}
+                          className="w-full h-full object-cover group-hover/thumb:scale-105 transition-transform duration-300 opacity-90"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-[#1E293B] to-[#0F172A]">
+                          <Video className="h-12 w-12 text-[#64748B]" />
+                        </div>
+                      )}
+
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/30 group-hover/thumb:bg-black/45 transition-colors">
+                        <div className="w-12 h-12 rounded-full bg-[#2563EB] text-white flex items-center justify-center shadow-lg group-hover/thumb:scale-110 transition-transform">
+                          <Play className="h-5 w-5 fill-white ml-0.5" />
+                        </div>
+                      </div>
+
+                      <div className="absolute top-3 left-3 bg-black/75 backdrop-blur-xs text-white text-xs px-2.5 py-1 rounded font-medium">
+                        {video.subject}
+                      </div>
+                      <div className="absolute bottom-3 right-3 bg-black/75 backdrop-blur-xs text-white text-xs px-2 py-0.5 rounded font-mono flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>{video.duration_minutes}m</span>
+                      </div>
+                    </div>
+
+                    {/* Body */}
+                    <div className="p-5 space-y-3">
+                      <h3
+                        onClick={() => setActivePreviewVideo(video)}
+                        className="text-base font-semibold text-[#0F172A] leading-snug line-clamp-2 cursor-pointer group-hover:text-[#2563EB] transition-colors"
+                      >
+                        {video.title}
+                      </h3>
+
+                      <p className="text-xs text-[#475569] leading-relaxed line-clamp-2">
+                        {video.description}
+                      </p>
+
+                      {video.skills_covered && video.skills_covered.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {video.skills_covered.slice(0, 3).map((skill, idx) => (
+                            <span
+                              key={idx}
+                              className="px-2 py-0.5 rounded text-[11px] font-medium bg-[#F1F5F9] text-[#334155] border border-[#E2E8F0]"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                          {video.skills_covered.length > 3 && (
+                            <span className="px-1.5 py-0.5 text-[10px] text-[#64748B]">
+                              +{video.skills_covered.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card Footer */}
+                  <div className="p-5 pt-0">
+                    <div className="pt-3 border-t border-[#F1F5F9] flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs text-[#64748B]">
+                        <Eye className="h-3.5 w-3.5" />
+                        <span>{video.views_count} views</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setActivePreviewVideo(video)}
+                          className="text-xs font-semibold text-[#2563EB] hover:text-[#1D4ED8] cursor-pointer"
+                        >
+                          Preview
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteVideo(video.id)}
+                          className="text-xs font-medium text-rose-600 hover:text-rose-800 p-1 rounded hover:bg-rose-50 cursor-pointer"
+                          title="Delete Video Lecture"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -1812,6 +2344,270 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                 className="px-4 py-2 bg-[#0B0B0A] hover:bg-[#111827] text-[#FFFFFF] text-xs rounded-md cursor-pointer"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* MODAL 5: PUBLISH NEW FACULTY VIDEO LECTURE */}
+      {showVideoModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#FFFFFF] rounded-xl max-w-2xl w-full border border-[#CBD5E1] shadow-2xl overflow-hidden my-auto animate-in fade-in-50 zoom-in-95 duration-200">
+            <div className="p-5 border-b border-[#E2E8F0] flex justify-between items-center bg-[#F8FAFC]">
+              <div className="flex items-center gap-2">
+                <Video className="h-5 w-5 text-[#2563EB]" />
+                <h3 className="text-base font-semibold text-[#0F172A]">Publish Video Lecture & Masterclass</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowVideoModal(false)}
+                className="p-1 text-[#64748B] hover:text-[#0F172A] rounded-md hover:bg-[#E2E8F0] cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateVideo} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+              {/* DRAG & DROP VIDEO DROPZONE (MATCHES RESUME INTELLIGENCE) */}
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) handleVideoFileSelect(file);
+                }}
+                className={`border border-dashed p-8 rounded-[16px] flex flex-col items-center justify-center text-center cursor-pointer transition-all relative ${
+                  isDragging
+                    ? "border-[#B08D57] bg-[rgba(176,141,87,0.10)] scale-[1.01]"
+                    : videoFile
+                    ? "border-emerald-500 bg-emerald-50/50"
+                    : "border-[#E5E1D8] bg-[#F7F5F0] hover:border-[#B08D57]/60 hover:bg-[#EFEBE3]"
+                }`}
+              >
+                <input
+                  type="file"
+                  accept=".mp4,.webm,.mov,.mkv,.avi,video/mp4,video/webm,video/quicktime"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleVideoFileSelect(file);
+                  }}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                />
+
+                {videoFile ? (
+                  <div className="space-y-3 w-full">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full border border-emerald-200 bg-emerald-100 text-emerald-700 mx-auto shadow-2xs">
+                      <Film className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-[#111827] break-all">{videoFile.name}</h4>
+                      <div className="flex items-center justify-center gap-2 mt-1">
+                        <span className="font-mono text-xs text-[#475569]">
+                          {(videoFile.size / (1024 * 1024)).toFixed(1)} MB
+                        </span>
+                        <span className="text-[#94A3B8]">·</span>
+                        <span className="font-mono text-xs text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-medium">
+                          ~{videoForm.duration_minutes} mins duration
+                        </span>
+                      </div>
+                    </div>
+
+                    {videoPreviewUrl && (
+                      <div className="max-w-xs mx-auto rounded-lg overflow-hidden border border-[#E5E1D8] bg-black mt-2">
+                        <video src={videoPreviewUrl} controls className="w-full aspect-video" />
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setVideoFile(null);
+                        setVideoPreviewUrl(null);
+                      }}
+                      className="mt-2 font-mono text-xs text-rose-600 hover:text-rose-800 underline cursor-pointer"
+                    >
+                      Remove and choose different video file
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2 py-2">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#E5E1D8] bg-[#FFFFFF] text-[#B08D57] mb-2 shadow-2xs mx-auto">
+                      <UploadCloud className="h-6 w-6" />
+                    </div>
+                    <p className="text-sm font-medium text-[#111827]">
+                      Drag & drop your video lecture here, or <span className="underline underline-offset-4 text-[#B08D57]">choose a file</span>
+                    </p>
+                    <p className="text-xs text-[#475569] mt-1">
+                      Supports <span className="text-[#111827] font-medium">MP4</span>, <span className="text-[#111827] font-medium">WebM</span>, <span className="text-[#111827] font-medium">MOV</span>, and <span className="text-[#111827] font-medium">MKV</span> video files (up to 500MB)
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="relative flex py-1 items-center">
+                <div className="grow border-t border-[#E5E1D8]" />
+                <span className="shrink mx-4 text-[11px] font-mono uppercase text-[#64748B]">Lecture Metadata</span>
+                <div className="grow border-t border-[#E5E1D8]" />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#1E293B] block mb-1">Lecture Title *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Distributed Systems & Microservices Architecture"
+                  value={videoForm.title}
+                  onChange={(e) => setVideoForm({ ...videoForm, title: e.target.value })}
+                  className="w-full text-sm p-2.5 rounded-md bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] outline-hidden"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-[#1E293B] block mb-1">Subject / Domain *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Backend Engineering / AI / Cloud"
+                    value={videoForm.subject}
+                    onChange={(e) => setVideoForm({ ...videoForm, subject: e.target.value })}
+                    className="w-full text-sm p-2.5 rounded-md bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] outline-hidden"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-[#1E293B] block mb-1">Duration (Minutes) *</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={600}
+                    required
+                    value={videoForm.duration_minutes}
+                    onChange={(e) => setVideoForm({ ...videoForm, duration_minutes: parseInt(e.target.value) || 30 })}
+                    className="w-full text-sm p-2.5 rounded-md bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A] focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] outline-hidden"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#1E293B] block mb-1">Skills Covered (Comma Separated)</label>
+                <input
+                  type="text"
+                  placeholder="Python, FastAPI, Docker, Microservices, PostgreSQL"
+                  value={videoForm.skills_covered_str}
+                  onChange={(e) => setVideoForm({ ...videoForm, skills_covered_str: e.target.value })}
+                  className="w-full text-sm p-2.5 rounded-md bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#1E293B] block mb-1">Lecture Description & Overview</label>
+                <textarea
+                  rows={2}
+                  placeholder="Describe key topics and takeaways of this masterclass..."
+                  value={videoForm.description}
+                  onChange={(e) => setVideoForm({ ...videoForm, description: e.target.value })}
+                  className="w-full text-sm p-2.5 rounded-md bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A] placeholder:text-[#94A3B8] focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] outline-hidden"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-[#1E293B] block mb-1">Professor's Study Notes & Key References (Markdown)</label>
+                <textarea
+                  rows={3}
+                  placeholder="# Lecture Notes&#10;&#10;### 1. Key Concepts...&#10;### 2. Suggested Practice Exercises..."
+                  value={videoForm.notes_markdown}
+                  onChange={(e) => setVideoForm({ ...videoForm, notes_markdown: e.target.value })}
+                  className="w-full text-sm p-2.5 rounded-md bg-[#F8FAFC] border border-[#CBD5E1] text-[#0F172A] placeholder:text-[#94A3B8] font-mono text-xs focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] outline-hidden"
+                />
+              </div>
+
+              <div className="pt-4 border-t border-[#E2E8F0] flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowVideoModal(false);
+                    setVideoFile(null);
+                    setVideoPreviewUrl(null);
+                  }}
+                  className="px-4 py-2 text-sm text-[#64748B] hover:text-[#0F172A] cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingVideo || !videoFile}
+                  className="px-5 py-2.5 bg-[#B08D57] hover:bg-[#9A7B4A] disabled:opacity-50 text-white text-sm font-medium rounded-md shadow-xs transition-colors cursor-pointer flex items-center gap-2"
+                >
+                  {savingVideo ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Uploading Video & Publishing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UploadCloud className="h-4 w-4" />
+                      <span>Upload & Publish Video Lecture</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 6: PREVIEW VIDEO PLAYER */}
+      {activePreviewVideo && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#FFFFFF] border border-[#CBD5E1] rounded-xl max-w-3xl w-full overflow-hidden shadow-2xl animate-in fade-in-50 zoom-in-95 duration-200">
+            <div className="p-4 border-b border-[#E2E8F0] flex items-center justify-between bg-[#F8FAFC]">
+              <div className="flex items-center gap-2">
+                <Video className="h-5 w-5 text-[#2563EB]" />
+                <h3 className="text-base font-semibold text-[#0F172A] line-clamp-1">{activePreviewVideo.title}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActivePreviewVideo(null)}
+                className="text-[#64748B] hover:text-[#0F172A] p-1.5 rounded-md hover:bg-[#E2E8F0] cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="relative aspect-video w-full bg-black">
+              <iframe
+                src={getEmbedUrl(activePreviewVideo.video_url)}
+                title={activePreviewVideo.title}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+
+            <div className="p-5 space-y-3">
+              <div className="flex items-center justify-between text-xs text-[#64748B]">
+                <span className="font-semibold text-[#0F172A]">{activePreviewVideo.subject} · {activePreviewVideo.duration_minutes} mins</span>
+                <span>{activePreviewVideo.views_count} total views</span>
+              </div>
+              <p className="text-xs text-[#334155] leading-relaxed">{activePreviewVideo.description}</p>
+            </div>
+
+            <div className="p-4 border-t border-[#E2E8F0] bg-[#F8FAFC] flex justify-end">
+              <button
+                type="button"
+                onClick={() => setActivePreviewVideo(null)}
+                className="px-4 py-2 bg-[#0F172A] text-white text-xs font-medium rounded-md cursor-pointer"
+              >
+                Close Preview
               </button>
             </div>
           </div>

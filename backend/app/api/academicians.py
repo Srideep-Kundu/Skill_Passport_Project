@@ -2,7 +2,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
@@ -23,6 +23,8 @@ from app.schemas.contracts import (
     FacultyPassportResponse,
     FacultyPassportUpdateRequest,
     FacultyProjectFeedbackRequest,
+    FacultyVideoCreate,
+    FacultyVideoResponse,
     WorkspaceDeliverableSubmit,
     WorkspaceDiscussionPostCreate,
     WorkspaceFeedbackSubmit,
@@ -402,3 +404,82 @@ async def update_faculty_application_status(
         return await academician_service.update_faculty_application_status_recruiter(session, application_id, payload)
     except ValueError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+
+
+# ============================================================================
+# 9. Faculty Video Lectures (Upload / Manage)
+# ============================================================================
+
+@router.post("/videos", response_model=FacultyVideoResponse, status_code=status.HTTP_201_CREATED)
+async def publish_faculty_video(
+    payload: FacultyVideoCreate,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> FacultyVideoResponse:
+    try:
+        return await academician_service.create_faculty_video(session, faculty.id, payload)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+
+
+@router.get("/videos", response_model=list[FacultyVideoResponse])
+async def get_own_faculty_videos(
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> list[FacultyVideoResponse]:
+    return await academician_service.list_faculty_own_videos(session, faculty.id)
+
+
+@router.post("/videos/upload", response_model=FacultyVideoResponse, status_code=status.HTTP_201_CREATED)
+async def upload_faculty_video(
+    file: Annotated[UploadFile, File(...)],
+    title: Annotated[str, Form(...)],
+    description: Annotated[str, Form("")] = "",
+    subject: Annotated[str, Form("General")] = "General",
+    department: Annotated[str, Form("")] = "",
+    duration_minutes: Annotated[int, Form(30)] = 30,
+    skills_covered: Annotated[str, Form("")] = "",
+    notes_markdown: Annotated[str | None, Form(None)] = None,
+    faculty: Annotated[Academician, Depends(require_role("academician"))] = None,
+    session: Annotated[AsyncSession, Depends(get_session)] = None,
+) -> FacultyVideoResponse:
+    if not file.filename:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No file provided")
+
+    file_bytes = await file.read()
+    if len(file_bytes) == 0:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "File is empty")
+
+    skills_list = [s.strip() for s in skills_covered.split(",") if s.strip()] if skills_covered else []
+
+    try:
+        return await academician_service.upload_faculty_video_file(
+            session=session,
+            faculty_id=faculty.id,
+            file_bytes=file_bytes,
+            original_filename=file.filename,
+            title=title,
+            description=description,
+            subject=subject,
+            department=department or None,
+            duration_minutes=duration_minutes,
+            skills_covered=skills_list,
+            notes_markdown=notes_markdown,
+        )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+
+
+@router.delete("/videos/{video_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_faculty_video(
+    video_id: UUID,
+    faculty: Annotated[Academician, Depends(require_role("academician"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> None:
+    try:
+        await academician_service.delete_faculty_video(session, faculty.id, video_id)
+    except PermissionError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+

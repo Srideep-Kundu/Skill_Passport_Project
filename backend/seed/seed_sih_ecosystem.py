@@ -19,6 +19,7 @@ from app.models import (
     FacultyEventRegistration,
     FacultyNotification,
     FacultyOpportunity,
+    FacultyVideo,
     InnovationChallenge,
     Institution,
     Internship,
@@ -1236,6 +1237,154 @@ async def seed_sih_ecosystem():
                     file_url="https://doi.org/10.1016/j.aij.2025.04.019",
                     verification_status="verified",
                     metadata_payload={"journal": "International AI Research Journal", "year": "2025", "peer_reviewed": True},
+                ),
+            ])
+
+        # Seed Faculty Video Masterclasses
+        existing_videos = (await session.scalars(select(FacultyVideo))).all()
+        if not existing_videos:
+            session.add_all([
+                FacultyVideo(
+                    faculty_id=fac_demo.id,
+                    faculty_name="Dr. Ananya Sharma",
+                    faculty_institution="National Institute of Technology Demo University",
+                    faculty_designation="Associate Professor, Computer Science",
+                    title="Advanced Asynchronous Microservices & FastAPI Architecture",
+                    description="Deep dive into production asynchronous backend development in Python, non-blocking I/O event loops, database connection pooling with SQLAlchemy 2.0 async, and high-throughput API gateway patterns.",
+                    video_url="https://www.youtube.com/watch?v=kCgGjBG6i10",
+                    thumbnail_url="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&q=80",
+                    duration_minutes=42,
+                    subject="Backend Engineering",
+                    department="Computer Science Engineering",
+                    skills_covered=["Python", "FastAPI", "AsyncIO", "REST APIs", "Microservices Architecture"],
+                    notes_markdown="""# Lecture Notes: Advanced FastAPI Microservices
+
+### 1. Asynchronous I/O Fundamentals
+- Python `asyncio` runs single-threaded concurrent cooperative multitasking.
+- Use `async def` for I/O bound tasks (DB queries, network calls, filesystem I/O).
+- Keep CPU-intensive computations in background thread pools or Celery workers.
+
+### 2. SQLAlchemy 2.0 Async Session Patterns
+```python
+async with SessionLocal() as session:
+    result = await session.execute(select(Student).where(Student.is_active == True))
+    students = result.scalars().all()
+```
+
+### 3. Pydantic v2 Serialization Performance
+- Native C++ core engine `pydantic-core` provides 5x-10x throughput enhancement.
+- Always use `Annotated` with FastAPI dependencies for strict type safety.
+""",
+                    views_count=184,
+                    is_published=True,
+                ),
+                FacultyVideo(
+                    faculty_id=fac_demo.id,
+                    faculty_name="Dr. Ananya Sharma",
+                    faculty_institution="National Institute of Technology Demo University",
+                    faculty_designation="Associate Professor, Computer Science",
+                    title="Vector Search & Cosine Embeddings with PostgreSQL pgvector",
+                    description="Comprehensive masterclass exploring high-dimensional embedding spaces, cosine similarity indexing with HNSW and IVFFlat, semantic skill matching algorithms, and SQL vector optimization.",
+                    video_url="https://www.youtube.com/watch?v=F0dU_Jg_u0U",
+                    thumbnail_url="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&q=80",
+                    duration_minutes=38,
+                    subject="Artificial Intelligence",
+                    department="Computer Science Engineering",
+                    skills_covered=["pgvector", "PostgreSQL", "Machine Learning", "Embeddings", "Vector Search"],
+                    notes_markdown="""# Lecture Notes: Vector Search with pgvector
+
+### 1. High-Dimensional Vector Distance Metrics
+- **Cosine Distance (`<=>`)**: $1 - \\frac{u \\cdot v}{\\|u\\| \\|v\\|}$
+- **Euclidean Distance (`<->`)**: $\\sqrt{\\sum (u_i - v_i)^2}$
+- **Inner Product (`<#>`)**: $- (u \\cdot v)$
+
+### 2. Creating HNSW Indexes in PostgreSQL
+```sql
+CREATE INDEX ON skill_embeddings USING hnsw (embedding vector_cosine_ops)
+WITH (m = 16, ef_construction = 64);
+```
+""",
+                    views_count=246,
+                    is_published=True,
+                ),
+                FacultyVideo(
+                    faculty_id=fac_demo.id,
+                    faculty_name="Dr. Ananya Sharma",
+                    faculty_institution="National Institute of Technology Demo University",
+                    faculty_designation="Associate Professor, Computer Science",
+                    title="Explainable AI & Fair Competency Graph Evaluation",
+                    description="Mathematical exploration of deterministic skill scoring formulas, removing demographic proxy bias, verifiable evidence provenance, and transparent human-auditable explanation templates.",
+                    video_url="https://www.youtube.com/watch?v=0h62p9VjNvg",
+                    thumbnail_url="https://images.unsplash.com/photo-1507146426996-ef05306b995a?w=800&q=80",
+                    duration_minutes=35,
+                    subject="Explainable AI",
+                    department="Computer Science Engineering",
+                    skills_covered=["Explainable AI", "Data Ethics", "Competency Mapping", "Algorithmic Fairness"],
+                    notes_markdown="""# Lecture Notes: Algorithmic Fairness in Skill Matching
+
+### 1. Deterministic Multi-Component Scoring
+$$\\text{Final Score} = \\text{clamp}(0.65 \\cdot D + 0.25 \\cdot S + 0.10 \\cdot V, 0, 1)$$
+- $D$: Exact required skill overlap.
+- $S$: Semantic embedding similarity (threshold $\\ge 0.75$).
+- $V$: External verification multiplier.
+
+### 2. Protected Attribute Isolation
+- Demographic features (Gender, Name, University Prestige) are completely isolated from scoring pipelines.
+""",
+                    views_count=312,
+                    is_published=True,
+                ),
+                FacultyVideo(
+                    faculty_id=fac_demo.id,
+                    faculty_name="Prof. Rajesh Kumar",
+                    faculty_institution="Indian Institute of Science & Technology",
+                    faculty_designation="Visiting Professor, Cloud Systems",
+                    title="Cloud Native DevOps & Distributed Container Orchestration",
+                    description="End-to-end containerization with Docker, multi-stage builds, Kubernetes pod lifecycle management, horizontal autoscaling, and resilient zero-downtime CI/CD deployment pipelines.",
+                    video_url="https://www.youtube.com/watch?v=X48VuDVv0do",
+                    thumbnail_url="https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?w=800&q=80",
+                    duration_minutes=48,
+                    subject="Cloud & DevOps",
+                    department="Information Technology",
+                    skills_covered=["Docker", "Kubernetes", "DevOps", "CI/CD Pipelines", "Cloud Infrastructure"],
+                    notes_markdown="""# Lecture Notes: Container Orchestration
+
+### 1. Multi-Stage Dockerfile Best Practices
+- Keep runtime images minimal using Alpine or Slim base images.
+- Cache dependencies (`package.json`, `requirements.txt`) in separate build layers.
+
+### 2. Kubernetes Resiliency Patterns
+- Configure `livenessProbe` and `readinessProbe` on all backend API services.
+- Define resource requests and limits to prevent noisy neighbor memory starvation.
+""",
+                    views_count=198,
+                    is_published=True,
+                ),
+                FacultyVideo(
+                    faculty_id=fac_demo.id,
+                    faculty_name="Dr. Vikram Rao",
+                    faculty_institution="National Institute of Technology Demo University",
+                    faculty_designation="Professor & Dean of Computing",
+                    title="System Design: Distributed Caching & Event-Driven Message Queues",
+                    description="Mastering Redis caching strategies (cache-aside, write-through), cache stampede mitigation, Redis Streams pub/sub architectures, and scalable real-time job processing workers.",
+                    video_url="https://www.youtube.com/watch?v=jgpVdJB2sKQ",
+                    thumbnail_url="https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&q=80",
+                    duration_minutes=45,
+                    subject="Distributed Systems",
+                    department="Computer Science Engineering",
+                    skills_covered=["Redis", "System Design", "Caching Strategies", "Distributed Systems", "Message Queues"],
+                    notes_markdown="""# Lecture Notes: Scalable Caching & Redis
+
+### 1. Cache-Aside Pattern
+1. App checks Redis cache for key.
+2. If hit: return immediately.
+3. If miss: query Postgres, write to Redis with TTL, return response.
+
+### 2. Cache Stampede Prevention
+- Use probabilistic early expiration (XFetch algorithm) or mutex locks on cache misses.
+""",
+                    views_count=275,
+                    is_published=True,
                 ),
             ])
 

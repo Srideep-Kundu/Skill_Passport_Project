@@ -1128,4 +1128,27 @@ class InstitutionActionPlan(Timestamped, Base):
     outcome_notes: Mapped[str | None] = mapped_column(Text)
 
 
+class FacultyVideo(Timestamped, Base):
+    __tablename__ = "faculty_videos"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    faculty_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("academicians.id", ondelete="CASCADE"), nullable=False, index=True)
+    faculty_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    faculty_institution: Mapped[str] = mapped_column(String(255), default="", nullable=False)
+    faculty_designation: Mapped[str] = mapped_column(String(255), default="Faculty", nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    video_url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    thumbnail_url: Mapped[str | None] = mapped_column(String(2048))
+    duration_minutes: Mapped[int] = mapped_column(Integer, default=30, nullable=False)
+    subject: Mapped[str] = mapped_column(String(128), default="General", nullable=False)
+    department: Mapped[str] = mapped_column(String(128), default="Computer Science", nullable=False)
+    skills_covered: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    notes_markdown: Mapped[str | None] = mapped_column(Text)
+    views_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    is_published: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    faculty: Mapped[Academician] = relationship()
+
+
+
 
