@@ -22,7 +22,12 @@ def upgrade() -> None:
     if bind.dialect.name == "postgresql":
         op.execute("CREATE INDEX ix_skills_embedding_cosine ON skills USING ivfflat (embedding vector_cosine_ops)")
         op.execute("CREATE INDEX ix_internships_embedding_cosine ON internships USING ivfflat (embedding vector_cosine_ops)")
-    op.execute("""CREATE VIEW matching_view AS
+    if bind.dialect.name == "postgresql":
+        view_verb = "CREATE OR REPLACE VIEW"
+    else:
+        op.execute("DROP VIEW IF EXISTS matching_view")
+        view_verb = "CREATE VIEW"
+    op.execute(f"""{view_verb} matching_view AS
         SELECT student_id, skill_id, source_evidence_id, extraction_confidence,
                CASE verification_tier WHEN 'verified' THEN extraction_confidence * 1.00
                  WHEN 'partially_verified' THEN extraction_confidence * 0.85 ELSE extraction_confidence * 0.65 END AS effective_confidence,
