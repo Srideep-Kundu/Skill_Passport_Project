@@ -105,6 +105,8 @@ export type RecruiterTab =
   | "analytics";
 export type AcademicianTab =
   | "opportunities"
+  | "collaboration_funding"
+  | "training_planner"
   | "videos"
   | "applications"
   | "workspaces"
@@ -215,9 +217,11 @@ export function App() {
     { id: "analytics", label: "Analytics & Insights", icon: <BarChart3 className="h-4 w-4 shrink-0" aria-hidden="true" /> },
   ];
 
-  // 11 Faculty / Academician Portal navigation tabs
+  // 13 Faculty / Academician Portal navigation tabs
   const academicianNavItems: { id: AcademicianTab; label: string; icon: React.ReactNode }[] = [
     { id: "opportunities", label: "Opportunities", icon: <Briefcase className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "collaboration_funding", label: "Collaboration & Funding", icon: <Sparkles className="h-4 w-4 shrink-0" aria-hidden="true" /> },
+    { id: "training_planner", label: "Training Planner", icon: <Award className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "videos", label: "Video Lectures", icon: <Video className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "applications", label: "My Applications", icon: <FileText className="h-4 w-4 shrink-0" aria-hidden="true" /> },
     { id: "workspaces", label: "Workspaces", icon: <Layers className="h-4 w-4 shrink-0" aria-hidden="true" /> },

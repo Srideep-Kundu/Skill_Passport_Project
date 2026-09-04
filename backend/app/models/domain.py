@@ -1150,5 +1150,165 @@ class FacultyVideo(Timestamped, Base):
     faculty: Mapped[Academician] = relationship()
 
 
+class ProfessionalSociety(Timestamped, Base):
+    __tablename__ = "professional_societies"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    short_name: Mapped[str] = mapped_column(String(64), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    website: Mapped[str] = mapped_column(String(1024), default="", nullable=False)
+    logo_url: Mapped[str | None] = mapped_column(String(2048))
+    domains: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    membership_fee: Mapped[str] = mapped_column(String(128), default="Institutional Membership Available", nullable=False)
+    benefits: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    available_programs: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    expert_speakers: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    previous_collaborations: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    contact_email: Mapped[str] = mapped_column(String(320), default="", nullable=False)
+    proposal_guidelines: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    sponsorship_available: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
+class IndustryExpert(Timestamped, Base):
+    __tablename__ = "industry_experts"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    organization: Mapped[str] = mapped_column(String(200), nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    expertise_tags: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    experience_years: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
+    speaking_fee: Mapped[str] = mapped_column(String(100), default="Honorarium (Standard AICTE / Institutional)", nullable=False)
+    availability: Mapped[str] = mapped_column(String(32), default="available", nullable=False)  # available, busy, by_request
+    bio: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    email: Mapped[str] = mapped_column(String(320), default="", nullable=False)
+    rating: Mapped[float] = mapped_column(Numeric(3, 2), default=4.8, nullable=False)
+    past_sessions_count: Mapped[int] = mapped_column(Integer, default=12, nullable=False)
+    avatar_url: Mapped[str | None] = mapped_column(String(2048))
+
+
+class FundingOpportunity(Timestamped, Base):
+    __tablename__ = "funding_opportunities"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    funding_organization: Mapped[str] = mapped_column(String(255), nullable=False)  # AICTE, SERB, DST, AWS, Microsoft
+    grant_type: Mapped[str] = mapped_column(String(64), default="workshop_grant", nullable=False)
+    amount: Mapped[str] = mapped_column(String(100), nullable=False)  # e.g. "₹2,00,000 - ₹5,00,000"
+    amount_numeric: Mapped[float] = mapped_column(Numeric(12, 2), default=200000.0, nullable=False)
+    deadline: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    eligibility: Mapped[str] = mapped_column(Text, nullable=False)
+    supported_domains: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    source_url: Mapped[str] = mapped_column(String(2048), default="", nullable=False)
+    required_documents: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    match_reason_template: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
+class FacultyProposal(Timestamped, Base):
+    __tablename__ = "faculty_proposals"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    faculty_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("academicians.id", ondelete="CASCADE"), nullable=False, index=True)
+    society_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("professional_societies.id", ondelete="SET NULL"), index=True)
+    funding_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("funding_opportunities.id", ondelete="SET NULL"), index=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    objective: Mapped[str] = mapped_column(Text, nullable=False)
+    event_type: Mapped[str] = mapped_column(String(64), default="workshop", nullable=False)
+    target_audience: Mapped[str] = mapped_column(String(200), default="3rd & 4th Year Engineering Students", nullable=False)
+    expected_participants: Mapped[int] = mapped_column(Integer, default=60, nullable=False)
+    required_funding: Mapped[str] = mapped_column(String(100), default="₹45,000", nullable=False)
+    funding_amount_numeric: Mapped[float] = mapped_column(Numeric(12, 2), default=45000.0, nullable=False)
+    duration_days: Mapped[int] = mapped_column(Integer, default=2, nullable=False)
+    proposed_dates: Mapped[str] = mapped_column(String(200), default="", nullable=False)
+    infrastructure_needed: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    expected_outcomes: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    budget_breakdown: Mapped[dict[str, Any]] = mapped_column(Json, default=dict, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)  # draft, submitted, under_review, accepted, rejected, active
+    reviewer_feedback: Mapped[str | None] = mapped_column(Text)
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    faculty: Mapped[Academician] = relationship()
+    society: Mapped[ProfessionalSociety | None] = relationship()
+    funding: Mapped[FundingOpportunity | None] = relationship()
+
+
+class ProposalEvent(Base):
+    __tablename__ = "proposal_events"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    proposal_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("faculty_proposals.id", ondelete="CASCADE"), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    note: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    actor_name: Mapped[str] = mapped_column(String(200), default="System", nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    proposal: Mapped[FacultyProposal] = relationship()
+
+
+class TrainingProgram(Timestamped, Base):
+    __tablename__ = "training_programs"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    faculty_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("academicians.id", ondelete="CASCADE"), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    program_type: Mapped[str] = mapped_column(String(64), default="skill_gap_workshop", nullable=False)  # skill_gap_workshop, fdp, industry_exposure, certification_bootcamp, placement_prep
+    target_department: Mapped[str] = mapped_column(String(120), default="Computer Science & Engineering", nullable=False)
+    target_year: Mapped[str] = mapped_column(String(64), default="3rd Year", nullable=False)
+    target_skills: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    expected_participants: Mapped[int] = mapped_column(Integer, default=80, nullable=False)
+    trainer_type: Mapped[str] = mapped_column(String(64), default="external_expert", nullable=False)
+    trainer_name: Mapped[str] = mapped_column(String(200), default="", nullable=False)
+    trainer_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("industry_experts.id", ondelete="SET NULL"), index=True)
+    start_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    end_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    preparation_days: Mapped[int] = mapped_column(Integer, default=30, nullable=False)
+    notice_period_status: Mapped[str] = mapped_column(String(32), default="good", nullable=False)  # good, warning, urgent
+    budget_total: Mapped[float] = mapped_column(Numeric(10, 2), default=0.0, nullable=False)
+    budget_breakdown: Mapped[dict[str, Any]] = mapped_column(Json, default=dict, nullable=False)
+    funding_gap: Mapped[float] = mapped_column(Numeric(10, 2), default=0.0, nullable=False)
+    infrastructure_required: Mapped[list[dict[str, Any]]] = mapped_column(Json, default=list, nullable=False)
+    infrastructure_resolution: Mapped[str | None] = mapped_column(Text)
+    marketing_kit: Mapped[dict[str, Any]] = mapped_column(Json, default=dict, nullable=False)
+    registered_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    attended_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    completed_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    feedback_rating: Mapped[float] = mapped_column(Numeric(3, 2), default=4.6, nullable=False)
+    pre_workshop_readiness: Mapped[float] = mapped_column(Numeric(5, 2), default=41.0, nullable=False)
+    post_workshop_readiness: Mapped[float] = mapped_column(Numeric(5, 2), default=72.0, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), default="draft", nullable=False)  # draft, scheduled, in_progress, completed, measured
+
+    faculty: Mapped[Academician] = relationship()
+    trainer: Mapped[IndustryExpert | None] = relationship()
+
+
+class TrainingParticipant(Base):
+    __tablename__ = "training_participants"
+    __table_args__ = (UniqueConstraint("training_id", "student_id", name="uq_training_participant"),)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    training_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("training_programs.id", ondelete="CASCADE"), nullable=False, index=True)
+    student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
+    registration_status: Mapped[str] = mapped_column(String(32), default="registered", nullable=False)  # registered, confirmed, attended, completed
+    attendance_percent: Mapped[float] = mapped_column(Numeric(5, 2), default=100.0, nullable=False)
+    pre_score: Mapped[float] = mapped_column(Numeric(5, 2), default=40.0, nullable=False)
+    post_score: Mapped[float] = mapped_column(Numeric(5, 2), default=75.0, nullable=False)
+    certificate_id: Mapped[str | None] = mapped_column(String(128))
+    registered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    training: Mapped[TrainingProgram] = relationship()
+    student: Mapped[Student] = relationship()
+
+
+class TrainingOutcomeMetric(Base):
+    __tablename__ = "training_outcome_metrics"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    training_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("training_programs.id", ondelete="CASCADE"), nullable=False, index=True)
+    skill_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    before_readiness: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
+    after_readiness: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
+    delta_readiness: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
+    students_impacted: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    measured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    training: Mapped[TrainingProgram] = relationship()
+
+
+
 
 

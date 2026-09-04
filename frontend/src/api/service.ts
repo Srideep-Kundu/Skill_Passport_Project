@@ -104,6 +104,16 @@ import type {
   InterventionRecommendation,
   LearningEffectivenessOverview,
   PlacementMonitoringOverview,
+  ProfessionalSociety,
+  IndustryExpert,
+  FundingOpportunity,
+  FundingRecommendation,
+  FacultyProposal,
+  ProposalCreateInput,
+  TrainingRecommendation,
+  TrainingProgram,
+  TrainingProgramCreateInput,
+  RecordOutcomesInput,
 } from "./types";
 
 export const api = {
@@ -406,4 +416,58 @@ export const api = {
     return res.json() as Promise<FacultyVideo>;
   },
   deleteFacultyVideo: (videoId: string, token: string) => request<void>(`/academician/videos/${encodeURIComponent(videoId)}`, { method: "DELETE" }, token),
+
+  // Collaboration & Funding Hub
+  getProfessionalSocieties: async (token: string, domain?: string, search?: string) => {
+    const params = new URLSearchParams();
+    if (domain && domain !== "All") params.append("domain", domain);
+    if (search) params.append("search", search);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    const res = await request<any>(`/academician/societies${qs}`, {}, token);
+    return Array.isArray(res) ? (res as ProfessionalSociety[]) : (res?.items as ProfessionalSociety[]) || [];
+  },
+  getProfessionalSociety: (id: string, token: string) => request<ProfessionalSociety>(`/academician/societies/${encodeURIComponent(id)}`, {}, token),
+  getIndustryExperts: async (token: string, expertise?: string, search?: string) => {
+    const params = new URLSearchParams();
+    if (expertise && expertise !== "All") params.append("expertise", expertise);
+    if (search) params.append("search", search);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    const res = await request<any>(`/academician/experts${qs}`, {}, token);
+    return Array.isArray(res) ? (res as IndustryExpert[]) : (res?.items as IndustryExpert[]) || [];
+  },
+  getFundingOpportunities: async (token: string, domain?: string, fundingType?: string) => {
+    const params = new URLSearchParams();
+    if (domain && domain !== "All") params.append("domain", domain);
+    if (fundingType && fundingType !== "All") params.append("funding_type", fundingType);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    const res = await request<any>(`/academician/funding${qs}`, {}, token);
+    return Array.isArray(res) ? (res as FundingOpportunity[]) : (res?.items as FundingOpportunity[]) || [];
+  },
+  getRecommendedFunding: (token: string) => request<FundingRecommendation[]>("/academician/funding/recommended", {}, token),
+  getFacultyProposals: async (token: string, status?: string) => {
+    const params = new URLSearchParams();
+    if (status && status !== "All") params.append("status", status);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    const res = await request<any>(`/academician/proposals${qs}`, {}, token);
+    return Array.isArray(res) ? (res as FacultyProposal[]) : (res?.items as FacultyProposal[]) || [];
+  },
+  createFacultyProposal: (input: ProposalCreateInput, token: string) => request<FacultyProposal>("/academician/proposals", { method: "POST", body: JSON.stringify(input) }, token),
+  updateFacultyProposalStatus: (id: string, status: string, notes?: string, token?: string) => request<FacultyProposal>(`/academician/proposals/${encodeURIComponent(id)}/status`, { method: "PATCH", body: JSON.stringify({ status, notes }) }, token),
+
+  // Training & Workshop Planner
+  getTrainingRecommendations: async (token: string) => {
+    const res = await request<any>("/academician/training-recommendations", {}, token);
+    return Array.isArray(res) ? (res as TrainingRecommendation[]) : (res?.items as TrainingRecommendation[]) || [];
+  },
+  getFacultyTrainings: async (token: string, status?: string) => {
+    const params = new URLSearchParams();
+    if (status && status !== "All") params.append("status", status);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    const res = await request<any>(`/academician/trainings${qs}`, {}, token);
+    return Array.isArray(res) ? (res as TrainingProgram[]) : (res?.items as TrainingProgram[]) || [];
+  },
+  createTrainingProgram: (input: TrainingProgramCreateInput, token: string) => request<TrainingProgram>("/academician/trainings", { method: "POST", body: JSON.stringify(input) }, token),
+  getTrainingProgramDetail: (id: string, token: string) => request<TrainingProgram>(`/academician/trainings/${encodeURIComponent(id)}`, {}, token),
+  recordTrainingOutcomes: (id: string, input: RecordOutcomesInput, token: string) => request<TrainingProgram>(`/academician/trainings/${encodeURIComponent(id)}/record-outcomes`, { method: "POST", body: JSON.stringify(input) }, token),
 };
+
