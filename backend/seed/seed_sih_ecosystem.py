@@ -3,8 +3,6 @@ import asyncio
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
-
 from app.core.db import SessionLocal
 from app.core.security import hash_password
 from app.models import (
@@ -30,6 +28,7 @@ from app.models import (
     ProjectApplication,
     Recruiter,
     Role,
+    SavedFacultyOpportunity,
     Skill,
     Student,
     StudentSkill,
@@ -37,6 +36,7 @@ from app.models import (
     VerificationTier,
 )
 from app.services.matching_service import recompute_matches_for_internship
+from sqlalchemy import select
 
 _NOW = datetime.now(UTC)
 DEMO_PASSWORD_HASH = hash_password("demo123")
@@ -529,6 +529,7 @@ async def seed_sih_ecosystem():
                 "domain": "Artificial Intelligence",
                 "required_expertise": ["Machine Learning", "Explainable AI", "Responsible AI"],
                 "collaboration_types": ["expert_speaker", "trainer", "faculty_workshop"],
+                "website_url": "https://responsible-ai-practice.example.demo/experts/meera-iyer",
                 "profile_metadata": {"expert_name": "Dr. Meera Iyer", "expert_title": "Principal Responsible AI Scientist", "delivery_modes": ["On-site", "Hybrid"]},
                 "stipend_or_grant": 75000.0,
             },
@@ -541,6 +542,7 @@ async def seed_sih_ecosystem():
                 "domain": "Cloud Computing & MLOps",
                 "required_expertise": ["MLOps", "Cloud Architecture", "Machine Learning", "DevOps"],
                 "collaboration_types": ["joint_research", "lab_sponsorship", "faculty_immersion"],
+                "website_url": "https://technova.example.demo/academic-partnerships",
                 "profile_metadata": {"partner_type": "Industry R&D", "available_support": ["Technical mentors", "Cloud credits", "Prototype reviews"]},
                 "stipend_or_grant": 500000.0,
             },
@@ -553,6 +555,7 @@ async def seed_sih_ecosystem():
                 "domain": "Applied Artificial Intelligence",
                 "required_expertise": ["Artificial Intelligence", "Explainable AI", "Data Analytics"],
                 "collaboration_types": ["research_grant", "multi_institution_research"],
+                "website_url": "https://innovation-research-council.example.demo/grants/applied-ai-catalyst",
                 "profile_metadata": {"funding_type": "Grant", "eligible_applicants": "Faculty principal investigators", "cost_share_required": False},
                 "stipend_or_grant": 2000000.0,
             },
@@ -565,21 +568,42 @@ async def seed_sih_ecosystem():
                 "domain": "Cloud, Cybersecurity & Data Engineering",
                 "required_expertise": ["Cloud Computing", "Cybersecurity", "Data Engineering"],
                 "collaboration_types": ["lab_sponsorship", "student_training", "expert_trainer"],
+                "website_url": "https://future-systems-foundation.example.demo/programs/emerging-tech-lab",
                 "profile_metadata": {"funding_type": "Sponsorship", "support": ["Equipment", "Cloud credits", "Trainer hours"]},
                 "stipend_or_grant": 1000000.0,
             },
         ]
-        existing_hub_titles = set((await session.scalars(select(FacultyOpportunity.title))).all())
+        existing_hub_opportunities = {
+            opportunity.title: opportunity
+            for opportunity in (await session.scalars(select(FacultyOpportunity))).all()
+        }
         for item in hub_catalog:
-            if item["title"] not in existing_hub_titles:
-                session.add(
-                    FacultyOpportunity(
-                        **item,
-                        duration_weeks=12,
-                        deadline=_NOW + timedelta(days=90),
-                        status="open",
-                    )
-                )
+            opportunity = existing_hub_opportunities.get(item["title"])
+            if opportunity is None:
+                opportunity = FacultyOpportunity(title=item["title"], opportunity_type=item["opportunity_type"], organization_name=item["organization_name"], description=item["description"], domain=item["domain"])
+                session.add(opportunity)
+            for field, value in item.items():
+                setattr(opportunity, field, value)
+            opportunity.duration_weeks = 12
+            opportunity.deadline = _NOW + timedelta(days=90)
+            opportunity.status = "open"
+            opportunity.objectives = [
+                f"Establish a measurable {item['discovery_type']} engagement",
+                "Address priority student skill gaps through faculty-led activity",
+                "Produce auditable academic and industry outcomes",
+            ]
+            opportunity.mode = "hybrid"
+            opportunity.location = "Bengaluru / Remote"
+            opportunity.eligibility = "Full-time faculty members with relevant teaching, research, or program-lead experience."
+            opportunity.deliverables = [
+                "Signed collaboration or participation plan",
+                "Faculty-led student engagement activity",
+                "Outcome and impact report",
+            ]
+            opportunity.required_documents = ["Faculty profile", "Concept note", "Institution approval letter", "Indicative budget"]
+            opportunity.contact_email = "faculty-partnerships@example.demo"
+            opportunity.contact_person = "Aarav Menon, Academic Partnerships Lead"
+        await session.flush()
 
         # Classify legacy faculty opportunities for the unified hub.
         legacy_opportunities = (await session.scalars(select(FacultyOpportunity))).all()
@@ -1371,6 +1395,213 @@ async def seed_sih_ecosystem():
                     metadata_payload={"journal": "International AI Research Journal", "year": "2025", "peer_reviewed": True},
                 ),
             ])
+
+        # Account-scoped Collaboration & Funding Hub demo state. Keep this
+        # independent from the legacy faculty fixture guard so existing demo
+        # databases receive the complete hub lifecycle on the next seed run.
+        hub_opportunities = {
+            opportunity.title: opportunity
+            for opportunity in (await session.scalars(select(FacultyOpportunity))).all()
+        }
+        saved_hub_titles = {
+            "IEEE Computer Society Academic Chapter Partnership",
+            "Explainable AI Expert Speaker & Faculty Trainer",
+            "Cloud & MLOps Industry Co-Innovation Partner",
+            "National Applied AI Research Catalyst Grant",
+        }
+        existing_saved_ids = set(
+            (
+                await session.scalars(
+                    select(SavedFacultyOpportunity.opportunity_id).where(
+                        SavedFacultyOpportunity.faculty_id == fac_demo.id
+                    )
+                )
+            ).all()
+        )
+        for title in saved_hub_titles:
+            opportunity = hub_opportunities.get(title)
+            if opportunity and opportunity.id not in existing_saved_ids:
+                session.add(
+                    SavedFacultyOpportunity(
+                        faculty_id=fac_demo.id,
+                        opportunity_id=opportunity.id,
+                    )
+                )
+
+        proposal_fixtures = [
+            {
+                "opportunity_title": "IEEE Computer Society Academic Chapter Partnership",
+                "status": "draft",
+                "proposal_title": "IEEE Student Chapter and Distinguished Speaker Series",
+                "proposal_text": "Launch an IEEE Computer Society student chapter with a year-long calendar of distinguished lectures, standards awareness sessions, and student-led technical activities.",
+                "problem_statement": "Students need sustained access to professional communities, technical standards, and practicing computing leaders beyond one-off campus events.",
+                "objectives": ["Establish an IEEE student chapter", "Host four expert talks", "Enroll 60 student members"],
+                "methodology": "Form a faculty-student steering committee, complete chapter registration, publish a quarterly activity plan, and measure participation and learning outcomes.",
+                "timeline_weeks": 16,
+                "budget_requested": 120000.0,
+                "industry_support_required": "Distinguished speakers, chapter onboarding support, and access to technical-community resources.",
+            },
+            {
+                "opportunity_title": "ACM SIGCSE Computing Education Collaboration",
+                "status": "submitted",
+                "proposal_title": "Evidence-Based Computing Curriculum Exchange",
+                "proposal_text": "Create a SIGCSE-aligned curriculum exchange focused on evidence-backed assessment, project-based learning, and responsible use of AI in computing education.",
+                "problem_statement": "The current curriculum needs stronger alignment between classroom assessment, authentic project evidence, and rapidly changing industry practices.",
+                "objectives": ["Review six core computing courses", "Pilot two evidence-based modules", "Publish reusable teaching resources"],
+                "methodology": "Run faculty working groups, map course outcomes to SIGCSE practices, pilot revised modules, and compare pre/post student competency evidence.",
+                "timeline_weeks": 20,
+                "budget_requested": 275000.0,
+                "industry_support_required": "Curriculum reviewers, teaching-practice workshops, and peer-institution benchmarking support.",
+            },
+            {
+                "opportunity_title": "Explainable AI Expert Speaker & Faculty Trainer",
+                "status": "under_review",
+                "proposal_title": "Responsible AI Faculty Clinic and Student Masterclass",
+                "proposal_text": "Engage Dr. Meera Iyer for a keynote, two faculty clinics, and a student masterclass on explainability, model governance, and responsible deployment.",
+                "problem_statement": "Faculty and capstone teams need practical methods to explain, audit, and govern AI systems used in academic and industry projects.",
+                "objectives": ["Train 35 faculty members", "Mentor 10 student teams", "Produce an explainability lab handbook"],
+                "methodology": "Use case-based clinics, hands-on model-card exercises, project reviews, and a post-program implementation assessment.",
+                "timeline_weeks": 6,
+                "budget_requested": 75000.0,
+                "industry_support_required": "Expert facilitation, case-study material, lab templates, and two remote follow-up reviews.",
+                "reviewer_notes": "Academic partnerships panel is validating the proposed clinic schedule and cohort size.",
+            },
+            {
+                "opportunity_title": "Industry-Sponsored Emerging Technology Lab",
+                "status": "rejected",
+                "proposal_title": "Secure Cloud and Data Engineering Teaching Lab",
+                "proposal_text": "Establish a teaching lab combining cloud credits, cybersecurity tooling, data engineering sandboxes, and industry-led student challenges.",
+                "problem_statement": "Existing shared laboratories cannot support realistic cloud security and large-scale data pipeline exercises for multiple cohorts.",
+                "objectives": ["Provision a 40-seat lab", "Train eight faculty coordinators", "Deliver three industry challenge cycles"],
+                "methodology": "Deploy isolated cloud sandboxes, train faculty, integrate guided labs into three courses, and assess student skill-gap closure.",
+                "timeline_weeks": 28,
+                "budget_requested": 950000.0,
+                "industry_support_required": "Cloud credits, security licenses, trainer hours, and quarterly architecture reviews.",
+                "reviewer_notes": "The panel requested a revised sustainability and recurring-cost plan before resubmission.",
+                "feedback": "Not selected in this cycle; resubmission is encouraged with a three-year operating-cost commitment.",
+            },
+            {
+                "opportunity_title": "Cloud & MLOps Industry Co-Innovation Partner",
+                "status": "accepted",
+                "proposal_title": "Campus MLOps Co-Innovation and Student Readiness Program",
+                "proposal_text": "Co-design an applied MLOps lab where faculty and students build, evaluate, deploy, and monitor responsible machine-learning services with industry mentors.",
+                "problem_statement": "Student teams can train models but lack production experience in reproducible deployment, monitoring, cloud operations, and model governance.",
+                "objectives": ["Launch an MLOps reference lab", "Mentor four capstone teams", "Deploy two production-grade prototypes"],
+                "methodology": "Run architecture workshops, fortnightly mentor reviews, shared prototype sprints, operational-readiness assessments, and an outcomes showcase.",
+                "timeline_weeks": 24,
+                "budget_requested": 500000.0,
+                "industry_support_required": "Cloud credits, solution architects, MLOps tooling, security review, and prototype showcase support.",
+                "reviewer_notes": "Approved by the joint academic-industry steering committee.",
+                "feedback": "Accepted with full technical mentoring and cloud-credit support.",
+            },
+        ]
+        applications_by_opportunity_id = {
+            application.opportunity_id: application
+            for application in (
+                await session.scalars(
+                    select(FacultyApplication).where(FacultyApplication.faculty_id == fac_demo.id)
+                )
+            ).all()
+        }
+        seeded_hub_applications: dict[str, FacultyApplication] = {}
+        for fixture in proposal_fixtures:
+            opportunity = hub_opportunities.get(fixture["opportunity_title"])
+            if opportunity is None:
+                continue
+            application = applications_by_opportunity_id.get(opportunity.id)
+            if application is None:
+                application = FacultyApplication(
+                    faculty_id=fac_demo.id,
+                    opportunity_id=opportunity.id,
+                    status=fixture["status"],
+                    application_type=opportunity.opportunity_type,
+                    proposal_title=fixture["proposal_title"],
+                    proposal_text=fixture["proposal_text"],
+                    problem_statement=fixture["problem_statement"],
+                    objectives=fixture["objectives"],
+                    methodology=fixture["methodology"],
+                    team_members=[
+                        {"name": "Dr. Ananya Sharma", "role": "Faculty Lead", "department": "Computer Science Engineering"},
+                        {"name": "Dr. Rohan Banerjee", "role": "Faculty Co-Investigator", "department": "Information Technology"},
+                    ],
+                    student_researchers=[
+                        {"name": "Maya Rivera", "roll_no": "CSE-2026-041", "skill": "Machine Learning"},
+                        {"name": "Noah Chen", "roll_no": "IT-2026-019", "skill": "Cloud Engineering"},
+                    ],
+                    deliverables=["Approved engagement charter", "Faculty and student activity report", "Measured outcome dashboard"],
+                    milestones=[
+                        {"id": "hub-m1", "title": "Discovery and program design", "status": "completed", "due_date": "Week 2"},
+                        {"id": "hub-m2", "title": "Faculty and student delivery", "status": "in_progress", "due_date": "Week 12"},
+                        {"id": "hub-m3", "title": "Outcome evaluation and showcase", "status": "pending", "due_date": "Final week"},
+                    ],
+                    timeline_weeks=fixture["timeline_weeks"],
+                    budget_requested=fixture["budget_requested"],
+                    industry_support_required=fixture["industry_support_required"],
+                    attachments=[
+                        {"name": "Detailed concept note", "url": "https://documents.example.demo/faculty-hub/concept-note.pdf", "type": "application/pdf"},
+                        {"name": "Institution approval letter", "url": "https://documents.example.demo/faculty-hub/approval-letter.pdf", "type": "application/pdf"},
+                        {"name": "Indicative budget", "url": "https://documents.example.demo/faculty-hub/budget.xlsx", "type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+                    ],
+                    reviewer_notes=fixture.get("reviewer_notes"),
+                    feedback=fixture.get("feedback"),
+                    industry_mentor_name="Aarav Menon",
+                    industry_mentor_email="aarav.menon@example.demo",
+                    engagement_status="active" if fixture["status"] == "accepted" else "not_started",
+                    start_date=_NOW - timedelta(days=14) if fixture["status"] == "accepted" else None,
+                    outcome_details={"success_metrics": ["Faculty participation", "Student skill-gap reduction", "Industry-reviewed outputs"]},
+                )
+                session.add(application)
+                await session.flush()
+            seeded_hub_applications[fixture["status"]] = application
+
+        accepted_hub_application = seeded_hub_applications.get("accepted")
+        if accepted_hub_application:
+            existing_hub_workspace = await session.scalar(
+                select(CollaborationWorkspace).where(
+                    CollaborationWorkspace.application_id == accepted_hub_application.id
+                )
+            )
+            if existing_hub_workspace is None:
+                accepted_opportunity = hub_opportunities["Cloud & MLOps Industry Co-Innovation Partner"]
+                session.add(
+                    CollaborationWorkspace(
+                        application_id=accepted_hub_application.id,
+                        title="Campus MLOps Co-Innovation Lab",
+                        collaboration_type="joint_research",
+                        organization_name=accepted_opportunity.organization_name,
+                        faculty_lead_id=fac_demo.id,
+                        industry_lead_name="Aarav Menon",
+                        industry_lead_email="aarav.menon@example.demo",
+                        status="active",
+                        progress_percentage=38,
+                        objectives=accepted_hub_application.objectives,
+                        participants=accepted_hub_application.team_members + [
+                            {"name": "Aarav Menon", "role": "Industry Program Lead", "company": accepted_opportunity.organization_name},
+                            {"name": "Maya Rivera", "role": "Student MLOps Researcher", "department": "Computer Science Engineering"},
+                        ],
+                        milestones=accepted_hub_application.milestones,
+                        tasks=[
+                            {"id": "hub-t1", "title": "Finalize reference architecture", "assigned_to": "Dr. Ananya Sharma", "status": "done", "priority": "high"},
+                            {"id": "hub-t2", "title": "Provision cloud training environment", "assigned_to": "Aarav Menon", "status": "in_progress", "priority": "high"},
+                            {"id": "hub-t3", "title": "Select capstone pilot teams", "assigned_to": "Dr. Rohan Banerjee", "status": "todo", "priority": "medium"},
+                        ],
+                        meetings=[
+                            {"id": "hub-meeting-1", "title": "Fortnightly MLOps Architecture Review", "date": "Alternate Fridays, 4:00 PM IST", "link": "https://meet.example.demo/campus-mlops-review"}
+                        ],
+                        discussion_posts=[
+                            {"id": "hub-post-1", "author_name": "Aarav Menon", "author_role": "industry_lead", "content": "Cloud-credit allocation is approved and the reference environment is ready for faculty review.", "created_at": (_NOW - timedelta(days=2)).isoformat()}
+                        ],
+                        deliverables=[
+                            {"id": "hub-d1", "title": "MLOps Reference Architecture", "deliverable_type": "architecture", "url_or_key": "https://documents.example.demo/faculty-hub/mlops-reference-architecture.pdf", "submitted_at": (_NOW - timedelta(days=4)).isoformat()}
+                        ],
+                        feedback=[
+                            {"author_name": "Aarav Menon", "author_role": "industry_lead", "rating": 5, "comments": "Strong kickoff with clear governance, measurable student outcomes, and realistic prototype milestones.", "created_at": (_NOW - timedelta(days=1)).isoformat()}
+                        ],
+                        outcome_summary="Active collaboration establishing a reusable MLOps teaching and prototyping environment.",
+                        start_date=_NOW - timedelta(days=14),
+                        end_date=_NOW + timedelta(weeks=22),
+                    )
+                )
 
         # Seed Faculty Video Masterclasses
         existing_videos = (await session.scalars(select(FacultyVideo))).all()
