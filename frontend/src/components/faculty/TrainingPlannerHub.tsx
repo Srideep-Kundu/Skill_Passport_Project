@@ -977,25 +977,25 @@ export function TrainingPlannerHub({ token, onNavigateToFundingHub }: TrainingPl
                   <div className="p-3 bg-[#F7F5F0] border border-[#E5E1D8] rounded-sm">
                     <span className="text-[10px] text-[#64748B] uppercase block">Registrations</span>
                     <span className="text-xl font-bold text-[#111827]">
-                      {selectedTraining.execution_metrics?.registered_count || selectedTraining.expected_participants}
+                      {selectedTraining.execution_metrics?.registered_count ?? selectedTraining.expected_participants}
                     </span>
                   </div>
                   <div className="p-3 bg-[#F7F5F0] border border-[#E5E1D8] rounded-sm">
                     <span className="text-[10px] text-[#64748B] uppercase block">Attended</span>
                     <span className="text-xl font-bold text-[#111827]">
-                      {selectedTraining.execution_metrics?.attended_count || 0}
+                      {selectedTraining.execution_metrics?.attended_count ?? 0}
                     </span>
                   </div>
                   <div className="p-3 bg-[#F7F5F0] border border-[#E5E1D8] rounded-sm">
                     <span className="text-[10px] text-[#64748B] uppercase block">Feedback Score</span>
                     <span className="text-xl font-bold text-amber-600">
-                      {selectedTraining.execution_metrics?.average_feedback_rating || 4.6}/5
+                      {selectedTraining.execution_metrics?.average_feedback_rating ?? 0}/5
                     </span>
                   </div>
                   <div className="p-3 bg-[#F7F5F0] border border-[#E5E1D8] rounded-sm">
                     <span className="text-[10px] text-[#64748B] uppercase block">Certificates Issued</span>
                     <span className="text-xl font-bold text-[#4F6F5A]">
-                      {selectedTraining.execution_metrics?.certificates_issued || 0}
+                      {selectedTraining.execution_metrics?.certificates_issued ?? 0}
                     </span>
                   </div>
                 </div>
@@ -1051,12 +1051,18 @@ export function TrainingPlannerHub({ token, onNavigateToFundingHub }: TrainingPl
                 {selectedTraining.campaign_metrics && (
                   <div className="space-y-2">
                     <span className="font-bold text-[#111827] block">Publicity Campaign Analytics:</span>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-[11px]">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 text-center text-[11px]">
                       <div className="p-2.5 bg-[#F7F5F0] rounded-xs border border-[#E5E1D8]">
                         Emails: {selectedTraining.campaign_metrics.emails_sent}
                       </div>
                       <div className="p-2.5 bg-[#F7F5F0] rounded-xs border border-[#E5E1D8]">
-                        Page Views: {selectedTraining.campaign_metrics.page_views}
+                        WhatsApp: {selectedTraining.campaign_metrics.whatsapp_recipients ?? 0}
+                      </div>
+                      <div className="p-2.5 bg-[#F7F5F0] rounded-xs border border-[#E5E1D8]">
+                        LinkedIn: {selectedTraining.campaign_metrics.linkedin_views ?? selectedTraining.campaign_metrics.page_views ?? 0}
+                      </div>
+                      <div className="p-2.5 bg-[#F7F5F0] rounded-xs border border-[#E5E1D8]">
+                        Poster Scans: {selectedTraining.campaign_metrics.poster_scans ?? 0}
                       </div>
                       <div className="p-2.5 bg-[#F7F5F0] rounded-xs border border-[#E5E1D8]">
                         Registrations: {selectedTraining.campaign_metrics.registrations}

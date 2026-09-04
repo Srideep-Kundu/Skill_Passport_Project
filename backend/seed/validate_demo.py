@@ -15,6 +15,7 @@ from app.models import (
     ExternalJob,
     ExternalJobMatchExplanation,
     FacultyApplication,
+    FacultyEventRegistration,
     FacultyOpportunity,
     Internship,
     JobDiscovery,
@@ -25,6 +26,7 @@ from app.models import (
     StudentSkill,
     TrainingOutcomeMetric,
     TrainingProgram,
+    UserDocument,
     VerificationCheck,
 )
 from sqlalchemy import func, select
@@ -124,6 +126,20 @@ async def validate_demo() -> None:
             "faculty demo account",
         )
         assert isinstance(faculty_demo, Academician)
+        if not (
+            len(faculty_demo.research_areas) >= 5
+            and len(faculty_demo.technical_skills) >= 12
+            and len(faculty_demo.certifications) >= 4
+            and len(faculty_demo.publications) >= 5
+            and len(faculty_demo.patents) >= 3
+            and len(faculty_demo.past_industry_experience) >= 3
+            and len(faculty_demo.completed_fdps) >= 3
+            and len(faculty_demo.completed_trainings) >= 3
+            and faculty_demo.phone
+            and faculty_demo.linkedin_url
+            and faculty_demo.google_scholar_url
+        ):
+            raise RuntimeError("Demo validation failed: complete faculty academic passport")
         complete_hub_opportunity_count = await session.scalar(
             select(func.count(FacultyOpportunity.id)).where(
                 FacultyOpportunity.discovery_type.in_(["society", "expert", "collaborator", "funding"]),
@@ -174,6 +190,34 @@ async def validate_demo() -> None:
             ),
             "faculty training planner active program",
         )
+        training_programs = list(
+            (
+                await session.scalars(
+                    select(TrainingProgram).where(TrainingProgram.faculty_id == faculty_demo.id)
+                )
+            ).all()
+        )
+        expected_training_types = {
+            "Training Program",
+            "Hands-on Workshop",
+            "FDP",
+            "Industry Talk",
+            "Certification Program",
+            "Placement Preparation",
+        }
+        if not expected_training_types.issubset({program.program_type for program in training_programs}):
+            raise RuntimeError("Demo validation failed: all faculty training program types")
+        if any(
+            not program.target_skills
+            or not program.infrastructure_requirements
+            or not program.budget_breakdown
+            or not program.preparation_tasks
+            or not program.marketing_kit
+            or not program.campaign_metrics
+            or not program.execution_metrics
+            for program in training_programs
+        ):
+            raise RuntimeError("Demo validation failed: complete faculty training records")
         measured_training = await _require(
             session,
             select(TrainingProgram.id).where(
@@ -190,6 +234,27 @@ async def validate_demo() -> None:
             ),
             "training outcome without automatic passport verification",
         )
+        faculty_event_count = int(
+            await session.scalar(
+                select(func.count(FacultyEventRegistration.id)).where(
+                    FacultyEventRegistration.faculty_id == faculty_demo.id
+                )
+            )
+            or 0
+        )
+        if faculty_event_count < 6:
+            raise RuntimeError("Demo validation failed: complete faculty event history")
+        faculty_document_count = int(
+            await session.scalar(
+                select(func.count(UserDocument.id)).where(
+                    UserDocument.user_id == faculty_demo.id,
+                    UserDocument.user_role == "academician",
+                )
+            )
+            or 0
+        )
+        if faculty_document_count < 8:
+            raise RuntimeError("Demo validation failed: complete faculty document vault")
         await _require(session, select(AutomationPolicy.id).where(AutomationPolicy.student_id == maya.id, AutomationPolicy.enabled.is_(True)), "automation policy")
         await _require(session, select(Application.id).where(Application.student_id == maya.id, Application.status == ApplicationStatus.approval_pending), "approval-pending review")
         tracked = await _require(session, select(Application.id).where(Application.student_id == maya.id, Application.status == ApplicationStatus.submitted), "tracked application")

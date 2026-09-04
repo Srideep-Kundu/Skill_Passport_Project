@@ -1113,6 +1113,72 @@ async def seed_sih_ecosystem():
         else:
             fac_demo.password_hash = DEMO_PASSWORD_HASH
             await session.flush()
+
+        # Refresh the judge-facing faculty passport on every seed run so an
+        # existing demo database receives the same complete account as a fresh
+        # checkout. These are display/profile records only and never enter the
+        # student matching pipeline.
+        fac_demo.full_name = "Dr. Ananya Sharma"
+        fac_demo.institution_name = "National Institute of Technology Demo University"
+        fac_demo.department = "Computer Science and Engineering"
+        fac_demo.designation = "Associate Professor and Faculty Innovation Lead"
+        fac_demo.research_areas = [
+            "Explainable Artificial Intelligence",
+            "Machine Learning Systems",
+            "Skill Analytics",
+            "Cloud and Distributed Systems",
+            "Industry-Academia Collaboration",
+        ]
+        fac_demo.bio = (
+            "Associate Professor and Faculty Innovation Lead with 12 years of academic, "
+            "research, and industry-collaboration experience. Leads sponsored projects in "
+            "explainable AI, verifiable skill intelligence, cloud-native systems, and "
+            "outcome-driven student readiness programs."
+        )
+        fac_demo.years_experience = 12
+        fac_demo.technical_skills = [
+            "Artificial Intelligence", "Machine Learning", "Explainable AI", "Python",
+            "PyTorch", "MLOps", "Generative AI", "FastAPI", "PostgreSQL", "pgvector",
+            "Docker", "Kubernetes", "Cloud Architecture", "Data Analytics",
+        ]
+        fac_demo.certifications = [
+            {"name": "AWS Certified Cloud Practitioner", "issuer": "Amazon Web Services", "year": "2024", "credential_url": "https://credentials.example.demo/ananya/aws-cloud-practitioner"},
+            {"name": "Machine Learning Specialization", "issuer": "DeepLearning.AI and Stanford Online", "year": "2023", "credential_url": "https://credentials.example.demo/ananya/ml-specialization"},
+            {"name": "Professional Cloud Architect", "issuer": "Google Cloud", "year": "2025", "credential_url": "https://credentials.example.demo/ananya/cloud-architect"},
+            {"name": "Responsible AI Practitioner", "issuer": "IEEE Computer Society", "year": "2026", "credential_url": "https://credentials.example.demo/ananya/responsible-ai"},
+        ]
+        fac_demo.publications = [
+            {"title": "Deep Learning Approaches for Predictive Analytics", "journal_or_conf": "International AI Research Journal", "year": "2025", "doi_or_url": "https://doi.org/10.0000/demo.2025.101"},
+            {"title": "Industry-Academia Collaboration Models for Skill Development", "journal_or_conf": "Journal of Engineering Education and Industry Practice", "year": "2024", "doi_or_url": "https://doi.org/10.0000/demo.2024.212"},
+            {"title": "Automated Skill Verification and Provenance Telemetry", "journal_or_conf": "IEEE Transactions on Learning Technologies", "year": "2025", "doi_or_url": "https://doi.org/10.0000/demo.2025.314"},
+            {"title": "Explainable Vector Embeddings for Student Competency Mapping", "journal_or_conf": "ACM SIGCSE", "year": "2024", "doi_or_url": "https://doi.org/10.0000/demo.2024.415"},
+            {"title": "Zero-Demographic-Bias Talent Pipelines", "journal_or_conf": "ACM KDD Workshop", "year": "2023", "doi_or_url": "https://doi.org/10.0000/demo.2023.516"},
+        ]
+        fac_demo.patents = [
+            {"title": "System and Method for Provable Skill Provenance Verification", "patent_number": "IN-2024-99881", "status": "Granted", "year": "2024"},
+            {"title": "Deterministic Competency Graph Generator for Multi-Tenant Workspaces", "patent_number": "IN-2025-10293", "status": "Published", "year": "2025"},
+            {"title": "Evidence-Linked Workforce Readiness Analytics", "patent_number": "IN-2026-11842", "status": "Filed", "year": "2026"},
+        ]
+        fac_demo.past_industry_experience = [
+            {"company": "TechNova AI Solutions", "role": "AI Consulting Lead", "duration_years": 2, "description": "Advised production ML delivery, model observability, and explainability programs."},
+            {"company": "Vision Analytics Labs", "role": "Research Collaboration Advisor", "duration_years": 3, "description": "Directed joint R&D on privacy-preserving student readiness analytics."},
+            {"company": "CloudSphere Technologies", "role": "Industry Mentorship Director", "duration_years": 3, "description": "Co-designed cloud-native laboratories, faculty immersion, and student capstones."},
+        ]
+        fac_demo.completed_fdps = [
+            {"title": "Cloud Architecture FDP", "organizer": "CloudSphere Technologies", "year": "2025", "mode": "5-day Hybrid", "certificate_url": "https://credentials.example.demo/ananya/cloud-fdp"},
+            {"title": "National FDP on Explainable Artificial Intelligence", "organizer": "IIT Bombay and AICTE", "year": "2024", "mode": "2-week Online", "certificate_url": "https://credentials.example.demo/ananya/xai-fdp"},
+            {"title": "Outcome-Based Engineering Education", "organizer": "ISTE", "year": "2026", "mode": "3-day On-site", "certificate_url": "https://credentials.example.demo/ananya/obe-fdp"},
+        ]
+        fac_demo.completed_trainings = [
+            {"title": "Industry 4.0 Faculty Training", "company": "TechNova AI Solutions", "duration_weeks": 3, "year": "2025", "skills": ["AI Systems", "Cloud Architecture", "DevOps"]},
+            {"title": "AI Faculty Immersion Program", "company": "TechNova AI Solutions", "duration_weeks": 4, "year": "2026", "skills": ["Machine Learning", "MLOps", "Generative AI"]},
+            {"title": "Secure Data Engineering Practicum", "company": "Future Systems Foundation", "duration_weeks": 2, "year": "2026", "skills": ["Data Engineering", "Cloud Security", "PostgreSQL"]},
+        ]
+        fac_demo.collaboration_availability = "available"
+        fac_demo.phone = "+91 98765 43210"
+        fac_demo.linkedin_url = "https://linkedin.com/in/demo-dr-ananya-sharma"
+        fac_demo.google_scholar_url = "https://scholar.google.com/citations?user=demo_ananya_sharma"
+        await session.flush()
         await _ensure_account_email(session, fac_demo.email, fac_demo.id, Role.academician)
         await _ensure_account_email(session, "faculty@example.demo", fac_demo.id, Role.academician)
         await _ensure_account_email(session, "faculty.advisor@university.demo", fac_demo.id, Role.academician)
@@ -1398,6 +1464,129 @@ async def seed_sih_ecosystem():
                 ),
             ])
 
+        # Complete legacy faculty lifecycle records independently of the initial
+        # fixture guard so rerunning the seed upgrades an existing demo account.
+        faculty_applications_by_title = {
+            application.proposal_title: application
+            for application in (
+                await session.scalars(
+                    select(FacultyApplication).where(FacultyApplication.faculty_id == fac_demo.id)
+                )
+            ).all()
+        }
+        immersion_application = faculty_applications_by_title.get("Advanced AI Faculty Immersion Program")
+        if immersion_application:
+            immersion_application.problem_statement = "Faculty need production exposure to translate current AI engineering practices into laboratory and capstone curricula."
+            immersion_application.objectives = ["Shadow production AI teams", "Build an observable MLOps pipeline", "Translate findings into two curriculum modules"]
+            immersion_application.methodology = "Four-week mentor-led immersion combining architecture reviews, paired engineering sprints, weekly demonstrations, and a faculty reflection report."
+            immersion_application.team_members = [{"name": "Dr. Ananya Sharma", "role": "Faculty Fellow", "department": "Computer Science and Engineering"}]
+            immersion_application.student_researchers = [{"name": "Maya Rivera", "roll_no": "CSE-2026-041", "skill": "MLOps benchmarking"}]
+            immersion_application.deliverables = ["Production MLOps reference architecture", "Faculty immersion reflection report", "Cloud-native curriculum module"]
+            immersion_application.milestones = [
+                {"id": "imm-1", "title": "Mentor alignment and environment access", "status": "completed", "due_date": "Week 1"},
+                {"id": "imm-2", "title": "Production pipeline shadowing", "status": "completed", "due_date": "Week 2"},
+                {"id": "imm-3", "title": "Observability prototype", "status": "in_progress", "due_date": "Week 3"},
+                {"id": "imm-4", "title": "Curriculum transfer workshop", "status": "pending", "due_date": "Week 4"},
+            ]
+            immersion_application.industry_support_required = "Cloud sandbox, architecture mentor, model monitoring stack, and production-readiness review."
+            immersion_application.industry_mentor_name = "Aarav Menon, Principal MLOps Architect"
+            immersion_application.industry_mentor_email = "aarav.menon@technova.demo"
+            immersion_application.attachments = [{"name": "Faculty Immersion Charter", "url": "https://documents.example.demo/faculty/immersion-charter.pdf", "type": "charter"}]
+            immersion_application.reviewer_notes = "Selected for strong alignment with institutional cloud and AI readiness priorities."
+            immersion_application.feedback = "Week-two review completed; the observability prototype is ahead of schedule."
+            immersion_application.end_date = _NOW + timedelta(days=8)
+            immersion_application.outcome_type = "curriculum_update"
+            immersion_application.outcome_details = {"modules_planned": 2, "faculty_reached": 18, "student_beneficiaries": 240}
+
+        grant_application = faculty_applications_by_title.get("AI Based Student Skill Prediction Model")
+        if grant_application:
+            grant_application.objectives = ["Build an auditable readiness model", "Validate across three cohorts", "Publish a reproducible benchmark"]
+            grant_application.team_members = [
+                {"name": "Dr. Ananya Sharma", "role": "Principal Investigator", "department": "Computer Science and Engineering"},
+                {"name": "Dr. Rohan Banerjee", "role": "Co-Investigator", "department": "Information Technology"},
+            ]
+            grant_application.student_researchers = [
+                {"name": "Maya Rivera", "roll_no": "CSE-2026-041", "skill": "Machine Learning"},
+                {"name": "Noah Chen", "roll_no": "IT-2026-019", "skill": "Vector Databases"},
+            ]
+            grant_application.industry_support_required = "Anonymized evaluation sandbox, cloud credits, quarterly architecture reviews, and dissemination support."
+            grant_application.attachments = [
+                {"name": "Approved Research Proposal", "url": "https://documents.example.demo/faculty/ai-skill-grant.pdf", "type": "proposal"},
+                {"name": "Ethics and Fairness Protocol", "url": "https://documents.example.demo/faculty/fairness-protocol.pdf", "type": "protocol"},
+            ]
+            grant_application.reviewer_notes = "Approved subject to quarterly fairness audits and evidence-provenance reporting."
+            grant_application.feedback = "First two milestones accepted; proceed with benchmark validation."
+            grant_application.end_date = _NOW + timedelta(days=120)
+            grant_application.outcome_type = "prototype"
+            grant_application.outcome_details = {"grant_awarded_inr": 1500000, "prototype_readiness": 72, "cohorts_in_pilot": 3, "students_in_scope": 420}
+
+        fdp_application = faculty_applications_by_title.get("Cloud Architecture FDP")
+        if fdp_application:
+            fdp_application.objectives = ["Modernize cloud curriculum", "Complete distributed-systems laboratories", "Train departmental faculty"]
+            fdp_application.deliverables = ["Five completed laboratories", "Cloud architecture teaching plan", "Faculty completion certificate"]
+            fdp_application.milestones = [
+                {"id": "fdp-1", "title": "Architecture foundations", "status": "completed", "due_date": "Day 1"},
+                {"id": "fdp-2", "title": "Container orchestration laboratory", "status": "completed", "due_date": "Day 3"},
+                {"id": "fdp-3", "title": "Curriculum integration plan", "status": "completed", "due_date": "Day 5"},
+            ]
+            fdp_application.industry_mentor_name = "Neha Kapoor, Cloud Education Lead"
+            fdp_application.completion_certificate_url = "https://credentials.example.demo/ananya/cloud-architecture-fdp"
+            fdp_application.rating_or_grade = "Distinction"
+            fdp_application.outcome_type = "certificate"
+            fdp_application.outcome_details = {"labs_completed": 5, "assessment_score": 94, "curriculum_modules_updated": 2}
+
+        existing_event_titles = set(
+            (
+                await session.scalars(
+                    select(FacultyEventRegistration.event_title).where(FacultyEventRegistration.faculty_id == fac_demo.id)
+                )
+            ).all()
+        )
+        additional_events = [
+            {"event_type": "mentorship", "event_title": "Faculty-Industry Mentorship Roundtable on AI Careers", "host_organization": "ACM India and TechNova AI Solutions", "role": "coordinator", "status": "upcoming", "feedback": "Agenda finalized with eight industry mentors and 60 student participants.", "certificate_url": None, "scheduled_at": _NOW + timedelta(days=12)},
+            {"event_type": "fdp", "event_title": "Outcome-Based Education and Skill Evidence FDP", "host_organization": "Indian Society for Technical Education", "role": "speaker", "status": "registered", "feedback": "Session proposal accepted: evidence-backed assessment without attendance-based verification.", "certificate_url": None, "scheduled_at": _NOW + timedelta(days=24)},
+            {"event_type": "challenge", "event_title": "National Verifiable Skills Innovation Challenge", "host_organization": "National Skill Development Agency", "role": "academic_advisor", "status": "upcoming", "feedback": "Advising three interdisciplinary student teams through prototype evaluation.", "certificate_url": None, "scheduled_at": _NOW + timedelta(days=18)},
+            {"event_type": "workshop", "event_title": "Responsible AI Curriculum Design Studio", "host_organization": "IEEE Computer Society", "role": "attendee", "status": "completed", "feedback": "Completed all design exercises and adopted the model-card assessment template.", "certificate_url": "https://credentials.example.demo/ananya/responsible-ai-studio", "scheduled_at": _NOW - timedelta(days=35)},
+        ]
+        for event_data in additional_events:
+            if event_data["event_title"] not in existing_event_titles:
+                session.add(FacultyEventRegistration(faculty_id=fac_demo.id, event_id=uuid.uuid4(), **event_data))
+
+        existing_document_titles = set(
+            (
+                await session.scalars(
+                    select(UserDocument.title).where(
+                        UserDocument.user_id == fac_demo.id,
+                        UserDocument.user_role == "academician",
+                    )
+                )
+            ).all()
+        )
+        additional_documents = [
+            {"document_type": "patent", "title": "Granted Patent - Skill Provenance Verification", "file_name": "Patent_IN_2024_99881.pdf", "file_size_bytes": 512000, "file_url": "https://documents.example.demo/faculty/patent-99881.pdf", "verification_status": "verified", "metadata_payload": {"patent_number": "IN-2024-99881", "status": "Granted", "year": 2024}},
+            {"document_type": "industrial_training_report", "title": "Faculty Immersion Interim Report - Production MLOps", "file_name": "MLOps_Immersion_Interim_Report.pdf", "file_size_bytes": 734000, "file_url": "https://documents.example.demo/faculty/mlops-immersion-report.pdf", "verification_status": "verified", "metadata_payload": {"partner": "TechNova AI Solutions", "review_status": "Mentor endorsed"}},
+            {"document_type": "research_dataset_protocol", "title": "Anonymized Cohort Benchmark and Fairness Protocol", "file_name": "Cohort_Benchmark_Fairness_Protocol.pdf", "file_size_bytes": 428000, "file_url": "https://documents.example.demo/faculty/cohort-fairness-protocol.pdf", "verification_status": "verified", "metadata_payload": {"cohorts": 3, "students_in_scope": 420, "contains_personal_data": False}},
+            {"document_type": "speaker_certificate", "title": "IEEE Responsible AI Workshop Speaker Certificate", "file_name": "IEEE_Responsible_AI_Speaker_Certificate.pdf", "file_size_bytes": 186000, "file_url": "https://credentials.example.demo/ananya/ieee-speaker-certificate", "verification_status": "verified", "metadata_payload": {"issuer": "IEEE Computer Society", "year": 2026}},
+        ]
+        for document_data in additional_documents:
+            if document_data["title"] not in existing_document_titles:
+                session.add(UserDocument(user_id=fac_demo.id, user_role="academician", mime_type="application/pdf", **document_data))
+
+        existing_notification_titles = set(
+            (
+                await session.scalars(
+                    select(FacultyNotification.title).where(FacultyNotification.faculty_id == fac_demo.id)
+                )
+            ).all()
+        )
+        additional_notifications = [
+            {"title": "Certification Cohort Reached 84 Registrations", "message": "The AWS Cloud Practitioner certification cohort has exceeded its target and the overflow lab plan is ready.", "category": "event", "is_read": False, "link_url": "/faculty/training-planner"},
+            {"title": "Research Grant Milestone Review Scheduled", "message": "The quarterly fairness and evidence-provenance review is scheduled with the industry research panel.", "category": "milestone", "is_read": False, "link_url": "/faculty/workspaces"},
+        ]
+        for notification_data in additional_notifications:
+            if notification_data["title"] not in existing_notification_titles:
+                session.add(FacultyNotification(faculty_id=fac_demo.id, **notification_data))
+
         # Account-scoped Collaboration & Funding Hub demo state. Keep this
         # independent from the legacy faculty fixture guard so existing demo
         # databases receive the complete hub lifecycle on the next seed run.
@@ -1481,6 +1670,19 @@ async def seed_sih_ecosystem():
                 "industry_support_required": "Cloud credits, security licenses, trainer hours, and quarterly architecture reviews.",
                 "reviewer_notes": "The panel requested a revised sustainability and recurring-cost plan before resubmission.",
                 "feedback": "Not selected in this cycle; resubmission is encouraged with a three-year operating-cost commitment.",
+            },
+            {
+                "opportunity_title": "National Applied AI Research Catalyst Grant",
+                "status": "shortlisted",
+                "proposal_title": "Explainable AI Readiness Observatory for Engineering Education",
+                "proposal_text": "Build an institution-scale observatory that connects aggregate skill-gap analytics, explainable intervention recommendations, and longitudinal training outcomes.",
+                "problem_statement": "Engineering institutions lack an auditable way to connect cohort readiness gaps with funded interventions and measurable post-training outcomes.",
+                "objectives": ["Deploy an explainable readiness observatory", "Pilot across three engineering departments", "Publish an intervention impact playbook"],
+                "methodology": "Use persisted cohort aggregates, deterministic recommendation rules, controlled pre/post diagnostics, and faculty-reviewed impact reports without exposing protected student attributes.",
+                "timeline_weeks": 36,
+                "budget_requested": 2000000.0,
+                "industry_support_required": "Research cloud credits, independent responsible-AI review, program evaluation support, and national dissemination partners.",
+                "reviewer_notes": "Shortlisted for the final technical presentation and institutional capability review.",
             },
             {
                 "opportunity_title": "Cloud & MLOps Industry Co-Innovation Partner",
@@ -1665,10 +1867,123 @@ async def seed_sih_ecosystem():
             await session.flush()
             session.add(TrainingOutcomeMetric(training_id=fdp_training.id, skill_name="Explainable AI", cohort_name="Engineering faculty", pre_readiness_score=46, post_readiness_score=78, improvement_percentage=32, attendance_count=43, feedback_rating=4.7, evidence_records_created=0))
 
+        if "Python and Data Engineering Foundation Training" not in training_titles:
+            session.add(TrainingProgram(
+                faculty_id=fac_demo.id, title="Python and Data Engineering Foundation Training",
+                objective="Build a common Python, SQL, and data-pipeline foundation for second-year students before advanced analytics coursework.",
+                program_type="Training Program", target_cohort="CSE and IT foundation cohort",
+                target_department="Computer Science and Information Technology", target_year="2nd Year",
+                target_skills=["Python", "SQL", "Data Engineering"], expected_participants=120,
+                prerequisites=["Programming fundamentals"], trainer_type="Internal Faculty",
+                trainer_name="Dr. Ananya Sharma", trainer_organization="National Institute of Technology Demo University",
+                infrastructure_requirements=[
+                    {"item": "Computer Lab", "required": 120, "available": 120, "gap": 0, "status": "AVAILABLE"},
+                    {"item": "Python and PostgreSQL software image", "required": 120, "available": 120, "gap": 0, "status": "AVAILABLE"},
+                    {"item": "High-speed Internet", "required": 1, "available": 1, "gap": 0, "status": "AVAILABLE"},
+                ],
+                budget_breakdown={"trainer_fee": 0, "venue": 6000, "food": 18000, "certificates": 3600, "marketing": 1400, "equipment": 5000, "software": 0},
+                total_estimated_budget=34000, confirmed_funding=34000, funding_gap=0,
+                start_date=_NOW + timedelta(days=52), end_date=_NOW + timedelta(days=57), notice_period_days=52, notice_status="GOOD",
+                preparation_tasks=[
+                    {"id": "curriculum", "title": "Freeze five-day curriculum", "status": "completed"},
+                    {"id": "lab-image", "title": "Validate lab software image", "status": "completed"},
+                    {"id": "diagnostic", "title": "Schedule pre-training diagnostic", "status": "in_progress"},
+                    {"id": "registration", "title": "Open cohort registration", "status": "pending"},
+                ],
+                marketing_kit={**common_marketing, "poster_content": "Five-day Python, SQL, and Data Engineering foundation training for second-year CSE and IT students."},
+                campaign_metrics={"emails_sent": 210, "whatsapp_recipients": 180, "linkedin_views": 390, "poster_scans": 48, "registrations": 36, "confirmed_participants": 28},
+                execution_metrics={"registered_count": 36, "attended_count": 0, "completed_count": 0, "attendance_rate": 0, "average_feedback_rating": 0, "certificates_issued": 0},
+                status="scheduled",
+            ))
+
+        if "Responsible AI in Production Industry Talk" not in training_titles:
+            session.add(TrainingProgram(
+                faculty_id=fac_demo.id, title="Responsible AI in Production Industry Talk",
+                objective="Expose students and faculty to model governance, explainability, monitoring, and responsible deployment practices used in industry.",
+                program_type="Industry Talk", target_cohort="AI specialization students and faculty",
+                target_department="Computer Science and Engineering", target_year="3rd Year, 4th Year, and Faculty",
+                target_skills=["Responsible AI", "Explainable AI", "Model Governance"], expected_participants=180,
+                prerequisites=["Machine Learning fundamentals"], trainer_type="Industry Expert",
+                trainer_name="Vikram Sethi", trainer_organization="Vision Analytics Labs",
+                infrastructure_requirements=[
+                    {"item": "Auditorium", "required": 1, "available": 1, "gap": 0, "status": "AVAILABLE"},
+                    {"item": "Projector and audio system", "required": 1, "available": 1, "gap": 0, "status": "AVAILABLE"},
+                    {"item": "Live-stream connection", "required": 1, "available": 1, "gap": 0, "status": "AVAILABLE"},
+                ],
+                budget_breakdown={"trainer_fee": 15000, "venue": 5000, "food": 16000, "certificates": 0, "marketing": 3000, "equipment": 1000, "software": 0},
+                total_estimated_budget=40000, confirmed_funding=40000, funding_gap=0,
+                start_date=_NOW - timedelta(days=18), end_date=_NOW - timedelta(days=18), notice_period_days=0, notice_status="CRITICAL",
+                preparation_tasks=[{"id": "delivered", "title": "Industry talk delivered and feedback archived", "status": "completed"}],
+                marketing_kit={**common_marketing, "linkedin_caption": "Responsible AI in Production: faculty-industry insights on explainability, governance, and deployment monitoring."},
+                campaign_metrics={"emails_sent": 420, "whatsapp_recipients": 310, "linkedin_views": 1460, "poster_scans": 126, "registrations": 192, "confirmed_participants": 180},
+                execution_metrics={"registered_count": 192, "attended_count": 176, "completed_count": 176, "attendance_rate": 91.7, "average_feedback_rating": 4.8, "certificates_issued": 0},
+                status="completed",
+            ))
+
+        if "AWS Cloud Practitioner Certification Program" not in training_titles:
+            session.add(TrainingProgram(
+                faculty_id=fac_demo.id, title="AWS Cloud Practitioner Certification Program",
+                objective="Prepare placement-focused students for a recognized cloud fundamentals certification through guided labs and mock assessments.",
+                program_type="Certification Program", target_cohort="Cloud career and placement cohort",
+                target_department="Computer Science, IT, and Electronics", target_year="3rd and 4th Year",
+                target_skills=["AWS", "Cloud Computing", "Cloud Security"], expected_participants=75,
+                prerequisites=["Networking fundamentals", "Linux basics"], trainer_type="External Certified Trainer",
+                trainer_name="Neha Kapoor", trainer_organization="CloudSphere Technologies",
+                infrastructure_requirements=[
+                    {"item": "Computer Lab", "required": 75, "available": 60, "gap": 15, "status": "GAP"},
+                    {"item": "AWS Academy learner seats", "required": 75, "available": 75, "gap": 0, "status": "AVAILABLE"},
+                    {"item": "Certification exam vouchers", "required": 75, "available": 50, "gap": 25, "status": "GAP"},
+                ],
+                budget_breakdown={"trainer_fee": 35000, "venue": 8000, "food": 15000, "certificates": 0, "marketing": 2500, "equipment": 4500, "software": 75000},
+                total_estimated_budget=140000, confirmed_funding=90000, funding_gap=50000,
+                start_date=_NOW + timedelta(days=21), end_date=_NOW + timedelta(days=49), notice_period_days=21, notice_status="TIGHT",
+                preparation_tasks=[
+                    {"id": "trainer", "title": "Confirm certified trainer", "status": "completed"},
+                    {"id": "vouchers", "title": "Secure remaining exam vouchers", "status": "in_progress"},
+                    {"id": "overflow", "title": "Provision overflow cloud laboratory", "status": "pending"},
+                    {"id": "mock", "title": "Publish mock assessment schedule", "status": "completed"},
+                ],
+                marketing_kit={**common_marketing, "registration_page_copy": "Register for guided AWS labs, weekly mock assessments, and certification readiness mentoring."},
+                campaign_metrics={"emails_sent": 260, "whatsapp_recipients": 230, "linkedin_views": 880, "poster_scans": 94, "registrations": 84, "confirmed_participants": 72},
+                execution_metrics={"registered_count": 84, "attended_count": 0, "completed_count": 0, "attendance_rate": 0, "average_feedback_rating": 0, "certificates_issued": 0},
+                status="registration_open",
+            ))
+
+        if "Backend Engineering Placement Readiness Sprint" not in training_titles:
+            placement_training = TrainingProgram(
+                faculty_id=fac_demo.id, title="Backend Engineering Placement Readiness Sprint",
+                objective="Improve placement readiness through API design, SQL diagnostics, system-design interviews, coding practice, and evidence-backed capstones.",
+                program_type="Placement Preparation", target_cohort="Placement-eligible backend engineering cohort",
+                target_department="Computer Science and Information Technology", target_year="Final Year",
+                target_skills=["Python", "FastAPI", "PostgreSQL", "System Design"], expected_participants=64,
+                prerequisites=["Python", "Data Structures", "Database fundamentals"], trainer_type="Internal Faculty and Industry Panel",
+                trainer_name="Dr. Ananya Sharma and Aarav Menon", trainer_organization="NIT Demo University and TechNova AI Solutions",
+                infrastructure_requirements=[
+                    {"item": "Computer Lab", "required": 64, "available": 64, "gap": 0, "status": "AVAILABLE"},
+                    {"item": "Interview rooms", "required": 6, "available": 6, "gap": 0, "status": "AVAILABLE"},
+                    {"item": "Assessment platform licenses", "required": 64, "available": 64, "gap": 0, "status": "AVAILABLE"},
+                ],
+                budget_breakdown={"trainer_fee": 24000, "venue": 4000, "food": 12000, "certificates": 2000, "marketing": 1000, "equipment": 2000, "software": 15000},
+                total_estimated_budget=60000, confirmed_funding=60000, funding_gap=0,
+                start_date=_NOW - timedelta(days=70), end_date=_NOW - timedelta(days=56), notice_period_days=0, notice_status="CRITICAL",
+                preparation_tasks=[{"id": "complete", "title": "Sprint completed and outcome report approved", "status": "completed"}],
+                marketing_kit={**common_marketing, "email_announcement": "Subject: Backend Engineering Placement Readiness Sprint registration and diagnostic schedule."},
+                campaign_metrics={"emails_sent": 170, "whatsapp_recipients": 145, "linkedin_views": 610, "poster_scans": 52, "registrations": 69, "confirmed_participants": 64},
+                execution_metrics={"registered_count": 69, "attended_count": 64, "completed_count": 59, "attendance_rate": 92.8, "average_feedback_rating": 4.6, "certificates_issued": 59, "mock_interviews_completed": 128, "students_shortlisted": 31},
+                status="completed",
+            )
+            session.add(placement_training)
+            await session.flush()
+            session.add(TrainingOutcomeMetric(training_id=placement_training.id, skill_name="Backend Engineering Readiness", cohort_name="Final-year placement cohort", pre_readiness_score=52, post_readiness_score=81, improvement_percentage=29, attendance_count=64, feedback_rating=4.6, evidence_records_created=0))
+
         # Keep reruns deterministic and clean previously seeded account data.
         seeded_training_titles = {
             "Applied MLOps & Production Deployment Workshop",
             "Explainable AI Faculty Development Program",
+            "Python and Data Engineering Foundation Training",
+            "Responsible AI in Production Industry Talk",
+            "AWS Cloud Practitioner Certification Program",
+            "Backend Engineering Placement Readiness Sprint",
         }
         seeded_trainings = (
             await session.scalars(

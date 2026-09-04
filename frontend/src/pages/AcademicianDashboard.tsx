@@ -1715,54 +1715,114 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
               </div>
             ) : (
               /* View Passport */
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="space-y-6">
-                  <div className="p-5 rounded-2xl bg-slate-50 bg-[#FFFFFF] border border-slate-200/70 border-[#E5E1D8] space-y-3">
-                    <span className="text-xs text-slate-400 uppercase font-bold">Research Areas</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {passport?.research_areas?.map((r, i) => (
-                        <span key={i} className="px-2.5 py-1 rounded-xs text-xs font-mono bg-[rgba(176,141,87,0.08)] text-[#B08D57] border border-[#B08D57]/30">
-                          {r}
-                        </span>
-                      ))}
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="p-4 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8]">
+                    <span className="text-[10px] text-[#64748B] uppercase block">Experience</span>
+                    <strong className="text-lg text-[#111827]">{passport?.years_experience ?? 0} years</strong>
+                  </div>
+                  <div className="p-4 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8]">
+                    <span className="text-[10px] text-[#64748B] uppercase block">Publications</span>
+                    <strong className="text-lg text-[#111827]">{passport?.publications?.length ?? 0}</strong>
+                  </div>
+                  <div className="p-4 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8]">
+                    <span className="text-[10px] text-[#64748B] uppercase block">Patents</span>
+                    <strong className="text-lg text-[#111827]">{passport?.patents?.length ?? 0}</strong>
+                  </div>
+                  <div className="p-4 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8]">
+                    <span className="text-[10px] text-[#64748B] uppercase block">Credentials</span>
+                    <strong className="text-lg text-[#111827]">{passport?.certifications?.length ?? 0}</strong>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-6">
+                    <div className="p-5 rounded-sm bg-[#FFFFFF] border border-[#E5E1D8] space-y-3">
+                      <span className="text-xs text-[#64748B] uppercase font-bold">Research Areas</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {passport?.research_areas?.map((area) => (
+                          <span key={area} className="px-2.5 py-1 rounded-xs text-xs bg-[rgba(176,141,87,0.08)] text-[#B08D57] border border-[#B08D57]/30">{area}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="p-5 rounded-sm bg-[#FFFFFF] border border-[#E5E1D8] space-y-3">
+                      <span className="text-xs text-[#64748B] uppercase font-bold">Technical Skills</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {passport?.technical_skills?.map((skill) => (
+                          <span key={skill} className="px-2.5 py-1 rounded-xs text-xs font-bold bg-[#F7F5F0] text-[#475569]">{skill}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="p-5 rounded-sm bg-[#FFFFFF] border border-[#E5E1D8] space-y-2 text-xs">
+                      <span className="text-xs text-[#64748B] uppercase font-bold block">Professional Links</span>
+                      <p className="text-[#475569]">{passport?.phone}</p>
+                      {passport?.linkedin_url && <a href={passport.linkedin_url} target="_blank" rel="noreferrer" className="text-[#B08D57] flex items-center gap-1">LinkedIn Profile <ExternalLink className="h-3 w-3" /></a>}
+                      {passport?.google_scholar_url && <a href={passport.google_scholar_url} target="_blank" rel="noreferrer" className="text-[#B08D57] flex items-center gap-1">Google Scholar Profile <ExternalLink className="h-3 w-3" /></a>}
                     </div>
                   </div>
 
-                  <div className="p-5 rounded-2xl bg-slate-50 bg-[#FFFFFF] border border-slate-200/70 border-[#E5E1D8] space-y-3">
-                    <span className="text-xs text-slate-400 uppercase font-bold">Technical Skills</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {passport?.technical_skills?.map((s, i) => (
-                        <span key={i} className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 bg-[#F7F5F0] text-slate-700 text-[#475569]">
-                          {s}
-                        </span>
-                      ))}
+                  <div className="md:col-span-2 space-y-6">
+                    <div className="p-5 rounded-sm bg-[#FFFFFF] border border-[#E5E1D8] space-y-2">
+                      <span className="text-xs text-[#64748B] uppercase font-bold">Academic and Industrial Biography</span>
+                      <p className="text-xs text-[#475569] leading-relaxed">{passport?.bio}</p>
+                    </div>
+                    <div className="p-5 rounded-sm bg-[#FFFFFF] border border-[#E5E1D8] space-y-3">
+                      <span className="text-xs text-[#64748B] uppercase font-bold">Selected Research Publications</span>
+                      <div className="space-y-2">
+                        {passport?.publications?.map((publication) => (
+                          <div key={publication.title} className="p-3 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8] text-xs">
+                            <p className="font-semibold text-[#111827]">{publication.title}</p>
+                            <p className="text-[10px] text-[#64748B]">{publication.journal_or_conf} • {publication.year}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="md:col-span-2 space-y-6">
-                  <div className="p-5 rounded-2xl bg-slate-50 bg-[#FFFFFF] border border-slate-200/70 border-[#E5E1D8] space-y-2">
-                    <span className="text-xs text-slate-400 uppercase font-bold">Academic & Industrial Biography</span>
-                    <p className="text-xs text-slate-700 text-[#475569] leading-relaxed">
-                      {passport?.bio || "Professor with over a decade of research in distributed computing and applied artificial intelligence. Active PI on sponsored research and corporate immersion programs."}
-                    </p>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="p-5 rounded-sm bg-[#FFFFFF] border border-[#E5E1D8] space-y-3">
+                    <span className="text-xs text-[#64748B] uppercase font-bold">Patents and Intellectual Property</span>
+                    {passport?.patents?.map((patent) => (
+                      <div key={patent.title} className="p-3 bg-[#F7F5F0] border border-[#E5E1D8] rounded-sm text-xs">
+                        <p className="font-semibold text-[#111827]">{patent.title}</p>
+                        <p className="text-[10px] text-[#64748B]">{patent.patent_number} • {patent.status} • {patent.year}</p>
+                      </div>
+                    ))}
                   </div>
-
-                  {/* Publications & Patents Cards */}
-                  <div className="p-5 rounded-2xl bg-slate-50 bg-[#FFFFFF] border border-slate-200/70 border-[#E5E1D8] space-y-3">
-                    <span className="text-xs text-slate-400 uppercase font-bold">Selected Research Publications & Patents</span>
-                    <div className="space-y-2">
-                      {passport?.publications && passport.publications.length > 0 ? (
-                        passport.publications.map((p, idx) => (
-                          <div key={idx} className="p-3 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8] text-xs">
-                            <p className="font-semibold text-[#111827]">{p.title}</p>
-                            <p className="text-[10px] text-[#64748B]">{p.journal_or_conf} • {p.year}</p>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-xs text-slate-400">Add publications via Edit Profile.</div>
-                      )}
-                    </div>
+                  <div className="p-5 rounded-sm bg-[#FFFFFF] border border-[#E5E1D8] space-y-3">
+                    <span className="text-xs text-[#64748B] uppercase font-bold">Professional Certifications</span>
+                    {passport?.certifications?.map((certification) => (
+                      <div key={certification.name} className="p-3 bg-[#F7F5F0] border border-[#E5E1D8] rounded-sm text-xs">
+                        <p className="font-semibold text-[#111827]">{certification.name}</p>
+                        <p className="text-[10px] text-[#64748B]">{certification.issuer} • {certification.year}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="p-5 rounded-sm bg-[#FFFFFF] border border-[#E5E1D8] space-y-3">
+                    <span className="text-xs text-[#64748B] uppercase font-bold">Past Industry Experience</span>
+                    {passport?.past_industry_experience?.map((experience) => (
+                      <div key={`${experience.company}-${experience.role}`} className="p-3 bg-[#F7F5F0] border border-[#E5E1D8] rounded-sm text-xs">
+                        <p className="font-semibold text-[#111827]">{experience.role} · {experience.company}</p>
+                        <p className="text-[10px] text-[#64748B]">{experience.duration_years} years</p>
+                        <p className="text-[11px] text-[#475569] mt-1">{experience.description}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="p-5 rounded-sm bg-[#FFFFFF] border border-[#E5E1D8] space-y-3">
+                    <span className="text-xs text-[#64748B] uppercase font-bold">Completed FDPs and Industrial Training</span>
+                    {passport?.completed_fdps?.map((fdp) => (
+                      <div key={fdp.title} className="p-3 bg-[#F7F5F0] border border-[#E5E1D8] rounded-sm text-xs">
+                        <p className="font-semibold text-[#111827]">{fdp.title}</p>
+                        <p className="text-[10px] text-[#64748B]">{fdp.organizer} • {fdp.year}</p>
+                      </div>
+                    ))}
+                    {passport?.completed_trainings?.map((training) => (
+                      <div key={training.title} className="p-3 bg-[#F7F5F0] border border-[#E5E1D8] rounded-sm text-xs">
+                        <p className="font-semibold text-[#111827]">{training.title}</p>
+                        <p className="text-[10px] text-[#64748B]">{training.company} • {training.duration_weeks} weeks • {training.year}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -1797,6 +1857,77 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
                 <p className="text-xs text-[#64748B] mt-1">Completion report submission and academic credential endorsement.</p>
               </div>
             </div>
+
+            <div className="pt-4 border-t border-[#E5E1D8] space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-[#111827]">Current and Completed Immersions</h3>
+                  <p className="text-[11px] text-[#64748B]">Mentor alignment, delivery milestones, industry feedback, and curriculum-transfer outcomes.</p>
+                </div>
+                <span className="text-xs text-[#B08D57] font-bold">
+                  {applications.filter((application) => ["industrial_immersion", "industrial_training", "faculty_internship"].includes(application.application_type)).length} records
+                </span>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {applications
+                  .filter((application) => ["industrial_immersion", "industrial_training", "faculty_internship"].includes(application.application_type))
+                  .map((application) => (
+                    <div key={application.id} className="p-5 bg-[#F7F5F0] border border-[#E5E1D8] rounded-sm space-y-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <span className="text-[10px] uppercase text-[#B08D57]">{application.application_type.replaceAll("_", " ")}</span>
+                          <h4 className="text-sm font-semibold text-[#111827] mt-1">{application.proposal_title}</h4>
+                          <p className="text-[11px] text-[#64748B]">{application.organization_name} • {application.timeline_weeks ?? 0} weeks</p>
+                        </div>
+                        <span className={`px-2.5 py-1 rounded-xs text-[10px] border uppercase ${getStatusBadge(application.status)}`}>{application.status}</span>
+                      </div>
+                      <p className="text-xs text-[#475569] leading-relaxed">{application.proposal_text}</p>
+                      <div className="grid grid-cols-2 gap-3 text-[11px]">
+                        <div className="p-3 bg-white border border-[#E5E1D8] rounded-xs">
+                          <span className="text-[#64748B] block">Industry Mentor</span>
+                          <strong className="text-[#111827]">{application.industry_mentor_name || "Mentor assignment pending"}</strong>
+                        </div>
+                        <div className="p-3 bg-white border border-[#E5E1D8] rounded-xs">
+                          <span className="text-[#64748B] block">Milestone Progress</span>
+                          <strong className="text-[#111827]">{application.milestones?.filter((milestone) => milestone.status === "completed").length ?? 0} / {application.milestones?.length ?? 0} completed</strong>
+                        </div>
+                      </div>
+                      {application.deliverables && application.deliverables.length > 0 && (
+                        <div>
+                          <span className="text-[10px] text-[#64748B] uppercase">Deliverables</span>
+                          <div className="flex flex-wrap gap-1.5 mt-1">
+                            {application.deliverables.map((deliverable) => <span key={deliverable} className="px-2 py-1 bg-white border border-[#E5E1D8] rounded-xs text-[10px]">{deliverable}</span>)}
+                          </div>
+                        </div>
+                      )}
+                      {application.outcome_details && Object.keys(application.outcome_details).length > 0 && (
+                        <p className="text-[11px] text-[#4F6F5A] border-t border-[#E5E1D8] pt-3">
+                          Outcome recorded: {Object.entries(application.outcome_details).map(([key, value]) => `${key.replaceAll("_", " ")}: ${String(value)}`).join(" • ")}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+              </div>
+              <div className="pt-4 border-t border-[#E5E1D8]">
+                <h3 className="text-sm font-bold text-[#111827]">Prior Faculty Development and Industry Training</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                  {passport?.completed_trainings?.map((training) => (
+                    <div key={training.title} className="p-4 bg-white border border-[#E5E1D8] rounded-sm">
+                      <span className="text-[10px] uppercase text-[#B08D57]">Industrial Training</span>
+                      <p className="text-xs font-semibold text-[#111827] mt-1">{training.title}</p>
+                      <p className="text-[10px] text-[#64748B]">{training.company} • {training.duration_weeks} weeks • {training.year}</p>
+                    </div>
+                  ))}
+                  {passport?.completed_fdps?.map((fdp) => (
+                    <div key={fdp.title} className="p-4 bg-white border border-[#E5E1D8] rounded-sm">
+                      <span className="text-[10px] uppercase text-[#4F6F5A]">Faculty Development Program</span>
+                      <p className="text-xs font-semibold text-[#111827] mt-1">{fdp.title}</p>
+                      <p className="text-[10px] text-[#64748B]">{fdp.organizer} • {fdp.year}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1813,7 +1944,55 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
               Construct structured research proposals with methodology, budget breakdowns, student research assistants, and industry deliverables.
             </p>
 
-            <div className="pt-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4">
+              <div className="p-3 bg-[#F7F5F0] border border-[#E5E1D8] rounded-sm">
+                <span className="text-[10px] text-[#64748B] uppercase block">Grant Proposals</span>
+                <strong className="text-xl text-[#111827]">{applications.filter((application) => application.application_type === "research_grant").length}</strong>
+              </div>
+              <div className="p-3 bg-[#F7F5F0] border border-[#E5E1D8] rounded-sm">
+                <span className="text-[10px] text-[#64748B] uppercase block">Accepted</span>
+                <strong className="text-xl text-[#4F6F5A]">{applications.filter((application) => application.application_type === "research_grant" && ["accepted", "active", "completed"].includes(application.status)).length}</strong>
+              </div>
+              <div className="p-3 bg-[#F7F5F0] border border-[#E5E1D8] rounded-sm">
+                <span className="text-[10px] text-[#64748B] uppercase block">Requested Funding</span>
+                <strong className="text-xl text-[#111827]">₹{(applications.filter((application) => application.application_type === "research_grant").reduce((sum, application) => sum + (application.budget_requested || 0), 0) / 100000).toFixed(1)} L</strong>
+              </div>
+              <div className="p-3 bg-[#F7F5F0] border border-[#E5E1D8] rounded-sm">
+                <span className="text-[10px] text-[#64748B] uppercase block">Student Researchers</span>
+                <strong className="text-xl text-[#111827]">{applications.filter((application) => application.application_type === "research_grant").reduce((sum, application) => sum + (application.student_researchers?.length || 0), 0)}</strong>
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-[#E5E1D8]">
+              {applications.filter((application) => application.application_type === "research_grant").map((application) => (
+                <div key={application.id} className="p-5 bg-[#F7F5F0] border border-[#E5E1D8] rounded-sm space-y-4">
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                    <div>
+                      <span className="text-[10px] text-[#B08D57] uppercase">{application.organization_name}</span>
+                      <h3 className="text-base font-semibold text-[#111827] mt-1">{application.proposal_title}</h3>
+                      <p className="text-[11px] text-[#64748B]">₹{(application.budget_requested || 0).toLocaleString()} requested • {application.timeline_weeks ?? 0} weeks • {application.student_researchers?.length ?? 0} student researchers</p>
+                    </div>
+                    <span className={`px-2.5 py-1 rounded-xs text-[10px] border uppercase ${getStatusBadge(application.status)}`}>{application.status}</span>
+                  </div>
+                  <p className="text-xs text-[#475569] leading-relaxed">{application.problem_statement || application.proposal_text}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="p-3 bg-white border border-[#E5E1D8] rounded-xs">
+                      <span className="text-[10px] text-[#64748B] uppercase block mb-1">Methodology</span>
+                      <p className="text-[11px] text-[#475569]">{application.methodology || "Methodology pending"}</p>
+                    </div>
+                    <div className="p-3 bg-white border border-[#E5E1D8] rounded-xs">
+                      <span className="text-[10px] text-[#64748B] uppercase block mb-1">Review and Industry Support</span>
+                      <p className="text-[11px] text-[#475569]">{application.reviewer_notes || application.industry_support_required || "Review pending"}</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {application.deliverables?.map((deliverable) => <span key={deliverable} className="px-2 py-1 bg-white border border-[#E5E1D8] rounded-xs text-[10px]">{deliverable}</span>)}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2">
               <button
                 onClick={() => {
                   setActiveTab("opportunities");
@@ -2015,7 +2194,7 @@ export function AcademicianDashboard({ token, activeTab: propTab, onTabChange }:
               {documents.map((doc) => (
                 <div key={doc.id} className="p-4 rounded-sm bg-[#F7F5F0] border border-[#E5E1D8] space-y-2">
                   <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-xs bg-[rgba(176,141,87,0.08)] text-[#B08D57] border border-[#B08D57]/30">
-                    {doc.document_type.replace("_", " ")}
+                    {doc.document_type.replaceAll("_", " ")}
                   </span>
                   <h4 className="text-xs font-semibold text-[#111827] truncate">{doc.title}</h4>
                   <p className="text-[10px] text-[#64748B]">{doc.file_name} • {(doc.file_size_bytes / 1024).toFixed(0)} KB</p>
