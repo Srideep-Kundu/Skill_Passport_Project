@@ -9,6 +9,7 @@ from app.models import (
     Academician,
     AccountEmail,
     Assessment,
+    AssessmentCategoryScore,
     AssessmentQuestion,
     CollaborationWorkspace,
     Evidence,
@@ -26,6 +27,8 @@ from app.models import (
     MentorshipSession,
     PlacementDrive,
     ProjectApplication,
+    ProjectAssessment,
+    ProjectAssessmentStatus,
     Recruiter,
     Role,
     SavedFacultyOpportunity,
@@ -573,6 +576,149 @@ async def seed_sih_ecosystem():
                 "website_url": "https://future-systems-foundation.example.demo/programs/emerging-tech-lab",
                 "profile_metadata": {"funding_type": "Sponsorship", "support": ["Equipment", "Cloud credits", "Trainer hours"]},
                 "stipend_or_grant": 1000000.0,
+            },
+            {
+                "title": "SIAM Academic Chapter on Applied Mathematics & ML",
+                "opportunity_type": "society_partnership",
+                "discovery_type": "society",
+                "organization_name": "Society for Industrial and Applied Mathematics",
+                "description": "Launch an interdisciplinary SIAM chapter bridging Mathematics, Data Science, Computational Optimization, and Machine Learning research.",
+                "domain": "Applied Mathematics & Computational Science",
+                "required_expertise": ["Data Science", "Algorithms", "Machine Learning", "Applied Mathematics"],
+                "collaboration_types": ["chapter_partnership", "student_workshop", "joint_research"],
+                "website_url": "https://www.siam.org/",
+                "profile_metadata": {"community": "SIAM Activity Groups", "benefits": ["Free student memberships", "Research travel awards", "Colloquium funding"]},
+                "stipend_or_grant": None,
+            },
+            {
+                "title": "ACM-W Women in Computing Mentorship & Institutional Chapter",
+                "opportunity_type": "society_partnership",
+                "discovery_type": "society",
+                "organization_name": "ACM Women (ACM-W)",
+                "description": "Empower female scholars and researchers through national mentorship cohorts, celebrate women in computing summits, and dedicated leadership scholarships.",
+                "domain": "Diversity & Computing Leadership",
+                "required_expertise": ["Computer Science", "Artificial Intelligence", "Mentorship"],
+                "collaboration_types": ["chapter_partnership", "expert_speaker", "student_workshop"],
+                "website_url": "https://women.acm.org/",
+                "profile_metadata": {"community": "ACM-W India", "benefits": ["Scholarships for international conferences", "Executive speaker series"]},
+                "stipend_or_grant": None,
+            },
+            {
+                "title": "High-Performance Distributed Systems & Raft Consensus Masterclass",
+                "opportunity_type": "expert_engagement",
+                "discovery_type": "expert",
+                "organization_name": "HyperScale Architecture Group",
+                "description": "Book Prof. Rajesh Nair for a 3-day deep dive into distributed transaction semantics, consensus protocols (Raft/Paxos), low-latency RPCs, and multi-region replication.",
+                "domain": "Distributed Systems & Cloud",
+                "required_expertise": ["Distributed Systems", "Go", "Cloud Architecture", "System Design"],
+                "collaboration_types": ["expert_speaker", "faculty_workshop", "curriculum_review"],
+                "website_url": "https://hyperscale-arch.example.demo/experts/rajesh-nair",
+                "profile_metadata": {"expert_name": "Prof. Rajesh Nair", "expert_title": "Distinguished Cloud Architect", "delivery_modes": ["On-Campus 3-Day Workshop", "Executive Lab Review"]},
+                "stipend_or_grant": 120000.0,
+            },
+            {
+                "title": "Post-Quantum Cryptography & Zero-Trust Security Seminar",
+                "opportunity_type": "expert_engagement",
+                "discovery_type": "expert",
+                "organization_name": "National Cyber Defense Academy",
+                "description": "Engage Dr. Sunita Kulkarni for an advanced technical lecture and faculty workshop on NIST-standardized Post-Quantum Cryptography (Kyber, Dilithium) and Zero-Trust architecture.",
+                "domain": "Cybersecurity & Cryptography",
+                "required_expertise": ["Cybersecurity", "Post-Quantum Cryptography", "Zero Trust", "Algorithms"],
+                "collaboration_types": ["expert_speaker", "faculty_workshop"],
+                "website_url": "https://cyberdefense-academy.example.demo/experts/sunita-kulkarni",
+                "profile_metadata": {"expert_name": "Dr. Sunita Kulkarni", "expert_title": "Chief Cryptographer & IEEE Senior Member", "delivery_modes": ["Hybrid", "On-site"]},
+                "stipend_or_grant": 90000.0,
+            },
+            {
+                "title": "Generative AI, Model Quantization & LLMOps Clinic",
+                "opportunity_type": "expert_engagement",
+                "discovery_type": "expert",
+                "organization_name": "Silicon Valley AI Research Exchange",
+                "description": "Virtual clinic series on parameter-efficient fine-tuning (LoRA/QLoRA), 4-bit quantization, vLLM high-throughput serving, and GPU optimization with Dr. Andrew Chen.",
+                "domain": "Generative AI & MLOps",
+                "required_expertise": ["Generative AI", "PyTorch", "MLOps", "Model Quantization"],
+                "collaboration_types": ["expert_speaker", "trainer", "curriculum_collaboration"],
+                "website_url": "https://sv-ai-exchange.example.demo/experts/andrew-chen",
+                "profile_metadata": {"expert_name": "Dr. Andrew Chen", "expert_title": "Senior Director of Applied AI Research", "delivery_modes": ["Live Interactive Zoom Series", "Code Clinic"]},
+                "stipend_or_grant": 150000.0,
+            },
+            {
+                "title": "CloudSphere Technologies: Edge AI & Microservices Research Cell",
+                "opportunity_type": "industry_collaboration",
+                "discovery_type": "collaborator",
+                "organization_name": "CloudSphere Technologies",
+                "description": "Establish a sponsored Edge AI and microservices sandbox on campus. CloudSphere engineers collaborate weekly with faculty on low-latency inference on edge hardware.",
+                "domain": "Edge Computing & IoT",
+                "required_expertise": ["Edge AI", "Kubernetes", "IoT", "C++", "Python"],
+                "collaboration_types": ["joint_research", "lab_sponsorship", "student_training"],
+                "website_url": "https://cloudsphere.example.demo/edge-ai-partner",
+                "profile_metadata": {"partner_type": "Cloud & Edge Hyper-scaler", "available_support": ["Edge Hardware Kits (NVIDIA Jetson)", "Cloud Credits", "Internship PPO Pool"]},
+                "stipend_or_grant": 400000.0,
+            },
+            {
+                "title": "HyperScale Research Labs: Vector Search & Database Indexing Co-Op",
+                "opportunity_type": "industry_collaboration",
+                "discovery_type": "collaborator",
+                "organization_name": "HyperScale Labs",
+                "description": "Partner with database kernel developers to research Approximate Nearest Neighbor (ANN) vector indexing, SIMD optimizations, and distributed pgvector clusters.",
+                "domain": "Database Systems & pgvector",
+                "required_expertise": ["PostgreSQL", "pgvector", "System Design", "Algorithms", "C++"],
+                "collaboration_types": ["joint_research", "faculty_immersion"],
+                "website_url": "https://hyperscalelabs.example.demo/academic-coop",
+                "profile_metadata": {"partner_type": "Database Infrastructure Provider", "available_support": ["High Memory GPU Clusters", "Direct Mentorship with Core Committers", "₹6.5L Grant"]},
+                "stipend_or_grant": 650000.0,
+            },
+            {
+                "title": "CyberShield Defense: Zero-Trust Security Operations Simulation Lab",
+                "opportunity_type": "industry_collaboration",
+                "discovery_type": "collaborator",
+                "organization_name": "CyberShield Defense Networks",
+                "description": "Build an active Cyber Security Operations Center (SOC) simulation environment on campus. Includes threat-intelligence feeds, malware sandboxes, and purple-team exercises.",
+                "domain": "Cybersecurity & SOC Operations",
+                "required_expertise": ["Cybersecurity", "Network Security", "Zero Trust", "Linux"],
+                "collaboration_types": ["lab_sponsorship", "student_training", "joint_research"],
+                "website_url": "https://cybershield.example.demo/campus-soc",
+                "profile_metadata": {"partner_type": "Enterprise Security Provider", "available_support": ["Commercial Threat Intelligence Feeds", "Live Attack Simulation Software", "Industry Certifications"]},
+                "stipend_or_grant": 350000.0,
+            },
+            {
+                "title": "DST-SERB Core Research Grant in Auditable Verification Systems",
+                "opportunity_type": "research_grant",
+                "discovery_type": "funding",
+                "organization_name": "Department of Science and Technology (DST-SERB)",
+                "description": "Premier government research grant supporting basic and applied research in deterministic evidence provenance, cryptographic passports, and bias-free evaluation engines.",
+                "domain": "Verification Systems & Cryptography",
+                "required_expertise": ["PostgreSQL", "FastAPI", "Verification Systems", "Algorithms"],
+                "collaboration_types": ["research_grant", "multi_institution_research"],
+                "website_url": "https://serbonline.in/SERB/crg",
+                "profile_metadata": {"funding_type": "Government Apex Research Grant", "tenure_years": 3, "fellowships_included": 2},
+                "stipend_or_grant": 3500000.0,
+            },
+            {
+                "title": "AICTE Clean Energy & Smart Computing Innovation Grant",
+                "opportunity_type": "research_grant",
+                "discovery_type": "funding",
+                "organization_name": "AICTE National R&D Cell",
+                "description": "Scheme for promoting research in smart energy grids, green computing algorithms, carbon-aware cloud scheduling, and IoT intelligence.",
+                "domain": "Green Computing & Smart Energy",
+                "required_expertise": ["Cloud Architecture", "IoT", "Machine Learning", "System Design"],
+                "collaboration_types": ["research_grant", "student_training"],
+                "website_url": "https://www.aicte-india.org/schemes/research-innovations-development-schemes",
+                "profile_metadata": {"funding_type": "AICTE R&D Grant", "scheme": "RPS (Research Promotion Scheme)"},
+                "stipend_or_grant": 1500000.0,
+            },
+            {
+                "title": "Microsoft Research AI for Accessibility Academic Challenge Grant",
+                "opportunity_type": "research_grant",
+                "discovery_type": "funding",
+                "organization_name": "Microsoft Research India",
+                "description": "Grants, Azure Cognitive Services credits, and Microsoft engineering mentorship for faculty teams developing assistive AI tools for accessibility.",
+                "domain": "Assistive Artificial Intelligence",
+                "required_expertise": ["Artificial Intelligence", "Deep Learning", "Python", "Cloud Architecture"],
+                "collaboration_types": ["research_grant", "joint_research"],
+                "website_url": "https://www.microsoft.com/en-us/research/academic-programs/ai-for-accessibility/",
+                "profile_metadata": {"funding_type": "Corporate Academic Research Grant", "benefits": ["$25,000 Azure Compute Credits", "Microsoft Research Mentorship"]},
+                "stipend_or_grant": 1800000.0,
             },
         ]
         existing_hub_opportunities = {
@@ -2182,6 +2328,194 @@ $$\\text{Final Score} = \\text{clamp}(0.65 \\cdot D + 0.25 \\cdot S + 0.10 \\cdo
             inst_dean.password_hash = DEMO_PASSWORD_HASH
             await session.flush()
         await _ensure_account_email(session, inst_dean.email, inst_dean.id, Role.institution)
+
+        # 4. RECRUITER & STUDENT PROJECT ASSESSMENTS
+        recruiter_obj = (await session.scalars(select(Recruiter))).first()
+        students_list = (await session.scalars(select(Student))).all()
+        student_map = {s.full_name: s for s in students_list}
+
+        existing_assessments = (await session.scalars(select(ProjectAssessment))).all()
+        if not existing_assessments and recruiter_obj:
+            s1 = student_map.get("Rahul Sharma") or (students_list[0] if students_list else None)
+            s2 = student_map.get("Aarav Singh") or (students_list[1] if len(students_list) > 1 else None)
+            s3 = student_map.get("Aria Patel") or (students_list[2] if len(students_list) > 2 else None)
+
+            pa1 = ProjectAssessment(
+                student_id=s1.id if s1 else None,
+                recruiter_id=recruiter_obj.id,
+                project_title="Scalable Microservices API Gateway",
+                repository_url="https://github.com/rahulsharma-dev/microservices-gateway",
+                repository_provider="github",
+                status=ProjectAssessmentStatus.ready,
+                overall_score=0,
+                assessment_summary="Comprehensive multi-category technical evaluation generated for repository 'rahulsharma-dev/microservices-gateway'. 5 tailored questions covering rate limiting, gRPC proxies, distributed tracing, and Docker optimization.",
+                strengths=[
+                    "Well-structured modular packages with clear separation of HTTP handlers and gRPC clients.",
+                    "Robust token bucket rate limiter implementation using Redis key expiration semantics.",
+                    "Comprehensive Dockerfile multi-stage builds reducing image size to under 25MB.",
+                    "Integrated OpenTelemetry middleware for distributed tracing across downstream services.",
+                ],
+                improvements=[
+                    "Add automated integration tests with Testcontainers to verify Redis failover behavior.",
+                    "Implement circuit breaking pattern for flaky downstream RPC calls.",
+                    "Define explicit timeouts and context cancellation handling across all reverse-proxy routes.",
+                ],
+                technologies=["Go", "Docker", "gRPC", "Kubernetes", "Redis", "OpenTelemetry"],
+                repository_metadata={
+                    "stars": 42,
+                    "forks": 11,
+                    "open_issues": 2,
+                    "primary_language": "Go",
+                    "questions": [
+                        {
+                            "id": "q-001-1",
+                            "question": "In your Redis token-bucket rate limiter, what happens if the Redis instance encounters transient network latency exceeding 200ms during an incoming burst?",
+                            "options": [
+                                "A) The gateway drops the request immediately with HTTP 429 Too Many Requests.",
+                                "B) The limiter falls back to an in-memory local token bucket with a bounded timeout, preventing request starvation.",
+                                "C) The connection pool blocks indefinitely until Redis responds, causing goroutine exhaustion.",
+                                "D) The gateway switches all routes to HTTP 503 Service Unavailable without attempting RPC execution.",
+                            ],
+                            "category": "System Design & Resilience",
+                            "difficulty": "hard",
+                            "correct_answer": "B",
+                            "explanation": "Production reverse proxies use a bounded Redis timeout with an in-memory token bucket fallback to preserve gateway availability during Redis degradation.",
+                        },
+                        {
+                            "id": "q-001-2",
+                            "question": "How does your gRPC reverse-proxy middleware convert streaming gRPC errors (e.g., Status UNAVAILABLE) into standard HTTP JSON responses?",
+                            "options": [
+                                "A) It wraps the gRPC status code in a standard RFC 7807 Problem Details JSON with appropriate HTTP 503 status.",
+                                "B) It silently swallows the error and returns an empty HTTP 200 OK array.",
+                                "C) It terminates the TCP connection abruptly without sending any HTTP headers.",
+                                "D) It converts all non-OK gRPC codes directly to HTTP 400 Bad Request.",
+                            ],
+                            "category": "Technical Implementation",
+                            "difficulty": "medium",
+                            "correct_answer": "A",
+                            "explanation": "Standard gRPC gateways translate status.Code(err) into HTTP error mappings using standard RFC 7807 problem details payloads.",
+                        },
+                        {
+                            "id": "q-001-3",
+                            "question": "In the multi-stage Dockerfile for the microservices gateway, why is CGO_ENABLED=0 specified during the go build step?",
+                            "options": [
+                                "A) To enable dynamic linking against libc in the final Debian base image.",
+                                "B) To produce a statically linked binary that runs seamlessly inside a minimal scratch or alpine image.",
+                                "C) To optimize CPU vectorization instructions for Intel AVX-512.",
+                                "D) To disable garbage collection during high-throughput benchmarks.",
+                            ],
+                            "category": "DevOps & Deployment",
+                            "difficulty": "medium",
+                            "correct_answer": "B",
+                            "explanation": "Disabling CGO creates a purely static binary without C standard library dependencies, allowing deployment on minimal scratch containers.",
+                        },
+                        {
+                            "id": "q-001-4",
+                            "question": "When propagating OpenTelemetry trace contexts through downstream HTTP microservices, which HTTP header is utilized?",
+                            "options": [
+                                "A) X-Custom-Trace-Id",
+                                "B) traceparent (W3C Trace Context standard)",
+                                "C) X-B3-TraceId-Only",
+                                "D) Authorization",
+                            ],
+                            "category": "Observability & Tracing",
+                            "difficulty": "easy",
+                            "correct_answer": "B",
+                            "explanation": "W3C Trace Context uses the standard 'traceparent' header (version-traceid-parentid-traceflags) for vendor-neutral distributed tracing.",
+                        },
+                        {
+                            "id": "q-001-5",
+                            "question": "What approach should be used in the gateway router to prevent goroutine memory leaks when clients cancel upstream HTTP requests?",
+                            "options": [
+                                "A) Ignore client cancellation and let background goroutines run until process restart.",
+                                "B) Pass r.Context() to all downstream gRPC/HTTP calls so cancellations propagate immediately.",
+                                "C) Use runtime.Goexit() inside every active HTTP handler.",
+                                "D) Increase the operating system TCP keepalive interval to 600 seconds.",
+                            ],
+                            "category": "Concurrency & Memory Safety",
+                            "difficulty": "medium",
+                            "correct_answer": "B",
+                            "explanation": "Propagating request contexts allows downstream network calls and database queries to abort immediately when an upstream client disconnects.",
+                        },
+                    ],
+                },
+                is_shortlisted=False,
+            )
+
+            pa2 = ProjectAssessment(
+                student_id=s2.id if s2 else None,
+                recruiter_id=recruiter_obj.id,
+                project_title="Foundation Model Multi-Agent Orchestrator",
+                repository_url="https://github.com/aarav-ml/multi-agent-orchestrator",
+                repository_provider="github",
+                status=ProjectAssessmentStatus.completed,
+                overall_score=94,
+                assessment_summary="Candidate completed the repository assessment with an exceptional score of 94/100 (5 of 5 questions correct). Demonstrated deep mastery of LLM tool calling, deterministic state graphs, and asynchronous pgvector semantic search.",
+                strengths=[
+                    "State-of-the-art async agent loop with cyclic graph execution and checkpointing.",
+                    "Deterministic fallback paths when LLM tool calling returns malformed JSON.",
+                    "Optimized HNSW vector index queries with cosine distance thresholds on pgvector.",
+                    "Clean Pydantic V2 schema validation at every tool interface boundary.",
+                ],
+                improvements=[
+                    "Add token rate-limit budgeting to prevent exceeding model context windows during multi-turn loops.",
+                    "Implement prompt injection sanitization filters on user-provided input variables.",
+                ],
+                technologies=["Python", "FastAPI", "PyTorch", "pgvector", "LangChain", "Docker"],
+                repository_metadata={
+                    "stars": 89,
+                    "forks": 24,
+                    "open_issues": 1,
+                    "primary_language": "Python",
+                    "student_answers": {"q-002-1": "A", "q-002-2": "A"},
+                },
+                is_shortlisted=True,
+                shortlist_notes="Outstanding multi-agent architecture, clean pgvector integration, and 94% quiz score. Recommend immediate technical interview round.",
+                completed_at=_NOW - timedelta(days=1),
+            )
+
+            pa3 = ProjectAssessment(
+                student_id=s3.id if s3 else None,
+                recruiter_id=recruiter_obj.id,
+                project_title="Distributed Fault-Tolerant Raft Consensus Engine",
+                repository_url="https://github.com/priyapatel-tech/raft-consensus-engine",
+                repository_provider="github",
+                status=ProjectAssessmentStatus.ready,
+                overall_score=0,
+                assessment_summary="Automated code evaluation for 'priyapatel-tech/raft-consensus-engine'. 5 in-depth questions evaluating leader election, log replication, snapshotting, and network partition recovery.",
+                strengths=[
+                    "Rigorous implementation of Raft leader election with randomized election timers.",
+                    "Asynchronous log append entries with memory-mapped write-ahead logging (WAL).",
+                    "Comprehensive test matrix simulating network partitions and delayed RPCs.",
+                ],
+                improvements=[
+                    "Implement log compaction and install snapshot RPC for long-running clusters.",
+                    "Add dynamic cluster membership changes (joint consensus).",
+                ],
+                technologies=["Rust", "Distributed Systems", "gRPC", "Tokio", "Raft"],
+                repository_metadata={"stars": 124, "forks": 38, "primary_language": "Rust"},
+                is_shortlisted=False,
+            )
+
+            session.add_all([pa1, pa2, pa3])
+            await session.flush()
+
+            # Add category scores for pa1 & pa2
+            cat_scores = [
+                AssessmentCategoryScore(assessment_id=pa1.id, category_name="Technical Implementation", score=92, feedback="Clean Go idioms and idiomatic package layouts."),
+                AssessmentCategoryScore(assessment_id=pa1.id, category_name="Code Comprehension", score=88, feedback="Solid grasp of asynchronous context propagation."),
+                AssessmentCategoryScore(assessment_id=pa1.id, category_name="Architecture & Design", score=90, feedback="Modular reverse-proxy pipeline with decoupled middleware."),
+                AssessmentCategoryScore(assessment_id=pa1.id, category_name="Best Practices", score=86, feedback="Multi-stage Docker builds and environment-based configuration."),
+                AssessmentCategoryScore(assessment_id=pa1.id, category_name="Testing & Quality", score=80, feedback="Good unit tests; needs Testcontainers integration tests."),
+
+                AssessmentCategoryScore(assessment_id=pa2.id, category_name="Technical Implementation", score=96, feedback="Flawless async Python 3.12 and FastAPI endpoints."),
+                AssessmentCategoryScore(assessment_id=pa2.id, category_name="Code Comprehension", score=94, feedback="Precise understanding of agentic state graphs and tool bindings."),
+                AssessmentCategoryScore(assessment_id=pa2.id, category_name="Architecture & Design", score=95, feedback="Excellent decoupling of LLM drivers and persistence layers."),
+                AssessmentCategoryScore(assessment_id=pa2.id, category_name="Best Practices", score=92, feedback="Strict Pydantic models, typed signatures, and structured logging."),
+                AssessmentCategoryScore(assessment_id=pa2.id, category_name="Testing & Quality", score=90, feedback="Comprehensive pytest-asyncio coverage with mock LLM responses."),
+            ]
+            session.add_all(cat_scores)
+            await session.flush()
 
         await session.commit()
         print("SIH Ecosystem seed completed successfully.")

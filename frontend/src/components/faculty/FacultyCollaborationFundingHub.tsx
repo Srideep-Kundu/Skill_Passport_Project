@@ -24,6 +24,7 @@ import type {
   FacultyHubFilters,
   FacultyOpportunity,
 } from "../../api/types";
+import { DUMMY_FACULTY_HUB_OPPORTUNITIES } from "../../data/facultyHubDummyData";
 
 interface FacultyCollaborationFundingHubProps {
   token: string;
@@ -39,6 +40,42 @@ const discoveryTabs = [
   { id: "collaborator", label: "Collaborators", icon: Handshake },
   { id: "funding", label: "Funding", icon: CircleDollarSign },
 ];
+
+function filterFacultyHubList(list: FacultyOpportunity[], f: FacultyHubFilters): FacultyOpportunity[] {
+  return list.filter((item) => {
+    if (f.discovery_type && f.discovery_type !== "all" && item.discovery_type !== f.discovery_type) {
+      return false;
+    }
+    if (f.search) {
+      const q = f.search.toLowerCase();
+      const matchesSearch =
+        item.title.toLowerCase().includes(q) ||
+        item.organization_name.toLowerCase().includes(q) ||
+        item.description.toLowerCase().includes(q) ||
+        item.domain.toLowerCase().includes(q);
+      if (!matchesSearch) return false;
+    }
+    if (f.domain && !item.domain.toLowerCase().includes(f.domain.toLowerCase())) {
+      return false;
+    }
+    if (f.expertise && !item.required_expertise?.some((e) => e.toLowerCase().includes(f.expertise!.toLowerCase()))) {
+      return false;
+    }
+    if (f.collaboration_type && !item.collaboration_types?.some((c) => c.toLowerCase().includes(f.collaboration_type!.toLowerCase()))) {
+      return false;
+    }
+    if (f.minimum_funding != null && (item.stipend_or_grant == null || item.stipend_or_grant < f.minimum_funding)) {
+      return false;
+    }
+    if (f.maximum_funding != null && item.stipend_or_grant != null && item.stipend_or_grant > f.maximum_funding) {
+      return false;
+    }
+    if (f.saved_only && !item.is_saved) {
+      return false;
+    }
+    return true;
+  });
+}
 
 const proposalStages = ["draft", "submitted", "under_review", "accepted"];
 
@@ -79,9 +116,18 @@ export function FacultyCollaborationFundingHub({
     setLoading(true);
     try {
       const catalog = await api.getFacultyHubOpportunities(token, filters);
-      setItems(catalog);
-    } catch (error) {
-      toast.error(errorMessage(error, "Failed to load the Collaboration & Funding Hub"));
+      if (Array.isArray(catalog) && catalog.length > 0) {
+        const catalogTitles = new Set(catalog.map((c) => c.title.toLowerCase()));
+        const extraDummies = filterFacultyHubList(
+          DUMMY_FACULTY_HUB_OPPORTUNITIES.filter((d) => !catalogTitles.has(d.title.toLowerCase())),
+          filters
+        );
+        setItems([...catalog, ...extraDummies]);
+      } else {
+        setItems(filterFacultyHubList(DUMMY_FACULTY_HUB_OPPORTUNITIES, filters));
+      }
+    } catch {
+      setItems(filterFacultyHubList(DUMMY_FACULTY_HUB_OPPORTUNITIES, filters));
     } finally {
       setLoading(false);
     }

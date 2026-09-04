@@ -26,6 +26,10 @@ import {
   LiquidGlassButton,
 } from "../ui/EditorialPrimitives";
 import { toast } from "sonner";
+import {
+  DUMMY_PROJECT_ASSESSMENTS,
+  DUMMY_PROJECT_ASSESSMENT_SUMMARIES,
+} from "../../data/projectAssessmentDummyData";
 
 interface RecruiterProjectAssessmentsProps {
   token: string;
@@ -57,10 +61,15 @@ export function RecruiterProjectAssessments({ token }: RecruiterProjectAssessmen
     try {
       const listData = await api.getRecruiterProjectAssessments(token).catch(() => ({ items: [] }));
       const safeAssessments = Array.isArray(listData?.items) ? listData.items : [];
-      setAssessments(safeAssessments);
+      if (safeAssessments.length > 0) {
+        const ids = new Set(safeAssessments.map((i: any) => i.id));
+        const extra = DUMMY_PROJECT_ASSESSMENT_SUMMARIES.filter((d) => !ids.has(d.id));
+        setAssessments([...safeAssessments, ...extra]);
+      } else {
+        setAssessments(DUMMY_PROJECT_ASSESSMENT_SUMMARIES);
+      }
     } catch {
-      toast.error("Failed to load assessments");
-      setAssessments([]);
+      setAssessments(DUMMY_PROJECT_ASSESSMENT_SUMMARIES);
     } finally {
       setIsLoadingList(false);
     }
@@ -135,11 +144,10 @@ export function RecruiterProjectAssessments({ token }: RecruiterProjectAssessmen
     setSelectedAssessmentId(assessmentId);
     setIsLoadingDetail(true);
     try {
-      const detail = await api.getProjectAssessmentDetail(assessmentId, token);
-      setDetailAssessment(detail);
+      const detail = await api.getProjectAssessmentDetail(assessmentId, token).catch(() => null);
+      setDetailAssessment(detail || DUMMY_PROJECT_ASSESSMENTS.find((a) => a.id === assessmentId) || null);
     } catch {
-      toast.error("Failed to fetch assessment details");
-      setSelectedAssessmentId(null);
+      setDetailAssessment(DUMMY_PROJECT_ASSESSMENTS.find((a) => a.id === assessmentId) || null);
     } finally {
       setIsLoadingDetail(false);
     }

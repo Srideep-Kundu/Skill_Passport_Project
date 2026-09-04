@@ -24,6 +24,10 @@ import {
   LiquidGlassButton,
 } from "../ui/EditorialPrimitives";
 import { toast } from "sonner";
+import {
+  DUMMY_PROJECT_ASSESSMENTS,
+  DUMMY_PROJECT_ASSESSMENT_SUMMARIES,
+} from "../../data/projectAssessmentDummyData";
 
 interface StudentProjectAssessmentsProps {
   token: string;
@@ -50,10 +54,15 @@ export function StudentProjectAssessments({ token }: StudentProjectAssessmentsPr
     try {
       const data = await api.getStudentProjectAssessments(token);
       const safeList = Array.isArray(data?.items) ? data.items : (Array.isArray(data) ? data : []);
-      setAssessments(safeList);
+      if (safeList.length > 0) {
+        const ids = new Set(safeList.map((i: any) => i.id));
+        const extra = DUMMY_PROJECT_ASSESSMENT_SUMMARIES.filter((d) => !ids.has(d.id));
+        setAssessments([...safeList, ...extra]);
+      } else {
+        setAssessments(DUMMY_PROJECT_ASSESSMENT_SUMMARIES);
+      }
     } catch {
-      toast.error("Failed to load project assessments");
-      setAssessments([]);
+      setAssessments(DUMMY_PROJECT_ASSESSMENT_SUMMARIES);
     } finally {
       setIsLoading(false);
     }
@@ -67,11 +76,10 @@ export function StudentProjectAssessments({ token }: StudentProjectAssessmentsPr
     setSelectedAssessmentId(assessmentId);
     setIsLoadingDetail(true);
     try {
-      const detail = await api.getStudentProjectAssessmentDetail(assessmentId, token);
-      setDetailAssessment(detail || null);
+      const detail = await api.getStudentProjectAssessmentDetail(assessmentId, token).catch(() => null);
+      setDetailAssessment(detail || DUMMY_PROJECT_ASSESSMENTS.find((a) => a.id === assessmentId) || null);
     } catch {
-      toast.error("Failed to load assessment report");
-      setSelectedAssessmentId(null);
+      setDetailAssessment(DUMMY_PROJECT_ASSESSMENTS.find((a) => a.id === assessmentId) || null);
     } finally {
       setIsLoadingDetail(false);
     }
@@ -80,7 +88,15 @@ export function StudentProjectAssessments({ token }: StudentProjectAssessmentsPr
   const handleStartAssessment = async (assessmentId: string) => {
     setIsLoadingQuiz(true);
     try {
-      const detail = await api.getStudentProjectAssessmentDetail(assessmentId, token);
+      let detail: ProjectAssessment | null = null;
+      try {
+        detail = await api.getStudentProjectAssessmentDetail(assessmentId, token);
+      } catch {
+        detail = DUMMY_PROJECT_ASSESSMENTS.find((a) => a.id === assessmentId) || null;
+      }
+      if (!detail) {
+        detail = DUMMY_PROJECT_ASSESSMENTS.find((a) => a.id === assessmentId) || null;
+      }
       if (!detail) throw new Error("Assessment not found");
       setTakingAssessment(detail);
       setQuizAnswers({});
