@@ -2,16 +2,27 @@
  * MediaPipe Face Landmarker & Dual-Layer Biometric Proctoring Engine.
  * 
  * Provides client-side, real-time webcam face presence, camera obstruction/hand-on-lens detection,
- * multiple face detection, head pose estimation (yaw/pitch/roll), and
- * looking-away analysis with temporal smoothing and anti-false-positive filtering.
+ * multiple face detection, 3D head pose estimation (yaw/pitch/roll), eye tracking, iris landmark analysis,
+ * blink dynamics, and looking-away analysis with temporal smoothing and anti-false-positive filtering.
  */
-import {
+import type {
   FaceLandmarker,
   ObjectDetector,
-  FilesetResolver,
-  type FaceLandmarkerResult,
-  type ObjectDetectorResult,
+  FaceLandmarkerResult,
+  ObjectDetectorResult,
 } from "@mediapipe/tasks-vision";
+
+let cachedFilesetResolver: any = null;
+
+import { EyeLandmarkExtractor, type ExtractedEyeMetrics } from "./EyeLandmarkExtractor";
+import { BlinkDetector, type BlinkDetectorMetrics } from "./BlinkDetector";
+import {
+  GazeEstimator,
+  type GazeState,
+  type GazeBaselineCalibration,
+  type EstimatedGazeResult,
+} from "./GazeEstimator";
+import { GazeTemporalFilter, type GazeViolationPayload } from "./GazeTemporalFilter";
 
 export interface FaceProctoringConfig {
   faceAbsentDurationMs?: number;
@@ -43,12 +54,23 @@ export interface FaceProctoringState {
   headPose: HeadPose;
   confidence: number;
   landmarks: Array<{ x: number; y: number; z: number }> | null;
+  // Eye Tracking & Gaze Estimation
+  gazeState: GazeState;
+  gazeVector: { x: number; y: number };
+  gazeConfidence: number;
+  isBlinking: boolean;
+  blinkCount: number;
+  avgEar: number;
+  isReadingPattern: boolean;
 }
 
 export type FaceViolationType =
   | "FACE_ABSENT"
   | "MULTIPLE_FACES"
   | "PROLONGED_LOOK_AWAY"
+  | "LOOKING_AWAY"
+  | "GAZE_DEVIATION"
+  | "PROLONGED_EYE_CLOSURE"
   | "HEAD_POSE_ANOMALY"
   | "PHONE_DETECTED";
 
@@ -67,20 +89,23 @@ export class FaceProctoringEngine {
   private isReady: boolean = false;
   private modelError: string | null = null;
 
+  // Dedicated Eye & Gaze Sub-engines
+  private eyeExtractor: EyeLandmarkExtractor = new EyeLandmarkExtractor();
+  private blinkDetector: BlinkDetector = new BlinkDetector();
+  private gazeEstimator: GazeEstimator = new GazeEstimator();
+  private gazeTemporalFilter: GazeTemporalFilter = new GazeTemporalFilter();
+
   // Offscreen analysis canvas for optical fallback & obstruction detection
   private opticalCanvas: HTMLCanvasElement | null = null;
-  private deviceCanvas: HTMLCanvasElement | null = null;
 
   // Temporal state tracking
   private faceAbsentStartTime: number | null = null;
   private multipleFacesStartTime: number | null = null;
-  private lookingAwayStartTime: number | null = null;
   private phoneDetectedStartTime: number | null = null;
 
   // Cooldown timestamps to prevent event spam
   private lastFaceAbsentEventTime: number = 0;
   private lastMultipleFacesEventTime: number = 0;
-  private lastLookingAwayEventTime: number = 0;
   private lastPhoneDetectedEventTime: number = 0;
 
   // Last inference time for throttle
@@ -99,13 +124,29 @@ export class FaceProctoringEngine {
     this.config = {
       faceAbsentDurationMs: config?.faceAbsentDurationMs ?? 1400,
       multipleFacesDurationMs: config?.multipleFacesDurationMs ?? 1500,
-      lookingAwayDurationMs: config?.lookingAwayDurationMs ?? 2500,
+      lookingAwayDurationMs: config?.lookingAwayDurationMs ?? 2800,
       yawThresholdDeg: config?.yawThresholdDeg ?? 26,
       pitchDownThresholdDeg: config?.pitchDownThresholdDeg ?? 22,
       pitchUpThresholdDeg: config?.pitchUpThresholdDeg ?? -18,
       cooldownMs: config?.cooldownMs ?? 5000,
       inferenceIntervalMs: config?.inferenceIntervalMs ?? 100,
     };
+
+    this.gazeTemporalFilter = new GazeTemporalFilter({
+      lookAwayThresholdMs: this.config.lookingAwayDurationMs,
+      cooldownMs: this.config.cooldownMs,
+    });
+
+    // Wire Gaze Temporal Filter events directly to engine violation dispatcher
+    this.gazeTemporalFilter.onViolation((payload: GazeViolationPayload) => {
+      this.triggerViolation({
+        type: payload.type,
+        durationMs: payload.durationMs,
+        confidence: payload.confidence,
+        timestamp: new Date().toISOString(),
+        metadata: payload.metadata,
+      });
+    });
 
     this.lastComputedState = {
       isModelReady: false,
@@ -120,11 +161,29 @@ export class FaceProctoringEngine {
       headPose: { yaw: 0, pitch: 0, roll: 0 },
       confidence: 0,
       landmarks: null,
+      gazeState: "UNKNOWN",
+      gazeVector: { x: 0, y: 0 },
+      gazeConfidence: 0,
+      isBlinking: false,
+      blinkCount: 0,
+      avgEar: 0.25,
+      isReadingPattern: false,
     };
   }
 
   public onViolation(callback: (event: FaceViolationEvent) => void): void {
     this.onViolationCallback = callback;
+  }
+
+  /**
+   * Sets or updates candidate screen-center baseline calibration.
+   */
+  public setCalibrationBaseline(baseline: Partial<GazeBaselineCalibration>): void {
+    this.gazeEstimator.setCalibration(baseline);
+  }
+
+  public getCalibrationBaseline(): GazeBaselineCalibration {
+    return this.gazeEstimator.getCalibration();
   }
 
   /**
@@ -138,11 +197,15 @@ export class FaceProctoringEngine {
     this.modelError = null;
 
     try {
-      const filesetResolver = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm"
-      );
+      const { FilesetResolver, FaceLandmarker, ObjectDetector } = await import("@mediapipe/tasks-vision");
+      if (!cachedFilesetResolver) {
+        cachedFilesetResolver = await FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm"
+        );
+      }
+      const filesetResolver = cachedFilesetResolver;
 
-      // 1. Initialize Face Landmarker (GPU first, fallback CPU)
+      // 1. Initialize Face Landmarker with blendshapes & iris landmark support
       try {
         this.landmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
           baseOptions: {
@@ -175,7 +238,7 @@ export class FaceProctoringEngine {
         });
       }
 
-      // 2. Initialize Object Detector for Mobile Phone / Handheld Electronic Devices
+      // 2. Initialize Object Detector for Mobile Phone Detection
       const modelUrls = [
         "https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/1/efficientdet_lite0.tflite",
         "https://storage.googleapis.com/mediapipe-models/object_detector/ssd_mobilenet_v2/float16/1/ssd_mobilenet_v2.tflite",
@@ -190,8 +253,8 @@ export class FaceProctoringEngine {
               delegate: "GPU",
             },
             runningMode: "VIDEO",
-            scoreThreshold: 0.18,
-            maxResults: 8,
+            scoreThreshold: 0.65,
+            maxResults: 4,
           });
         } catch {
           try {
@@ -201,8 +264,8 @@ export class FaceProctoringEngine {
                 delegate: "CPU",
               },
               runningMode: "VIDEO",
-              scoreThreshold: 0.18,
-              maxResults: 8,
+              scoreThreshold: 0.65,
+              maxResults: 4,
             });
           } catch {
             // Try next model URL
@@ -249,11 +312,10 @@ export class FaceProctoringEngine {
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
-        const brightness = (r + g + b) / 3;
+        const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
         totalBrightness += brightness;
 
-        // Human skin tone detection heuristic
-        if (r > 60 && g > 30 && b > 15 && r > g && r > b && (r - g) > 10) {
+        if (r > 60 && g > 40 && b > 20 && r > g && r > b && Math.abs(r - g) > 10) {
           skinPixels++;
         }
       }
@@ -265,8 +327,8 @@ export class FaceProctoringEngine {
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
-        const bVal = (r + g + b) / 3;
-        varianceAcc += Math.abs(bVal - avgBrightness);
+        const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+        varianceAcc += Math.abs(lum - avgBrightness);
       }
       const avgVariance = varianceAcc / (data.length / 16);
 
@@ -280,87 +342,7 @@ export class FaceProctoringEngine {
   }
 
   /**
-   * Real-time Computer Vision Handheld Mobile Phone / Electronic Device Analyzer.
-   * Detects:
-   * 1. Rectangular phone form-factor (aspect ratio ~1.5:1 to 2.4:1) with parallel straight edges.
-   * 2. Handheld electronic bezel contours in front of chest/webcam.
-   * 3. Mobile screen display emission, glossy dark glass reflections, or high-contrast screen textures.
-   */
-  private checkOpticalDeviceInFrame(video: HTMLVideoElement): { phoneDetected: boolean; confidence: number } {
-    if (!this.deviceCanvas) {
-      this.deviceCanvas = document.createElement("canvas");
-      this.deviceCanvas.width = 120;
-      this.deviceCanvas.height = 90;
-    }
-    const canvas = this.deviceCanvas;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    if (!ctx) return { phoneDetected: false, confidence: 0 };
-
-    try {
-      const W = 120;
-      const H = 90;
-      ctx.drawImage(video, 0, 0, W, H);
-      const imgData = ctx.getImageData(0, 0, W, H);
-      const data = imgData.data;
-
-      let verticalEdgePoints = 0;
-      let horizontalEdgePoints = 0;
-      let phoneScreenLuminanceBlobs = 0;
-      let darkGlossyRectPoints = 0;
-
-      // Scan grid for high-gradient phone borders and screen texture
-      for (let y = 10; y < H - 10; y += 3) {
-        for (let x = 10; x < W - 10; x += 3) {
-          const idx = (y * W + x) * 4;
-          const r = data[idx];
-          const g = data[idx + 1];
-          const b = data[idx + 2];
-          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
-
-          // Horizontal gradient (vertical bezel lines)
-          const rightIdx = (y * W + (x + 2)) * 4;
-          const lumRight = 0.299 * data[rightIdx] + 0.587 * data[rightIdx + 1] + 0.114 * data[rightIdx + 2];
-          const gradH = Math.abs(lum - lumRight);
-
-          // Vertical gradient (horizontal bezel lines)
-          const downIdx = ((y + 2) * W + x) * 4;
-          const lumDown = 0.299 * data[downIdx] + 0.587 * data[downIdx + 1] + 0.114 * data[downIdx + 2];
-          const gradV = Math.abs(lum - lumDown);
-
-          if (gradH > 35) verticalEdgePoints++;
-          if (gradV > 35) horizontalEdgePoints++;
-
-          // 1. Mobile screen glow (active display emission)
-          if ((b > 160 && (b - r) > 15 && lum > 120) || (lum > 220 && (r + g + b) > 650)) {
-            phoneScreenLuminanceBlobs++;
-          }
-
-          // 2. Dark glossy phone rectangle / black bezel held up
-          if (lum < 40 && (gradH > 30 || gradV > 30)) {
-            darkGlossyRectPoints++;
-          }
-        }
-      }
-
-      // Smartphone signature: strong vertical & horizontal parallel edges + screen glow or dark glossy bezel
-      const hasEdgeStructure = verticalEdgePoints >= 18 && horizontalEdgePoints >= 14;
-      const isEmissivePhone = phoneScreenLuminanceBlobs >= 8 && (verticalEdgePoints >= 12 || horizontalEdgePoints >= 10);
-      const isDarkGlossyPhone = darkGlossyRectPoints >= 16 && hasEdgeStructure;
-      const isStrongEdgePhone = verticalEdgePoints >= 36 && horizontalEdgePoints >= 28;
-
-      const isDetected = isEmissivePhone || isDarkGlossyPhone || isStrongEdgePhone;
-      const confidence = isDetected
-        ? Math.min(0.99, 0.70 + (phoneScreenLuminanceBlobs * 0.02) + (verticalEdgePoints * 0.005))
-        : 0;
-
-      return { phoneDetected: isDetected, confidence };
-    } catch {
-      return { phoneDetected: false, confidence: 0 };
-    }
-  }
-
-  /**
-   * Processes a video frame with dual-layer vision & temporal smoothing.
+   * Processes a video frame with dual-layer vision, eye tracking, and temporal smoothing.
    */
   public processFrame(video: HTMLVideoElement, now: number = performance.now()): FaceProctoringState {
     if (!video || video.readyState < 2 || video.videoWidth === 0) {
@@ -373,7 +355,10 @@ export class FaceProctoringEngine {
     }
     this.lastInferenceTime = now;
 
-    // 1. MediaPipe Object Detection (Cell Phone / Mobile Device Check)
+    // 1. MediaPipe Object Detection (Strict Cell Phone Detection with 2.5s Temporal Persistence)
+    let isPhoneInThisFrame = false;
+    let phoneScore = 0;
+
     if (this.objectDetector) {
       try {
         const objResult: ObjectDetectorResult = this.objectDetector.detectForVideo(video, now);
@@ -382,55 +367,60 @@ export class FaceProctoringEngine {
             for (const cat of det.categories) {
               const label = (cat.categoryName || "").toLowerCase();
               if (
-                (label.includes("cell") ||
-                  label.includes("phone") ||
-                  label.includes("mobile") ||
-                  label.includes("telephone") ||
-                  label.includes("remote") ||
-                  label.includes("device") ||
-                  label.includes("handheld") ||
-                  label.includes("tablet") ||
-                  label.includes("screen") ||
-                  label.includes("laptop")) &&
-                cat.score >= 0.18
+                (label === "cell phone" || label === "mobile phone" || label === "telephone") &&
+                cat.score >= 0.65
               ) {
-                return this.handlePhoneDetected(
-                  now,
-                  `Mobile phone detected via vision detector (${cat.categoryName}: ${(cat.score * 100).toFixed(0)}% confidence)`,
-                  cat.score
-                );
+                isPhoneInThisFrame = true;
+                phoneScore = Math.max(phoneScore, cat.score);
               }
             }
           }
         }
       } catch {
-        // Fallback to optical device check
+        // Non-blocking fail-soft
       }
     }
 
-    // 2. Optical Phone Screen / Rectangular Bezel Detection Check
-    const deviceCheck = this.checkOpticalDeviceInFrame(video);
-    if (deviceCheck.phoneDetected) {
-      return this.handlePhoneDetected(
-        now,
-        "Unauthorized mobile phone / handheld electronic device detected in webcam frame",
-        deviceCheck.confidence
-      );
+    if (isPhoneInThisFrame) {
+      if (this.phoneDetectedStartTime === null) {
+        this.phoneDetectedStartTime = now;
+      }
+      const duration = now - this.phoneDetectedStartTime;
+      if (duration >= 2500 && now - this.lastPhoneDetectedEventTime >= 5000) {
+        this.lastPhoneDetectedEventTime = now;
+        this.triggerViolation({
+          type: "PHONE_DETECTED",
+          durationMs: Math.round(duration),
+          confidence: phoneScore,
+          timestamp: new Date().toISOString(),
+          metadata: {
+            reason: `Mobile phone verified in camera view (${(phoneScore * 100).toFixed(0)}% confidence for ${(duration / 1000).toFixed(1)}s)`,
+            action: "CANCEL_EXAM_NO_SUBMIT",
+            device: "cell phone",
+          },
+        });
+      }
     } else {
       this.phoneDetectedStartTime = null;
     }
 
-    // 3. First Optical Check (Instant Hand-on-Camera & Lens Obstruction detector)
+    // 2. Optical Check (Camera Blocked / Lens Covered Detector)
     const optical = this.checkOpticalFrame(video);
     if (optical.isCameraBlocked) {
       return this.handleFaceAbsent(now, "Camera lens is blocked or covered by an object/hand");
     }
 
-    // 4. MediaPipe Face Landmark Detection
+    // 3. MediaPipe Face Landmark Detection with Eye Tracking & Gaze Fusion
     if (this.landmarker) {
       try {
         const result: FaceLandmarkerResult = this.landmarker.detectForVideo(video, now);
         const state = this.analyzeResult(result, now);
+        const isSustainedPhone =
+          isPhoneInThisFrame &&
+          this.phoneDetectedStartTime !== null &&
+          now - this.phoneDetectedStartTime >= 2500;
+        state.isPhoneDetected = isSustainedPhone;
+        state.phoneConfidence = isPhoneInThisFrame ? phoneScore : 0;
         this.lastComputedState = state;
         return state;
       } catch {
@@ -438,7 +428,7 @@ export class FaceProctoringEngine {
       }
     }
 
-    // 5. Fallback Optical Presence if MediaPipe not yet initialized
+    // 4. Optical Fallback Presence if MediaPipe not yet initialized
     if (!optical.hasHumanPresence) {
       return this.handleFaceAbsent(now, "No student face detected in camera view");
     } else {
@@ -456,48 +446,16 @@ export class FaceProctoringEngine {
         headPose: { yaw: 0, pitch: 0, roll: 0 },
         confidence: 0.88,
         landmarks: null,
+        gazeState: "CENTER",
+        gazeVector: { x: 0, y: 0 },
+        gazeConfidence: 0.80,
+        isBlinking: false,
+        blinkCount: 0,
+        avgEar: 0.25,
+        isReadingPattern: false,
       };
       return this.lastComputedState;
     }
-  }
-
-  private handlePhoneDetected(now: number, reason: string, confidence: number = 0.95): FaceProctoringState {
-    if (this.phoneDetectedStartTime === null) {
-      this.phoneDetectedStartTime = now;
-    }
-
-    const duration = now - this.phoneDetectedStartTime;
-    // Trigger immediately after 150ms of sustained phone detection
-    if (duration >= 150 && now - this.lastPhoneDetectedEventTime >= 2000) {
-      this.lastPhoneDetectedEventTime = now;
-      this.triggerViolation({
-        type: "PHONE_DETECTED",
-        durationMs: Math.round(duration),
-        confidence,
-        timestamp: new Date().toISOString(),
-        metadata: {
-          reason,
-          action: "CANCEL_EXAM_NO_SUBMIT",
-          device: "cell phone",
-        },
-      });
-    }
-
-    this.lastComputedState = {
-      isModelReady: this.isReady,
-      modelError: this.modelError,
-      faceCount: 1,
-      faceDetected: true,
-      multipleFaces: false,
-      faceAbsent: false,
-      isLookingAway: false,
-      isPhoneDetected: true,
-      phoneConfidence: confidence,
-      headPose: { yaw: 0, pitch: 0, roll: 0 },
-      confidence,
-      landmarks: null,
-    };
-    return this.lastComputedState;
   }
 
   private handleFaceAbsent(now: number, reason: string): FaceProctoringState {
@@ -523,6 +481,8 @@ export class FaceProctoringEngine {
       }
     }
 
+    this.gazeTemporalFilter.reset();
+
     this.lastComputedState = {
       isModelReady: this.isReady,
       modelError: this.modelError,
@@ -536,24 +496,65 @@ export class FaceProctoringEngine {
       landmarks: null,
       isPhoneDetected: false,
       phoneConfidence: 0,
+      gazeState: "UNKNOWN",
+      gazeVector: { x: 0, y: 0 },
+      gazeConfidence: 0,
+      isBlinking: false,
+      blinkCount: this.blinkDetector.update(false, 0, now).blinkCount,
+      avgEar: 0,
+      isReadingPattern: false,
     };
     return this.lastComputedState;
   }
 
   /**
-   * Analyzes raw MediaPipe Face Landmarker results and handles temporal state transitions.
+   * Analyzes raw MediaPipe Face Landmarker results and handles temporal eye & head transitions.
    */
   private analyzeResult(result: FaceLandmarkerResult, now: number): FaceProctoringState {
     const faceCount = result.faceLandmarks ? result.faceLandmarks.length : 0;
     let headPose: HeadPose = { yaw: 0, pitch: 0, roll: 0 };
-    let isLookingAway = false;
     let confidence = 0.95;
     let landmarks = null;
+    let eyeMetrics: ExtractedEyeMetrics = {
+      leftEye: null,
+      rightEye: null,
+      avgEar: 0.25,
+      isBlinking: false,
+      leftIrisRatioX: 0.5,
+      rightIrisRatioX: 0.5,
+      leftIrisRatioY: 0.5,
+      rightIrisRatioY: 0.5,
+      confidence: 0,
+    };
+    let blinkMetrics: BlinkDetectorMetrics = {
+      state: "EYES_OPEN",
+      blinkCount: 0,
+      avgBlinkDurationMs: 180,
+      currentClosureDurationMs: 0,
+      isProlongedClosure: false,
+      ear: 0.25,
+    };
+    let gazeResult: EstimatedGazeResult = {
+      gazeState: "UNKNOWN",
+      gazeVector: { x: 0, y: 0 },
+      confidence: 0,
+      headPose: { yaw: 0, pitch: 0, roll: 0 },
+      eyeOffset: { x: 0, y: 0 },
+      isReadingPattern: false,
+      isLookingAway: false,
+      reason: "",
+    };
 
     if (faceCount > 0 && result.faceLandmarks[0]) {
       landmarks = result.faceLandmarks[0];
       headPose = this.estimateHeadPose(landmarks);
-      isLookingAway = this.checkLookingAway(headPose, result.faceBlendshapes?.[0]);
+      eyeMetrics = this.eyeExtractor.extract(landmarks);
+      blinkMetrics = this.blinkDetector.update(eyeMetrics.isBlinking, eyeMetrics.avgEar, now);
+      gazeResult = this.gazeEstimator.estimate(
+        eyeMetrics,
+        headPose,
+        result.faceBlendshapes?.[0]
+      );
     }
 
     // 1. TEMPORAL RULE: FACE ABSENCE (0 Faces)
@@ -565,6 +566,7 @@ export class FaceProctoringEngine {
 
     // 2. TEMPORAL RULE: MULTIPLE FACES (>= 2 Faces)
     if (faceCount >= 2) {
+      this.gazeTemporalFilter.reset();
       if (this.multipleFacesStartTime === null) {
         this.multipleFacesStartTime = now;
       } else {
@@ -587,53 +589,56 @@ export class FaceProctoringEngine {
           });
         }
       }
+
+      return {
+        isModelReady: this.isReady,
+        modelError: this.modelError,
+        faceCount,
+        faceDetected: false,
+        multipleFaces: true,
+        faceAbsent: false,
+        isLookingAway: false,
+        headPose,
+        confidence: 0.95,
+        landmarks,
+        isPhoneDetected: false,
+        phoneConfidence: 0,
+        gazeState: "UNKNOWN",
+        gazeVector: { x: 0, y: 0 },
+        gazeConfidence: 0,
+        isBlinking: false,
+        blinkCount: blinkMetrics.blinkCount,
+        avgEar: eyeMetrics.avgEar,
+        isReadingPattern: false,
+      };
     } else {
       this.multipleFacesStartTime = null;
     }
 
-    // 3. TEMPORAL RULE: LOOKING AWAY (Sustained Yaw / Pitch deviation)
-    if (faceCount === 1 && isLookingAway) {
-      if (this.lookingAwayStartTime === null) {
-        this.lookingAwayStartTime = now;
-      } else {
-        const lookAwayDuration = now - this.lookingAwayStartTime;
-        if (
-          lookAwayDuration >= this.config.lookingAwayDurationMs &&
-          now - this.lastLookingAwayEventTime >= this.config.cooldownMs
-        ) {
-          this.lastLookingAwayEventTime = now;
-          this.triggerViolation({
-            type: "PROLONGED_LOOK_AWAY",
-            durationMs: Math.round(lookAwayDuration),
-            confidence: 0.90,
-            timestamp: new Date().toISOString(),
-            metadata: {
-              yaw: Math.round(headPose.yaw),
-              pitch: Math.round(headPose.pitch),
-              roll: Math.round(headPose.roll),
-              reason: "Candidate gaze and head pose deviated off-screen for sustained period",
-              duration_seconds: (lookAwayDuration / 1000).toFixed(1),
-            },
-          });
-        }
-      }
-    } else {
-      this.lookingAwayStartTime = null;
-    }
+    // 3. EYE TRACKING & GAZE TEMPORAL FILTERING (Sustained Off-Screen Gaze)
+    const filterResult = this.gazeTemporalFilter.update(gazeResult, blinkMetrics, now);
+    const isLookingAway = gazeResult.isLookingAway || filterResult.isSustainedViolation;
 
     return {
       isModelReady: this.isReady,
       modelError: this.modelError,
       faceCount,
       faceDetected: faceCount === 1,
-      multipleFaces: faceCount >= 2,
-      faceAbsent: faceCount === 0,
+      multipleFaces: false,
+      faceAbsent: false,
       isLookingAway,
       headPose,
       confidence,
       landmarks,
       isPhoneDetected: false,
       phoneConfidence: 0,
+      gazeState: gazeResult.gazeState,
+      gazeVector: filterResult.smoothedVector,
+      gazeConfidence: gazeResult.confidence,
+      isBlinking: blinkMetrics.state === "BLINKING",
+      blinkCount: blinkMetrics.blinkCount,
+      avgEar: eyeMetrics.avgEar,
+      isReadingPattern: gazeResult.isReadingPattern,
     };
   }
 
@@ -671,47 +676,6 @@ export class FaceProctoringEngine {
     };
   }
 
-  /**
-   * Evaluates whether head pose or eye blendshapes indicate off-screen gaze.
-   */
-  private checkLookingAway(headPose: HeadPose, blendshapes?: any): boolean {
-    // 1. Check head pose angles
-    const isYawDeviated = Math.abs(headPose.yaw) > this.config.yawThresholdDeg;
-    const isPitchDeviated =
-      headPose.pitch > this.config.pitchDownThresholdDeg ||
-      headPose.pitch < this.config.pitchUpThresholdDeg;
-
-    if (isYawDeviated || isPitchDeviated) {
-      return true;
-    }
-
-    // 2. Check eye gaze blendshapes if available
-    if (blendshapes && blendshapes.categories) {
-      const getScore = (name: string): number => {
-        const cat = blendshapes.categories.find((c: any) => c.categoryName === name);
-        return cat ? cat.score : 0;
-      };
-
-      const eyeLookOutLeft = getScore("eyeLookOutLeft");
-      const eyeLookInRight = getScore("eyeLookInRight");
-      const eyeLookOutRight = getScore("eyeLookOutRight");
-      const eyeLookInLeft = getScore("eyeLookInLeft");
-      const eyeLookDownLeft = getScore("eyeLookDownLeft");
-      const eyeLookDownRight = getScore("eyeLookDownRight");
-
-      // Gaze turned strongly sideways
-      if ((eyeLookOutLeft > 0.60 && eyeLookInRight > 0.60) || (eyeLookOutRight > 0.60 && eyeLookInLeft > 0.60)) {
-        return true;
-      }
-      // Gaze turned strongly downwards
-      if (eyeLookDownLeft > 0.70 && eyeLookDownRight > 0.70) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
   private triggerViolation(event: FaceViolationEvent): void {
     if (this.onViolationCallback) {
       this.onViolationCallback(event);
@@ -727,6 +691,10 @@ export class FaceProctoringEngine {
         this.landmarker.close();
         this.landmarker = null;
       }
+      if (this.objectDetector) {
+        this.objectDetector.close();
+        this.objectDetector = null;
+      }
     } catch {
       // fail-soft
     }
@@ -734,5 +702,7 @@ export class FaceProctoringEngine {
     this.isInitializing = false;
     this.onViolationCallback = null;
     this.opticalCanvas = null;
+    this.blinkDetector.reset();
+    this.gazeTemporalFilter.reset();
   }
 }

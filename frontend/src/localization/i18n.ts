@@ -57,7 +57,7 @@ void i18n.use(initReactI18next).init({
 });
 
 applyDocumentLocale(initialLocale);
-i18n.on("languageChanged", (language) => {
+i18n.on("languageChanged", (language: string) => {
   const code = isLocaleCode(language) ? language : "en";
   applyDocumentLocale(code);
 });

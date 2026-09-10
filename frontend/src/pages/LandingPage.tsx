@@ -17,6 +17,16 @@ export function LandingPage({ defaultAuthOpen = false }: LandingPageProps) {
   const [authRole, setAuthRole] = useState<"student" | "recruiter" | "academician" | "institution">("student");
   const [authMode, setAuthMode] = useState<"login" | "register" | "forgot_password" | "reset_password">("login");
   const [activeSection, setActiveSection] = useState<string>("home");
+  const [videoSrc, setVideoSrc] = useState<string | undefined>(undefined);
+
+  // Lazy load heavy background video after critical content is rendered
+  useEffect(() => {
+    if (prefersReducedMotion) return;
+    const timer = setTimeout(() => {
+      setVideoSrc("https://designerstephen.github.io/public-assets/videos/serene-art-hero.mp4");
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [prefersReducedMotion]);
 
   // Check URL parameters for direct reset token or reset mode link
   useEffect(() => {
@@ -59,14 +69,15 @@ export function LandingPage({ defaultAuthOpen = false }: LandingPageProps) {
       {/* 1. CINEMATIC HERO SECTION (EXACT PRESERVED HERO - DO NOT MODIFY)          */}
       {/* ========================================================================= */}
       <div className="relative min-h-screen w-full overflow-hidden flex flex-col justify-between">
-        {/* Full-bleed Background Video Layer (High Visibility & Vivid Landscape) */}
+        {/* Full-bleed Background Video Layer (High Visibility & Vivid Landscape - Lazy Loaded after initial paint) */}
         <video
           autoPlay={!prefersReducedMotion}
           loop
           muted
           playsInline
-          className="absolute inset-0 h-full w-full object-cover z-0 opacity-100"
-          src="https://designerstephen.github.io/public-assets/videos/serene-art-hero.mp4"
+          preload="none"
+          className="absolute inset-0 h-full w-full object-cover z-0 opacity-100 transition-opacity duration-700"
+          src={videoSrc}
         />
 
         {/* Subtle Non-Obtrusive Legibility Overlay (Maximizes Video Visibility) */}

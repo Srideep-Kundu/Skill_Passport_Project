@@ -78,7 +78,7 @@ async def list_assessment_candidate_options(
     response_model=ProjectAssessmentResponse,
 )
 async def get_recruiter_assessment_detail(
-    assessment_id: UUID,
+    assessment_id: str,
     recruiter: Annotated[Recruiter, Depends(require_role("recruiter"))],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ProjectAssessmentResponse:
@@ -98,7 +98,7 @@ async def get_recruiter_assessment_detail(
     response_model=ProjectAssessmentResponse,
 )
 async def retry_failed_assessment(
-    assessment_id: UUID,
+    assessment_id: str,
     recruiter: Annotated[Recruiter, Depends(require_role("recruiter"))],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ProjectAssessmentResponse:
@@ -114,7 +114,7 @@ async def retry_failed_assessment(
     response_model=ProjectAssessmentResponse,
 )
 async def toggle_candidate_shortlist(
-    assessment_id: UUID,
+    assessment_id: str,
     payload: ProjectAssessmentShortlistRequest,
     recruiter: Annotated[Recruiter, Depends(require_role("recruiter"))],
     session: Annotated[AsyncSession, Depends(get_session)],
@@ -133,7 +133,7 @@ async def toggle_candidate_shortlist(
     response_model=ProjectAssessmentResponse,
 )
 async def update_assessment_questions(
-    assessment_id: UUID,
+    assessment_id: str,
     payload: ProjectAssessmentQuestionsUpdateRequest,
     recruiter: Annotated[Recruiter, Depends(require_role("recruiter"))],
     session: Annotated[AsyncSession, Depends(get_session)],
@@ -170,7 +170,7 @@ async def list_student_project_assessments(
     response_model=ProjectAssessmentResponse,
 )
 async def get_student_project_assessment_detail(
-    assessment_id: UUID,
+    assessment_id: str,
     student: Annotated[Student, Depends(require_role("student"))],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ProjectAssessmentResponse:
@@ -190,7 +190,7 @@ async def get_student_project_assessment_detail(
     response_model=ProjectAssessmentResponse,
 )
 async def submit_student_project_assessment(
-    assessment_id: UUID,
+    assessment_id: str,
     payload: ProjectAssessmentAnswerSubmitRequest,
     student: Annotated[Student, Depends(require_role("student"))],
     session: Annotated[AsyncSession, Depends(get_session)],

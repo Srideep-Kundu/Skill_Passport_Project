@@ -31,13 +31,22 @@ import {
   Video,
   Handshake,
 } from "lucide-react";
-import { LandingPage } from "./pages/LandingPage";
 import { useAuth } from "./auth/AuthContext";
-import { CommandPalette } from "./components/CommandPalette";
-import { SkillPassportCopilot } from "./components/SkillPassportCopilot";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "./localization/LanguageSelector";
 
+const LandingPage = lazy(async () => ({
+  default: (await import("./pages/LandingPage")).LandingPage,
+}));
+const PostLoginTransition = lazy(async () => ({
+  default: (await import("./components/PostLoginTransition")).PostLoginTransition,
+}));
+const CommandPalette = lazy(async () => ({
+  default: (await import("./components/CommandPalette")).CommandPalette,
+}));
+const SkillPassportCopilot = lazy(async () => ({
+  default: (await import("./components/SkillPassportCopilot")).SkillPassportCopilot,
+}));
 const RecruiterDashboard = lazy(async () => ({
   default: (await import("./pages/RecruiterDashboard")).RecruiterDashboard,
 }));
@@ -66,6 +75,7 @@ function DashboardVideoBackground() {
           loop
           muted
           playsInline
+          preload="none"
           className="fixed inset-0 h-full w-full object-cover z-[-2] opacity-100"
           src="https://designerstephen.github.io/public-assets/videos/serene-art-hero.mp4"
         />
@@ -136,7 +146,7 @@ export type InstitutionTab =
 
 export function App() {
   const { t } = useTranslation();
-  const { session, signOut } = useAuth();
+  const { session, signOut, justLoggedIn, completePostLoginTransition } = useAuth();
   const prefersReduced = useReducedMotion();
   const [studentTab, setStudentTab] = useState<StudentTab>("overview");
   const [recruiterTab, setRecruiterTab] = useState<RecruiterTab>("overview");
@@ -183,7 +193,24 @@ export function App() {
   }, []);
 
   if (!session) {
-    return <LandingPage />;
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-[#F7F5F0]" />}>
+        <LandingPage />
+      </Suspense>
+    );
+  }
+
+  // Show the post-login welcome transition animation before the dashboard
+  if (justLoggedIn) {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-[#F7F5F0]" />}>
+        <PostLoginTransition
+          role={session.role}
+          userEmail={session.email}
+          onComplete={completePostLoginTransition}
+        />
+      </Suspense>
+    );
   }
 
   const isStudent = session.role === "student";
@@ -272,13 +299,15 @@ export function App() {
 
       {/* Command Palette */}
       {!isAssessmentFullscreen && (isStudent || isRecruiter) && (
-        <CommandPalette
-          open={cmdOpen}
-          onOpenChange={setCmdOpen}
-          role={isStudent ? "student" : "recruiter"}
-          onSelectStudentTab={setStudentTab}
-          onSelectRecruiterTab={setRecruiterTab}
-        />
+        <Suspense fallback={null}>
+          <CommandPalette
+            open={cmdOpen}
+            onOpenChange={setCmdOpen}
+            role={isStudent ? "student" : "recruiter"}
+            onSelectStudentTab={setStudentTab}
+            onSelectRecruiterTab={setRecruiterTab}
+          />
+        </Suspense>
       )}
 
       {/* Mobile Overlay */}
@@ -604,13 +633,15 @@ export function App() {
 
       {/* Floating Bottom-Right Copilot Assistant */}
       {!isAssessmentFullscreen && (isStudent || isRecruiter) && (
-        <SkillPassportCopilot
-          token={session.access_token}
-          onNavigate={(tab: string) => {
-            if (isStudent) setStudentTab(tab as StudentTab);
-            else if (isRecruiter) setRecruiterTab(tab as RecruiterTab);
-          }}
-        />
+        <Suspense fallback={null}>
+          <SkillPassportCopilot
+            token={session.access_token}
+            onNavigate={(tab: string) => {
+              if (isStudent) setStudentTab(tab as StudentTab);
+              else if (isRecruiter) setRecruiterTab(tab as RecruiterTab);
+            }}
+          />
+        </Suspense>
       )}
     </div>
   );

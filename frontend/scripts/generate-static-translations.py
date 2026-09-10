@@ -15,7 +15,7 @@ SOURCE_PATH = ROOT / "src" / "localization" / "generated" / "source-phrases.json
 OUTPUT_DIR = SOURCE_PATH.parent
 LANGUAGE_CODES = {
     "as": "as", "bn": "bn", "brx": "brx", "doi": "doi", "gu": "gu", "hi": "hi",
-    "kn": "kn", "kok": "gom", "mai": "mai", "ml": "ml",
+    "kn": "kn", "kok": "gom", "mai": "mai", "ml": "ml", "mni": "mni-Mtei",
     "mr": "mr", "ne": "ne", "or": "or", "pa": "pa", "sa": "sa",
     "ta": "ta", "te": "te",
 }

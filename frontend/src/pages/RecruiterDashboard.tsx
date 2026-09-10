@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, lazy, Suspense } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Briefcase,
@@ -16,22 +16,56 @@ import {
 import { ApiError, api } from "../api";
 import type { CandidateMatch, Internship, InternshipRequirementInput, MatchExplanation, Skill } from "../api";
 import { EmptyState, ErrorState, LoadingState } from "../components/AsyncState";
-import { MatchExplanationPanel } from "../components/MatchExplanationPanel";
 import { TypewriterText } from "../components/TypewriterText";
 import { TypewriterReveal } from "../components/TypewriterReveal";
 import { diagonalPageVariants, reducedMotionVariants, pageAssemblyItemVariants } from "../theme/motion";
 import type { RecruiterTab } from "../App";
 import { EditorialCard, EditorialButton, LiquidGlassButton } from "../components/ui/EditorialPrimitives";
 
-import { RecruiterEvidenceGraph } from "../components/recruiter/RecruiterEvidenceGraph";
-import { RecruiterExplainableMatches } from "../components/recruiter/RecruiterExplainableMatches";
-import { RecruiterCandidateComparison } from "../components/recruiter/RecruiterCandidateComparison";
-import { RecruiterSkillIntelligence } from "../components/recruiter/RecruiterSkillIntelligence";
-import { RecruiterTalentPipeline } from "../components/recruiter/RecruiterTalentPipeline";
-import { RecruiterTalentDiscovery } from "../components/recruiter/RecruiterTalentDiscovery";
-import { RecruiterApplications } from "../components/recruiter/RecruiterApplications";
-import { RecruiterAnalytics } from "../components/recruiter/RecruiterAnalytics";
-import { RecruiterProjectAssessments } from "../components/recruiter/RecruiterProjectAssessments";
+const MatchExplanationPanel = lazy(async () => ({
+  default: (await import("../components/MatchExplanationPanel")).MatchExplanationPanel,
+}));
+const RecruiterEvidenceGraph = lazy(async () => ({
+  default: (await import("../components/recruiter/RecruiterEvidenceGraph")).RecruiterEvidenceGraph,
+}));
+const RecruiterExplainableMatches = lazy(async () => ({
+  default: (await import("../components/recruiter/RecruiterExplainableMatches")).RecruiterExplainableMatches,
+}));
+const RecruiterCandidateComparison = lazy(async () => ({
+  default: (await import("../components/recruiter/RecruiterCandidateComparison")).RecruiterCandidateComparison,
+}));
+const RecruiterSkillIntelligence = lazy(async () => ({
+  default: (await import("../components/recruiter/RecruiterSkillIntelligence")).RecruiterSkillIntelligence,
+}));
+const RecruiterTalentPipeline = lazy(async () => ({
+  default: (await import("../components/recruiter/RecruiterTalentPipeline")).RecruiterTalentPipeline,
+}));
+const RecruiterTalentDiscovery = lazy(async () => ({
+  default: (await import("../components/recruiter/RecruiterTalentDiscovery")).RecruiterTalentDiscovery,
+}));
+const RecruiterApplications = lazy(async () => ({
+  default: (await import("../components/recruiter/RecruiterApplications")).RecruiterApplications,
+}));
+const RecruiterAnalytics = lazy(async () => ({
+  default: (await import("../components/recruiter/RecruiterAnalytics")).RecruiterAnalytics,
+}));
+const RecruiterProjectAssessments = lazy(async () => ({
+  default: (await import("../components/recruiter/RecruiterProjectAssessments")).RecruiterProjectAssessments,
+}));
+
+function TabLoadingFallback() {
+  return (
+    <div className="p-8 space-y-4 rounded-xl border border-[#E5E1D8] bg-[#FFFFFF] animate-pulse">
+      <div className="h-6 w-1/3 bg-[#E5E1D8] rounded" />
+      <div className="h-4 w-1/2 bg-[#F7F5F0] rounded" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+        <div className="h-28 bg-[#F7F5F0] rounded-lg" />
+        <div className="h-28 bg-[#F7F5F0] rounded-lg" />
+        <div className="h-28 bg-[#F7F5F0] rounded-lg" />
+      </div>
+    </div>
+  );
+}
 
 const recruiterHeaderMap: Record<RecruiterTab, { title: string; subtitle: string }> = {
   overview: {
@@ -446,7 +480,7 @@ export function RecruiterDashboard({
                       size="sm"
                     >
                       Manage Roles
-                    </EditorialButton>
+                  </EditorialButton>
                   </div>
                 </EditorialCard>
               </div>
@@ -454,33 +488,59 @@ export function RecruiterDashboard({
           )}
 
           {/* TAB: PROJECT ASSESSMENTS */}
-          {activeTab === "project_assessments" && <RecruiterProjectAssessments token={token} />}
+          {activeTab === "project_assessments" && (
+            <Suspense fallback={<TabLoadingFallback />}>
+              <RecruiterProjectAssessments token={token} />
+            </Suspense>
+          )}
 
           {/* TAB 2: EVIDENCE GRAPH */}
-          {activeTab === "evidence_graph" && <RecruiterEvidenceGraph />}
+          {activeTab === "evidence_graph" && (
+            <Suspense fallback={<TabLoadingFallback />}>
+              <RecruiterEvidenceGraph />
+            </Suspense>
+          )}
 
           {/* TAB 3: TALENT DISCOVERY */}
-          {activeTab === "discovery" && <RecruiterTalentDiscovery />}
+          {activeTab === "discovery" && (
+            <Suspense fallback={<TabLoadingFallback />}>
+              <RecruiterTalentDiscovery />
+            </Suspense>
+          )}
 
           {/* TAB 4: EXPLAINABLE MATCHES */}
           {(activeTab === "matches" || activeTab === "candidates") && (
-            <RecruiterExplainableMatches
-              internships={internships}
-              selectedInternship={selected}
-              onSelectInternship={(int) => void selectInternship(int)}
-              liveMatches={matches}
-              onViewLiveExplanation={(match) => void showExplanation(match)}
-            />
+            <Suspense fallback={<TabLoadingFallback />}>
+              <RecruiterExplainableMatches
+                internships={internships}
+                selectedInternship={selected}
+                onSelectInternship={(int) => void selectInternship(int)}
+                liveMatches={matches}
+                onViewLiveExplanation={(match) => void showExplanation(match)}
+              />
+            </Suspense>
           )}
 
           {/* TAB 5: CANDIDATE COMPARISON */}
-          {activeTab === "comparison" && <RecruiterCandidateComparison />}
+          {activeTab === "comparison" && (
+            <Suspense fallback={<TabLoadingFallback />}>
+              <RecruiterCandidateComparison />
+            </Suspense>
+          )}
 
           {/* TAB 6: SKILL INTELLIGENCE */}
-          {activeTab === "skills" && <RecruiterSkillIntelligence />}
+          {activeTab === "skills" && (
+            <Suspense fallback={<TabLoadingFallback />}>
+              <RecruiterSkillIntelligence />
+            </Suspense>
+          )}
 
           {/* TAB 7: TALENT PIPELINE */}
-          {activeTab === "pipeline" && <RecruiterTalentPipeline />}
+          {activeTab === "pipeline" && (
+            <Suspense fallback={<TabLoadingFallback />}>
+              <RecruiterTalentPipeline />
+            </Suspense>
+          )}
 
           {/* TAB 8: INTERNSHIP MANAGEMENT */}
           {(activeTab === "internships" || activeTab === "post_job") && (
@@ -644,7 +704,7 @@ export function RecruiterDashboard({
                       {matches.map((match, index) => (
                         <li
                           key={match.id}
-                          className="flex flex-wrap items-center justify-between gap-4 border border-[#E5E1D8] bg-[#F7F5F0] p-5 rounded-[14px] hover:border-[#B08D57]/60 transition-all shadow-2xs"
+                          className="flex flex-wrap items-center justify-between gap-4 border border-[#E5E1D8] bg-[#F7F5F0] p-5 rounded-[14px] hover:border-[#B08D57]/60 transition-all"
                         >
                           <div className="space-y-1.5">
                             <div className="flex items-center gap-2">
@@ -701,13 +761,25 @@ export function RecruiterDashboard({
           )}
 
           {/* TAB 9: CANDIDATE APPLICATIONS */}
-          {activeTab === "applications" && <RecruiterApplications />}
+          {activeTab === "applications" && (
+            <Suspense fallback={<TabLoadingFallback />}>
+              <RecruiterApplications />
+            </Suspense>
+          )}
 
           {/* TAB 10: ANALYTICS & INSIGHTS */}
-          {activeTab === "analytics" && <RecruiterAnalytics token={token} />}
+          {activeTab === "analytics" && (
+            <Suspense fallback={<TabLoadingFallback />}>
+              <RecruiterAnalytics token={token} />
+            </Suspense>
+          )}
 
           {/* Match Explanation Modal */}
-          {explanation && <MatchExplanationPanel explanation={explanation} onClose={() => setExplanation(null)} />}
+          {explanation && (
+            <Suspense fallback={null}>
+              <MatchExplanationPanel explanation={explanation} onClose={() => setExplanation(null)} />
+            </Suspense>
+          )}
         </motion.div>
       </AnimatePresence>
     </div>

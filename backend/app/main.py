@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from redis.asyncio import Redis
@@ -72,27 +73,32 @@ async def lifespan(app: FastAPI):
             await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector;"))
             await conn.run_sync(Base.metadata.create_all)
             await create_matching_view(conn)
-        try:
-            from seed.seed_skills import seed_skills
+            
+            # Fast check: If skills are already populated, skip slow seed initialization to prevent cold-start latency
+            res = await conn.execute(text("SELECT count(id) FROM skills;"))
+            skills_count = res.scalar() or 0
 
+        if skills_count == 0:
             try:
-                await seed_skills()
-            except Exception as e:
-                logger.info("seed_skills_notice", extra={"detail": str(e)})
+                from seed.seed_skills import seed_skills
+                try:
+                    await seed_skills()
+                except Exception as e:
+                    logger.info("seed_skills_notice", extra={"detail": str(e)})
 
-            try:
-                from seed.seed_demo_data import seed_demo_data
-                await seed_demo_data()
-            except Exception as e:
-                logger.info("seed_demo_data_notice", extra={"detail": str(e)})
+                try:
+                    from seed.seed_demo_data import seed_demo_data
+                    await seed_demo_data()
+                except Exception as e:
+                    logger.info("seed_demo_data_notice", extra={"detail": str(e)})
 
-            try:
-                from seed.seed_sih_ecosystem import seed_sih_ecosystem
-                await seed_sih_ecosystem()
-            except Exception as e:
-                logger.info("seed_sih_ecosystem_notice", extra={"detail": str(e)})
-        except Exception as seed_err:
-            logger.info("seed_notice", extra={"detail": str(seed_err)})
+                try:
+                    from seed.seed_sih_ecosystem import seed_sih_ecosystem
+                    await seed_sih_ecosystem()
+                except Exception as e:
+                    logger.info("seed_sih_ecosystem_notice", extra={"detail": str(e)})
+            except Exception as seed_err:
+                logger.info("seed_notice", extra={"detail": str(seed_err)})
     except Exception:  # noqa: BLE001 - preserve teammate fail-soft startup behavior
         logger.warning("database_schema_auto_creation_notice")
     yield
@@ -100,6 +106,7 @@ async def lifespan(app: FastAPI):
 
 settings = get_settings()
 app = FastAPI(title="Skill Passport API", version="0.1.0", lifespan=lifespan)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,

@@ -22,20 +22,44 @@ import { EvidenceUpload } from "./EvidenceUpload";
 import { DigiLockerVerification } from "../components/DigiLockerVerification";
 import { EvidenceLifecycle } from "../components/EvidenceLifecycle";
 import { ExternalJobs } from "../components/ExternalJobs";
-import { InternshipMatches } from "../components/InternshipMatches";
-import { ResumeIntelligence } from "../components/ResumeIntelligence";
-import { LinkedInIntelligence } from "../components/LinkedInIntelligence";
-import { UnifiedCandidateProfile } from "../components/UnifiedCandidateProfile";
-import { GitHubVerification } from "./GitHubVerification";
+import { lazy, Suspense } from "react";
 import { SkillBadge } from "../components/SkillBadge";
-import { TeamSuggestions } from "./TeamSuggestions";
-import { SkillGapAnalyzer } from "../components/SkillGapAnalyzer";
-import { SkillAssessments } from "../components/SkillAssessments";
-import { LearningHub } from "../components/LearningHub";
-import { PlacementDrives } from "../components/PlacementDrives";
-import { CollaborationHub } from "../components/CollaborationHub";
 import { EditorialPageHeader, MetricReadout, LiquidGlassButton } from "../components/ui/EditorialPrimitives";
 import type { StudentTab } from "../App";
+
+const InternshipMatches = lazy(async () => ({
+  default: (await import("../components/InternshipMatches")).InternshipMatches,
+}));
+const ResumeIntelligence = lazy(async () => ({
+  default: (await import("../components/ResumeIntelligence")).ResumeIntelligence,
+}));
+const LinkedInIntelligence = lazy(async () => ({
+  default: (await import("../components/LinkedInIntelligence")).LinkedInIntelligence,
+}));
+const UnifiedCandidateProfile = lazy(async () => ({
+  default: (await import("../components/UnifiedCandidateProfile")).UnifiedCandidateProfile,
+}));
+const GitHubVerification = lazy(async () => ({
+  default: (await import("./GitHubVerification")).GitHubVerification,
+}));
+const TeamSuggestions = lazy(async () => ({
+  default: (await import("./TeamSuggestions")).TeamSuggestions,
+}));
+const SkillGapAnalyzer = lazy(async () => ({
+  default: (await import("../components/SkillGapAnalyzer")).SkillGapAnalyzer,
+}));
+const SkillAssessments = lazy(async () => ({
+  default: (await import("../components/SkillAssessments")).SkillAssessments,
+}));
+const LearningHub = lazy(async () => ({
+  default: (await import("../components/LearningHub")).LearningHub,
+}));
+const PlacementDrives = lazy(async () => ({
+  default: (await import("../components/PlacementDrives")).PlacementDrives,
+}));
+const CollaborationHub = lazy(async () => ({
+  default: (await import("../components/CollaborationHub")).CollaborationHub,
+}));
 
 const headerContentMap: Record<StudentTab, { title: string; subtitle: string; category: string }> = {
   overview: {
@@ -539,120 +563,120 @@ export function StudentDashboard({
           <UnifiedCandidateProfile token={token} refreshKey={evidenceRefresh} />
         </div>
       )}
-
-
-      {/* 3. EVIDENCE & RESUMES TAB */}
-      {activeTab === "evidence" && (
-        <div className="space-y-8">
-          <DigiLockerVerification
-            token={token}
-            onEvidenceImported={() => {
-              setEvidenceRefresh((v) => v + 1);
-              void loadData();
-            }}
-          />
-          <ResumeIntelligence
-            token={token}
-            onChanged={() => {
-              setEvidenceRefresh((v) => v + 1);
-              void loadData();
-            }}
-          />
-          <EvidenceUpload
-            token={token}
-            onSubmitted={() => {
-              setEvidenceRefresh((v) => v + 1);
-              void loadData();
-            }}
-          />
-          <LinkedInIntelligence
-            token={token}
-            onChanged={() => {
-              setEvidenceRefresh((v) => v + 1);
-              void loadData();
-            }}
-          />
-          <EvidenceLifecycle
-            token={token}
-            refreshKey={evidenceRefresh}
-            onChanged={() => void loadData()}
-          />
-        </div>
-      )}
-
-      {/* 4. GITHUB VERIFICATION TAB */}
-      {activeTab === "github" && (
-        <GitHubVerification
-          token={token}
-          evidence={passport?.evidence ?? []}
-          onVerified={() => void loadData()}
-        />
-      )}
-
-      {/* 5. INTERNSHIP MATCHES TAB */}
-      {activeTab === "matches" && (
-        <div className="space-y-6">
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => void handleRecomputeInternshipMatches()}
-              disabled={recomputingInternshipMatches}
-              className="inline-flex items-center gap-2 rounded-full border border-[#E5E1D8] bg-[#FFFFFF] px-4 py-2 font-mono text-xs text-[#0f172a] font-bold hover:bg-[#F7F5F0] hover:text-[#000000] transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${recomputingInternshipMatches ? "animate-spin" : ""}`} />
-              <span>{recomputingInternshipMatches ? "Recomputing..." : "Recompute Matches"}</span>
-            </button>
+      <Suspense fallback={<DashboardSkeleton />}>
+        {/* 3. EVIDENCE & RESUME TAB */}
+        {activeTab === "evidence" && (
+          <div className="space-y-8">
+            <DigiLockerVerification
+              token={token}
+              onEvidenceImported={() => {
+                setEvidenceRefresh((v) => v + 1);
+                void loadData();
+              }}
+            />
+            <ResumeIntelligence
+              token={token}
+              onChanged={() => {
+                setEvidenceRefresh((v) => v + 1);
+                void loadData();
+              }}
+            />
+            <EvidenceUpload
+              token={token}
+              onSubmitted={() => {
+                setEvidenceRefresh((v) => v + 1);
+                void loadData();
+              }}
+            />
+            <LinkedInIntelligence
+              token={token}
+              onChanged={() => {
+                setEvidenceRefresh((v) => v + 1);
+                void loadData();
+              }}
+            />
+            <EvidenceLifecycle
+              token={token}
+              refreshKey={evidenceRefresh}
+              onChanged={() => void loadData()}
+            />
           </div>
-          <InternshipMatches
+        )}
+
+        {/* 4. GITHUB VERIFICATION TAB */}
+        {activeTab === "github" && (
+          <GitHubVerification
             token={token}
-            onNavigateToDiscovery={() => onNavigateTab?.("discovery")}
+            evidence={passport?.evidence ?? []}
+            onVerified={() => void loadData()}
           />
-        </div>
-      )}
+        )}
 
-      {/* 6. JOB DISCOVERY TAB */}
-      {activeTab === "discovery" && <ExternalJobs token={token} />}
+        {/* 5. INTERNSHIP MATCHES TAB */}
+        {activeTab === "matches" && (
+          <div className="space-y-6">
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => void handleRecomputeInternshipMatches()}
+                disabled={recomputingInternshipMatches}
+                className="inline-flex items-center gap-2 rounded-full border border-[#E5E1D8] bg-[#FFFFFF] px-4 py-2 font-mono text-xs text-[#0f172a] font-bold hover:bg-[#F7F5F0] hover:text-[#000000] transition-colors cursor-pointer disabled:opacity-50 shadow-2xs"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${recomputingInternshipMatches ? "animate-spin" : ""}`} />
+                <span>{recomputingInternshipMatches ? "Recomputing..." : "Recompute Matches"}</span>
+              </button>
+            </div>
+            <InternshipMatches
+              token={token}
+              onNavigateToDiscovery={() => onNavigateTab?.("discovery")}
+            />
+          </div>
+        )}
 
-      {/* 7. TEAM FORMATION TAB */}
-      {activeTab === "teams" && (
-        <TeamSuggestions token={token} availableSkillIds={allSkills.map((s) => s.skill_id)} />
-      )}
+        {/* 6. JOB DISCOVERY TAB */}
+        {activeTab === "discovery" && <ExternalJobs token={token} />}
 
-      {/* 8. SKILL GAPS & GOALS TAB */}
-      {activeTab === "gaps" && (
-        <SkillGapAnalyzer
-          token={token}
-          onNavigateToLearning={() => onNavigateTab?.("learning")}
-          onNavigateToAssessment={() => onNavigateTab?.("assessments")}
-        />
-      )}
+        {/* 7. TEAM FORMATION TAB */}
+        {activeTab === "teams" && (
+          <TeamSuggestions token={token} availableSkillIds={allSkills.map((s) => s.skill_id)} />
+        )}
 
-      {/* 9. SKILL ASSESSMENTS TAB (includes both GitHub Project Assessments & Diagnostic Quizzes) */}
-      {(activeTab === "assessments" || activeTab === "project_assessments") && (
-        <SkillAssessments
-          token={token}
-          defaultMode={activeTab === "project_assessments" ? "projects" : undefined}
-          onAssessmentCompleted={() => {
-            void loadData();
-          }}
-        />
-      )}
+        {/* 8. SKILL GAPS & GOALS TAB */}
+        {activeTab === "gaps" && (
+          <SkillGapAnalyzer
+            token={token}
+            onNavigateToLearning={() => onNavigateTab?.("learning")}
+            onNavigateToAssessment={() => onNavigateTab?.("assessments")}
+          />
+        )}
 
-      {/* 10. LEARNING HUB TAB */}
-      {activeTab === "learning" && (
-        <LearningHub
-          token={token}
-          onCourseCompleted={() => {
-            void loadData();
-          }}
-        />
-      )}
+        {/* 9. SKILL ASSESSMENTS TAB (includes both GitHub Project Assessments & Diagnostic Quizzes) */}
+        {(activeTab === "assessments" || activeTab === "project_assessments") && (
+          <SkillAssessments
+            token={token}
+            defaultMode={activeTab === "project_assessments" ? "projects" : undefined}
+            onAssessmentCompleted={() => {
+              void loadData();
+            }}
+          />
+        )}
 
-      {/* 11. PLACEMENT DRIVES TAB */}
-      {activeTab === "placements" && <PlacementDrives token={token} />}
+        {/* 10. LEARNING HUB TAB */}
+        {activeTab === "learning" && (
+          <LearningHub
+            token={token}
+            onCourseCompleted={() => {
+              void loadData();
+            }}
+          />
+        )}
 
-      {/* 12. COLLABORATIONS TAB */}
-      {activeTab === "collaborations" && <CollaborationHub token={token} />}
+        {/* 11. PLACEMENT DRIVES TAB */}
+        {activeTab === "placements" && <PlacementDrives token={token} />}
+
+        {/* 12. COLLABORATIONS TAB */}
+        {activeTab === "collaborations" && <CollaborationHub token={token} />}
+      </Suspense>
     </div>
   );
 }

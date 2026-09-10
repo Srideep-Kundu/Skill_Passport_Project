@@ -89,7 +89,7 @@ async def upload_proctoring_evidence(
     response_model=ProctoringSessionResponse,
 )
 async def get_session_status(
-    session_id: UUID,
+    session_id: str,
     current_user: Annotated[Student | Recruiter | Admin, Depends(current_principal)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ProctoringSessionResponse:
@@ -110,7 +110,7 @@ async def get_session_status(
     response_model=ProctoringSessionResponse,
 )
 async def end_proctoring_session(
-    session_id: UUID,
+    session_id: str,
     payload: ProctoringSessionEndRequest,
     student: Annotated[Student, Depends(require_role("student"))],
     session: Annotated[AsyncSession, Depends(get_session)],
@@ -127,8 +127,8 @@ async def end_proctoring_session(
     response_model=ProctoringReportResponse,
 )
 async def get_proctoring_report(
-    assessment_id: UUID,
-    student_id: UUID,
+    assessment_id: str,
+    student_id: str,
     current_user: Annotated[Student | Recruiter | Admin, Depends(current_principal)],
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> ProctoringReportResponse:

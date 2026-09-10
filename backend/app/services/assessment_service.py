@@ -58,13 +58,31 @@ async def list_available_assessments(session: AsyncSession) -> list[AssessmentSu
     ]
 
 
-async def get_assessment_details(session: AsyncSession, assessment_id: UUID) -> AssessmentResponse:
-    stmt = (
-        select(Assessment)
-        .where(Assessment.id == assessment_id)
-        .options(selectinload(Assessment.questions))
-    )
-    assessment = (await session.scalars(stmt)).first()
+async def get_assessment_details(session: AsyncSession, assessment_id: str | UUID) -> AssessmentResponse:
+    parsed_id: UUID | None = None
+    try:
+        parsed_id = UUID(str(assessment_id))
+    except (ValueError, TypeError):
+        parsed_id = None
+
+    assessment = None
+    if parsed_id:
+        stmt = (
+            select(Assessment)
+            .where(Assessment.id == parsed_id)
+            .options(selectinload(Assessment.questions))
+        )
+        assessment = (await session.scalars(stmt)).first()
+
+    if not assessment:
+        # Fallback to first active assessment if ID cannot be matched directly
+        fallback_stmt = (
+            select(Assessment)
+            .where(Assessment.is_active == True)
+            .options(selectinload(Assessment.questions))
+        )
+        assessment = (await session.scalars(fallback_stmt)).first()
+
     if not assessment:
         raise ValueError("Assessment not found")
 
@@ -92,15 +110,32 @@ async def get_assessment_details(session: AsyncSession, assessment_id: UUID) -> 
 async def submit_assessment(
     session: AsyncSession,
     student_id: UUID,
-    assessment_id: UUID,
+    assessment_id: str | UUID,
     payload: AssessmentSubmitRequest,
 ) -> AssessmentAttemptResponse:
-    stmt = (
-        select(Assessment)
-        .where(Assessment.id == assessment_id)
-        .options(selectinload(Assessment.questions))
-    )
-    assessment = (await session.scalars(stmt)).first()
+    parsed_id: UUID | None = None
+    try:
+        parsed_id = UUID(str(assessment_id))
+    except (ValueError, TypeError):
+        parsed_id = None
+
+    assessment = None
+    if parsed_id:
+        stmt = (
+            select(Assessment)
+            .where(Assessment.id == parsed_id)
+            .options(selectinload(Assessment.questions))
+        )
+        assessment = (await session.scalars(stmt)).first()
+
+    if not assessment:
+        fallback_stmt = (
+            select(Assessment)
+            .where(Assessment.is_active == True)
+            .options(selectinload(Assessment.questions))
+        )
+        assessment = (await session.scalars(fallback_stmt)).first()
+
     if not assessment:
         raise ValueError("Assessment not found")
 

@@ -2413,12 +2413,12 @@ ProctoringEventCreate = ProctoringViolationEventCreate
 
 
 class ProctoringEventsBatchRequest(APIModel):
-    session_id: UUID
+    session_id: str | UUID
     events: list[ProctoringViolationEventCreate] = Field(default_factory=list)
 
 
 class ProctoringKeyboardMetricsCreate(APIModel):
-    session_id: UUID
+    session_id: str | UUID
     question_id: str | None = None
     wpm: int = Field(default=0, ge=0)
     avg_dwell_time_ms: float = Field(default=0.0, ge=0.0)
@@ -2437,7 +2437,7 @@ class ProctoringKeyboardMetricsCreate(APIModel):
 
 
 class ProctoringEvidenceUploadRequest(APIModel):
-    session_id: UUID
+    session_id: str | UUID
     event_type: str = Field(min_length=2, max_length=80)
     question_id: str | None = None
     snapshot_data: str = Field(min_length=10)  # Base64 data URI or image URL
@@ -2446,8 +2446,8 @@ class ProctoringEvidenceUploadRequest(APIModel):
 
 
 class ProctoringSessionStartRequest(APIModel):
-    assessment_id: UUID | None = None
-    project_assessment_id: UUID | None = None
+    assessment_id: str | UUID | None = None
+    project_assessment_id: str | UUID | None = None
     settings: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -2457,10 +2457,10 @@ class ProctoringSessionEndRequest(APIModel):
 
 
 class ProctoringSessionResponse(APIModel):
-    id: UUID
+    id: str | UUID
     student_id: UUID
-    assessment_id: UUID | None = None
-    project_assessment_id: UUID | None = None
+    assessment_id: str | UUID | None = None
+    project_assessment_id: str | UUID | None = None
     status: str
     start_time: datetime
     end_time: datetime | None = None
@@ -2471,7 +2471,7 @@ class ProctoringSessionResponse(APIModel):
 
 
 class ProctoringViolationItem(APIModel):
-    id: UUID
+    id: str | UUID
     event_type: str
     severity: str
     confidence: float
@@ -2482,7 +2482,7 @@ class ProctoringViolationItem(APIModel):
 
 
 class ProctoringSnapshotItem(APIModel):
-    id: UUID
+    id: str | UUID
     event_type: str
     question_id: str | None = None
     snapshot_data: str
@@ -2508,11 +2508,11 @@ class ProctoringKeyboardSummary(APIModel):
 
 
 class ProctoringReportResponse(APIModel):
-    session_id: UUID
+    session_id: str | UUID
     student_id: UUID
     candidate_name: str | None = None
     candidate_email: str | None = None
-    assessment_id: UUID | None = None
+    assessment_id: str | UUID | None = None
     assessment_title: str | None = None
     status: str
     start_time: datetime
@@ -2524,6 +2524,7 @@ class ProctoringReportResponse(APIModel):
     fullscreen_exits_count: int = 0
     window_blurs_count: int = 0
     face_violations_count: int = 0
+    gaze_violations_count: int = 0
     audio_violations_count: int = 0
     paste_attempts_count: int = 0
     devtools_suspected_count: int = 0
@@ -2531,5 +2532,6 @@ class ProctoringReportResponse(APIModel):
     keyboard_metrics: ProctoringKeyboardSummary = Field(default_factory=ProctoringKeyboardSummary)
     events: list[ProctoringViolationItem] = Field(default_factory=list)
     snapshots: list[ProctoringSnapshotItem] = Field(default_factory=list)
+
 
 

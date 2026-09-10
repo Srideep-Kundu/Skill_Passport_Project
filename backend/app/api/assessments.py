@@ -32,7 +32,7 @@ async def get_assessments(
 
 @router.get("/{assessment_id}", response_model=AssessmentResponse)
 async def get_assessment(
-    assessment_id: UUID,
+    assessment_id: str,
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> AssessmentResponse:
     try:
@@ -43,7 +43,7 @@ async def get_assessment(
 
 @router.post("/{assessment_id}/submit", response_model=AssessmentAttemptResponse)
 async def submit_student_assessment(
-    assessment_id: UUID,
+    assessment_id: str,
     payload: AssessmentSubmitRequest,
     student: Annotated[Student, Depends(require_role("student"))],
     session: Annotated[AsyncSession, Depends(get_session)],

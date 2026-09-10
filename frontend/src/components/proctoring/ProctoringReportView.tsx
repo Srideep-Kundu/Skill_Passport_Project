@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ZoomIn,
+  Eye,
 } from "lucide-react";
 import type { ProctoringReport } from "../../api/types";
 
@@ -36,10 +37,30 @@ export function ProctoringReportView({
   const fullscreenExits = report?.fullscreen_exits_count ?? report?.fullscreen_exit_count ?? 0;
   const windowBlurs = report?.window_blurs_count ?? report?.window_blur_count ?? 0;
   const faceViolations = report?.face_violations_count ?? report?.multiple_faces_detected_count ?? (report as any)?.face_absence_count ?? 0;
+  const gazeViolations = (report as any)?.gaze_violations_count ?? (events.filter((e: any) => {
+    const t = (e.event_type || e.type || "").toUpperCase();
+    return t === "LOOKING_AWAY" || t === "PROLONGED_LOOK_AWAY" || t === "GAZE_DEVIATION" || t === "PROLONGED_EYE_CLOSURE";
+  }).length);
   const audioViolations = report?.audio_violations_count ?? report?.audio_spikes_count ?? 0;
   const pasteAttempts = report?.paste_attempts_count ?? (report as any)?.instant_paste_events ?? 0;
   const shortcutsBlocked = (report as any)?.suspicious_shortcut_attempts ?? (report as any)?.suspicious_shortcuts_count ?? 0;
   const devtoolsSuspected = report?.devtools_suspected_count ?? 0;
+
+  const lookingAwayEvents = events.filter((e: any) => {
+    const t = (e.event_type || e.type || "").toUpperCase();
+    return t === "LOOKING_AWAY" || t === "PROLONGED_LOOK_AWAY" || t === "GAZE_DEVIATION";
+  });
+  const leftGazeCount = lookingAwayEvents.filter((e: any) => (e.metadata?.direction || "").toUpperCase().includes("LEFT")).length;
+  const rightGazeCount = lookingAwayEvents.filter((e: any) => (e.metadata?.direction || "").toUpperCase().includes("RIGHT")).length;
+  const upGazeCount = lookingAwayEvents.filter((e: any) => (e.metadata?.direction || "").toUpperCase().includes("UP")).length;
+  const downGazeCount = lookingAwayEvents.filter((e: any) => (e.metadata?.direction || "").toUpperCase().includes("DOWN")).length;
+  const prolongedClosureCount = events.filter((e: any) => (e.event_type || e.type || "").toUpperCase() === "PROLONGED_EYE_CLOSURE").length;
+  const totalLookAwaySec = Math.round(
+    lookingAwayEvents.reduce((acc: number, e: any) => {
+      const dur = e.metadata?.duration_ms ? e.metadata.duration_ms / 1000 : (e.metadata?.duration_seconds ? Number(e.metadata.duration_seconds) : 3.0);
+      return acc + dur;
+    }, 0) * 10
+  ) / 10;
 
   const km = report?.keystroke_metrics || report?.keyboard_metrics;
   const totalKeys = km?.total_keystrokes ?? km?.keystrokes_count ?? 142;
@@ -253,6 +274,12 @@ export function ProctoringReportView({
               </strong>
             </div>
             <div className="flex justify-between">
+              <span>Gaze Deviations:</span>
+              <strong className={gazeViolations > 0 ? "text-amber-600" : "text-[#111827]"}>
+                {gazeViolations > 0 ? `${gazeViolations} Flagged` : "0 (Centered)"}
+              </strong>
+            </div>
+            <div className="flex justify-between">
               <span>DevTools Warnings:</span>
               <strong className={devtoolsSuspected > 0 ? "text-amber-600" : "text-[#111827]"}>
                 {devtoolsSuspected}
@@ -369,7 +396,56 @@ export function ProctoringReportView({
         </div>
       </div>
 
-      {/* 4. VISUAL SNAPSHOTS AUDIT TRAIL (CAPTURED EVERY 2 SECONDS) */}
+      {/* 4. EYE & GAZE TRACKING INTELLIGENCE CARD */}
+      <div className="p-5 rounded-2xl border border-[#E5E1D8] bg-[#F7F5F0] space-y-4">
+        <div className="flex items-center justify-between border-b border-[#E5E1D8] pb-3">
+          <div className="flex items-center gap-2">
+            <Eye className="h-4 w-4 text-[#B08D57]" />
+            <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-[#111827]">
+              Eye & Gaze Tracking Intelligence
+            </h4>
+          </div>
+          <span className="font-mono text-[11px] text-[#64748B]">
+            MediaPipe Iris & 3D Head Pose Fusion
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs">
+          <div className="bg-white p-3 rounded-xl border border-[#E5E1D8]">
+            <span className="text-[10px] uppercase text-[#94A3B8] block">Looking Away</span>
+            <strong className={`text-sm ${lookingAwayEvents.length > 0 ? "text-amber-700" : "text-emerald-700"}`}>
+              {lookingAwayEvents.length} Events
+            </strong>
+            <p className="text-[10px] text-[#64748B] mt-0.5">Sustained off-screen gaze</p>
+          </div>
+
+          <div className="bg-white p-3 rounded-xl border border-[#E5E1D8]">
+            <span className="text-[10px] uppercase text-[#94A3B8] block">Off-Screen Duration</span>
+            <strong className="text-sm text-[#111827]">{totalLookAwaySec}s Total</strong>
+            <p className="text-[10px] text-[#64748B] mt-0.5">Cumulative duration</p>
+          </div>
+
+          <div className="bg-white p-3 rounded-xl border border-[#E5E1D8]">
+            <span className="text-[10px] uppercase text-[#94A3B8] block">Direction Bias</span>
+            <strong className="text-sm text-[#111827]">
+              {leftGazeCount > 0 || rightGazeCount > 0 || upGazeCount > 0 || downGazeCount > 0
+                ? `L:${leftGazeCount} R:${rightGazeCount} U:${upGazeCount} D:${downGazeCount}`
+                : "Balanced Center"}
+            </strong>
+            <p className="text-[10px] text-[#64748B] mt-0.5">Spatial deviation count</p>
+          </div>
+
+          <div className="bg-white p-3 rounded-xl border border-[#E5E1D8]">
+            <span className="text-[10px] uppercase text-[#94A3B8] block">Prolonged Closures</span>
+            <strong className={`text-sm ${prolongedClosureCount > 0 ? "text-amber-700" : "text-emerald-700"}`}>
+              {prolongedClosureCount} Flagged
+            </strong>
+            <p className="text-[10px] text-[#64748B] mt-0.5">Normal blinks discounted</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. VISUAL SNAPSHOTS AUDIT TRAIL (CAPTURED EVERY 2 SECONDS) */}
       {snapshots && snapshots.length > 0 && (
         <div className="space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E5E1D8] pb-2">

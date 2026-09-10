@@ -77,7 +77,6 @@ export function ProctoringShield({
   const multipleFacesCountRef = useRef<number>(0);
   const gazeDeviationCountRef = useRef<number>(0);
   const tabSwitchesRef = useRef<number>(0);
-  const totalViolationsRef = useRef<number>(0);
 
   // MediaPipe Face Landmarker Live Biometrics State
   const [faceState, setFaceState] = useState<FaceProctoringState>({
@@ -93,11 +92,20 @@ export function ProctoringShield({
     landmarks: null,
     isPhoneDetected: false,
     phoneConfidence: 0,
+    gazeState: "CENTER",
+    gazeVector: { x: 0, y: 0 },
+    gazeConfidence: 0.85,
+    isBlinking: false,
+    blinkCount: 0,
+    avgEar: 0.25,
+    isReadingPattern: false,
   });
 
   const [isHudCollapsed, setIsHudCollapsed] = useState<boolean>(false);
   const lastScreenshotAttemptTimeRef = useRef<number>(0);
-  const lastMetaOrShiftKeyTimeRef = useRef<number>(0);
+  // Debounce guards to prevent double-counting from keydown+keyup or blur+visibilitychange
+  const lastTabSwitchTimeRef = useRef<number>(0);
+  const lastScreenshotEnforceTimeRef = useRef<number>(0);
 
   // General State
   const [violations, setViolations] = useState<ProctoringViolationEvent[]>([]);
@@ -455,8 +463,6 @@ export function ProctoringShield({
         setTabSwitches(currentCount);
       }
 
-      totalViolationsRef.current += 1;
-
       const eventTypeMap: Record<string, ProctoringViolationType> = {
         FULLSCREEN: "FULLSCREEN_EXIT",
         SCREENSHOT: "DEVTOOLS_SUSPECTED",
@@ -479,7 +485,8 @@ export function ProctoringShield({
       pendingEventsQueueRef.current.push(newEvent);
       setViolations((prev) => [...prev, newEvent]);
 
-      if (currentCount <= 2 && totalViolationsRef.current < 4) {
+      // Cancellation is strictly per-category: only cancel when THIS category exceeds 2
+      if (currentCount <= 2) {
         setRecentViolationWarning({
           category,
           warningNum: currentCount,
@@ -495,7 +502,7 @@ export function ProctoringShield({
 
         onReportUpdateRef.current?.(generateReportRef.current([...violations, newEvent]));
       } else {
-        // Exceeded 2 warnings (Count is 3 or higher) -> Force Immediate Auto Submit!
+        // Exceeded 2 warnings in THIS category (count is 3+) -> Force Immediate Auto Submit!
         triggerAutoSubmitRef.current(
           `Security violation limit exceeded for [${category}] (${currentCount}/2). Maximum allowed warnings breached. Assessment auto-submitted.`,
           category
@@ -697,6 +704,9 @@ export function ProctoringShield({
             const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
             if (AudioCtx) {
               const audioCtx = new AudioCtx();
+              if (audioCtx.state === "suspended") {
+                audioCtx.resume().catch(() => {});
+              }
               localAudioCtx = audioCtx;
               audioContextRef.current = audioCtx;
               const source = audioCtx.createMediaStreamSource(stream);
@@ -767,9 +777,13 @@ export function ProctoringShield({
     });
     engineRef.current = engine;
 
+    const activationTime = Date.now();
+
     // Connect authoritative MediaPipe violation events to category warning enforcer
     engine.onViolation((evt: FaceViolationEvent) => {
       if (isCancelled || isTerminatedRef.current) return;
+      // 4-second initial grace period while webcam exposure stabilizes
+      if (Date.now() - activationTime < 4000) return;
 
       if (evt.type === "FACE_ABSENT") {
         enforceCategoryRuleRef.current(
@@ -781,10 +795,21 @@ export function ProctoringShield({
           "MULTIPLE_FACES",
           `Multiple faces (${evt.metadata.face_count || 2}) detected in the testing environment.`
         );
-      } else if (evt.type === "PROLONGED_LOOK_AWAY" || evt.type === "HEAD_POSE_ANOMALY") {
+      } else if (
+        evt.type === "LOOKING_AWAY" ||
+        evt.type === "PROLONGED_LOOK_AWAY" ||
+        evt.type === "GAZE_DEVIATION" ||
+        evt.type === "HEAD_POSE_ANOMALY"
+      ) {
+        const dir = evt.metadata.direction ? ` (${evt.metadata.direction})` : "";
         enforceCategoryRuleRef.current(
           "GAZE_DEVIATION",
-          "Eyes/head looking away from screen detected. Please keep your focus on the assessment."
+          `Eyes/gaze turned away from screen${dir} for sustained period. Please keep your focus on the assessment.`
+        );
+      } else if (evt.type === "PROLONGED_EYE_CLOSURE") {
+        enforceCategoryRuleRef.current(
+          "GAZE_DEVIATION",
+          "Prolonged eye closure detected. Please keep your eyes open and active during the assessment."
         );
       } else if (evt.type === "PHONE_DETECTED") {
         triggerImmediateCancellationRef.current(
@@ -813,13 +838,6 @@ export function ProctoringShield({
       const video = videoRef.current;
       if (video && video.readyState >= 2 && video.videoWidth > 0 && !video.paused) {
         const state = engine.processFrame(video, timestamp);
-
-        if (state.isPhoneDetected) {
-          triggerImmediateCancellationRef.current(
-            "Unauthorized Mobile Phone / Electronic Device detected by camera. Assessment cancelled immediately.",
-            "PHONE_DETECTED"
-          );
-        }
 
         // Throttle React state updates to ~5 FPS to keep CPU usage low
         if (timestamp - lastStateUpdate > 200) {
@@ -860,6 +878,12 @@ export function ProctoringShield({
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
+        const now = Date.now();
+        // Suppress if screenshot hotkey was pressed recently (OS snipping tool steals focus)
+        if (now - lastScreenshotAttemptTimeRef.current < 2000) return;
+        // Debounce: don't double-count if blur already fired within 1.5s
+        if (now - lastTabSwitchTimeRef.current < 1500) return;
+        lastTabSwitchTimeRef.current = now;
         enforceCategoryRuleRef.current(
           "TAB_SWITCH",
           "Tab switch or browser minimization detected."
@@ -869,20 +893,11 @@ export function ProctoringShield({
 
     const handleWindowBlur = () => {
       const now = Date.now();
-      // 1. If explicit screenshot hotkey was recorded in the last 3500ms, suppress tab switch
-      if (now - lastScreenshotAttemptTimeRef.current < 3500) {
-        return;
-      }
-      // 2. If window lost focus right after Win or Shift key (e.g. Win+Shift+S Snipping Tool invocation intercepted by OS)
-      if (now - lastMetaOrShiftKeyTimeRef.current < 1200) {
-        lastScreenshotAttemptTimeRef.current = now;
-        enforceCategoryRuleRef.current(
-          "SCREENSHOT",
-          "Screen capture / Snipping Tool window overlay detected."
-        );
-        return;
-      }
-      // 3. Otherwise standard tab or window switch
+      // Suppress if screenshot hotkey was pressed recently (OS snipping tool steals focus)
+      if (now - lastScreenshotAttemptTimeRef.current < 2000) return;
+      // Debounce: don't double-count if visibilitychange already fired within 1.5s
+      if (now - lastTabSwitchTimeRef.current < 1500) return;
+      lastTabSwitchTimeRef.current = now;
       enforceCategoryRuleRef.current(
         "TAB_SWITCH",
         "Assessment window lost focus (switched to another window or application)."
@@ -926,10 +941,6 @@ export function ProctoringShield({
       const now = performance.now();
       lastActivityTimeRef.current = Date.now();
 
-      if (e.key === "Meta" || e.key === "OS" || e.key === "Shift" || e.metaKey || e.ctrlKey || e.altKey) {
-        lastMetaOrShiftKeyTimeRef.current = Date.now();
-      }
-
       // Track dwell time start
       if (!keydownTimesRef.current.has(e.code)) {
         keydownTimesRef.current.set(e.code, now);
@@ -959,8 +970,12 @@ export function ProctoringShield({
       if (isPrintScreen || isSnippingTool || isPrintAttempt) {
         e.preventDefault();
         e.stopPropagation();
-        lastScreenshotAttemptTimeRef.current = Date.now();
+        const now = Date.now();
+        lastScreenshotAttemptTimeRef.current = now;
         shortcutAttemptsRef.current += 1;
+        // Debounce: prevent double-counting from keydown+keyup firing within 2s
+        if (now - lastScreenshotEnforceTimeRef.current < 2000) return;
+        lastScreenshotEnforceTimeRef.current = now;
         enforceCategoryRuleRef.current(
           "SCREENSHOT",
           "Screenshot, PrintScreen, or Screen Snipping attempt detected."
@@ -990,15 +1005,15 @@ export function ProctoringShield({
       const now = performance.now();
       lastKeyupTimeRef.current = now;
 
-      if (e.key === "Meta" || e.key === "OS" || e.key === "Shift" || e.metaKey || e.ctrlKey || e.altKey) {
-        lastMetaOrShiftKeyTimeRef.current = Date.now();
-      }
-
       // Check PrintScreen on KeyUp as Windows OS often sends PrintScreen on key release
       if (e.key === "PrintScreen" || e.code === "PrintScreen" || e.key === "Snapshot") {
         e.preventDefault();
-        lastScreenshotAttemptTimeRef.current = Date.now();
+        const now = Date.now();
+        lastScreenshotAttemptTimeRef.current = now;
         shortcutAttemptsRef.current += 1;
+        // Only enforce if keydown didn't already enforce within 2s (prevents double-count)
+        if (now - lastScreenshotEnforceTimeRef.current < 2000) return;
+        lastScreenshotEnforceTimeRef.current = now;
         enforceCategoryRuleRef.current("SCREENSHOT", "PrintScreen key capture attempt detected.");
       }
 
@@ -1059,24 +1074,24 @@ export function ProctoringShield({
             initial={{ opacity: 0, y: -25, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -25, scale: 0.95 }}
-            className="fixed top-4 left-1/2 -translate-x-1/2 z-[1000000] px-5 py-3 rounded-2xl bg-red-950/95 border-2 border-red-500 shadow-2xl backdrop-blur-md flex items-center gap-3.5 text-red-100 text-xs font-medium max-w-xl"
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-[1000000] px-5 py-3 rounded-2xl bg-[#FFFFFF] border-2 border-[#EF4444] shadow-2xl backdrop-blur-md flex items-center gap-3.5 text-[#111827] text-xs font-medium max-w-xl"
           >
-            <div className="w-8 h-8 rounded-xl bg-red-500/20 border border-red-500/40 flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-5 h-5 text-red-400 animate-bounce" />
+            <div className="w-8 h-8 rounded-xl bg-[#FEE2E2] border border-[#FCA5A5] flex items-center justify-center shrink-0">
+              <AlertTriangle className="w-5 h-5 text-[#DC2626] animate-bounce" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="font-bold text-red-300 uppercase tracking-wider text-[10.5px]">
+                <span className="font-bold text-[#991B1B] uppercase tracking-wider text-[10.5px]">
                   {recentViolationWarning.category.replace("_", " ")} WARNING
                 </span>
-                <span className="px-2 py-0.5 rounded-full font-mono text-[10px] font-bold bg-red-500/30 text-red-200 border border-red-400/50">
+                <span className="px-2 py-0.5 rounded-full font-mono text-[10px] font-bold bg-[#FEE2E2] text-[#991B1B] border border-[#FCA5A5]">
                   {recentViolationWarning.warningNum} / {recentViolationWarning.maxWarnings} WARNINGS
                 </span>
               </div>
-              <p className="text-xs text-red-200 leading-snug mt-0.5">
+              <p className="text-xs text-[#334155] leading-snug mt-0.5">
                 {recentViolationWarning.message}
               </p>
-              <p className="text-[10px] text-red-400 font-mono mt-0.5">
+              <p className="text-[10px] text-[#DC2626] font-mono mt-0.5">
                 {recentViolationWarning.warningNum >= recentViolationWarning.maxWarnings
                   ? "FINAL WARNING: Next violation will auto-submit the exam."
                   : `1 warning remaining before automatic test submission.`}
@@ -1084,7 +1099,7 @@ export function ProctoringShield({
             </div>
             <button
               onClick={() => setRecentViolationWarning(null)}
-              className="text-red-400 hover:text-white text-xs px-2 py-1 rounded bg-red-900/50 hover:bg-red-800 transition cursor-pointer shrink-0"
+              className="text-[#64748B] hover:text-[#111827] text-xs px-2.5 py-1 rounded-lg bg-[#F7F5F0] hover:bg-[#EFEBE3] border border-[#E5E1D8] transition cursor-pointer shrink-0 font-semibold"
             >
               Dismiss
             </button>
@@ -1094,20 +1109,22 @@ export function ProctoringShield({
 
       {/* Auto-Submit Terminal Modal */}
       {isTerminated && (
-        <div className="fixed inset-0 z-[1000005] bg-red-950/90 backdrop-blur-lg flex items-center justify-center p-6 text-center">
+        <div className="fixed inset-0 z-[1000005] bg-black/50 backdrop-blur-md flex items-center justify-center p-6 text-center">
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-slate-900 border-2 border-red-500 rounded-2xl p-8 max-w-md w-full shadow-2xl space-y-4"
+            className="bg-[#FFFFFF] border-2 border-[#EF4444] rounded-2xl p-8 max-w-md w-full shadow-2xl space-y-4"
           >
-            <div className="w-16 h-16 rounded-full bg-red-500/20 border border-red-500/50 flex items-center justify-center mx-auto text-red-400">
+            <div className="w-16 h-16 rounded-full bg-[#FEE2E2] border border-[#FCA5A5] flex items-center justify-center mx-auto text-[#DC2626]">
               <AlertTriangle className="w-8 h-8 animate-pulse" />
             </div>
-            <h2 className="text-xl font-bold text-white">Assessment Auto-Submitted</h2>
-            <p className="text-xs text-red-300 leading-relaxed">
+            <h2 className="text-xl font-bold text-[#111827]" style={{ fontFamily: "var(--font-display)" }}>
+              Assessment Auto-Submitted
+            </h2>
+            <p className="text-xs text-[#475569] leading-relaxed">
               {terminationReason || "Security integrity limit was breached. Test responses have been saved and finalized."}
             </p>
-            <div className="p-3 bg-black/40 rounded-xl font-mono text-xs text-slate-400 text-left space-y-1">
+            <div className="p-3 bg-[#F7F5F0] border border-[#E5E1D8] rounded-xl font-mono text-xs text-[#334155] text-left space-y-1">
               <p>• Fullscreen Exits: {fullscreenExits}/2</p>
               <p>• Screenshot Attempts: {screenshotAttempts}/2</p>
               <p>• Face In View: {faceAbsenceCount}/2</p>
@@ -1122,23 +1139,23 @@ export function ProctoringShield({
       <motion.div
         drag
         dragConstraints={{ left: -600, right: 100, top: -250, bottom: 250 }}
-        className="fixed right-6 top-1/2 -translate-y-1/2 z-[100000] w-64 bg-slate-900/95 border border-indigo-500/30 rounded-2xl shadow-2xl backdrop-blur-md overflow-hidden"
+        className="fixed right-6 top-1/2 -translate-y-1/2 z-[100000] w-64 bg-[#FFFFFF]/95 border border-[#E5E1D8] rounded-2xl shadow-2xl backdrop-blur-md overflow-hidden"
       >
         {/* Top Mini Status Bar */}
-        <div className="bg-slate-950/90 px-3 py-2 border-b border-slate-800 flex items-center justify-between text-[11px] font-mono cursor-move select-none">
+        <div className="bg-[#F7F5F0] px-3 py-2 border-b border-[#E5E1D8] flex items-center justify-between text-[11px] font-mono cursor-move select-none">
           <div className="flex items-center gap-1.5">
             <span
               className={`w-2 h-2 rounded-full ${
                 !faceState.isModelReady
-                  ? "bg-amber-400 animate-pulse"
+                  ? "bg-[#EAB308] animate-pulse"
                   : faceState.multipleFaces
-                  ? "bg-red-500 animate-ping"
+                  ? "bg-[#EF4444] animate-ping"
                   : faceState.faceDetected
-                  ? "bg-emerald-400 animate-pulse"
-                  : "bg-amber-400"
+                  ? "bg-[#22C55E] animate-pulse"
+                  : "bg-[#EAB308]"
               }`}
             />
-            <span className="text-slate-300 font-semibold text-[10.5px]">
+            <span className="text-[#111827] font-semibold text-[10.5px]">
               {!faceState.isModelReady
                 ? "Loading Vision Model..."
                 : faceState.multipleFaces
@@ -1151,13 +1168,13 @@ export function ProctoringShield({
             </span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-[rgba(176,141,87,0.1)] text-[#854D0E] border border-[rgba(176,141,87,0.25)]">
               MediaPipe AI
             </span>
             <button
               type="button"
               onClick={() => setIsHudCollapsed((prev) => !prev)}
-              className="text-slate-400 hover:text-white text-[10px] px-1 py-0.5 rounded bg-slate-800 cursor-pointer"
+              className="text-[#64748B] hover:text-[#111827] text-[10px] px-1.5 py-0.5 rounded bg-[#EFEBE3] border border-[#E5E1D8] cursor-pointer font-bold"
               title={isHudCollapsed ? "Expand proctoring HUD" : "Collapse proctoring HUD"}
             >
               {isHudCollapsed ? "▼" : "▲"}
@@ -1168,7 +1185,7 @@ export function ProctoringShield({
         {!isHudCollapsed && (
           <>
             {/* Live Video Feed PiP */}
-            <div className="relative aspect-video bg-black flex items-center justify-center overflow-hidden">
+            <div className="relative aspect-video bg-[#111827] flex items-center justify-center overflow-hidden">
               <video
                 ref={(el) => {
                   videoRef.current = el;
@@ -1196,21 +1213,21 @@ export function ProctoringShield({
 
               {/* MediaPipe Active Reticle */}
               {hasCameraPermission && (
-                <div className="absolute inset-0 pointer-events-none border border-indigo-500/10 rounded-lg flex items-center justify-center">
+                <div className="absolute inset-0 pointer-events-none border border-[rgba(176,141,87,0.2)] rounded-lg flex items-center justify-center">
                   <div
                     className={`w-14 h-14 border rounded-full transition-colors ${
                       faceState.multipleFaces
-                        ? "border-red-500/80 bg-red-500/10 animate-ping"
+                        ? "border-[#EF4444] bg-[#EF4444]/10 animate-ping"
                         : faceState.isLookingAway
-                        ? "border-amber-400/80 bg-amber-400/10 animate-pulse"
+                        ? "border-[#EAB308] bg-[#EAB308]/10 animate-pulse"
                         : faceState.faceDetected
-                        ? "border-emerald-400/50 bg-emerald-400/5"
-                        : "border-dashed border-indigo-400/40 animate-pulse"
+                        ? "border-[#22C55E]/80 bg-[#22C55E]/10"
+                        : "border-dashed border-[#B08D57]/60 animate-pulse"
                     }`}
                   />
                   {faceState.faceDetected && (
-                    <div className="absolute top-1.5 right-2 px-1.5 py-0.5 rounded bg-black/70 backdrop-blur font-mono text-[9px] text-emerald-400 flex items-center gap-1">
-                      <span className="w-1 h-1 rounded-full bg-emerald-400" />
+                    <div className="absolute top-1.5 right-2 px-1.5 py-0.5 rounded bg-black/75 backdrop-blur font-mono text-[9px] text-[#86EFAC] flex items-center gap-1">
+                      <span className="w-1 h-1 rounded-full bg-[#22C55E]" />
                       <span>1 Face Tracked</span>
                     </div>
                   )}
@@ -1223,41 +1240,41 @@ export function ProctoringShield({
               )}
 
               {/* Audio Waveform Meter */}
-              <div className="absolute bottom-1.5 left-2 right-2 flex items-center gap-1.5 bg-black/70 backdrop-blur px-2 py-0.5 rounded text-[10px] text-slate-300">
+              <div className="absolute bottom-1.5 left-2 right-2 flex items-center gap-1.5 bg-black/75 backdrop-blur-sm px-2 py-1 rounded-md text-[10px] text-white/90 border border-white/10">
                 {hasMicPermission ? (
-                  <Mic className="w-3 h-3 text-indigo-400 shrink-0" />
+                  <Mic className="w-3 h-3 text-[#B08D57] shrink-0" />
                 ) : (
-                  <MicOff className="w-3 h-3 text-slate-500 shrink-0" />
+                  <MicOff className="w-3 h-3 text-slate-400 shrink-0" />
                 )}
-                <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div className="w-full bg-white/20 h-1.5 rounded-full overflow-hidden">
                   <div
-                    className="bg-indigo-500 h-full transition-all duration-75"
+                    className="bg-[#B08D57] h-full transition-all duration-75 rounded-full"
                     style={{ width: `${audioLevel}%` }}
                   />
                 </div>
-                <span className="font-mono text-[9px] w-6 text-right text-indigo-300">{audioLevel}%</span>
+                <span className="font-mono text-[9px] font-medium w-7 text-right text-[#FDE047]">{audioLevel}%</span>
               </div>
             </div>
 
             {/* Invariant Warning Limits Live Table */}
-            <div className="p-2.5 bg-slate-900 border-t border-slate-800 text-[10.5px] space-y-1.5 font-mono">
-              <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center justify-between pb-1 border-b border-slate-800">
+            <div className="p-2.5 bg-[#FFFFFF] border-t border-[#E5E1D8] text-[10.5px] space-y-1.5 font-mono">
+              <div className="text-[10px] uppercase font-bold text-[#64748B] tracking-wider flex items-center justify-between pb-1 border-b border-[#E5E1D8]">
                 <span>Rule Enforcement</span>
                 <span>Warnings</span>
               </div>
 
               {/* Fullscreen */}
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-slate-300">
-                  <Maximize2 className="w-3 h-3 text-indigo-400" /> Fullscreen Mode
+                <span className="flex items-center gap-1.5 text-[#334155]">
+                  <Maximize2 className="w-3 h-3 text-[#B08D57]" /> Fullscreen Mode
                 </span>
                 <span
-                  className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold border font-mono ${
                     fullscreenExits === 0
-                      ? "text-emerald-400 bg-emerald-500/10"
+                      ? "text-[#166534] bg-[#DCFCE7] border-[#86EFAC]"
                       : fullscreenExits === 1
-                      ? "text-amber-400 bg-amber-500/10 animate-pulse"
-                      : "text-red-400 bg-red-500/20 animate-bounce"
+                      ? "text-[#854D0E] bg-[#FEF08A] border-[#FDE047] animate-pulse"
+                      : "text-[#991B1B] bg-[#FEE2E2] border-[#FCA5A5] animate-bounce"
                   }`}
                 >
                   {fullscreenExits} / 2
@@ -1266,16 +1283,16 @@ export function ProctoringShield({
 
               {/* Screenshot */}
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-slate-300">
-                  <ScreenIcon className="w-3 h-3 text-indigo-400" /> Screenshots / Snipping
+                <span className="flex items-center gap-1.5 text-[#334155]">
+                  <ScreenIcon className="w-3 h-3 text-[#B08D57]" /> Screenshots / Snipping
                 </span>
                 <span
-                  className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold border font-mono ${
                     screenshotAttempts === 0
-                      ? "text-emerald-400 bg-emerald-500/10"
+                      ? "text-[#166534] bg-[#DCFCE7] border-[#86EFAC]"
                       : screenshotAttempts === 1
-                      ? "text-amber-400 bg-amber-500/10 animate-pulse"
-                      : "text-red-400 bg-red-500/20 animate-bounce"
+                      ? "text-[#854D0E] bg-[#FEF08A] border-[#FDE047] animate-pulse"
+                      : "text-[#991B1B] bg-[#FEE2E2] border-[#FCA5A5] animate-bounce"
                   }`}
                 >
                   {screenshotAttempts} / 2
@@ -1284,16 +1301,16 @@ export function ProctoringShield({
 
               {/* Face Presence */}
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-slate-300">
-                  <UserX className="w-3 h-3 text-indigo-400" /> Face In View (Absence)
+                <span className="flex items-center gap-1.5 text-[#334155]">
+                  <UserX className="w-3 h-3 text-[#B08D57]" /> Face In View (Absence)
                 </span>
                 <span
-                  className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold border font-mono ${
                     faceAbsenceCount === 0
-                      ? "text-emerald-400 bg-emerald-500/10"
+                      ? "text-[#166534] bg-[#DCFCE7] border-[#86EFAC]"
                       : faceAbsenceCount === 1
-                      ? "text-amber-400 bg-amber-500/10 animate-pulse"
-                      : "text-red-400 bg-red-500/20 animate-bounce"
+                      ? "text-[#854D0E] bg-[#FEF08A] border-[#FDE047] animate-pulse"
+                      : "text-[#991B1B] bg-[#FEE2E2] border-[#FCA5A5] animate-bounce"
                   }`}
                 >
                   {faceAbsenceCount} / 2
@@ -1302,16 +1319,16 @@ export function ProctoringShield({
 
               {/* Multiple Faces */}
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-slate-300">
-                  <UserX className="w-3 h-3 text-indigo-400" /> Multiple Faces Detection
+                <span className="flex items-center gap-1.5 text-[#334155]">
+                  <UserX className="w-3 h-3 text-[#B08D57]" /> Multiple Faces Detection
                 </span>
                 <span
-                  className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold border font-mono ${
                     multipleFacesCount === 0
-                      ? "text-emerald-400 bg-emerald-500/10"
+                      ? "text-[#166534] bg-[#DCFCE7] border-[#86EFAC]"
                       : multipleFacesCount === 1
-                      ? "text-amber-400 bg-amber-500/10 animate-pulse"
-                      : "text-red-400 bg-red-500/20 animate-bounce"
+                      ? "text-[#854D0E] bg-[#FEF08A] border-[#FDE047] animate-pulse"
+                      : "text-[#991B1B] bg-[#FEE2E2] border-[#FCA5A5] animate-bounce"
                   }`}
                 >
                   {multipleFacesCount} / 2
@@ -1320,16 +1337,16 @@ export function ProctoringShield({
 
               {/* Eyes Gaze */}
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-slate-300">
-                  <Eye className="w-3 h-3 text-indigo-400" /> Eyes / Gaze On Screen
+                <span className="flex items-center gap-1.5 text-[#334155]">
+                  <Eye className="w-3 h-3 text-[#B08D57]" /> Eyes / Gaze On Screen
                 </span>
                 <span
-                  className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold border font-mono ${
                     gazeDeviationCount === 0
-                      ? "text-emerald-400 bg-emerald-500/10"
+                      ? "text-[#166534] bg-[#DCFCE7] border-[#86EFAC]"
                       : gazeDeviationCount === 1
-                      ? "text-amber-400 bg-amber-500/10 animate-pulse"
-                      : "text-red-400 bg-red-500/20 animate-bounce"
+                      ? "text-[#854D0E] bg-[#FEF08A] border-[#FDE047] animate-pulse"
+                      : "text-[#991B1B] bg-[#FEE2E2] border-[#FCA5A5] animate-bounce"
                   }`}
                 >
                   {gazeDeviationCount} / 2
@@ -1338,16 +1355,16 @@ export function ProctoringShield({
 
               {/* Tab/Window Switch */}
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-slate-300">
-                  <Layers className="w-3 h-3 text-indigo-400" /> Tab / Window Switch
+                <span className="flex items-center gap-1.5 text-[#334155]">
+                  <Layers className="w-3 h-3 text-[#B08D57]" /> Tab / Window Switch
                 </span>
                 <span
-                  className={`px-1.5 py-0.2 rounded text-[10px] font-bold ${
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-bold border font-mono ${
                     tabSwitches === 0
-                      ? "text-emerald-400 bg-emerald-500/10"
+                      ? "text-[#166534] bg-[#DCFCE7] border-[#86EFAC]"
                       : tabSwitches === 1
-                      ? "text-amber-400 bg-amber-500/10 animate-pulse"
-                      : "text-red-400 bg-red-500/20 animate-bounce"
+                      ? "text-[#854D0E] bg-[#FEF08A] border-[#FDE047] animate-pulse"
+                      : "text-[#991B1B] bg-[#FEE2E2] border-[#FCA5A5] animate-bounce"
                   }`}
                 >
                   {tabSwitches} / 2
@@ -1355,23 +1372,23 @@ export function ProctoringShield({
               </div>
 
               {/* Camera Connection */}
-              <div className="flex items-center justify-between pt-1 border-t border-slate-800 text-[10px]">
-                <span className="text-slate-400 flex items-center gap-1">
-                  <Camera className="w-3 h-3 text-cyan-400" /> Camera Feed Status:
+              <div className="flex items-center justify-between pt-1 border-t border-[#E5E1D8] text-[10px]">
+                <span className="text-[#64748B] flex items-center gap-1">
+                  <Camera className="w-3 h-3 text-[#B08D57]" /> Camera Feed Status:
                 </span>
-                <span className="text-cyan-300 font-semibold flex items-center gap-1">
-                  <CheckCircle2 className="w-2.5 h-2.5" /> Direct Cancel If Off
+                <span className="text-[#854D0E] font-mono text-[9.5px] font-semibold bg-[rgba(176,141,87,0.1)] border border-[rgba(176,141,87,0.25)] px-1.5 py-0.5 rounded flex items-center gap-1">
+                  <CheckCircle2 className="w-2.5 h-2.5 text-[#166534]" /> Direct Cancel If Off
                 </span>
               </div>
 
               {/* Keystroke Real-Time Rate */}
-              <div className="flex items-center justify-between pt-1 text-[10px] text-slate-400">
+              <div className="flex items-center justify-between pt-1 text-[10px] text-[#64748B]">
                 <span className="flex items-center gap-1">
-                  <Keyboard className="w-3 h-3 text-indigo-400" /> {liveWpm} WPM
+                  <Keyboard className="w-3 h-3 text-[#B08D57]" /> {liveWpm} WPM
                 </span>
-                <span className="font-mono text-slate-300">{liveKeystrokes} Keys</span>
-                <span className="flex items-center gap-1">
-                  <Activity className="w-3 h-3 text-emerald-400" /> {liveCadenceScore}%
+                <span className="font-mono text-[#334155]">{liveKeystrokes} Keys</span>
+                <span className="flex items-center gap-1 font-mono text-[#166534] font-semibold">
+                  <Activity className="w-3 h-3" /> {liveCadenceScore}%
                 </span>
               </div>
 
@@ -1379,9 +1396,9 @@ export function ProctoringShield({
                 <button
                   type="button"
                   onClick={requestFullscreen}
-                  className="w-full mt-1.5 py-1 rounded bg-amber-500/15 border border-amber-500/40 text-amber-300 text-[10px] font-semibold flex items-center justify-center gap-1 hover:bg-amber-500/25 transition cursor-pointer"
+                  className="w-full mt-1.5 py-1.5 rounded-lg bg-[rgba(176,141,87,0.1)] border border-[rgba(176,141,87,0.3)] text-[#854D0E] hover:bg-[rgba(176,141,87,0.2)] text-[10px] font-semibold flex items-center justify-center gap-1 transition cursor-pointer"
                 >
-                  <Maximize2 className="w-3 h-3" /> Re-enter Fullscreen
+                  <Maximize2 className="w-3 h-3 text-[#B08D57]" /> Re-enter Fullscreen
                 </button>
               )}
             </div>
