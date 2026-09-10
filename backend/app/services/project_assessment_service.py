@@ -425,9 +425,9 @@ class AssessmentEngine:
         }
 
     def generate_repository_questions(
-        self, project_title: str, repo_data: dict[str, Any], detected_techs: list[str]
+        self, project_title: str, repo_data: dict[str, Any], detected_techs: list[str], count: int = 5
     ) -> list[dict[str, Any]]:
-        """Generates 5 multi-choice technical assessment questions tailored to the analyzed repo."""
+        """Generates dynamic multi-choice technical assessment questions tailored to the analyzed repo."""
         file_paths = repo_data.get("file_paths", [])
         lower_paths = [p.lower() for p in file_paths]
         docker_present = repo_data.get("docker_present", False) or any("docker" in p for p in lower_paths)
@@ -657,7 +657,89 @@ class AssessmentEngine:
                 "explanation": "The testing pyramid recommends a wide foundation of fast, deterministic unit tests, a middle layer of service/integration tests, and a focused peak of end-to-end user journey tests.",
             })
 
-        return questions[:5]
+        # Question 6: Security & Authentication
+        questions.append({
+            "id": "q_6",
+            "question": f"In securing API endpoints for '{project_title}', why is using parameterized queries or ORM expressions mandatory when accepting user inputs?",
+            "options": [
+                "A) It prevents SQL injection by ensuring input parameters are treated strictly as data rather than executable SQL statements.",
+                "B) It automatically converts all SQL queries into asynchronous background jobs.",
+                "C) It encrypts the database server hardware in real time.",
+                "D) It increases the number of database connections permitted.",
+            ],
+            "category": "Security & Auth",
+            "difficulty": "Intermediate",
+            "correct_answer": "A",
+            "explanation": "Parameterized queries separate SQL command logic from untrusted user data, neutralizing SQL injection vectors entirely regardless of special characters in the input.",
+        })
+
+        # Question 7: Performance & Caching
+        questions.append({
+            "id": "q_7",
+            "question": f"When implementing in-memory caching (e.g. Redis) for high-traffic read endpoints in '{project_title}', what is the primary purpose of setting Time-To-Live (TTL) expiration keys?",
+            "options": [
+                "A) To prevent stale data accumulation and bound cache memory usage by evicting aged entries automatically.",
+                "B) To delete records from the primary SQL database permanently upon expiration.",
+                "C) To force client browsers to disable JavaScript execution.",
+                "D) To convert cached strings into relational SQL tables.",
+            ],
+            "category": "Performance & Caching",
+            "difficulty": "Intermediate",
+            "correct_answer": "A",
+            "explanation": "TTLs ensure cache records naturally expire and get refreshed from the source of truth, avoiding stale state and unbounded memory growth in Redis.",
+        })
+
+        # Question 8: Error Handling & Resilience
+        questions.append({
+            "id": "q_8",
+            "question": f"When handling unexpected runtime errors in '{project_title}', why should backend APIs avoid returning raw database stack traces to client callers?",
+            "options": [
+                "A) Raw stack traces leak internal table schemas, file paths, and environment secrets to potential attackers.",
+                "B) JSON parsers cannot serialize strings that contain newlines.",
+                "C) Returning stack traces consumes 100% CPU on client browsers.",
+                "D) Stack traces automatically invalidate SSL/TLS certificates.",
+            ],
+            "category": "Error Handling",
+            "difficulty": "Intermediate",
+            "correct_answer": "A",
+            "explanation": "Leaking database or code stack traces in HTTP responses exposes database schema names, internal IPs, and credentials to malicious actors. APIs should return sanitized, structured error contracts.",
+        })
+
+        # Question 9: Scalability & Async Queuing
+        questions.append({
+            "id": "q_9",
+            "question": f"For long-running tasks in '{project_title}' (e.g. AI inference or repository cloning), why should the application offload the work to background queue workers rather than executing synchronously in the HTTP request handler?",
+            "options": [
+                "A) To return an immediate 202/200 response to the client and prevent HTTP gateway timeout errors under heavy processing loads.",
+                "B) Because HTTP requests cannot process tasks that take longer than 20 milliseconds.",
+                "C) Because background workers automatically optimize SQL queries.",
+                "D) Because web browsers reject asynchronous responses.",
+            ],
+            "category": "Scalability & Async",
+            "difficulty": "Intermediate",
+            "correct_answer": "A",
+            "explanation": "Offloading long-running tasks to async queues keeps the web API responsive, frees up worker threads for incoming requests, and allows tasks to be retried independently without holding open HTTP sockets.",
+        })
+
+        # Question 10: Clean Code & Maintainability
+        questions.append({
+            "id": "q_10",
+            "question": f"In '{project_title}', what is the primary benefit of following Single Responsibility Principle (SRP) across modules?",
+            "options": [
+                "A) Each module has only one reason to change, simplifying testing, maintenance, and refactoring without side-effects.",
+                "B) It requires all application logic to be stored in a single large class.",
+                "C) It disables git merge conflicts automatically.",
+                "D) It converts all functions into global variables.",
+            ],
+            "category": "Code Quality",
+            "difficulty": "Intermediate",
+            "correct_answer": "A",
+            "explanation": "The Single Responsibility Principle ensures that modules are cohesive and focused, making them significantly easier to unit test, debug, and safely modify without causing unintended regressions.",
+        })
+
+        # Limit to the requested count (minimum 1, up to available questions)
+        target_count = max(1, min(count, len(questions)))
+        return questions[:target_count]
 
 
 # =========================================================================
@@ -685,6 +767,7 @@ class ProjectAssessmentService:
         owner, repo = self.github_provider.validate_url(payload.repository_url)
 
         # 3. Create initial assessment record in scanning status
+        q_count = payload.question_count if payload.question_count and payload.question_count > 0 else 5
         assessment = ProjectAssessment(
             student_id=student.id if student else None,
             recruiter_id=recruiter_id,
@@ -697,14 +780,14 @@ class ProjectAssessmentService:
             strengths=[],
             improvements=[],
             technologies=[],
-            repository_metadata={"owner": owner, "repo": repo, "submissions": {}},
+            repository_metadata={"owner": owner, "repo": repo, "submissions": {}, "requested_question_count": q_count},
         )
         session.add(assessment)
         await session.commit()
         await session.refresh(assessment)
 
         # 4. Trigger asynchronous assessment pipeline in background
-        asyncio.create_task(self.run_automated_pipeline(assessment.id, owner, repo))
+        asyncio.create_task(self.run_automated_pipeline(assessment.id, owner, repo, question_count=q_count))
 
         # 5. Return immediate response
         return self._format_response(assessment, student=student, viewer_role="recruiter")
@@ -714,21 +797,27 @@ class ProjectAssessmentService:
         assessment_id: UUID,
         owner: str,
         repo: str,
+        question_count: int = 5,
         session_override: AsyncSession | None = None,
     ) -> None:
         """Background asynchronous task that executes scanning, analysis, and scoring."""
         try:
             if session_override is not None:
-                await self._execute_pipeline(session_override, assessment_id, owner, repo)
+                await self._execute_pipeline(session_override, assessment_id, owner, repo, question_count=question_count)
                 return
 
             async with SessionLocal() as session:
-                await self._execute_pipeline(session, assessment_id, owner, repo)
+                await self._execute_pipeline(session, assessment_id, owner, repo, question_count=question_count)
         except Exception as exc:
             logger.info("automated_pipeline_notice", extra={"detail": str(exc), "id": str(assessment_id)})
 
     async def _execute_pipeline(
-        self, session: AsyncSession, assessment_id: UUID | str, owner: str, repo: str
+        self,
+        session: AsyncSession,
+        assessment_id: UUID | str,
+        owner: str,
+        repo: str,
+        question_count: int = 5,
     ) -> None:
         target_uuid = assessment_id if isinstance(assessment_id, UUID) else UUID(str(assessment_id))
         stmt = (
@@ -756,9 +845,13 @@ class ProjectAssessmentService:
             assessment.status = ProjectAssessmentStatus.generating
             await session.commit()
 
+            eff_q_count = question_count
+            if not eff_q_count or eff_q_count <= 0:
+                eff_q_count = (assessment.repository_metadata or {}).get("requested_question_count", 5)
+
             analysis = self.engine.analyze_and_score(assessment.project_title, repo_data)
             questions = self.engine.generate_repository_questions(
-                assessment.project_title, repo_data, analysis["technologies"]
+                assessment.project_title, repo_data, analysis["technologies"], count=eff_q_count
             )
 
             # Preserve submissions if any
@@ -769,6 +862,7 @@ class ProjectAssessmentService:
             repo_meta = dict(analysis["repository_metadata"])
             repo_meta["questions"] = questions
             repo_meta["submissions"] = submissions
+            repo_meta["requested_question_count"] = eff_q_count
             repo_meta["code_audit"] = {
                 "overall_score": analysis["overall_score"],
                 "categories": analysis["categories"],
@@ -1158,6 +1252,37 @@ class ProjectAssessmentService:
         await session.commit()
         await session.refresh(assessment)
         return self._format_response_for_student(assessment, student_id)
+
+    async def update_questions(
+        self,
+        session: AsyncSession,
+        assessment_id: UUID,
+        recruiter_id: UUID,
+        questions: list[ProjectAssessmentQuestionItem],
+    ) -> ProjectAssessmentResponse:
+        """Recruiter updates, adds, replaces, or deletes questions in the project assessment."""
+        stmt = (
+            select(ProjectAssessment)
+            .where(ProjectAssessment.id == assessment_id)
+            .options(selectinload(ProjectAssessment.category_scores))
+        )
+        assessment = (await session.scalars(stmt)).first()
+        if not assessment:
+            raise ValueError("Project assessment not found.")
+        if assessment.recruiter_id != recruiter_id:
+            raise PermissionError("Unauthorized to modify this assessment's questions.")
+
+        meta = dict(assessment.repository_metadata or {})
+        q_dicts = [q.model_dump() for q in questions]
+        meta["questions"] = q_dicts
+        meta["requested_question_count"] = len(q_dicts)
+        assessment.repository_metadata = meta
+        assessment.assessment_summary = (
+            f"Technical assessment with {len(q_dicts)} customized questions tailored for candidate evaluation."
+        )
+        await session.commit()
+        await session.refresh(assessment)
+        return self._format_response(assessment, viewer_role="recruiter")
 
     def _format_response_for_student(
         self,

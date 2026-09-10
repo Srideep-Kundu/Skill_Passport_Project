@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime, timezone
 from typing import Any, Generic, Literal, TypeVar
 from uuid import UUID
 
@@ -2136,6 +2136,7 @@ class ProjectAssessmentCreateRequest(APIModel):
     student_id: UUID | None = None
     project_title: str = Field(min_length=2, max_length=255)
     repository_url: str = Field(min_length=10, max_length=2048)
+    question_count: int = Field(default=5, ge=1, le=20)
 
 
 class ProjectAssessmentCategoryResponse(APIModel):
@@ -2155,6 +2156,10 @@ class ProjectAssessmentQuestionItem(APIModel):
     explanation: str | None = None
     student_selected_option: str | None = None
     is_correct: bool | None = None
+
+
+class ProjectAssessmentQuestionsUpdateRequest(APIModel):
+    questions: list[ProjectAssessmentQuestionItem]
 
 
 class ProjectAssessmentAnswerSubmitRequest(APIModel):
@@ -2370,4 +2375,143 @@ class InterviewDecisionRequest(APIModel):
     feedback: str | None = Field(default=None, max_length=5000)
     notes: str | None = Field(default=None, max_length=5000)
     offer_details: dict[str, Any] | None = None
+
+
+# =============================================================================
+# ASSESSMENT PROCTORING & KEYBOARD TRACKING SCHEMAS
+# =============================================================================
+
+class ProctoringViolationEventCreate(APIModel):
+    event_type: str = Field(min_length=2, max_length=80)
+    severity: str = Field(default="LOW", max_length=32)
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
+    question_id: str | None = None
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    snapshot_url: str | None = None
+
+
+ProctoringEventCreate = ProctoringViolationEventCreate
+
+
+class ProctoringEventsBatchRequest(APIModel):
+    session_id: UUID
+    events: list[ProctoringViolationEventCreate] = Field(default_factory=list)
+
+
+class ProctoringKeyboardMetricsCreate(APIModel):
+    session_id: UUID
+    question_id: str | None = None
+    wpm: int = Field(default=0, ge=0)
+    avg_dwell_time_ms: float = Field(default=0.0, ge=0.0)
+    avg_flight_time_ms: float = Field(default=0.0, ge=0.0)
+    cadence_variance: float = Field(default=0.0, ge=0.0)
+    rhythm_consistency: float = Field(default=100.0, ge=0.0, le=100.0)
+    keystrokes_count: int = Field(default=0, ge=0)
+    backspace_count: int = Field(default=0, ge=0)
+    delete_count: int = Field(default=0, ge=0)
+    edit_ratio: float = Field(default=0.0, ge=0.0, le=1.0)
+    bulk_insertions_count: int = Field(default=0, ge=0)
+    paste_attempts_count: int = Field(default=0, ge=0)
+    restricted_shortcuts_count: int = Field(default=0, ge=0)
+    macro_pattern_score: float = Field(default=0.0, ge=0.0, le=100.0)
+    idle_duration_seconds: float = Field(default=0.0, ge=0.0)
+
+
+class ProctoringEvidenceUploadRequest(APIModel):
+    session_id: UUID
+    event_type: str = Field(min_length=2, max_length=80)
+    question_id: str | None = None
+    snapshot_data: str = Field(min_length=10)  # Base64 data URI or image URL
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ProctoringSessionStartRequest(APIModel):
+    assessment_id: UUID | None = None
+    project_assessment_id: UUID | None = None
+    settings: dict[str, Any] = Field(default_factory=dict)
+
+
+class ProctoringSessionEndRequest(APIModel):
+    status: str = Field(default="completed")
+    final_notes: str | None = None
+
+
+class ProctoringSessionResponse(APIModel):
+    id: UUID
+    student_id: UUID
+    assessment_id: UUID | None = None
+    project_assessment_id: UUID | None = None
+    status: str
+    start_time: datetime
+    end_time: datetime | None = None
+    integrity_score: float
+    risk_level: str
+    total_violations: int
+    settings: dict[str, Any] = Field(default_factory=dict)
+
+
+class ProctoringViolationItem(APIModel):
+    id: UUID
+    event_type: str
+    severity: str
+    confidence: float
+    question_id: str | None = None
+    timestamp: datetime
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    snapshot_url: str | None = None
+
+
+class ProctoringSnapshotItem(APIModel):
+    id: UUID
+    event_type: str
+    question_id: str | None = None
+    snapshot_data: str
+    timestamp: datetime
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ProctoringKeyboardSummary(APIModel):
+    wpm: int = 0
+    avg_dwell_time_ms: float = 0.0
+    avg_flight_time_ms: float = 0.0
+    cadence_variance: float = 0.0
+    rhythm_consistency: float = 100.0
+    keystrokes_count: int = 0
+    backspace_count: int = 0
+    delete_count: int = 0
+    edit_ratio: float = 0.0
+    bulk_insertions_count: int = 0
+    paste_attempts_count: int = 0
+    restricted_shortcuts_count: int = 0
+    macro_pattern_score: float = 0.0
+    idle_duration_seconds: float = 0.0
+
+
+class ProctoringReportResponse(APIModel):
+    session_id: UUID
+    student_id: UUID
+    candidate_name: str | None = None
+    candidate_email: str | None = None
+    assessment_id: UUID | None = None
+    assessment_title: str | None = None
+    status: str
+    start_time: datetime
+    end_time: datetime | None = None
+    integrity_score: float
+    risk_level: str
+    total_violations: int
+    tab_switches_count: int = 0
+    fullscreen_exits_count: int = 0
+    window_blurs_count: int = 0
+    face_violations_count: int = 0
+    audio_violations_count: int = 0
+    paste_attempts_count: int = 0
+    devtools_suspected_count: int = 0
+    typing_anomalies_count: int = 0
+    keyboard_metrics: ProctoringKeyboardSummary = Field(default_factory=ProctoringKeyboardSummary)
+    events: list[ProctoringViolationItem] = Field(default_factory=list)
+    snapshots: list[ProctoringSnapshotItem] = Field(default_factory=list)
+
 

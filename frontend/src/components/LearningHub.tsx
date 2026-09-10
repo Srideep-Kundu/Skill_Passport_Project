@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   ExternalLink,
   CheckCircle2,
@@ -638,9 +639,9 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
       {/* =========================================================================
           INTERACTIVE VIDEO PLAYER & STUDY NOTES MODAL
           ========================================================================= */}
-      {activePlayingVideo && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-          <div className="bg-[#FFFFFF] border border-[#CBD5E1] rounded-xl max-w-4xl w-full overflow-hidden shadow-2xl animate-in fade-in-50 zoom-in-95 duration-200">
+      {activePlayingVideo && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[1000000] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+          <div className="bg-[#FFFFFF] border border-[#CBD5E1] rounded-xl max-w-4xl w-full overflow-hidden shadow-2xl animate-in fade-in-50 zoom-in-95 duration-200 my-auto">
             {/* Modal Header */}
             <div className="p-4 sm:p-5 border-b border-[#E2E8F0] flex items-center justify-between bg-[#F8FAFC]">
               <div className="flex items-center gap-3">
@@ -759,7 +760,8 @@ export function LearningHub({ token, onCourseCompleted }: Props) {
               </EditorialButton>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

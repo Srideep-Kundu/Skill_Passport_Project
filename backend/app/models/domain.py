@@ -1338,3 +1338,102 @@ class FacultyJobApplication(Base):
 
     job: Mapped[InstitutionFacultyJob] = relationship(back_populates="applications")
     faculty: Mapped[Academician] = relationship()
+
+
+# =========================================================================
+# Assessment Proctoring & Keystroke Dynamics Models
+# =========================================================================
+
+class ProctoringSessionStatus(str, enum.Enum):
+    in_progress = "in_progress"
+    completed = "completed"
+    terminated_violation = "terminated_violation"
+    cancelled = "cancelled"
+
+
+class ProctoringRiskLevel(str, enum.Enum):
+    low = "low"
+    medium = "medium"
+    high = "high"
+
+
+class ProctoringSession(Timestamped, Base):
+    __tablename__ = "proctoring_sessions"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    student_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("students.id", ondelete="CASCADE"), nullable=False, index=True)
+    assessment_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("assessments.id", ondelete="SET NULL"), nullable=True, index=True)
+    project_assessment_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("project_assessments.id", ondelete="SET NULL"), nullable=True, index=True)
+    status: Mapped[ProctoringSessionStatus] = mapped_column(
+        Enum(ProctoringSessionStatus), default=ProctoringSessionStatus.in_progress, nullable=False, index=True
+    )
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    end_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    integrity_score: Mapped[float] = mapped_column(Numeric(5, 2), default=100.0, nullable=False)
+    risk_level: Mapped[ProctoringRiskLevel] = mapped_column(
+        Enum(ProctoringRiskLevel), default=ProctoringRiskLevel.low, nullable=False, index=True
+    )
+    total_violations: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    settings: Mapped[dict[str, Any]] = mapped_column(Json, default=dict, nullable=False)
+    metadata_payload: Mapped[dict[str, Any]] = mapped_column(Json, default=dict, nullable=False)
+
+    student: Mapped[Student] = relationship()
+    events: Mapped[list["ProctoringEvent"]] = relationship(back_populates="session", cascade="all, delete-orphan")
+    evidence_snapshots: Mapped[list["ProctoringEvidence"]] = relationship(back_populates="session", cascade="all, delete-orphan")
+    keyboard_metrics: Mapped[list["KeyboardMetrics"]] = relationship(back_populates="session", cascade="all, delete-orphan")
+
+
+class ProctoringEvent(Base):
+    __tablename__ = "proctoring_events"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("proctoring_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
+    question_id: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    event_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    severity: Mapped[str] = mapped_column(String(32), default="LOW", nullable=False)
+    confidence: Mapped[float] = mapped_column(Numeric(4, 3), default=1.0, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    metadata_payload: Mapped[dict[str, Any]] = mapped_column(Json, default=dict, nullable=False)
+    snapshot_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+
+    session: Mapped[ProctoringSession] = relationship(back_populates="events")
+
+
+class ProctoringEvidence(Base):
+    __tablename__ = "proctoring_evidence"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("proctoring_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
+    event_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    question_id: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    snapshot_data: Mapped[str] = mapped_column(Text, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    metadata_payload: Mapped[dict[str, Any]] = mapped_column(Json, default=dict, nullable=False)
+
+    session: Mapped[ProctoringSession] = relationship(back_populates="evidence_snapshots")
+
+
+class KeyboardMetrics(Base):
+    __tablename__ = "keyboard_metrics"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("proctoring_sessions.id", ondelete="CASCADE"), nullable=False, index=True)
+    question_id: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
+    wpm: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    avg_dwell_time_ms: Mapped[float] = mapped_column(Numeric(7, 2), default=0.0, nullable=False)
+    avg_flight_time_ms: Mapped[float] = mapped_column(Numeric(7, 2), default=0.0, nullable=False)
+    cadence_variance: Mapped[float] = mapped_column(Numeric(7, 2), default=0.0, nullable=False)
+    rhythm_consistency: Mapped[float] = mapped_column(Numeric(5, 2), default=100.0, nullable=False)
+    keystrokes_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    backspace_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    delete_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    edit_ratio: Mapped[float] = mapped_column(Numeric(5, 3), default=0.0, nullable=False)
+    bulk_insertions_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    paste_attempts_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    restricted_shortcuts_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    macro_pattern_score: Mapped[float] = mapped_column(Numeric(5, 2), default=0.0, nullable=False)
+    idle_duration_seconds: Mapped[float] = mapped_column(Numeric(7, 2), default=0.0, nullable=False)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    session: Mapped[ProctoringSession] = relationship(back_populates="keyboard_metrics")
+

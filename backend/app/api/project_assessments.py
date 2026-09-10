@@ -13,6 +13,7 @@ from app.schemas.contracts import (
     ProjectAssessmentAnswerSubmitRequest,
     ProjectAssessmentCreateRequest,
     ProjectAssessmentListResponse,
+    ProjectAssessmentQuestionsUpdateRequest,
     ProjectAssessmentResponse,
     ProjectAssessmentShortlistRequest,
 )
@@ -123,6 +124,27 @@ async def toggle_candidate_shortlist(
         return await project_assessment_service.toggle_shortlist(
             session, assessment_id, recruiter.id, payload
         )
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+
+
+@router.put(
+    "/project-assessments/{assessment_id}/questions",
+    response_model=ProjectAssessmentResponse,
+)
+async def update_assessment_questions(
+    assessment_id: UUID,
+    payload: ProjectAssessmentQuestionsUpdateRequest,
+    recruiter: Annotated[Recruiter, Depends(require_role("recruiter"))],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> ProjectAssessmentResponse:
+    """Recruiter updates, adds, replaces, or deletes questions in the project assessment."""
+    try:
+        return await project_assessment_service.update_questions(
+            session, assessment_id, recruiter.id, payload.questions
+        )
+    except PermissionError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
 

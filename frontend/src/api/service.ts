@@ -108,6 +108,10 @@ import type {
   InternshipMonitoringOverview,
   InterventionPlan,
   InterventionPlanPayload,
+  ProctoringSession,
+  ProctoringViolationEvent,
+  KeystrokeDynamicsMetrics,
+  ProctoringReport,
   InterventionRecommendation,
   LearningEffectivenessOverview,
   PlacementMonitoringOverview,
@@ -115,6 +119,7 @@ import type {
   ProjectAssessment,
   ProjectAssessmentCreatePayload,
   ProjectAssessmentList,
+  ProjectAssessmentQuestion,
   ProjectAssessmentShortlistPayload,
   ProjectAssessmentSubmitPayload,
   InstitutionFacultyJob,
@@ -482,6 +487,11 @@ export const api = {
     request<ProjectAssessment>(`/project-assessments/${encodeURIComponent(id)}/retry`, { method: "POST" }, token),
   toggleShortlistProjectAssessment: (id: string, input: ProjectAssessmentShortlistPayload, token: string) =>
     request<ProjectAssessment>(`/project-assessments/${encodeURIComponent(id)}/shortlist`, { method: "POST", body: JSON.stringify(input) }, token),
+  updateProjectAssessmentQuestions: (id: string, questions: ProjectAssessmentQuestion[], token: string) =>
+    request<ProjectAssessment>(`/project-assessments/${encodeURIComponent(id)}/questions`, {
+      method: "PUT",
+      body: JSON.stringify({ questions }),
+    }, token),
   getStudentProjectAssessments: async (token: string) => {
     const res = await request<any>("/student/project-assessments", {}, token);
     if (Array.isArray(res)) {
@@ -535,4 +545,21 @@ export const api = {
     request<FacultyJobApplication>("/academician/faculty-jobs/apply", { method: "POST", body: JSON.stringify(payload) }, token),
   getMyFacultyApplications: (token: string) =>
     request<FacultyJobApplicationListResponse>("/academician/faculty-jobs/my-applications", {}, token),
+
+  // Assessment Proctoring & Keystroke Tracking Subsystem
+  startProctoringSession: (payload: { assessment_id?: string; project_assessment_id?: string; settings?: Record<string, unknown> }, token: string) =>
+    request<ProctoringSession>("/proctoring/session/start", { method: "POST", body: JSON.stringify(payload) }, token),
+  recordProctoringEvents: (sessionId: string, events: ProctoringViolationEvent[], token: string) =>
+    request<ProctoringSession>("/proctoring/events", { method: "POST", body: JSON.stringify({ session_id: sessionId, events }) }, token),
+  recordKeyboardMetrics: (payload: Partial<KeystrokeDynamicsMetrics> & { session_id: string; question_id?: string }, token: string) =>
+    request<void>("/proctoring/keyboard", { method: "POST", body: JSON.stringify(payload) }, token),
+  uploadProctoringEvidence: (payload: { session_id: string; event_type: string; snapshot_data: string; question_id?: string; metadata?: Record<string, unknown> }, token: string) =>
+    request<void>("/proctoring/evidence", { method: "POST", body: JSON.stringify(payload) }, token),
+  getProctoringSessionStatus: (sessionId: string, token: string) =>
+    request<ProctoringSession>(`/proctoring/session/${encodeURIComponent(sessionId)}`, {}, token),
+  endProctoringSession: (sessionId: string, payload: { status?: string; final_notes?: string }, token: string) =>
+    request<ProctoringSession>(`/proctoring/session/${encodeURIComponent(sessionId)}/end`, { method: "POST", body: JSON.stringify(payload) }, token),
+  getProctoringReport: (assessmentId: string, studentId: string, token: string) =>
+    request<ProctoringReport>(`/proctoring/report/${encodeURIComponent(assessmentId)}/${encodeURIComponent(studentId)}`, {}, token),
 };
+

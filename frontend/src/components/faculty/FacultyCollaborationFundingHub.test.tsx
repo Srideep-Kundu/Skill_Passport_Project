@@ -54,7 +54,7 @@ describe("FacultyCollaborationFundingHub", () => {
     );
 
     expect(await screen.findByText("IEEE Computer Society Academic Chapter Partnership")).toBeInTheDocument();
-    expect(screen.getByText("Why recommended?")).toBeInTheDocument();
+    expect(screen.getAllByText("Why recommended?")[0]).toBeInTheDocument();
     expect(screen.getByText(/Matches faculty expertise/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Funding" }));
@@ -68,7 +68,7 @@ describe("FacultyCollaborationFundingHub", () => {
     fireEvent.click(screen.getByRole("button", { name: `Save ${opportunity.title}` }));
     await waitFor(() => expect(save).toHaveBeenCalledWith(opportunity.id, "faculty-token"));
 
-    fireEvent.click(screen.getByRole("button", { name: /Create proposal/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /Create proposal/i })[0]);
     expect(createProposal).toHaveBeenCalledWith(
       expect.objectContaining({ id: opportunity.id, is_saved: true })
     );

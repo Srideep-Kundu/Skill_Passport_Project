@@ -40,6 +40,7 @@ from app.api import (
     matches,
     passport,
     placements,
+    proctoring,
     project_assessments,
     recruiter_analytics,
     resumes,
@@ -141,6 +142,7 @@ app.include_router(internships.router)
 app.include_router(matches.router)
 app.include_router(applications.router)
 app.include_router(project_assessments.router)
+app.include_router(proctoring.router)
 app.include_router(teams.router)
 app.include_router(admin.router)
 

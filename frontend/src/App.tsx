@@ -35,7 +35,6 @@ import { LandingPage } from "./pages/LandingPage";
 import { useAuth } from "./auth/AuthContext";
 import { CommandPalette } from "./components/CommandPalette";
 import { SkillPassportCopilot } from "./components/SkillPassportCopilot";
-import { PostLoginTransition } from "./components/PostLoginTransition";
 
 const RecruiterDashboard = lazy(async () => ({
   default: (await import("./pages/RecruiterDashboard")).RecruiterDashboard,
@@ -134,7 +133,7 @@ export type InstitutionTab =
   | "reports";
 
 export function App() {
-  const { session, signOut, justLoggedIn, completePostLoginTransition } = useAuth();
+  const { session, signOut } = useAuth();
   const prefersReduced = useReducedMotion();
   const [studentTab, setStudentTab] = useState<StudentTab>("overview");
   const [recruiterTab, setRecruiterTab] = useState<RecruiterTab>("overview");
@@ -170,20 +169,6 @@ export function App() {
 
   if (!session) {
     return <LandingPage />;
-  }
-
-  if (justLoggedIn) {
-    return (
-      <PostLoginTransition
-        role={session.role}
-        userEmail={session.email}
-        onComplete={() => {
-          setStudentTab("overview");
-          setRecruiterTab("overview");
-          completePostLoginTransition();
-        }}
-      />
-    );
   }
 
   const isStudent = session.role === "student";
@@ -254,6 +239,18 @@ export function App() {
     { id: "reports", label: "Institutional Reports", icon: <Download className="h-4 w-4 shrink-0" aria-hidden="true" /> },
   ];
 
+  const [isAssessmentFullscreen, setIsAssessmentFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleAssessmentState = (e: any) => {
+      setIsAssessmentFullscreen(Boolean(e.detail?.active));
+    };
+    window.addEventListener("assessment-fullscreen-active", handleAssessmentState);
+    return () => {
+      window.removeEventListener("assessment-fullscreen-active", handleAssessmentState);
+    };
+  }, []);
+
   const currentTabName = isStudent
     ? studentTab
     : isRecruiter
@@ -262,16 +259,20 @@ export function App() {
     ? academicianTab
     : institutionTab;
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [currentTabName]);
+
   return (
     <div className="min-h-screen relative flex text-[#111827] font-sans selection:bg-[rgba(176,141,87,0.2)] selection:text-[#111827]">
       {/* Shared Full-Viewport Animated Background Video Layer */}
-      <DashboardVideoBackground />
+      {!isAssessmentFullscreen && <DashboardVideoBackground />}
 
       {/* Toast Notifications */}
       <Toaster position="bottom-right" theme="light" closeButton />
 
       {/* Command Palette */}
-      {(isStudent || isRecruiter) && (
+      {!isAssessmentFullscreen && (isStudent || isRecruiter) && (
         <CommandPalette
           open={cmdOpen}
           onOpenChange={setCmdOpen}
@@ -282,7 +283,7 @@ export function App() {
       )}
 
       {/* Mobile Overlay */}
-      {mobileMenuOpen && (
+      {!isAssessmentFullscreen && mobileMenuOpen && (
         <div
           className="fixed inset-0 z-40 bg-[#0F172A]/40 backdrop-blur-xs md:hidden"
           onClick={() => setMobileMenuOpen(false)}
@@ -290,11 +291,12 @@ export function App() {
       )}
 
       {/* Left Rail / Sidebar (Translucent Glassmorphism with Subtle Border) */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-40 h-screen md:sticky md:top-0 bg-white/20 md:bg-white/20 backdrop-blur-md border-r border-[#E5E1D8]/60 flex flex-col justify-between transition-all duration-200 md:translate-x-0 shrink-0 ${
-          isCollapsed ? "md:w-20" : "md:w-64"
-        } w-64 ${mobileMenuOpen ? "translate-x-0 shadow-2xl bg-white/95" : "-translate-x-full"}`}
-      >
+      {!isAssessmentFullscreen && (
+        <aside
+          className={`fixed inset-y-0 left-0 z-40 h-screen md:sticky md:top-0 bg-white/20 md:bg-white/20 backdrop-blur-md border-r border-[#E5E1D8]/60 flex flex-col justify-between transition-all duration-200 md:translate-x-0 shrink-0 ${
+            isCollapsed ? "md:w-20" : "md:w-64"
+          } w-64 ${mobileMenuOpen ? "translate-x-0 shadow-2xl bg-white/95" : "-translate-x-full"}`}
+        >
         {/* Top Header & Nav Items */}
         <div className={`flex-1 min-h-0 ${isCollapsed ? "p-3 overflow-hidden" : "p-5 overflow-y-auto no-scrollbar"}`}>
           {/* Logo */}
@@ -484,50 +486,53 @@ export function App() {
           )}
         </div>
       </aside>
+      )}
 
       {/* Main Content Area */}
       <div className="relative z-10 flex-1 flex flex-col min-w-0">
         {/* Desktop Top Status Bar (Translucent Glassmorphism) */}
-        <header className="sticky top-0 z-30 border-b border-[#E5E1D8]/50 bg-white/25 md:bg-white/25 backdrop-blur-md px-6 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(true)}
-              aria-label="Open sidebar menu"
-              className="md:hidden p-1.5 rounded-lg border border-[#E5E1D8]/50 text-[#0f172a] hover:text-[#000000] hover:bg-white/40"
-            >
-              <Menu className="h-4 w-4" />
-            </button>
-            <div className="font-mono text-xs uppercase tracking-wider hidden sm:block text-[#334155] font-semibold">
-              {session.role} / <span className="text-[#000000] font-bold">{currentTabName}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {(isStudent || isRecruiter) && (
+        {!isAssessmentFullscreen && (
+          <header className="sticky top-0 z-30 border-b border-[#E5E1D8]/50 bg-white/25 md:bg-white/25 backdrop-blur-md px-6 py-3.5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => setCmdOpen(true)}
-                className="pill-btn-outline px-3.5 py-1 text-xs text-[#0f172a] font-medium hover:text-[#000000] hover:font-semibold gap-2 shadow-2xs border-[#E5E1D8]/60 bg-white/40 hover:bg-white/60"
+                onClick={() => setMobileMenuOpen(true)}
+                aria-label="Open sidebar menu"
+                className="md:hidden p-1.5 rounded-lg border border-[#E5E1D8]/50 text-[#0f172a] hover:text-[#000000] hover:bg-white/40"
               >
-                <Search className="h-3.5 w-3.5 text-[#0f172a]" />
-                <span>Search actions</span>
-                <kbd className="font-mono text-[10px] text-[#0f172a] font-bold border border-[#CBD5E1] bg-white/60 px-1.5 py-0.5 rounded-sm">
-                  ⌘K
-                </kbd>
+                <Menu className="h-4 w-4" />
               </button>
-            )}
-          </div>
-        </header>
+              <div className="font-mono text-xs uppercase tracking-wider hidden sm:block text-[#334155] font-semibold">
+                {session.role} / <span className="text-[#000000] font-bold">{currentTabName}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {(isStudent || isRecruiter) && (
+                <button
+                  type="button"
+                  onClick={() => setCmdOpen(true)}
+                  className="pill-btn-outline px-3.5 py-1 text-xs text-[#0f172a] font-medium hover:text-[#000000] hover:font-semibold gap-2 shadow-2xs border-[#E5E1D8]/60 bg-white/40 hover:bg-white/60"
+                >
+                  <Search className="h-3.5 w-3.5 text-[#0f172a]" />
+                  <span>Search actions</span>
+                  <kbd className="font-mono text-[10px] text-[#0f172a] font-bold border border-[#CBD5E1] bg-white/60 px-1.5 py-0.5 rounded-sm">
+                    ⌘K
+                  </kbd>
+                </button>
+              )}
+            </div>
+          </header>
+        )}
 
         {/* Content Body */}
-        <main className="flex-1 p-6 sm:p-8 lg:p-10 w-full max-w-7xl mx-auto animate-fade-rise">
+        <main className={isAssessmentFullscreen ? "flex-1 w-full p-0 m-0" : "flex-1 p-6 sm:p-8 lg:p-10 w-full max-w-7xl mx-auto animate-fade-rise"}>
           <AnimatePresence mode="wait">
             <motion.div
               key={currentTabName}
-              initial={prefersReduced ? { opacity: 1 } : { opacity: 0, y: 12 }}
+              initial={prefersReduced || isAssessmentFullscreen ? { opacity: 1 } : { opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={prefersReduced ? { opacity: 1 } : { opacity: 0, y: -8 }}
+              exit={prefersReduced || isAssessmentFullscreen ? { opacity: 1 } : { opacity: 0, y: -8 }}
               transition={{ duration: 0.25, ease: "easeOut" }}
             >
               {isStudent ? (
@@ -598,7 +603,7 @@ export function App() {
       </div>
 
       {/* Floating Bottom-Right Copilot Assistant */}
-      {(isStudent || isRecruiter) && (
+      {!isAssessmentFullscreen && (isStudent || isRecruiter) && (
         <SkillPassportCopilot
           token={session.access_token}
           onNavigate={(tab: string) => {

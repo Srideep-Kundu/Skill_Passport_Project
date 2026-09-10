@@ -73,6 +73,12 @@ from app.models.domain import (
     UserDocument,
     VerificationCheck,
     VerificationTier,
+    ProctoringSessionStatus,
+    ProctoringRiskLevel,
+    ProctoringSession,
+    ProctoringEvent,
+    ProctoringEvidence,
+    KeyboardMetrics,
 )
 
 __all__ = [
@@ -150,5 +156,12 @@ __all__ = [
     "UserDocument",
     "VerificationCheck",
     "VerificationTier",
+    "ProctoringSessionStatus",
+    "ProctoringRiskLevel",
+    "ProctoringSession",
+    "ProctoringEvent",
+    "ProctoringEvidence",
+    "KeyboardMetrics",
 ]
+
 

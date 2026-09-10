@@ -630,6 +630,144 @@ export interface Assessment {
   question_count?: number;
 }
 
+export type ProctoringViolationType =
+  | "fullscreen_exit"
+  | "tab_switch"
+  | "window_blur"
+  | "restricted_shortcut"
+  | "paste_attempt"
+  | "right_click"
+  | "face_missing"
+  | "multiple_faces"
+  | "gaze_deviation"
+  | "audio_noise"
+  | "rapid_injection"
+  | "macro_cadence"
+  | "devtools_open"
+  | "TAB_SWITCH"
+  | "FULLSCREEN_EXIT"
+  | "WINDOW_BLUR"
+  | "PAGE_HIDDEN"
+  | "MULTIPLE_FACES"
+  | "FACE_ABSENT"
+  | "PROLONGED_LOOK_AWAY"
+  | "RESTRICTED_SHORTCUT"
+  | "RESTRICTED_PASTE"
+  | "PASTE_ATTEMPT"
+  | "BULK_TEXT_INSERTION"
+  | "DEVTOOLS_SUSPECTED"
+  | "VOICE_DETECTED"
+  | "BACKGROUND_SPEECH"
+  | "LOUD_NOISE"
+  | "TYPING_ANOMALY"
+  | "AUTOMATED_TYPING_PATTERN"
+  | "TYPING_PATTERN_CHANGE"
+  | "PHONE_DETECTED"
+  | "UNAUTHORIZED_DEVICE";
+
+export interface ProctoringViolationEvent {
+  id?: string;
+  timestamp: string;
+  type?: ProctoringViolationType | string;
+  event_type?: ProctoringViolationType | string;
+  severity: "low" | "medium" | "high" | "critical" | "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  message?: string;
+  confidence?: number;
+  question_id?: string;
+  snapshot_data?: string;
+  snapshot_url?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface KeystrokeDynamicsMetrics {
+  total_keystrokes?: number;
+  average_dwell_time_ms?: number;
+  average_flight_time_ms?: number;
+  typing_speed_wpm?: number;
+  cadence_rhythm_score?: number;
+  backspace_count?: number;
+  instant_paste_events?: number;
+  suspicious_shortcut_attempts?: number;
+  keyboard_integrity_score?: number;
+  wpm?: number;
+  avg_dwell_time_ms?: number;
+  avg_flight_time_ms?: number;
+  cadence_variance?: number;
+  rhythm_consistency?: number;
+  keystrokes_count?: number;
+  delete_count?: number;
+  edit_ratio?: number;
+  bulk_insertions_count?: number;
+  paste_attempts_count?: number;
+  restricted_shortcuts_count?: number;
+  macro_pattern_score?: number;
+  idle_duration_seconds?: number;
+}
+
+export interface ProctoringSnapshotItem {
+  id?: string;
+  event_type?: string;
+  label?: string;
+  question_id?: string;
+  snapshot_data?: string;
+  image_url?: string;
+  timestamp: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ProctoringSession {
+  id: string;
+  student_id: string;
+  assessment_id?: string | null;
+  project_assessment_id?: string | null;
+  status: "in_progress" | "completed" | "terminated_violation" | "cancelled" | string;
+  start_time: string;
+  end_time?: string | null;
+  integrity_score: number;
+  risk_level: "low" | "medium" | "high" | string;
+  total_violations: number;
+  settings?: Record<string, unknown>;
+}
+
+export interface ProctoringReport {
+  session_id?: string;
+  student_id?: string;
+  candidate_name?: string | null;
+  candidate_email?: string | null;
+  assessment_id?: string | null;
+  assessment_title?: string | null;
+  status?: string;
+  start_time?: string;
+  end_time?: string | null;
+  integrity_score?: number;
+  risk_level?: "low" | "medium" | "high" | string;
+  total_violations?: number;
+  tab_switches_count?: number;
+  fullscreen_exits_count?: number;
+  window_blurs_count?: number;
+  face_violations_count?: number;
+  audio_violations_count?: number;
+  paste_attempts_count?: number;
+  devtools_suspected_count?: number;
+  typing_anomalies_count?: number;
+  overall_integrity_score?: number;
+  trust_level?: "High Trust" | "Moderate Trust" | "Flagged / Review Required" | "Integrity Breach" | string;
+  tab_switch_count?: number;
+  fullscreen_exit_count?: number;
+  window_blur_count?: number;
+  camera_active?: boolean;
+  audio_active?: boolean;
+  face_absence_seconds?: number;
+  multiple_faces_detected_count?: number;
+  gaze_deviations_count?: number;
+  audio_spikes_count?: number;
+  keyboard_metrics?: KeystrokeDynamicsMetrics;
+  keystroke_metrics?: KeystrokeDynamicsMetrics;
+  violations?: ProctoringViolationEvent[];
+  events?: ProctoringViolationEvent[];
+  snapshots?: ProctoringSnapshotItem[] | Array<{ timestamp: string; label: string; image_url?: string; snapshot_data?: string }>;
+}
+
 export interface AssessmentAttempt {
   id: string;
   assessment_id: string;
@@ -639,6 +777,7 @@ export interface AssessmentAttempt {
   percentage: number;
   passed: boolean;
   completed_at: string;
+  proctoring_report?: ProctoringReport;
 }
 
 export interface LearningCourse {
@@ -1681,6 +1820,7 @@ export interface ProjectAssessment {
   updated_at: string;
   completed_at?: string | null;
   category_scores: ProjectAssessmentCategory[];
+  proctoring_report?: ProctoringReport;
 }
 
 export interface ProjectAssessmentSummary {
@@ -1702,6 +1842,8 @@ export interface ProjectAssessmentSummary {
   technologies: string[];
   created_at: string;
   completed_at?: string | null;
+  proctoring_trust_score?: number;
+  proctoring_trust_level?: string;
 }
 
 export interface ProjectAssessmentList {
@@ -1713,6 +1855,11 @@ export interface ProjectAssessmentCreatePayload {
   student_id?: string | null;
   project_title: string;
   repository_url: string;
+  question_count?: number;
+}
+
+export interface ProjectAssessmentQuestionsUpdatePayload {
+  questions: ProjectAssessmentQuestion[];
 }
 
 export interface ProjectAssessmentShortlistPayload {
@@ -1722,6 +1869,7 @@ export interface ProjectAssessmentShortlistPayload {
 
 export interface ProjectAssessmentSubmitPayload {
   answers: Record<string, string>;
+  proctoring_report?: ProctoringReport;
 }
 
 export interface CandidateOption {
@@ -1980,6 +2128,7 @@ export interface TrainingProgramUpdateInput {
   confirmed_funding?: number;
   campaign_metrics?: Record<string, number>;
 }
+
 
 
 
