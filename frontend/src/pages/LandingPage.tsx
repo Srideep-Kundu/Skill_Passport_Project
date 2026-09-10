@@ -95,7 +95,7 @@ export function LandingPage({ defaultAuthOpen = false }: LandingPageProps) {
               >
                 <div className="h-9 w-9 rounded-full bg-[#FCFBF9] border border-[#E5E1D8] flex items-center justify-center p-0.5 shadow-xs overflow-hidden shrink-0">
                   <img
-                    src="/lumina-logo.png"
+                    src="/branding/favicon.svg"
                     alt="Lumina Intel Logo"
                     className="h-full w-full object-contain"
                   />
@@ -495,7 +495,7 @@ export function LandingPage({ defaultAuthOpen = false }: LandingPageProps) {
 
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-[#64748B] font-mono gap-4">
             <div className="flex items-center gap-2">
-              <BrandLogo compact />
+              <BrandLogo />
               <span>© {new Date().getFullYear()} Lumina Intel Platform. All rights reserved.</span>
             </div>
             <div className="flex items-center gap-6">

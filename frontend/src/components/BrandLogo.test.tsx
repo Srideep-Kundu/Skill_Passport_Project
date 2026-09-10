@@ -3,15 +3,16 @@ import { describe, expect, it } from "vitest";
 import { BrandLogo } from "./BrandLogo";
 
 describe("BrandLogo", () => {
-  it("shows the brand name with decorative original artwork", () => {
+  it("shows only the accessible compass artwork without a wordmark", () => {
     const { container } = render(<BrandLogo />);
-    expect(screen.getByText("Lumina Intel")).toBeInTheDocument();
-    expect(container.querySelector("img")).toHaveAttribute("src", "/branding/lumina-intel.png");
-    expect(container.querySelector("img")).toHaveAttribute("alt", "");
+    expect(screen.queryByText("Lumina Intel")).not.toBeInTheDocument();
+    expect(container.querySelector("img")).toHaveAttribute("src", "/branding/favicon.svg");
+    expect(screen.getByRole("img", { name: "Lumina Intel" })).toBeInTheDocument();
   });
 
-  it("keeps the collapsed brand accessible without a visible wordmark", () => {
-    render(<BrandLogo compact />);
+  it("preserves accessible branding when custom styling is supplied", () => {
+    render(<BrandLogo className="rounded-full" />);
+    expect(screen.getByRole("img", { name: "Lumina Intel" })).toHaveClass("rounded-full");
     expect(screen.getByRole("img", { name: "Lumina Intel" })).toBeInTheDocument();
     expect(screen.queryByText("Lumina Intel")).not.toBeInTheDocument();
   });

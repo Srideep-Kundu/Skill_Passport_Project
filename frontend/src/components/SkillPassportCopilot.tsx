@@ -194,7 +194,7 @@ export function SkillPassportCopilot({
               <div className="p-3.5 border-b border-[#27272A] flex items-center justify-between shrink-0 bg-[#18181B] text-white">
                 <div className="flex items-center gap-2.5">
                   <div className="h-7 w-7 rounded bg-[#FCFBF9] border border-white/20 flex items-center justify-center p-0.5 shrink-0 shadow-xs">
-                    <img src="/lumina-logo.png" alt="Lumina Intel" className="h-full w-full object-contain" />
+                    <img src="/branding/favicon.svg" alt="Lumina Intel" className="h-full w-full object-contain" />
                   </div>
                   <div className="flex items-baseline gap-2">
                     <h3 className="text-sm font-semibold text-white tracking-tight">

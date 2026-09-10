@@ -332,7 +332,7 @@ export function App() {
               <a href="/" className="flex items-center gap-3 text-[#111827] min-w-0">
                 <div className="h-11 w-11 shrink-0 rounded-full bg-[#FCFBF9] border border-[#E5E1D8] flex items-center justify-center p-1 shadow-xs overflow-hidden">
                   <img
-                    src="/lumina-logo.png"
+                    src="/branding/favicon.svg"
                     alt="Lumina Intel Logo"
                     className="h-full w-full object-contain"
                   />

@@ -443,7 +443,7 @@ export function AuthPage({
         <div className="lg:col-span-5 space-y-6">
           <div className="flex items-center gap-3">
             <img
-              src="/lumina-logo.png"
+              src="/branding/favicon.svg"
               alt="Lumina Intel Logo"
               className="h-10 w-10 shrink-0 object-contain rounded-full border border-[#B08D57]/30 bg-white shadow-xs p-0.5"
             />

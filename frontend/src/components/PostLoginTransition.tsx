@@ -210,7 +210,7 @@ export function PostLoginTransition({
           >
             <div className="flex justify-center mb-4">
               <img
-                src="/lumina-logo.png"
+                src="/branding/favicon.svg"
                 alt="Lumina Intel Logo"
                 className="h-16 w-16 object-contain rounded-full border border-[#B08D57]/30 bg-white p-1 shadow-md"
               />
