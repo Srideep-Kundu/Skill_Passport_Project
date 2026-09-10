@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AuthPage } from "./AuthPage";
+import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "../localization/LanguageSelector";
 
 export interface LandingPageProps {
   isDarkMode?: boolean;
@@ -9,6 +11,7 @@ export interface LandingPageProps {
 }
 
 export function LandingPage({ defaultAuthOpen = false }: LandingPageProps) {
+  const { t } = useTranslation();
   const prefersReducedMotion = useReducedMotion();
   const [authModalOpen, setAuthModalOpen] = useState(defaultAuthOpen);
   const [authRole, setAuthRole] = useState<"student" | "recruiter" | "academician" | "institution">("student");
@@ -71,9 +74,9 @@ export function LandingPage({ defaultAuthOpen = false }: LandingPageProps) {
 
         {/* 3-Column Distributed Navigation Bar (Max-width: 1280px, px: 32px, py: 24px) */}
         <header className="relative z-20 w-full">
-          <nav className="mx-auto grid w-full max-w-[1280px] grid-cols-2 md:grid-cols-3 items-center px-8 py-6">
+          <nav className="landing-nav mx-auto grid w-full max-w-[1280px] grid-cols-2 md:grid-cols-3 items-center px-8 py-6">
             {/* Left Column: Brand logo using 'Instrument Serif' at 30px with ® superscript */}
-            <div className="flex items-center justify-start">
+            <div className="landing-brand flex items-center justify-start">
               <a
                 href="#home"
                 className="font-['Inter',sans-serif] text-[26px] font-semibold tracking-tight text-[#0f172a] leading-none flex items-center select-none"
@@ -115,20 +118,21 @@ export function LandingPage({ defaultAuthOpen = false }: LandingPageProps) {
             </div>
 
             {/* Right Column: Sign In + Pill-shaped CTA button with Royal Indigo/Purple Gradient */}
-            <div className="flex items-center justify-end gap-5">
+            <div className="landing-actions flex items-center justify-end gap-5">
+              <LanguageSelector compact />
               <button
                 type="button"
                 onClick={() => openAuth("login")}
                 className="text-[14px] font-medium text-slate-700 hover:text-black px-2 py-1.5 transition-colors cursor-pointer"
               >
-                Sign In
+                {t("common.signIn")}
               </button>
               <button
                 type="button"
                 onClick={() => openAuth("register")}
                 className="pill-btn pill-btn-sm text-[13px] px-6 py-2.5 bg-[#000000] text-white hover:scale-105 shadow-md transition-all duration-200 cursor-pointer"
               >
-                Find my dream
+                {t("landing.cta")}
               </button>
             </div>
           </nav>
@@ -141,7 +145,7 @@ export function LandingPage({ defaultAuthOpen = false }: LandingPageProps) {
             <h1
               className="font-['Inter',sans-serif] font-medium text-[44px] sm:text-[60px] md:text-[76px] leading-[1.05] tracking-tight text-[#0f172a] max-w-[1000px] text-balance"
             >
-              Where evidence becomes opportunity.
+              {t("landing.headline")}
             </h1>
           </div>
 
@@ -149,7 +153,7 @@ export function LandingPage({ defaultAuthOpen = false }: LandingPageProps) {
           <p
             className="animate-fade-rise-delay mt-6 max-w-[670px] text-[16px] sm:text-[18px] font-normal leading-[1.625] text-slate-700 text-balance"
           >
-            Turn resumes, code repositories, and assessments into evidence-linked skill records—then discover opportunities through transparent, deterministic matching.
+            {t("landing.body")}
           </p>
 
           {/* Staggered Entrance Item 03: Main CTA Button */}
@@ -159,7 +163,7 @@ export function LandingPage({ defaultAuthOpen = false }: LandingPageProps) {
               onClick={() => openAuth("register")}
               className="pill-btn text-[16px] px-12 py-4 bg-[#000000] text-white hover:scale-105 shadow-xl transition-all duration-200 cursor-pointer font-medium"
             >
-              Find my dream
+              {t("landing.cta")}
             </button>
           </div>
         </main>

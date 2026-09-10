@@ -35,6 +35,8 @@ import { LandingPage } from "./pages/LandingPage";
 import { useAuth } from "./auth/AuthContext";
 import { CommandPalette } from "./components/CommandPalette";
 import { SkillPassportCopilot } from "./components/SkillPassportCopilot";
+import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "./localization/LanguageSelector";
 
 const RecruiterDashboard = lazy(async () => ({
   default: (await import("./pages/RecruiterDashboard")).RecruiterDashboard,
@@ -133,6 +135,7 @@ export type InstitutionTab =
   | "reports";
 
 export function App() {
+  const { t } = useTranslation();
   const { session, signOut } = useAuth();
   const prefersReduced = useReducedMotion();
   const [studentTab, setStudentTab] = useState<StudentTab>("overview");
@@ -166,6 +169,18 @@ export function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [studentTab, recruiterTab, academicianTab, institutionTab]);
+
+  const [isAssessmentFullscreen, setIsAssessmentFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleAssessmentState = (e: any) => {
+      setIsAssessmentFullscreen(Boolean(e.detail?.active));
+    };
+    window.addEventListener("assessment-fullscreen-active", handleAssessmentState);
+    return () => {
+      window.removeEventListener("assessment-fullscreen-active", handleAssessmentState);
+    };
+  }, []);
 
   if (!session) {
     return <LandingPage />;
@@ -239,18 +254,6 @@ export function App() {
     { id: "reports", label: "Institutional Reports", icon: <Download className="h-4 w-4 shrink-0" aria-hidden="true" /> },
   ];
 
-  const [isAssessmentFullscreen, setIsAssessmentFullscreen] = useState(false);
-
-  useEffect(() => {
-    const handleAssessmentState = (e: any) => {
-      setIsAssessmentFullscreen(Boolean(e.detail?.active));
-    };
-    window.addEventListener("assessment-fullscreen-active", handleAssessmentState);
-    return () => {
-      window.removeEventListener("assessment-fullscreen-active", handleAssessmentState);
-    };
-  }, []);
-
   const currentTabName = isStudent
     ? studentTab
     : isRecruiter
@@ -259,12 +262,8 @@ export function App() {
     ? academicianTab
     : institutionTab;
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
-  }, [currentTabName]);
-
   return (
-    <div className="min-h-screen relative flex text-[#111827] font-sans selection:bg-[rgba(176,141,87,0.2)] selection:text-[#111827]">
+    <div className="app-shell min-h-screen relative flex text-[#111827] font-sans selection:bg-[rgba(176,141,87,0.2)] selection:text-[#111827]">
       {/* Shared Full-Viewport Animated Background Video Layer */}
       {!isAssessmentFullscreen && <DashboardVideoBackground />}
 
@@ -293,206 +292,206 @@ export function App() {
       {/* Left Rail / Sidebar (Translucent Glassmorphism with Subtle Border) */}
       {!isAssessmentFullscreen && (
         <aside
-          className={`fixed inset-y-0 left-0 z-40 h-screen md:sticky md:top-0 bg-white/20 md:bg-white/20 backdrop-blur-md border-r border-[#E5E1D8]/60 flex flex-col justify-between transition-all duration-200 md:translate-x-0 shrink-0 ${
+          className={`app-sidebar fixed inset-y-0 left-0 z-40 h-screen md:sticky md:top-0 bg-white/20 md:bg-white/20 backdrop-blur-md border-r border-[#E5E1D8]/60 flex flex-col justify-between transition-all duration-200 md:translate-x-0 shrink-0 ${
             isCollapsed ? "md:w-20" : "md:w-64"
           } w-64 ${mobileMenuOpen ? "translate-x-0 shadow-2xl bg-white/95" : "-translate-x-full"}`}
         >
-        {/* Top Header & Nav Items */}
-        <div className={`flex-1 min-h-0 ${isCollapsed ? "p-3 overflow-hidden" : "p-5 overflow-y-auto no-scrollbar"}`}>
-          {/* Logo */}
-          <div className={`flex items-center ${isCollapsed ? "flex-col gap-3" : "justify-between"} pb-6 border-b border-[#E5E1D8]/40 mb-4`}>
-            <a href="/" className="flex items-center gap-2.5 text-[#111827] min-w-0">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#B08D57]/40 bg-white/30 font-mono text-xs text-[#B08D57] font-semibold">
-                LI
-              </span>
+          {/* Top Header & Nav Items */}
+          <div className={`flex-1 min-h-0 ${isCollapsed ? "p-3 overflow-hidden" : "p-5 overflow-y-auto no-scrollbar"}`}>
+            {/* Logo */}
+            <div className={`flex items-center ${isCollapsed ? "flex-col gap-3" : "justify-between"} pb-6 border-b border-[#E5E1D8]/40 mb-4`}>
+              <a href="/" className="flex items-center gap-2.5 text-[#111827] min-w-0">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#B08D57]/40 bg-white/30 font-mono text-xs text-[#B08D57] font-semibold">
+                  LI
+                </span>
+                {!isCollapsed && (
+                  <div className="overflow-hidden whitespace-nowrap">
+                    <span
+                      className="text-lg font-normal tracking-tight block leading-none text-[#111827]"
+                      style={{ fontFamily: "var(--font-display)" }}
+                    >
+                      Lumina Intel<sup className="text-[10px] ml-0.5 text-[#B08D57]">®</sup>
+                    </span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-[#B08D57] block mt-1 font-semibold">
+                      {session.role}
+                    </span>
+                  </div>
+                )}
+              </a>
+
+              {/* Sidebar Collapse Toggle */}
+              <button
+                type="button"
+                onClick={() => setIsCollapsed((prev) => !prev)}
+                aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                className="hidden md:flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#E5E1D8]/40 bg-white/20 text-[#64748B] hover:text-[#111827] hover:border-[#B08D57]/50 transition-colors cursor-pointer"
+              >
+                <MoreHorizontal className={`h-3.5 w-3.5 transition-transform ${isCollapsed ? "rotate-90" : ""}`} />
+              </button>
+
+              {/* Mobile Close Button */}
+              <button
+                type="button"
+                className="md:hidden text-[#64748B] hover:text-[#111827] p-1"
+                onClick={() => setMobileMenuOpen(false)}
+                aria-label="Close menu"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Navigation Links */}
+            <nav className="space-y-1">
               {!isCollapsed && (
-                <div className="overflow-hidden whitespace-nowrap">
-                  <span
-                    className="text-lg font-normal tracking-tight block leading-none text-[#111827]"
-                    style={{ fontFamily: "var(--font-display)" }}
-                  >
-                    Lumina Intel<sup className="text-[10px] ml-0.5 text-[#B08D57]">®</sup>
-                  </span>
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-[#B08D57] block mt-1 font-semibold">
-                    {session.role}
-                  </span>
+                <div className="text-xs font-mono uppercase tracking-wider text-[#0f172a] px-3 py-1.5 mb-1.5 font-bold">
+                  Workspace
                 </div>
               )}
-            </a>
 
-            {/* Sidebar Collapse Toggle */}
-            <button
-              type="button"
-              onClick={() => setIsCollapsed((prev) => !prev)}
-              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="hidden md:flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#E5E1D8]/40 bg-white/20 text-[#64748B] hover:text-[#111827] hover:border-[#B08D57]/50 transition-colors cursor-pointer"
-            >
-              <MoreHorizontal className={`h-3.5 w-3.5 transition-transform ${isCollapsed ? "rotate-90" : ""}`} />
-            </button>
+              {isStudent &&
+                studentNavItems.map((item) => {
+                  const isActive = studentTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setStudentTab(item.id);
+                        setMobileMenuOpen(false);
+                      }}
+                      title={isCollapsed ? item.label : undefined}
+                      className={`w-full flex items-center rounded-lg text-[13.5px] leading-snug transition-all duration-200 cursor-pointer ${
+                        isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
+                      } ${
+                        isActive
+                          ? "nav-active-accent bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
+                          : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
+                      }`}
+                    >
+                      <span className={`shrink-0 ${isActive ? "text-[#935f18]" : "text-[#1e293b]"}`}>{item.icon}</span>
+                      {!isCollapsed && <span className="truncate">{item.label}</span>}
+                    </button>
+                  );
+                })}
 
-            {/* Mobile Close Button */}
-            <button
-              type="button"
-              className="md:hidden text-[#64748B] hover:text-[#111827] p-1"
-              onClick={() => setMobileMenuOpen(false)}
-              aria-label="Close menu"
-            >
-              <X className="h-4 w-4" />
-            </button>
+              {isRecruiter &&
+                recruiterNavItems.map((item) => {
+                  const isActive = recruiterTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setRecruiterTab(item.id);
+                        setMobileMenuOpen(false);
+                      }}
+                      title={isCollapsed ? item.label : undefined}
+                      className={`w-full flex items-center rounded-lg text-[13.5px] leading-snug transition-all duration-200 cursor-pointer ${
+                        isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
+                      } ${
+                        isActive
+                          ? "nav-active-accent bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
+                          : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
+                      }`}
+                    >
+                      <span className={`shrink-0 ${isActive ? "text-[#935f18]" : "text-[#1e293b]"}`}>{item.icon}</span>
+                      {!isCollapsed && <span className="truncate">{item.label}</span>}
+                    </button>
+                  );
+                })}
+
+              {isAcademician &&
+                academicianNavItems.map((item) => {
+                  const isActive = academicianTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setAcademicianTab(item.id);
+                        setMobileMenuOpen(false);
+                      }}
+                      title={isCollapsed ? item.label : undefined}
+                      className={`w-full flex items-center rounded-lg text-[13.5px] leading-snug transition-all duration-200 cursor-pointer ${
+                        isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
+                      } ${
+                        isActive
+                          ? "nav-active-accent bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
+                          : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
+                      }`}
+                    >
+                      <span className={`shrink-0 ${isActive ? "text-[#935f18]" : "text-[#1e293b]"}`}>{item.icon}</span>
+                      {!isCollapsed && <span className="truncate">{item.label}</span>}
+                    </button>
+                  );
+                })}
+
+              {isInstitution &&
+                institutionNavItems.map((item) => {
+                  const isActive = institutionTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setInstitutionTab(item.id);
+                        setMobileMenuOpen(false);
+                      }}
+                      title={isCollapsed ? item.label : undefined}
+                      className={`w-full flex items-center rounded-lg text-[13.5px] leading-snug transition-all duration-200 cursor-pointer ${
+                        isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
+                      } ${
+                        isActive
+                          ? "nav-active-accent bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
+                          : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
+                      }`}
+                    >
+                      <span className={`shrink-0 ${isActive ? "text-[#935f18]" : "text-[#1e293b]"}`}>{item.icon}</span>
+                      {!isCollapsed && <span className="truncate">{item.label}</span>}
+                    </button>
+                  );
+                })}
+            </nav>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="space-y-1">
-            {!isCollapsed && (
-              <div className="text-xs font-mono uppercase tracking-wider text-[#0f172a] px-3 py-1.5 mb-1.5 font-bold">
-                Workspace
+          {/* Footer / User Profile & Logout (Translucent Glass) */}
+          <div className={`border-t border-[#E5E1D8]/60 bg-white/20 p-3.5 space-y-2`}>
+            {!isCollapsed ? (
+              <div className="flex items-center justify-between gap-2 p-2 rounded-lg border border-[#E5E1D8]/60 bg-white/40 backdrop-blur-xs shadow-2xs">
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs text-[#000000] truncate font-bold">{session.email}</div>
+                  <div className="font-mono text-[10px] uppercase text-[#935f18] mt-0.5 font-bold">{session.role}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={signOut}
+                  title={t("common.signOut")}
+                  aria-label={t("common.signOut")}
+                  className="p-1.5 text-[#0f172a] hover:text-[#b91c1c] transition-colors cursor-pointer"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
               </div>
-            )}
-
-            {isStudent &&
-              studentNavItems.map((item) => {
-                const isActive = studentTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      setStudentTab(item.id);
-                      setMobileMenuOpen(false);
-                    }}
-                    title={isCollapsed ? item.label : undefined}
-                    className={`w-full flex items-center rounded-lg text-[13.5px] leading-snug transition-all duration-200 cursor-pointer ${
-                      isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
-                    } ${
-                      isActive
-                        ? "bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
-                        : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
-                    }`}
-                  >
-                    <span className={`shrink-0 ${isActive ? "text-[#935f18]" : "text-[#1e293b]"}`}>{item.icon}</span>
-                    {!isCollapsed && <span className="truncate">{item.label}</span>}
-                  </button>
-                );
-              })}
-
-            {isRecruiter &&
-              recruiterNavItems.map((item) => {
-                const isActive = recruiterTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      setRecruiterTab(item.id);
-                      setMobileMenuOpen(false);
-                    }}
-                    title={isCollapsed ? item.label : undefined}
-                    className={`w-full flex items-center rounded-lg text-[13.5px] leading-snug transition-all duration-200 cursor-pointer ${
-                      isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
-                    } ${
-                      isActive
-                        ? "bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
-                        : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
-                    }`}
-                  >
-                    <span className={`shrink-0 ${isActive ? "text-[#935f18]" : "text-[#1e293b]"}`}>{item.icon}</span>
-                    {!isCollapsed && <span className="truncate">{item.label}</span>}
-                  </button>
-                );
-              })}
-
-            {isAcademician &&
-              academicianNavItems.map((item) => {
-                const isActive = academicianTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      setAcademicianTab(item.id);
-                      setMobileMenuOpen(false);
-                    }}
-                    title={isCollapsed ? item.label : undefined}
-                    className={`w-full flex items-center rounded-lg text-[13.5px] leading-snug transition-all duration-200 cursor-pointer ${
-                      isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
-                    } ${
-                      isActive
-                        ? "bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
-                        : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
-                    }`}
-                  >
-                    <span className={`shrink-0 ${isActive ? "text-[#935f18]" : "text-[#1e293b]"}`}>{item.icon}</span>
-                    {!isCollapsed && <span className="truncate">{item.label}</span>}
-                  </button>
-                );
-              })}
-
-            {isInstitution &&
-              institutionNavItems.map((item) => {
-                const isActive = institutionTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      setInstitutionTab(item.id);
-                      setMobileMenuOpen(false);
-                    }}
-                    title={isCollapsed ? item.label : undefined}
-                    className={`w-full flex items-center rounded-lg text-[13.5px] leading-snug transition-all duration-200 cursor-pointer ${
-                      isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
-                    } ${
-                      isActive
-                        ? "bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
-                        : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
-                    }`}
-                  >
-                    <span className={`shrink-0 ${isActive ? "text-[#935f18]" : "text-[#1e293b]"}`}>{item.icon}</span>
-                    {!isCollapsed && <span className="truncate">{item.label}</span>}
-                  </button>
-                );
-              })}
-          </nav>
-        </div>
-
-        {/* Footer / User Profile & Logout (Translucent Glass) */}
-        <div className={`border-t border-[#E5E1D8]/60 bg-white/20 p-3.5 space-y-2`}>
-          {!isCollapsed ? (
-            <div className="flex items-center justify-between gap-2 p-2 rounded-lg border border-[#E5E1D8]/60 bg-white/40 backdrop-blur-xs shadow-2xs">
-              <div className="min-w-0 flex-1">
-                <div className="text-xs text-[#000000] truncate font-bold">{session.email}</div>
-                <div className="font-mono text-[10px] uppercase text-[#935f18] mt-0.5 font-bold">{session.role}</div>
-              </div>
+            ) : (
               <button
                 type="button"
                 onClick={signOut}
-                title="Sign out"
-                aria-label="Sign out"
-                className="p-1.5 text-[#0f172a] hover:text-[#b91c1c] transition-colors cursor-pointer"
+                title={t("common.signOut")}
+                aria-label={t("common.signOut")}
+                className="flex h-9 w-full items-center justify-center rounded-lg border border-[#E5E1D8]/60 bg-white/40 text-[#0f172a] hover:text-[#b91c1c] transition-colors cursor-pointer shadow-2xs"
               >
                 <LogOut className="h-4 w-4" />
               </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={signOut}
-              title="Sign out"
-              aria-label="Sign out"
-              className="flex h-9 w-full items-center justify-center rounded-lg border border-[#E5E1D8]/60 bg-white/40 text-[#0f172a] hover:text-[#b91c1c] transition-colors cursor-pointer shadow-2xs"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-      </aside>
+            )}
+          </div>
+        </aside>
       )}
 
       {/* Main Content Area */}
       <div className="relative z-10 flex-1 flex flex-col min-w-0">
         {/* Desktop Top Status Bar (Translucent Glassmorphism) */}
         {!isAssessmentFullscreen && (
-          <header className="sticky top-0 z-30 border-b border-[#E5E1D8]/50 bg-white/25 md:bg-white/25 backdrop-blur-md px-6 py-3.5 flex items-center justify-between">
+          <header className="app-topbar sticky top-0 z-30 border-b border-[#E5E1D8]/50 bg-white/25 md:bg-white/25 backdrop-blur-md px-6 py-3.5 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -508,6 +507,7 @@ export function App() {
             </div>
 
             <div className="flex items-center gap-3">
+              <LanguageSelector compact />
               {(isStudent || isRecruiter) && (
                 <button
                   type="button"

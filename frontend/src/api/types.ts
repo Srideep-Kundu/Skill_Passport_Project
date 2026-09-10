@@ -6,6 +6,10 @@ export interface AuthSession {
   role: Role;
 }
 
+export interface AccountPreferences {
+  preferred_locale: string | null;
+}
+
 export interface StudentRegistration {
   email: string;
   password: string;

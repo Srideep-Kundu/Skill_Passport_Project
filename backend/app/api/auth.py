@@ -1,5 +1,6 @@
 import secrets
 from typing import Annotated, Any, Literal, cast
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from google.auth.transport import requests as google_requests
@@ -7,8 +8,6 @@ from google.oauth2 import id_token
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from uuid import UUID
 
 from app.core.config import get_settings
 from app.core.db import get_session
@@ -31,11 +30,13 @@ from app.models import (
 )
 from app.schemas.contracts import (
     AcademicianRegistration,
+    AccountPreferenceResponse,
     ForgotPasswordRequest,
     ForgotPasswordResponse,
     GoogleAuthRequest,
     InstitutionRegistration,
     LoginRequest,
+    PreferredLocaleUpdate,
     RecruiterRegistration,
     ResetPasswordRequest,
     ResetPasswordResponse,
@@ -465,6 +466,7 @@ async def get_me(
         "id": str(principal.id),
         "email": principal.email,
         "role": role_val,
+        "preferred_locale": principal.preferred_locale,
     }
     if hasattr(principal, "full_name"):
         data["full_name"] = principal.full_name
@@ -479,4 +481,23 @@ async def get_me(
     if hasattr(principal, "university"):
         data["university"] = principal.university
     return data
+
+
+@router.get("/me/preferences", response_model=AccountPreferenceResponse)
+async def get_my_preferences(
+    principal: Annotated[Student | Recruiter | Admin | Academician | Institution, Depends(current_principal)],
+) -> AccountPreferenceResponse:
+    return AccountPreferenceResponse(preferred_locale=principal.preferred_locale)
+
+
+@router.patch("/me/preferences", response_model=AccountPreferenceResponse)
+async def update_my_preferences(
+    payload: PreferredLocaleUpdate,
+    principal: Annotated[Student | Recruiter | Admin | Academician | Institution, Depends(current_principal)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> AccountPreferenceResponse:
+    """Update only the authenticated principal; no request-supplied account ID is accepted."""
+    principal.preferred_locale = payload.preferred_locale
+    await session.commit()
+    return AccountPreferenceResponse(preferred_locale=principal.preferred_locale)
 

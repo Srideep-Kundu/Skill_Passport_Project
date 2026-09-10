@@ -485,3 +485,31 @@ tr:hover td {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(17, 24, 39, 0.3);
 }
+
+@media (max-width: 767px) {
+  .landing-nav {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+    padding-inline: 1.25rem;
+  }
+
+  .landing-brand,
+  .landing-actions {
+    justify-content: center;
+  }
+
+  .landing-actions {
+    flex-wrap: wrap;
+    gap: 0.65rem 0.9rem;
+  }
+
+  .landing-actions .pill-btn {
+    min-width: min(100%, 12rem);
+    white-space: normal;
+  }
+
+  .app-topbar {
+    gap: 0.75rem;
+    padding-inline: 1rem;
+  }
+}
