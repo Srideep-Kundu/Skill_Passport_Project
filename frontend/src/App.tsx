@@ -327,37 +327,36 @@ export function App() {
         >
           {/* Top Header & Nav Items */}
           <div className={`flex-1 min-h-0 ${isCollapsed ? "p-3 overflow-hidden" : "p-5 overflow-y-auto no-scrollbar"}`}>
-            {/* Logo */}
-            <div className={`flex items-center ${isCollapsed ? "flex-col gap-3" : "justify-between"} pb-6 border-b border-[#E5E1D8]/40 mb-4`}>
-              <a href="/" className="flex items-center gap-2.5 text-[#111827] min-w-0">
-                <img
-                  src="/lumina-logo.png"
-                  alt="Lumina Intel Logo"
-                  className="h-8 w-8 shrink-0 object-contain rounded-lg border border-[#B08D57]/30 bg-white/60 p-0.5 shadow-2xs"
-                />
+            {/* Logo Header */}
+            <div className={`flex items-center ${isCollapsed ? "flex-col gap-3" : "justify-between"} pb-5 border-b border-[#E5E1D8]/60 mb-4`}>
+              <a href="/" className="flex items-center gap-3 text-[#111827] min-w-0">
+                <div className="h-11 w-11 shrink-0 rounded-full bg-[#FCFBF9] border border-[#E5E1D8] flex items-center justify-center p-1 shadow-xs overflow-hidden">
+                  <img
+                    src="/lumina-logo.png"
+                    alt="Lumina Intel Logo"
+                    className="h-full w-full object-contain"
+                  />
+                </div>
                 {!isCollapsed && (
                   <div className="overflow-hidden whitespace-nowrap">
-                    <span
-                      className="text-lg font-normal tracking-tight block leading-none text-[#111827]"
-                      style={{ fontFamily: "var(--font-display)" }}
-                    >
-                      Lumina Intel<sup className="text-[10px] ml-0.5 text-[#B08D57]">®</sup>
+                    <span className="text-[15px] font-extrabold tracking-tight block leading-tight text-[#1E293B]">
+                      LUMINA INTEL
                     </span>
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-[#B08D57] block mt-1 font-semibold">
+                    <span className="text-[11px] font-mono uppercase tracking-widest text-[#B08D57] font-bold block mt-0.5">
                       {session.role}
                     </span>
                   </div>
                 )}
               </a>
 
-              {/* Sidebar Collapse Toggle */}
+              {/* Sidebar Collapse / Options Toggle */}
               <button
                 type="button"
                 onClick={() => setIsCollapsed((prev) => !prev)}
                 aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-                className="hidden md:flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[#E5E1D8]/40 bg-white/20 text-[#64748B] hover:text-[#111827] hover:border-[#B08D57]/50 transition-colors cursor-pointer"
+                className="hidden md:flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#E5E1D8] bg-white/70 hover:bg-white text-[#475569] hover:text-[#111827] transition-all cursor-pointer shadow-2xs"
               >
-                <MoreHorizontal className={`h-3.5 w-3.5 transition-transform ${isCollapsed ? "rotate-90" : ""}`} />
+                <MoreHorizontal className={`h-4 w-4 transition-transform ${isCollapsed ? "rotate-90" : ""}`} />
               </button>
 
               {/* Mobile Close Button */}
