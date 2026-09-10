@@ -208,6 +208,14 @@ export function PostLoginTransition({
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="relative z-10 mx-auto max-w-2xl px-8 py-10 rounded-2xl border border-[#E5E1D8] bg-[#FFFFFF]/90 backdrop-blur-md shadow-[0_12px_40px_rgba(17,24,39,0.08)] text-center mx-4"
           >
+            <div className="flex justify-center mb-4">
+              <img
+                src="/lumina-logo.png"
+                alt="Lumina Intel Logo"
+                className="h-16 w-16 object-contain rounded-full border border-[#B08D57]/30 bg-white p-1 shadow-md"
+              />
+            </div>
+
             <p className="mb-3 font-mono text-xs uppercase tracking-widest text-[#B08D57] font-semibold">
               {isStudent && resolvedName ? `Welcome back, ${resolvedName}` : "Welcome back"}
             </p>

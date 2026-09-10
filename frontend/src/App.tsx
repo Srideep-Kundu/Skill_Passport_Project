@@ -330,9 +330,11 @@ export function App() {
             {/* Logo */}
             <div className={`flex items-center ${isCollapsed ? "flex-col gap-3" : "justify-between"} pb-6 border-b border-[#E5E1D8]/40 mb-4`}>
               <a href="/" className="flex items-center gap-2.5 text-[#111827] min-w-0">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#B08D57]/40 bg-white/30 font-mono text-xs text-[#B08D57] font-semibold">
-                  LI
-                </span>
+                <img
+                  src="/lumina-logo.png"
+                  alt="Lumina Intel Logo"
+                  className="h-8 w-8 shrink-0 object-contain rounded-lg border border-[#B08D57]/30 bg-white/60 p-0.5 shadow-2xs"
+                />
                 {!isCollapsed && (
                   <div className="overflow-hidden whitespace-nowrap">
                     <span
