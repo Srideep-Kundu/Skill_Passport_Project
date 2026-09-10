@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AuthPage } from "./AuthPage";
 import { useTranslation } from "react-i18next";
 import { LanguageSelector } from "../localization/LanguageSelector";
+import { BrandLogo } from "../components/BrandLogo";
 
 export interface LandingPageProps {
   isDarkMode?: boolean;
@@ -86,13 +87,13 @@ export function LandingPage({ defaultAuthOpen = false }: LandingPageProps) {
         {/* 3-Column Distributed Navigation Bar (Max-width: 1280px, px: 32px, py: 24px) */}
         <header className="relative z-20 w-full">
           <nav className="landing-nav mx-auto grid w-full max-w-[1280px] grid-cols-2 md:grid-cols-3 items-center px-8 py-6">
-            {/* Left Column: Brand logo using 'Instrument Serif' at 30px with ® superscript */}
+            {/* Brand home link */}
             <div className="landing-brand flex items-center justify-start">
               <a
                 href="#home"
                 className="font-['Inter',sans-serif] text-[26px] font-semibold tracking-tight text-[#0f172a] leading-none flex items-center select-none"
               >
-                Lumina Intel<sup className="text-[12px] font-mono ml-1 text-slate-500 font-normal">®</sup>
+                <BrandLogo />
               </a>
             </div>
 
@@ -485,7 +486,8 @@ export function LandingPage({ defaultAuthOpen = false }: LandingPageProps) {
 
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-[#64748B] font-mono gap-4">
             <div>
-              © {new Date().getFullYear()} Lumina Intel Platform. All rights reserved.
+              <a href="#home" className="mb-3 inline-flex"><BrandLogo /></a>
+              <p>© {new Date().getFullYear()} Lumina Intel Platform. All rights reserved.</p>
             </div>
             <div className="flex items-center gap-6">
               <a href="#privacy" className="hover:text-[#111827] transition-colors">Privacy</a>

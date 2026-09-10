@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
+import { BrandLogo } from "./components/BrandLogo";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Toaster } from "sonner";
 import {
@@ -330,16 +331,14 @@ export function App() {
             {/* Logo */}
             <div className={`flex items-center ${isCollapsed ? "flex-col gap-3" : "justify-between"} pb-6 border-b border-[#E5E1D8]/40 mb-4`}>
               <a href="/" className="flex items-center gap-2.5 text-[#111827] min-w-0">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#B08D57]/40 bg-white/30 font-mono text-xs text-[#B08D57] font-semibold">
-                  LI
-                </span>
+                <BrandLogo compact />
                 {!isCollapsed && (
                   <div className="overflow-hidden whitespace-nowrap">
                     <span
                       className="text-lg font-normal tracking-tight block leading-none text-[#111827]"
                       style={{ fontFamily: "var(--font-display)" }}
                     >
-                      Lumina Intel<sup className="text-[10px] ml-0.5 text-[#B08D57]">®</sup>
+                      <span className="font-serif font-bold uppercase text-[#404341]">Lumina Intel</span>
                     </span>
                     <span className="text-[10px] font-mono uppercase tracking-widest text-[#B08D57] block mt-1 font-semibold">
                       {session.role}
