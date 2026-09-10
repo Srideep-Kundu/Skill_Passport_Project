@@ -1,10 +1,11 @@
 import { motion, useReducedMotion } from "framer-motion";
 import type { MatchExplanation, MatchExplanationLine } from "../api";
 import { AlertCircle, CheckCircle2, ShieldCheck, Sparkles, XCircle, X } from "lucide-react";
-import { AnimatedNumber } from "./AnimatedNumber";
 import { modalVariants } from "../theme/motion";
+import { useTranslation } from "react-i18next";
 
 function ExplanationRow({ line }: { line: MatchExplanationLine }) {
+  const { t, i18n } = useTranslation();
   const isExact = line.status.startsWith("matched_");
   const isSemantic = line.status === "semantic_near_match";
   const isMissing = line.status === "missing";
@@ -21,27 +22,27 @@ function ExplanationRow({ line }: { line: MatchExplanationLine }) {
 
           {isSemantic && line.matched_skill_name && (
             <span className="font-mono text-[10px] uppercase text-[#B08D57] border border-[#B08D57]/30 bg-[rgba(176,141,87,0.08)] px-2 py-0.5 rounded-full font-semibold">
-              Semantic ⇄ {line.matched_skill_name} ({Math.round((line.semantic_similarity ?? 0) * 100)}%)
+              {t("match.semantic")} ⇄ {line.matched_skill_name} ({new Intl.NumberFormat(i18n.resolvedLanguage, { style: "percent", maximumFractionDigits: 0 }).format(line.semantic_similarity ?? 0)})
             </span>
           )}
 
           {isMissing && (
             <span className="font-mono text-[10px] uppercase text-[#B4534B] border border-[#B4534B]/30 bg-[rgba(180,83,75,0.08)] px-2 py-0.5 rounded-full font-semibold">
-              Missing
+              {t("match.missing")}
             </span>
           )}
         </div>
 
         {line.evidence_title && (
           <p className="font-mono text-[11px] text-[#64748B] pl-6">
-            Supported by evidence: <span className="text-[#111827] font-medium">&quot;{line.evidence_title}&quot;</span>
+            {t("match.supportedBy", { title: line.evidence_title })}
           </p>
         )}
       </div>
 
       <div className="pl-6 sm:pl-0 shrink-0 text-right">
         <span className="inline-block font-mono border border-[#E5E1D8] bg-[#FFFFFF] px-2.5 py-0.5 text-xs text-[#4F6F5A] font-semibold rounded-full shadow-2xs">
-          +<AnimatedNumber value={Math.round(line.total_contribution * 100)} /> pts
+          {t("match.points", { count: Math.round(line.total_contribution * 100) })}
         </span>
       </div>
     </li>
@@ -55,6 +56,7 @@ export function MatchExplanationPanel({
   explanation: MatchExplanation;
   onClose?: () => void;
 }) {
+  const { t, i18n } = useTranslation();
   const prefersReducedMotion = useReducedMotion();
   const items = Array.isArray(explanation?.items) ? explanation.items : [];
   const exactItems = items.filter((i) => i?.status?.startsWith("matched_"));
@@ -63,7 +65,7 @@ export function MatchExplanationPanel({
 
   return (
     <motion.section
-      aria-label="Deterministic match explanation"
+      aria-label={t("match.aria")}
       variants={prefersReducedMotion ? undefined : modalVariants}
       initial="hidden"
       animate="visible"
@@ -75,14 +77,14 @@ export function MatchExplanationPanel({
         <div>
           <div className="font-mono text-[11px] uppercase tracking-widest text-[#B08D57] font-semibold mb-1 flex items-center gap-1.5">
             <span className="h-1.5 w-1.5 rounded-full bg-[#B08D57]" />
-            <span>ALGORITHMIC PROVENANCE BREAKDOWN</span>
+            <span>{t("match.provenance")}</span>
           </div>
           <h3 className="text-2xl font-normal text-[#111827] flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
             <ShieldCheck className="h-5 w-5 text-[#B08D57]" />
-            <span>Deterministic Match Formula Audit</span>
+            <span>{t("match.title")}</span>
           </h3>
           <p className="text-xs text-[#475569] mt-0.5">
-            Rendered directly from persisted database evidence records and exact scoring formulas.
+            {t("match.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -103,21 +105,21 @@ export function MatchExplanationPanel({
       {/* Metric Breakdown Cards */}
       <dl className="grid grid-cols-3 gap-3 text-center font-mono">
         <div className="border border-[#E5E1D8] bg-[#F7F5F0] p-4 rounded-[12px]">
-          <dt className="text-[10px] uppercase text-[#64748B] font-semibold">Exact Overlap (D)</dt>
+          <dt className="text-[10px] uppercase text-[#64748B] font-semibold">{t("match.exact")}</dt>
           <dd className="text-2xl font-normal text-[#111827] mt-0.5" style={{ fontFamily: "var(--font-display)" }}>
-            <AnimatedNumber value={Math.round(explanation.deterministic_score * 100)} formatter={(v) => `${v}%`} />
+            {new Intl.NumberFormat(i18n.resolvedLanguage, { style: "percent", maximumFractionDigits: 0 }).format(explanation.deterministic_score)}
           </dd>
         </div>
         <div className="border border-[#E5E1D8] bg-[#F7F5F0] p-4 rounded-[12px]">
-          <dt className="text-[10px] uppercase text-[#64748B] font-semibold">Semantic Match (S)</dt>
+          <dt className="text-[10px] uppercase text-[#64748B] font-semibold">{t("match.semantic")}</dt>
           <dd className="text-2xl font-normal text-[#111827] mt-0.5" style={{ fontFamily: "var(--font-display)" }}>
-            <AnimatedNumber value={Math.round(explanation.semantic_score * 100)} formatter={(v) => `${v}%`} />
+            {new Intl.NumberFormat(i18n.resolvedLanguage, { style: "percent", maximumFractionDigits: 0 }).format(explanation.semantic_score)}
           </dd>
         </div>
         <div className="border border-[#E5E1D8] bg-[#F7F5F0] p-4 rounded-[12px]">
-          <dt className="text-[10px] uppercase text-[#64748B] font-semibold">Verified Bonus (V)</dt>
+          <dt className="text-[10px] uppercase text-[#64748B] font-semibold">{t("match.verification")}</dt>
           <dd className="text-2xl font-normal text-[#4F6F5A] mt-0.5" style={{ fontFamily: "var(--font-display)" }}>
-            +<AnimatedNumber value={Math.round(explanation.verification_bonus * 100)} formatter={(v) => `${v}%`} />
+            +{new Intl.NumberFormat(i18n.resolvedLanguage, { style: "percent", maximumFractionDigits: 0 }).format(explanation.verification_bonus)}
           </dd>
         </div>
       </dl>
@@ -127,7 +129,7 @@ export function MatchExplanationPanel({
         <div className="flex items-start gap-2.5 border border-[#E5E1D8] bg-[#F7F5F0] p-3.5 rounded-[12px] text-xs font-mono text-[#475569]">
           <AlertCircle className="h-4 w-4 shrink-0 mt-0.5 text-[#B08D57]" />
           <span>
-            <strong className="text-[#111827]">Note on Semantic Near-Matches:</strong> Semantic similarity indicates conceptual closeness based on vector embeddings. It does <em>not</em> imply exact verified possession of the required skill.
+            <strong className="text-[#111827]">{t("match.semanticNoteTitle")}</strong> {t("match.semanticNote")}
           </span>
         </div>
       )}
@@ -138,7 +140,7 @@ export function MatchExplanationPanel({
           <div>
             <h4 className="font-mono text-[10px] uppercase tracking-wider text-[#64748B] font-semibold mb-2 flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-[#4F6F5A]" />
-              <span>Verified & Exact Matched Skills ({exactItems.length})</span>
+              <span>{t("match.exactSkills", { count: exactItems.length })}</span>
             </h4>
             <ul className="divide-y divide-[#E5E1D8]">
               {exactItems.map((line) => (
@@ -152,7 +154,7 @@ export function MatchExplanationPanel({
           <div className="pt-3 border-t border-[#E5E1D8]">
             <h4 className="font-mono text-[10px] uppercase tracking-wider text-[#B08D57] font-semibold mb-2 flex items-center gap-1.5">
               <Sparkles className="h-3.5 w-3.5 text-[#B08D57]" />
-              <span>Semantic Near-Matches ({semanticItems.length})</span>
+              <span>{t("match.semanticSkills", { count: semanticItems.length })}</span>
             </h4>
             <ul className="divide-y divide-[#E5E1D8]">
               {semanticItems.map((line) => (
@@ -166,7 +168,7 @@ export function MatchExplanationPanel({
           <div className="pt-3 border-t border-[#E5E1D8]">
             <h4 className="font-mono text-[10px] uppercase tracking-wider text-[#B4534B] font-semibold mb-2 flex items-center gap-1.5">
               <XCircle className="h-3.5 w-3.5 text-[#B4534B]" />
-              <span>Missing Skill Requirements ({missingItems.length})</span>
+              <span>{t("match.missingSkills", { count: missingItems.length })}</span>
             </h4>
             <ul className="divide-y divide-[#E5E1D8]">
               {missingItems.map((line) => (
@@ -179,9 +181,9 @@ export function MatchExplanationPanel({
 
       {/* Summary Footer */}
       <div className="flex items-center justify-between border-t border-[#E5E1D8] pt-3.5">
-        <span className="font-mono text-xs uppercase text-[#64748B] font-semibold">Final Audit Score</span>
+        <span className="font-mono text-xs uppercase text-[#64748B] font-semibold">{t("match.final")}</span>
         <span className="font-mono text-lg font-normal text-[#111827]" style={{ fontFamily: "var(--font-display)" }}>
-          <AnimatedNumber value={Math.round(explanation.final_score * 100)} formatter={(v) => `${v}% Final Score`} />
+          {t("match.finalValue", { value: new Intl.NumberFormat(i18n.resolvedLanguage, { maximumFractionDigits: 0 }).format(explanation.final_score * 100) })}
         </span>
       </div>
     </motion.section>

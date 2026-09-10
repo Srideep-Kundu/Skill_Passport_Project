@@ -184,6 +184,7 @@ class Student(Timestamped, Base):
     github_username: Mapped[str | None] = mapped_column(String(39), unique=True, index=True)
     career_goals: Mapped[dict[str, Any] | None] = mapped_column(Json)
     recruiter_evidence_consent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    preferred_locale: Mapped[str | None] = mapped_column(String(12))
     role = Role.student.value
     evidence: Mapped[list["Evidence"]] = relationship(back_populates="student", cascade="all, delete-orphan")
 
@@ -206,6 +207,7 @@ class Recruiter(Timestamped, Base):
     email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     company_name: Mapped[str] = mapped_column(String(255))
+    preferred_locale: Mapped[str | None] = mapped_column(String(12))
     role = Role.recruiter.value
     internships: Mapped[list["Internship"]] = relationship(back_populates="recruiter", cascade="all, delete-orphan")
 
@@ -233,6 +235,7 @@ class Academician(Timestamped, Base):
     phone: Mapped[str | None] = mapped_column(String(32))
     linkedin_url: Mapped[str | None] = mapped_column(String(512))
     google_scholar_url: Mapped[str | None] = mapped_column(String(512))
+    preferred_locale: Mapped[str | None] = mapped_column(String(12))
     role = Role.academician.value
 
 
@@ -245,6 +248,7 @@ class Institution(Timestamped, Base):
     institution_code: Mapped[str] = mapped_column(String(64), unique=True, index=True)
     state: Mapped[str | None] = mapped_column(String(100))
     departments: Mapped[list[str]] = mapped_column(Json, default=list, nullable=False)
+    preferred_locale: Mapped[str | None] = mapped_column(String(12))
     role = Role.institution.value
 
 
@@ -253,6 +257,7 @@ class Admin(Timestamped, Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255))
+    preferred_locale: Mapped[str | None] = mapped_column(String(12))
     role = Role.admin.value
 
 

@@ -8,6 +8,7 @@ import type {
   Assessment,
   AssessmentAttempt,
   AuthSession,
+  AccountPreferences,
   AutomationPolicy,
   AutomationQueueItem,
   CandidateMatch,
@@ -128,6 +129,8 @@ import type {
 } from "./types";
 
 export const api = {
+  getPreferences: (token: string) => request<AccountPreferences>("/auth/me/preferences", {}, token),
+  updatePreferences: (input: { preferred_locale: string }, token: string) => request<AccountPreferences>("/auth/me/preferences", { method: "PATCH", body: JSON.stringify(input) }, token),
   registerStudent: (input: StudentRegistration) => request<AuthSession>("/auth/register/student", { method: "POST", body: JSON.stringify(input) }),
   registerRecruiter: (input: RecruiterRegistration) => request<AuthSession>("/auth/register/recruiter", { method: "POST", body: JSON.stringify(input) }),
   registerAcademician: (input: AcademicianRegistration) => request<AuthSession>("/auth/register/academician", { method: "POST", body: JSON.stringify(input) }),

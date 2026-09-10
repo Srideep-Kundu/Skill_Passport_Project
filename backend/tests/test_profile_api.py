@@ -45,3 +45,37 @@ async def test_profile_is_student_private_and_never_selects_another_student(clie
     assert first_response.json()["student_id"] != second_response.json()["student_id"]
     assert "full_name" not in first_response.text and "email" not in first_response.text
     assert (await client.get("/passport/profile", headers={"Authorization": f"Bearer {recruiter}"})).status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_preferred_locale_is_validated_and_owned_by_authenticated_account(client: httpx.AsyncClient) -> None:
+    first = await register(client, "student", "locale-first@example.test")
+    second = await register(client, "student", "locale-second@example.test")
+
+    updated = await client.patch(
+        "/auth/me/preferences",
+        json={"preferred_locale": "hi"},
+        headers={"Authorization": f"Bearer {first}"},
+    )
+    assert updated.status_code == 200
+    assert updated.json() == {"preferred_locale": "hi"}
+
+    first_preferences = await client.get("/auth/me/preferences", headers={"Authorization": f"Bearer {first}"})
+    second_preferences = await client.get("/auth/me/preferences", headers={"Authorization": f"Bearer {second}"})
+    assert first_preferences.json() == {"preferred_locale": "hi"}
+    assert second_preferences.json() == {"preferred_locale": None}
+    assert (await client.get("/auth/me", headers={"Authorization": f"Bearer {first}"})).json()["preferred_locale"] == "hi"
+
+    invalid = await client.patch(
+        "/auth/me/preferences",
+        json={"preferred_locale": "fr"},
+        headers={"Authorization": f"Bearer {first}"},
+    )
+    assert invalid.status_code == 422
+
+    removed = await client.patch(
+        "/auth/me/preferences",
+        json={"preferred_locale": "ur"},
+        headers={"Authorization": f"Bearer {first}"},
+    )
+    assert removed.status_code == 422

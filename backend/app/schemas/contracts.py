@@ -4,6 +4,8 @@ from uuid import UUID
 
 from pydantic import AnyHttpUrl, BaseModel, ConfigDict, Field, field_validator
 
+from app.core.locales import is_supported_locale
+
 
 class APIModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -13,6 +15,22 @@ class TokenResponse(APIModel):
     access_token: str
     token_type: str = "bearer"
     role: Literal["student", "recruiter", "admin", "academician", "institution"]
+
+
+class PreferredLocaleUpdate(APIModel):
+    preferred_locale: str = Field(min_length=2, max_length=12)
+
+    @field_validator("preferred_locale")
+    @classmethod
+    def validate_preferred_locale(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not is_supported_locale(normalized):
+            raise ValueError("Unsupported locale")
+        return normalized
+
+
+class AccountPreferenceResponse(APIModel):
+    preferred_locale: str | None = None
 
 
 import re

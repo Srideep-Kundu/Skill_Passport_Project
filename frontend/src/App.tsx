@@ -36,6 +36,8 @@ import { useAuth } from "./auth/AuthContext";
 import { CommandPalette } from "./components/CommandPalette";
 import { SkillPassportCopilot } from "./components/SkillPassportCopilot";
 import { PostLoginTransition } from "./components/PostLoginTransition";
+import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "./localization/LanguageSelector";
 
 const RecruiterDashboard = lazy(async () => ({
   default: (await import("./pages/RecruiterDashboard")).RecruiterDashboard,
@@ -134,6 +136,7 @@ export type InstitutionTab =
   | "reports";
 
 export function App() {
+  const { t } = useTranslation();
   const { session, signOut, justLoggedIn, completePostLoginTransition } = useAuth();
   const prefersReduced = useReducedMotion();
   const [studentTab, setStudentTab] = useState<StudentTab>("overview");
@@ -263,7 +266,7 @@ export function App() {
     : institutionTab;
 
   return (
-    <div className="min-h-screen relative flex text-[#111827] font-sans selection:bg-[rgba(176,141,87,0.2)] selection:text-[#111827]">
+    <div className="app-shell min-h-screen relative flex text-[#111827] font-sans selection:bg-[rgba(176,141,87,0.2)] selection:text-[#111827]">
       {/* Shared Full-Viewport Animated Background Video Layer */}
       <DashboardVideoBackground />
 
@@ -291,7 +294,7 @@ export function App() {
 
       {/* Left Rail / Sidebar (Translucent Glassmorphism with Subtle Border) */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 h-screen md:sticky md:top-0 bg-white/20 md:bg-white/20 backdrop-blur-md border-r border-[#E5E1D8]/60 flex flex-col justify-between transition-all duration-200 md:translate-x-0 shrink-0 ${
+        className={`app-sidebar fixed inset-y-0 left-0 z-40 h-screen md:sticky md:top-0 bg-white/20 md:bg-white/20 backdrop-blur-md border-r border-[#E5E1D8]/60 flex flex-col justify-between transition-all duration-200 md:translate-x-0 shrink-0 ${
           isCollapsed ? "md:w-20" : "md:w-64"
         } w-64 ${mobileMenuOpen ? "translate-x-0 shadow-2xl bg-white/95" : "-translate-x-full"}`}
       >
@@ -363,7 +366,7 @@ export function App() {
                       isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
                     } ${
                       isActive
-                        ? "bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
+                        ? "nav-active-accent bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
                         : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
                     }`}
                   >
@@ -389,7 +392,7 @@ export function App() {
                       isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
                     } ${
                       isActive
-                        ? "bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
+                        ? "nav-active-accent bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
                         : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
                     }`}
                   >
@@ -415,7 +418,7 @@ export function App() {
                       isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
                     } ${
                       isActive
-                        ? "bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
+                        ? "nav-active-accent bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
                         : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
                     }`}
                   >
@@ -441,7 +444,7 @@ export function App() {
                       isCollapsed ? "justify-center p-2.5" : "px-3 py-2.5 gap-3"
                     } ${
                       isActive
-                        ? "bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
+                        ? "nav-active-accent bg-white/80 text-[#000000] font-bold border-l-3 border-[#935f18] shadow-xs"
                         : "text-[#0f172a] font-medium hover:bg-white/40 hover:text-[#000000] hover:font-semibold"
                     }`}
                   >
@@ -464,8 +467,8 @@ export function App() {
               <button
                 type="button"
                 onClick={signOut}
-                title="Sign out"
-                aria-label="Sign out"
+                title={t("common.signOut")}
+                aria-label={t("common.signOut")}
                 className="p-1.5 text-[#0f172a] hover:text-[#b91c1c] transition-colors cursor-pointer"
               >
                 <LogOut className="h-4 w-4" />
@@ -475,8 +478,8 @@ export function App() {
             <button
               type="button"
               onClick={signOut}
-              title="Sign out"
-              aria-label="Sign out"
+              title={t("common.signOut")}
+              aria-label={t("common.signOut")}
               className="flex h-9 w-full items-center justify-center rounded-lg border border-[#E5E1D8]/60 bg-white/40 text-[#0f172a] hover:text-[#b91c1c] transition-colors cursor-pointer shadow-2xs"
             >
               <LogOut className="h-4 w-4" />
@@ -488,7 +491,7 @@ export function App() {
       {/* Main Content Area */}
       <div className="relative z-10 flex-1 flex flex-col min-w-0">
         {/* Desktop Top Status Bar (Translucent Glassmorphism) */}
-        <header className="sticky top-0 z-30 border-b border-[#E5E1D8]/50 bg-white/25 md:bg-white/25 backdrop-blur-md px-6 py-3.5 flex items-center justify-between">
+        <header className="app-topbar sticky top-0 z-30 border-b border-[#E5E1D8]/50 bg-white/25 md:bg-white/25 backdrop-blur-md px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -504,6 +507,7 @@ export function App() {
           </div>
 
           <div className="flex items-center gap-3">
+            <LanguageSelector compact />
             {(isStudent || isRecruiter) && (
               <button
                 type="button"
