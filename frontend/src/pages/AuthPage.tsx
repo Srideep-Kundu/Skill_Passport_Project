@@ -441,9 +441,16 @@ export function AuthPage({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 items-start w-full max-w-5xl mx-auto">
         {/* Left Narrative Panel */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="font-mono text-[10px] uppercase tracking-widest text-[#B08D57] font-semibold flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#B08D57]" />
-            AUTHENTICATION GATEWAY
+          <div className="flex items-center gap-3">
+            <img
+              src="/lumina-logo.png"
+              alt="Lumina Intel Logo"
+              className="h-10 w-10 shrink-0 object-contain rounded-full border border-[#B08D57]/30 bg-white shadow-xs p-0.5"
+            />
+            <div className="font-mono text-[10px] uppercase tracking-widest text-[#B08D57] font-semibold flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#B08D57]" />
+              AUTHENTICATION GATEWAY
+            </div>
           </div>
           <h2
             className="text-3xl sm:text-4xl font-normal leading-[1.05] tracking-tight text-[#111827]"

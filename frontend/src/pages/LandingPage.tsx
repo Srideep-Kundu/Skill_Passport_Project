@@ -87,13 +87,22 @@ export function LandingPage({ defaultAuthOpen = false }: LandingPageProps) {
         {/* 3-Column Distributed Navigation Bar (Max-width: 1280px, px: 32px, py: 24px) */}
         <header className="relative z-20 w-full">
           <nav className="landing-nav mx-auto grid w-full max-w-[1280px] grid-cols-2 md:grid-cols-3 items-center px-8 py-6">
-            {/* Brand home link */}
+            {/* Left Column: Brand logo matching Screenshot 2 */}
             <div className="landing-brand flex items-center justify-start">
               <a
                 href="#home"
-                className="font-['Inter',sans-serif] text-[26px] font-semibold tracking-tight text-[#0f172a] leading-none flex items-center select-none"
+                className="flex items-center gap-2.5 select-none"
               >
-                <BrandLogo />
+                <div className="h-9 w-9 rounded-full bg-[#FCFBF9] border border-[#E5E1D8] flex items-center justify-center p-0.5 shadow-xs overflow-hidden shrink-0">
+                  <img
+                    src="/lumina-logo.png"
+                    alt="Lumina Intel Logo"
+                    className="h-full w-full object-contain"
+                  />
+                </div>
+                <span className="font-['Inter',sans-serif] text-[18px] sm:text-[20px] font-extrabold tracking-tight text-[#1E293B]">
+                  LUMINA INTEL
+                </span>
               </a>
             </div>
 
@@ -485,9 +494,9 @@ export function LandingPage({ defaultAuthOpen = false }: LandingPageProps) {
           </div>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-[#64748B] font-mono gap-4">
-            <div>
-              <a href="#home" className="mb-3 inline-flex"><BrandLogo /></a>
-              <p>© {new Date().getFullYear()} Lumina Intel Platform. All rights reserved.</p>
+            <div className="flex items-center gap-2">
+              <BrandLogo compact />
+              <span>© {new Date().getFullYear()} Lumina Intel Platform. All rights reserved.</span>
             </div>
             <div className="flex items-center gap-6">
               <a href="#privacy" className="hover:text-[#111827] transition-colors">Privacy</a>
