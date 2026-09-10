@@ -190,29 +190,26 @@ export function SkillPassportCopilot({
               transition={{ duration: 0.2 }}
               className="w-full h-full bg-[#FFFFFF] border border-[#E5E1D8] rounded-[16px] shadow-[0_20px_50px_rgba(17,24,39,0.15)] flex flex-col overflow-hidden text-[#111827] font-sans"
             >
-              {/* Header */}
-              <div className="p-4 border-b border-[#E5E1D8] flex items-center justify-between shrink-0 bg-[#F7F5F0]">
+              {/* Header matching Screenshot 3 */}
+              <div className="p-3.5 border-b border-[#27272A] flex items-center justify-between shrink-0 bg-[#18181B] text-white">
                 <div className="flex items-center gap-2.5">
-                  <div className="h-8 w-8 rounded-full border border-[#B08D57]/40 bg-[rgba(176,141,87,0.12)] flex items-center justify-center text-[#B08D57]">
-                    <Bot className="h-4 w-4" />
+                  <div className="h-7 w-7 rounded bg-[#FCFBF9] border border-white/20 flex items-center justify-center p-0.5 shrink-0 shadow-xs">
+                    <img src="/lumina-logo.png" alt="Lumina Intel" className="h-full w-full object-contain" />
                   </div>
-                  <div>
-                    <h3 className="text-base font-normal text-[#111827] flex items-center gap-2" style={{ fontFamily: "var(--font-display)" }}>
-                      <span>Platform Copilot</span>
-                      <span className="font-mono text-[9px] uppercase tracking-wider text-[#4F6F5A] border border-[#4F6F5A]/30 bg-[rgba(79,111,90,0.10)] px-2 py-0.5 rounded-full font-semibold">
-                        Grounded
-                      </span>
+                  <div className="flex items-baseline gap-2">
+                    <h3 className="text-sm font-semibold text-white tracking-tight">
+                      Lumina Intel
                     </h3>
-                    <p className="text-[10px] text-[#64748B] font-mono">
-                      Deterministic record grounding & audit assistance
-                    </p>
+                    <span className="text-[11px] text-[#A1A1AA] font-mono">
+                      Platform Copilot
+                    </span>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={handleClose}
                   aria-label="Close Copilot"
-                  className="p-1.5 rounded-full text-[#64748B] hover:text-[#111827] hover:bg-[#EFEBE3] cursor-pointer transition-colors"
+                  className="p-1 rounded-md text-[#A1A1AA] hover:text-white hover:bg-white/10 cursor-pointer transition-colors"
                 >
                   <X className="h-4 w-4" />
                 </button>
