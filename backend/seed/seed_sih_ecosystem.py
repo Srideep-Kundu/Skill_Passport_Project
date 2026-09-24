@@ -1109,7 +1109,7 @@ async def seed_sih_ecosystem():
                 password_hash=DEMO_PASSWORD_HASH,
                 full_name="Maya Rivera",
                 university="Harbor Polytechnic University",
-                github_username="demo-maya",
+                github_username="demo-maya-poly",
                 recruiter_evidence_consent=True,
             )
             session.add(st_poly)
