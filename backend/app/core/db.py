@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+import ssl as _ssl_lib
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -12,7 +13,16 @@ class Base(DeclarativeBase):
 
 
 settings = get_settings()
-engine = create_async_engine(settings.database_url, future=True)
+
+_db_url = settings.database_url
+_connect_args: dict = {}
+
+# asyncpg does not accept 'sslmode' as a query param — strip it and pass ssl via connect_args.
+if "asyncpg" in _db_url and "sslmode=require" in _db_url:
+    _db_url = _db_url.replace("?sslmode=require", "").replace("&sslmode=require", "")
+    _connect_args["ssl"] = _ssl_lib.create_default_context()
+
+engine = create_async_engine(_db_url, future=True, connect_args=_connect_args)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 
