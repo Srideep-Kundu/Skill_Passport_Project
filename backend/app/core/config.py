@@ -264,7 +264,14 @@ class Settings(BaseSettings):
         ),
     )
     cors_origins: Annotated[list[str], NoDecode] = Field(
-        default=["http://localhost:5173"],
+        default=[
+            "http://localhost:5173",
+            "http://localhost:4173",
+            "https://luminaintel.app",
+            "https://www.luminaintel.app",
+            "https://skill-passport-project.onrender.com",
+            "https://skill-passport-project.vercel.app",
+        ],
         validation_alias=AliasChoices("SKILL_PASSPORT_CORS_ORIGINS", "CORS_ORIGINS"),
     )
     environment: str = Field(
