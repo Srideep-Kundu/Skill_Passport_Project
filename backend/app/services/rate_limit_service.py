@@ -41,6 +41,6 @@ async def enforce_rate_limit(category: str, subject: str, limit: int) -> None:
                 "Too many requests. Please try again shortly.",
                 headers={"Retry-After": "60"},
             )
-    except RedisError:
+    except Exception:
         # Fall back gracefully so the live API remains 100% available
         return
