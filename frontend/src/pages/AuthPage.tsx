@@ -21,6 +21,18 @@ import { useAuth } from "../auth/AuthContext";
 type Mode = "login" | "register" | "forgot_password" | "reset_password";
 type RegistrationRole = "student" | "recruiter" | "academician" | "institution";
 
+function GitHubIcon({ className = "w-5 h-5" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+      />
+    </svg>
+  );
+}
+
 export interface AuthPageProps {
   isModal?: boolean;
   initialMode?: Mode;
@@ -232,6 +244,35 @@ export function AuthPage({
       const params = new URLSearchParams(window.location.search);
       const urlToken = params.get("token") || initialResetToken;
       const urlMode = params.get("mode");
+      const ghCode = params.get("code");
+      const ghState = params.get("state");
+
+      if (ghCode) {
+        setIsGitHubExchanging(true);
+        let targetRole: "student" | "recruiter" = "student";
+        if (ghState && ghState.startsWith("recruiter:")) {
+          targetRole = "recruiter";
+        }
+        // Remove code and state from URL so reloads don't retry with expired code
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        api.exchangeGitHubCode({ code: ghCode, role: targetRole })
+          .then((session) => {
+            setSession(session, "GitHub User");
+            toast.success(`Signed in successfully with GitHub as ${targetRole === "recruiter" ? "Recruiter" : "Student"}.`);
+            if (onClose) onClose();
+          })
+          .catch((caught) => {
+            const msg = caught instanceof ApiError ? caught.detail : "GitHub sign-in failed. Please try again.";
+            setError(msg);
+            toast.error(msg);
+          })
+          .finally(() => {
+            setIsGitHubExchanging(false);
+          });
+        return;
+      }
+
       if (urlToken || urlMode === "reset_password") {
         setMode("reset_password");
         if (urlToken) {
@@ -243,7 +284,7 @@ export function AuthPage({
     } catch {
       // Ignore URL parsing errors
     }
-  }, [initialResetToken, resetPasswordForm]);
+  }, [initialResetToken, resetPasswordForm, setSession, onClose]);
 
   async function handleLoginSubmit(data: LoginFormData) {
     setError(null);
@@ -414,6 +455,38 @@ export function AuthPage({
       toast.error(msg);
     } finally {
       setIsGoogleSubmitting(false);
+    }
+  }
+
+  const [isGitHubLoading, setIsGitHubLoading] = useState<boolean>(false);
+  const [isGitHubExchanging, setIsGitHubExchanging] = useState<boolean>(false);
+  const [showGitHubRoleModal, setShowGitHubRoleModal] = useState<boolean>(false);
+
+  async function triggerGitHubRedirect(targetRole: "student" | "recruiter") {
+    setIsGitHubLoading(true);
+    setError(null);
+    try {
+      const resp = await api.getGitHubLoginUrl(targetRole);
+      if (resp.url) {
+        window.location.href = resp.url;
+      }
+    } catch (caught) {
+      setIsGitHubLoading(false);
+      const msg = caught instanceof ApiError ? caught.detail : "GitHub login unavailable. Please check system configuration.";
+      setError(msg);
+      toast.error(msg);
+    }
+  }
+
+  function handleGitHubButtonClick() {
+    if (mode === "register") {
+      if (role === "student" || role === "recruiter") {
+        triggerGitHubRedirect(role);
+      } else {
+        toast.error("GitHub registration is available for Student and Recruiter roles only.");
+      }
+    } else {
+      setShowGitHubRoleModal(true);
     }
   }
 
@@ -1253,21 +1326,42 @@ export function AuthPage({
                 </div>
               </div>
 
-              {/* Google OAuth Button */}
-              <div className="flex flex-col items-center justify-center w-full min-h-[44px]">
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() => {
-                    setError("Google authentication was unsuccessful.");
-                    toast.error("Google authentication failed.");
-                  }}
-                  useOneTap={false}
-                  theme="filled_black"
-                  shape="rectangular"
-                  size="large"
-                  width="100%"
-                  text={mode === "login" ? "signin_with" : "signup_with"}
-                />
+              <div className="flex flex-col gap-2.5 w-full">
+                {/* Google OAuth Button */}
+                <div className="flex flex-col items-center justify-center w-full min-h-[44px]">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={() => {
+                      setError("Google authentication was unsuccessful.");
+                      toast.error("Google authentication failed.");
+                    }}
+                    useOneTap={false}
+                    theme="filled_black"
+                    shape="rectangular"
+                    size="large"
+                    width="100%"
+                    text={mode === "login" ? "signin_with" : "signup_with"}
+                  />
+                </div>
+
+                {/* GitHub OAuth Button — for Student and Recruiter only */}
+                {(mode === "login" || role === "student" || role === "recruiter") && (
+                  <button
+                    type="button"
+                    onClick={handleGitHubButtonClick}
+                    disabled={isGitHubLoading}
+                    className="flex items-center justify-center gap-2.5 w-full h-[40px] px-4 rounded-[4px] border border-[#24292F] bg-[#24292F] hover:bg-[#1a1e22] text-white text-sm font-medium transition-all shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <GitHubIcon className="w-4 h-4 fill-current shrink-0" />
+                    <span>
+                      {isGitHubLoading
+                        ? "Redirecting to GitHub..."
+                        : mode === "login"
+                        ? "Sign in with GitHub"
+                        : `Sign up as ${role === "recruiter" ? "Recruiter" : "Student"} with GitHub`}
+                    </span>
+                  </button>
+                )}
               </div>
             </>
           )}
@@ -1370,6 +1464,82 @@ export function AuthPage({
                 {isGoogleSubmitting ? "Connecting..." : "Confirm & Enter"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* GitHub Role Selection Dialog (for Sign In when role needs to be confirmed) */}
+      {showGitHubRoleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F172A]/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md rounded-[16px] border border-[#E5E1D8] bg-[#FFFFFF] p-6 sm:p-7 shadow-[0_8px_30px_rgba(17,24,39,0.08)] space-y-5 text-[#111827]">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-[#24292F] text-white">
+                <GitHubIcon className="h-5 w-5 fill-current" />
+              </div>
+              <div>
+                <span className="font-mono text-[10px] uppercase tracking-widest text-[#B08D57] font-semibold">
+                  GITHUB AUTHENTICATION
+                </span>
+                <h3 className="text-xl font-normal text-[#111827]" style={{ fontFamily: "var(--font-display)" }}>
+                  Select Account Role
+                </h3>
+              </div>
+            </div>
+
+            <p className="text-xs text-[#475569]">
+              GitHub sign-in is available for Student and Recruiter accounts. Select your persona to proceed:
+            </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowGitHubRoleModal(false);
+                  triggerGitHubRedirect("student");
+                }}
+                disabled={isGitHubLoading}
+                className="p-3.5 rounded-xl border border-[#E5E1D8] bg-[#F7F5F0] hover:border-[#B08D57] hover:bg-[rgba(176,141,87,0.10)] transition-all text-left cursor-pointer group"
+              >
+                <div className="font-mono text-[10px] uppercase tracking-wider text-[#B08D57] font-semibold">01 / CANDIDATE</div>
+                <div className="text-sm font-semibold text-[#111827] mt-1 group-hover:text-[#B08D57]">Student</div>
+                <div className="text-[11px] text-[#64748B] mt-0.5">Verified skill passport & match feed</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowGitHubRoleModal(false);
+                  triggerGitHubRedirect("recruiter");
+                }}
+                disabled={isGitHubLoading}
+                className="p-3.5 rounded-xl border border-[#E5E1D8] bg-[#F7F5F0] hover:border-[#B08D57] hover:bg-[rgba(176,141,87,0.10)] transition-all text-left cursor-pointer group"
+              >
+                <div className="font-mono text-[10px] uppercase tracking-wider text-[#B08D57] font-semibold">02 / EMPLOYER</div>
+                <div className="text-sm font-semibold text-[#111827] mt-1 group-hover:text-[#B08D57]">Recruiter</div>
+                <div className="text-[11px] text-[#64748B] mt-0.5">Post internships & auditable matches</div>
+              </button>
+            </div>
+
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => setShowGitHubRoleModal(false)}
+                className="w-full pill-btn-secondary py-2 text-xs font-mono uppercase tracking-wider text-[#475569] hover:text-[#111827]"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* GitHub Exchanging Code Loading Overlay */}
+      {isGitHubExchanging && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F172A]/50 backdrop-blur-sm p-4">
+          <div className="rounded-[16px] border border-[#E5E1D8] bg-[#FFFFFF] p-8 shadow-xl text-center space-y-4 max-w-sm w-full">
+            <GitHubIcon className="w-12 h-12 mx-auto text-[#111827] animate-pulse" />
+            <h3 className="text-lg font-semibold text-[#111827]">Connecting GitHub Account</h3>
+            <p className="text-xs text-[#475569]">Exchanging credentials and securing your passport session...</p>
           </div>
         </div>
       )}

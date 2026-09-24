@@ -182,6 +182,7 @@ class Student(Timestamped, Base):
     university: Mapped[str | None] = mapped_column(String(255))
     graduation_year: Mapped[int | None] = mapped_column(Integer)
     github_username: Mapped[str | None] = mapped_column(String(39), unique=True, index=True)
+    github_id: Mapped[str | None] = mapped_column(String(64), unique=True, index=True)
     career_goals: Mapped[dict[str, Any] | None] = mapped_column(Json)
     recruiter_evidence_consent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     preferred_locale: Mapped[str | None] = mapped_column(String(12))
@@ -207,6 +208,7 @@ class Recruiter(Timestamped, Base):
     email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     company_name: Mapped[str] = mapped_column(String(255))
+    github_id: Mapped[str | None] = mapped_column(String(64), unique=True, index=True)
     preferred_locale: Mapped[str | None] = mapped_column(String(12))
     role = Role.recruiter.value
     internships: Mapped[list["Internship"]] = relationship(back_populates="recruiter", cascade="all, delete-orphan")

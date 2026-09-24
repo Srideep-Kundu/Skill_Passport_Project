@@ -29,13 +29,24 @@ export function LandingPage({ defaultAuthOpen = false }: LandingPageProps) {
     return () => clearTimeout(timer);
   }, [prefersReducedMotion]);
 
-  // Check URL parameters for direct reset token or reset mode link
+  // Check URL parameters for direct reset token, reset mode link, or GitHub OAuth callback
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
       const token = params.get("token");
       const modeParam = params.get("mode");
-      if (token || modeParam === "reset_password") {
+      const ghCode = params.get("code");
+      const ghState = params.get("state");
+
+      if (ghCode) {
+        if (ghState && ghState.startsWith("recruiter:")) {
+          setAuthRole("recruiter");
+        } else {
+          setAuthRole("student");
+        }
+        setAuthMode("login");
+        setAuthModalOpen(true);
+      } else if (token || modeParam === "reset_password") {
         setAuthMode("reset_password");
         setAuthModalOpen(true);
       } else if (modeParam === "forgot_password") {

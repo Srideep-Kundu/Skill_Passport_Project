@@ -34,6 +34,16 @@ export interface GoogleAuthRequest {
   company_name?: string;
 }
 
+export interface GitHubOAuthURLResponse {
+  url: string;
+}
+
+export interface GitHubAuthExchangeRequest {
+  code: string;
+  role: "student" | "recruiter";
+  company_name?: string;
+}
+
 export interface ForgotPasswordRequest {
   email: string;
 }

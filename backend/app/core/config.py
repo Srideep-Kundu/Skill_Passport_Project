@@ -219,6 +219,14 @@ class Settings(BaseSettings):
         default=None,
         validation_alias=AliasChoices("SKILL_PASSPORT_GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_ID"),
     )
+    github_oauth_client_id: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("SKILL_PASSPORT_GITHUB_OAUTH_CLIENT_ID", "GITHUB_OAUTH_CLIENT_ID"),
+    )
+    github_oauth_client_secret: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("SKILL_PASSPORT_GITHUB_OAUTH_CLIENT_SECRET", "GITHUB_OAUTH_CLIENT_SECRET"),
+    )
     institution_registration_allowlist: Annotated[list[str], NoDecode] = Field(
         default_factory=list,
         validation_alias=AliasChoices(

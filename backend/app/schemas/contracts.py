@@ -118,6 +118,16 @@ class GoogleAuthRequest(APIModel):
     company_name: str | None = Field(default=None, max_length=255)
 
 
+class GitHubOAuthURLResponse(APIModel):
+    url: str
+
+
+class GitHubAuthExchangeRequest(APIModel):
+    code: str = Field(min_length=1)
+    role: Literal["student", "recruiter"] = "student"
+    company_name: str | None = Field(default=None, max_length=255)
+
+
 class ForgotPasswordRequest(APIModel):
     email: str = Field(min_length=3, max_length=320)
 

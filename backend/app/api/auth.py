@@ -1,10 +1,12 @@
 import secrets
+import urllib.parse
 from typing import Annotated, Any, Literal, cast
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
+import httpx
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,6 +35,8 @@ from app.schemas.contracts import (
     AccountPreferenceResponse,
     ForgotPasswordRequest,
     ForgotPasswordResponse,
+    GitHubAuthExchangeRequest,
+    GitHubOAuthURLResponse,
     GoogleAuthRequest,
     InstitutionRegistration,
     LoginRequest,
@@ -504,3 +508,158 @@ async def update_my_preferences(
     await session.commit()
     return AccountPreferenceResponse(preferred_locale=principal.preferred_locale)
 
+
+# ---------------------------------------------------------------------------
+# GitHub OAuth — student and recruiter only
+# ---------------------------------------------------------------------------
+
+_GITHUB_AUTHORIZE_URL = "https://github.com/login/oauth/authorize"
+_GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token"
+_GITHUB_USER_URL = "https://api.github.com/user"
+_GITHUB_EMAILS_URL = "https://api.github.com/user/emails"
+
+
+@router.get("/github/login", response_model=GitHubOAuthURLResponse)
+async def github_login(role: Literal["student", "recruiter"] = "student") -> GitHubOAuthURLResponse:
+    """Return the GitHub authorization URL. The client redirects the browser to it."""
+    settings = get_settings()
+    if not settings.github_oauth_client_id:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="github_oauth_not_configured")
+    state = f"{role}:{secrets.token_urlsafe(16)}"
+    params = urllib.parse.urlencode({
+        "client_id": settings.github_oauth_client_id,
+        "scope": "read:user user:email",
+        "state": state,
+    })
+    return GitHubOAuthURLResponse(url=f"{_GITHUB_AUTHORIZE_URL}?{params}")
+
+
+@router.post("/github/exchange", response_model=TokenResponse)
+async def github_exchange(
+    payload: GitHubAuthExchangeRequest,
+    request: Request,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> TokenResponse:
+    """Exchange a GitHub OAuth code for a Skill Passport JWT.
+
+    Creates a new student/recruiter account on first login.
+    Links subsequent logins by github_id. Protected attributes are never stored
+    from GitHub into matching inputs.
+    """
+    settings = get_settings()
+    if not settings.github_oauth_client_id or not settings.github_oauth_client_secret:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="github_oauth_not_configured")
+
+    subject = _request_subject(request)
+    await enforce_rate_limit("github_exchange", subject, limit=10)
+
+    # --- Exchange code for GitHub access token ---
+    async with httpx.AsyncClient(timeout=10) as client:
+        token_resp = await client.post(
+            _GITHUB_TOKEN_URL,
+            headers={"Accept": "application/json"},
+            data={
+                "client_id": settings.github_oauth_client_id,
+                "client_secret": settings.github_oauth_client_secret,
+                "code": payload.code,
+            },
+        )
+        if token_resp.status_code != 200:
+            raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="github_token_exchange_failed")
+        token_data = token_resp.json()
+        gh_access_token = token_data.get("access_token")
+        if not gh_access_token:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="github_oauth_code_invalid_or_expired")
+
+        # --- Fetch GitHub user profile ---
+        headers = {"Authorization": f"Bearer {gh_access_token}", "Accept": "application/json"}
+        user_resp = await client.get(_GITHUB_USER_URL, headers=headers)
+        if user_resp.status_code != 200:
+            raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="github_user_fetch_failed")
+        gh_user = user_resp.json()
+        gh_id = str(gh_user["id"])
+        gh_login = gh_user.get("login", "")
+        gh_name = gh_user.get("name") or gh_login
+
+        # --- Fetch primary verified email (GitHub may hide it in profile) ---
+        emails_resp = await client.get(_GITHUB_EMAILS_URL, headers=headers)
+        gh_email: str | None = None
+        if emails_resp.status_code == 200:
+            for entry in emails_resp.json():
+                if entry.get("primary") and entry.get("verified"):
+                    gh_email = entry["email"]
+                    break
+        if not gh_email:
+            gh_email = gh_user.get("email")
+        if not gh_email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="github_account_has_no_verified_email",
+            )
+
+    # --- Find or create account ---
+    if payload.role == "student":
+        # Try by github_id first, then email
+        result = await session.execute(select(Student).where(Student.github_id == gh_id))
+        user = result.scalar_one_or_none()
+        if user is None:
+            result = await session.execute(select(Student).where(Student.email == gh_email.casefold()))
+            user = result.scalar_one_or_none()
+            if user is not None:
+                user.github_id = gh_id
+                if not user.github_username:
+                    user.github_username = gh_login
+                await session.commit()
+        if user is None:
+            user = Student(
+                email=gh_email.casefold(),
+                password_hash=hash_password(secrets.token_urlsafe(32)),
+                full_name=gh_name,
+                github_id=gh_id,
+                github_username=gh_login,
+            )
+            session.add(user)
+            await session.flush()
+            session.add(AccountEmail(email=user.email, account_id=user.id, role=Role.student))
+            try:
+                await session.commit()
+                await session.refresh(user)
+            except IntegrityError:
+                await session.rollback()
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="account_already_exists")
+        return TokenResponse(
+            access_token=create_access_token(user.id, Role.student),
+            token_type="bearer",
+            role="student",
+        )
+    else:  # recruiter
+        result = await session.execute(select(Recruiter).where(Recruiter.github_id == gh_id))
+        user = result.scalar_one_or_none()
+        if user is None:
+            result = await session.execute(select(Recruiter).where(Recruiter.email == gh_email.casefold()))
+            user = result.scalar_one_or_none()
+            if user is not None:
+                user.github_id = gh_id
+                await session.commit()
+        if user is None:
+            company = payload.company_name or f"{gh_name}'s Company"
+            user = Recruiter(
+                email=gh_email.casefold(),
+                password_hash=hash_password(secrets.token_urlsafe(32)),
+                company_name=company,
+                github_id=gh_id,
+            )
+            session.add(user)
+            await session.flush()
+            session.add(AccountEmail(email=user.email, account_id=user.id, role=Role.recruiter))
+            try:
+                await session.commit()
+                await session.refresh(user)
+            except IntegrityError:
+                await session.rollback()
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="account_already_exists")
+        return TokenResponse(
+            access_token=create_access_token(user.id, Role.recruiter),
+            token_type="bearer",
+            role="recruiter",
+        )
