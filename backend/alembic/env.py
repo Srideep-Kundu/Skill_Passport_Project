@@ -15,11 +15,14 @@ target_metadata = Base.metadata
 
 def sync_database_url() -> str:
     """Alembic runs through a synchronous driver while the API uses async SQLAlchemy."""
-    return (
+    url = (
         get_settings()
         .database_url.replace("postgresql+asyncpg://", "postgresql+psycopg://")
         .replace("sqlite+aiosqlite://", "sqlite://")
     )
+    if "ssl=" in url and "sslmode=" not in url:
+        url = url.replace("ssl=", "sslmode=")
+    return url
 
 
 def run_migrations_offline() -> None:
