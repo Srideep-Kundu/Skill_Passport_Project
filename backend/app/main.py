@@ -101,8 +101,7 @@ async def lifespan(app: FastAPI):
                 logger.info("seed_notice", extra={"detail": str(seed_err)})
     except Exception as _startup_exc:  # noqa: BLE001 - preserve teammate fail-soft startup behavior
         logger.warning(
-            "database_schema_auto_creation_notice",
-            extra={"exc_type": type(_startup_exc).__name__, "exc_detail": str(_startup_exc)},
+            f"database_schema_auto_creation_notice: {type(_startup_exc).__name__}: {_startup_exc}"
         )
     yield
 
